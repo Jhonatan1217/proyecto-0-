@@ -1,6 +1,6 @@
 <?php
 
-include("database.php")
+include("database.php");
 
 // INSERTAR
 if (isset($_POST['guardar'])) {
