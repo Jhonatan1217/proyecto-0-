@@ -5,7 +5,7 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 
 include_once __DIR__ . '/../../config/database.php';
-include_once __DIR__ . '/../models/Ficha.php';
+include_once __DIR__ . '/../models/Trimestralizacion.php';
 
 // Verificar conexión
 if (!isset($conn)) {
@@ -13,7 +13,7 @@ if (!isset($conn)) {
     exit;
 }
 
-$ficha = new Ficha($conn);
+$trimestral = new Trimestralizacion($conn);
 $accion = isset($_GET['accion']) ? $_GET['accion'] : null;
 
 if (!$accion) {
@@ -24,36 +24,43 @@ if (!$accion) {
 switch ($accion) {
 
     case 'listar':
-        $res = $ficha->listar();
+        $res = $trimestral->listar();
         echo json_encode($res);
         break;
 
     case 'obtener':
-        if (!isset($_GET['id_ficha'])) {
-            echo json_encode(['error' => 'Debe enviar el parámetro id_ficha']);
+        if (!isset($_GET['id_trimestral'])) {
+            echo json_encode(['error' => 'Debe enviar el parámetro id_trimestral']);
             exit;
         }
-
-        $res = $ficha->obtenerPorId($_GET['id_ficha']);
+        $res = $trimestral->obtenerPorId($_GET['id_trimestral']);
         echo json_encode($res);
         break;
 
     case 'crear':
-        
-        $res = $ficha->crear();
+        // Leer JSON o POST tradicional
+        $data = json_decode(file_get_contents("php://input"), true);
+        $id_horario = $data['id_horario'] ?? $_POST['id_horario'] ?? null;
+
+        if (!$id_horario) {
+            echo json_encode(['error' => 'Debe enviar el campo id_horario']);
+            exit;
+        }
+
+        $res = $trimestral->crear($id_horario);
         echo json_encode($res);
         break;
 
     case 'eliminar':
         $data = json_decode(file_get_contents("php://input"), true);
-        $id_ficha = $data['id_ficha'] ?? $_POST['id_ficha'] ?? null;
+        $id_trimestral = $data['id_trimestral'] ?? $_POST['id_trimestral'] ?? null;
 
-        if (!$id_ficha) {
-            echo json_encode(['error' => 'Debe enviar el parámetro id_ficha']);
+        if (!$id_trimestral) {
+            echo json_encode(['error' => 'Debe enviar el parámetro id_trimestral']);
             exit;
         }
 
-        $res = $ficha->eliminar($id_ficha);
+        $res = $trimestral->eliminar($id_trimestral);
         echo json_encode($res);
         break;
 
