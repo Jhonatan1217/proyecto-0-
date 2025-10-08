@@ -17,5 +17,12 @@ class Competencia {
                 VALUES ('$descripcion', '$tipo', '$nombre_competencia')";
         mysqli_query($this->conexion, $sql);
     }
+
+    public function actualizarCompetencia($id, $descripcion, $tipo, $nombre_competencia) {
+        $sql = "UPDATE competencias 
+                SET descripcion = '$descripcion', tipo = '$tipo', nombre_competencia = '$nombre_competencia'
+                WHERE id = $id";
+        return mysqli_query($this->conexion, $sql);
+    }
 }
 ?>

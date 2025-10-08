@@ -16,5 +16,12 @@ class Horario {
                 VALUES ('$dia', '$hora_inicio', '$hora_fin')";
         mysqli_query($this->conexion, $sql);
     }
+
+    public function actualizarHorario($id, $dia, $hora_inicio, $hora_fin) {
+        $sql = "UPDATE horarios 
+                SET dia = '$dia', hora_inicio = '$hora_inicio', hora_fin = '$hora_fin'
+                WHERE id = $id";
+        return mysqli_query($this->conexion, $sql);
+    }
 }
 ?>
