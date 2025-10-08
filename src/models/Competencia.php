@@ -1,28 +1,35 @@
 <?php
 class Competencia {
-    private $conexion;
+    private $conn;
+    private $table = "competencias";
 
-    public function __construct($conexion) {
-        $this->conexion = $conexion;
+    public function __construct($db) {
+        $this->conn = $db;
     }
 
-    public function obtenerCompetencias() {
-        $sql = "SELECT * FROM competencias";
-        $resultado = mysqli_query($this->conexion, $sql);
-        return $resultado;
+    public function listar() {
+        $sql = "SELECT * FROM $this->table";
+        return $this->conn->query($sql);
     }
 
-    public function crearCompetencia($descripcion, $tipo, $nombre_competencia) {
-        $sql = "INSERT INTO competencias (descripcion, tipo, nombre_competencia)
-                VALUES ('$descripcion', '$tipo', '$nombre_competencia')";
-        mysqli_query($this->conexion, $sql);
+    public function obtenerPorId($id) {
+        $sql = "SELECT * FROM $this->table WHERE id_competencia = $id";
+        return $this->conn->query($sql);
     }
 
-    public function actualizarCompetencia($id, $descripcion, $tipo, $nombre_competencia) {
-        $sql = "UPDATE competencias 
-                SET descripcion = '$descripcion', tipo = '$tipo', nombre_competencia = '$nombre_competencia'
-                WHERE id = $id";
-        return mysqli_query($this->conexion, $sql);
+    public function crear($descripcion) {
+        $sql = "INSERT INTO $this->table (descripcion) VALUES ('$descripcion')";
+        return $this->conn->query($sql);
+    }
+
+    public function actualizar($id, $descripcion) {
+        $sql = "UPDATE $this->table SET descripcion = '$descripcion' WHERE id_competencia = $id";
+        return $this->conn->query($sql);
+    }
+
+    public function eliminar($id) {
+        $sql = "DELETE FROM $this->table WHERE id_competencia = $id";
+        return $this->conn->query($sql);
     }
 }
 ?>
