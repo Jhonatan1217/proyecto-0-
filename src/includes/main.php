@@ -1,6 +1,6 @@
 <?php
 // Página solicitada (por defecto 'home')
-$page = $_GET['page'] ?? 'home';
+$page = $_GET['page'] ?? 'landing';
 
 // Ruta de la vista
 $file = __DIR__ . "/../views/$page.php";
