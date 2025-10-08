@@ -1,11 +1,12 @@
 <?php
-function getZonas() {
-    return [
-        1 => 'Zona 1',
-        2 => 'Zona 2',
-        3 => 'Zona 3',
-        5 => 'Zona 5',
-        6 => 'Zona 6'
-    ];
+function getZonas($conn) {
+    try {
+        $sql = "SELECT * FROM zonas";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        die("Error al obtener zonas: " . $e->getMessage());
+    }
 }
 ?>
