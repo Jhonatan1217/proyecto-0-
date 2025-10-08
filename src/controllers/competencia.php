@@ -1,23 +1,30 @@
 <?php
+class Competencia {
+    private $conn;
+    private $table = "competencias";
 
-include("database.php")
+    public function __construct($db) {
+        $this->conn = $db;
+    }
 
-// INSERTAR
-if (isset($_POST['guardar'])) {
-    $descripcion = $_POST['descripcion'];
-    $tipo = $_POST['tipo'];
-    $nombre = $_POST['nombre_competencia'];
+    public function listar() {
+        $sql = "SELECT * FROM $this->table";
+        return $this->conn->query($sql);
+    }
 
-    $sql = "INSERT INTO competencias (descripcion, tipo, nombre_competencia)
-            VALUES ('$descripcion', '$tipo', '$nombre')";
-    mysqli_query($conexion, $sql);
-    echo "Competencia guardada correctamente";
-}
+    public function crear($descripcion) {
+        $sql = "INSERT INTO $this->table (descripcion) VALUES ('$descripcion')";
+        return $this->conn->query($sql);
+    }
 
-// MOSTRAR
-$resultado = mysqli_query($conexion, "SELECT * FROM competencias");
-    echo "<h3>Lista de Competencias</h3>";
-    while ($fila = mysqli_fetch_assoc($resultado)) {
-        echo $fila['id'] . " - " . $fila['nombre_competencia'] . " - " . $fila['tipo'] . "<br>";
+    public function actualizar($id, $descripcion) {
+        $sql = "UPDATE $this->table SET descripcion='$descripcion' WHERE id_competencia=$id";
+        return $this->conn->query($sql);
+    }
+
+    public function eliminar($id) {
+        $sql = "DELETE FROM $this->table WHERE id_competencia=$id";
+        return $this->conn->query($sql);
+    }
 }
 ?>

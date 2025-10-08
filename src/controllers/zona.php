@@ -1,7 +1,7 @@
 <?php
-class Ficha {
+class Zona {
     private $conn;
-    private $table = "fichas";
+    private $table = "zonas";
 
     public function __construct($db) {
         $this->conn = $db;
@@ -18,7 +18,7 @@ class Ficha {
     }
 
     public function eliminar($id) {
-        $sql = "DELETE FROM $this->table WHERE id_ficha=$id";
+        $sql = "DELETE FROM $this->table WHERE id_zona=$id";
         return $this->conn->query($sql);
     }
 }

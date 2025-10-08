@@ -1,7 +1,7 @@
 <?php
-class Ficha {
+class Trimestralizacion {
     private $conn;
-    private $table = "fichas";
+    private $table = "trimestralizacion";
 
     public function __construct($db) {
         $this->conn = $db;
@@ -12,13 +12,13 @@ class Ficha {
         return $this->conn->query($sql);
     }
 
-    public function crear() {
-        $sql = "INSERT INTO $this->table VALUES (NULL)";
+    public function crear($id_horario) {
+        $sql = "INSERT INTO $this->table (id_horario) VALUES ($id_horario)";
         return $this->conn->query($sql);
     }
 
     public function eliminar($id) {
-        $sql = "DELETE FROM $this->table WHERE id_ficha=$id";
+        $sql = "DELETE FROM $this->table WHERE id_trimestral=$id";
         return $this->conn->query($sql);
     }
 }
