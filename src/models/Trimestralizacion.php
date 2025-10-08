@@ -8,7 +8,14 @@ class Trimestralizacion {
     }
 
     public function listar() {
-        $sql = "SELECT * FROM $this->table";
+        $sql = "SELECT t.*, h.dia, h.hora_inicio, h.hora_fin 
+                FROM trimestralizacion t
+                INNER JOIN horarios h ON t.id_horario = h.id_horario";
+        return $this->conn->query($sql);
+    }
+
+    public function obtenerPorId($id) {
+        $sql = "SELECT * FROM $this->table WHERE id_trimestral = $id";
         return $this->conn->query($sql);
     }
 
@@ -18,7 +25,7 @@ class Trimestralizacion {
     }
 
     public function eliminar($id) {
-        $sql = "DELETE FROM $this->table WHERE id_trimestral=$id";
+        $sql = "DELETE FROM $this->table WHERE id_trimestral = $id";
         return $this->conn->query($sql);
     }
 }

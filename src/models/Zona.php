@@ -1,14 +1,30 @@
 <?php
 class Zona {
-    private $conexion;
+    private $conn;
+    private $table = "zonas";
 
-    public function __construct($conexion) {
-        $this->conexion = $conexion;
+    public function __construct($db) {
+        $this->conn = $db;
     }
 
-    public function obtenerZonas() {
-        $sql = "SELECT * FROM zonas";
-        return mysqli_query($this->conexion, $sql);
+    public function listar() {
+        $sql = "SELECT * FROM $this->table";
+        return $this->conn->query($sql);
+    }
+
+    public function obtenerPorId($id) {
+        $sql = "SELECT * FROM $this->table WHERE id_zona = $id";
+        return $this->conn->query($sql);
+    }
+
+    public function crear() {
+        $sql = "INSERT INTO $this->table VALUES (NULL)";
+        return $this->conn->query($sql);
+    }
+
+    public function eliminar($id) {
+        $sql = "DELETE FROM $this->table WHERE id_zona = $id";
+        return $this->conn->query($sql);
     }
 }
 ?>
