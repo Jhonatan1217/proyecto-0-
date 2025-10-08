@@ -1,10 +1,7 @@
 <?php
-
-// Configuración base
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 define('ACCESO_PERMITIDO', true);
-define('BASE_PATH', dirname(__DIR__)); 
 ?>
 
 <!DOCTYPE html>
@@ -15,13 +12,13 @@ define('BASE_PATH', dirname(__DIR__));
 </head>
 <body>
 <header>
-    <?php require_once BASE_PATH . '/includes/header.php'; ?>
+    <?php require_once __DIR__ . '/src/includes/header.php'; ?>
 </header>
 
-    <?php require_once BASE_PATH . '/includes/main.php'; ?>
+    <?php require_once __DIR__ . '/src/includes/main.php'; ?>
     
 <footer>
-    <?php require_once BASE_PATH . '/includes/footer.php' ?>
+    
 </footer>
 
 </body>
