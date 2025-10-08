@@ -8,7 +8,7 @@
 </head>
 <body class="flex flex-col min-h-screen font-sans text-center bg-white text-gray-900">
     <!-- Pie de página -->
-    <footer class="border-t py-3 text-xs text-gray-500">
+    <footer class="border-t py-3 lg:py-4 xl:py-6 text-xs lg:text-sm xl:text-base 2xl:text-lg text-gray-500 flex flex-col lg:flex-row items-center justify-center gap-2">
       Copyright © 2025 Fábrica ADSO
     </footer>
 </body>
