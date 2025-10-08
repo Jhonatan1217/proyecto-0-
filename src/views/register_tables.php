@@ -205,15 +205,6 @@
         <button onclick="descargarPDF()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">Descargar PDF</button>
         </div>
     </main>
-
-    <script>
-        function actualizar() {
-        alert("El registro ha sido actualizado correctamente.");
-        }
-        function descargarPDF() {
-        alert("Descargando archivo PDF...");
-        }
-    </script>
-
+    <script src="../assets/js/registerTables.js"></script>
 </body>
 </html>
