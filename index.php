@@ -18,7 +18,7 @@ define('ACCESO_PERMITIDO', true);
     <?php require_once __DIR__ . '/src/includes/main.php'; ?>
     
 <footer>
-    
+    <?php require_once __DIR__ . '/src/includes/footer.php'; ?>
 </footer>
 
 </body>

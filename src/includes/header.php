@@ -6,7 +6,7 @@
     <title>Document</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="flex flex-col min-h-screen font-sans text-center bg-white text-gray-900">
     <!-- Barra superior -->
     <header class="flex items-center justify-between px-6 py-3 border-b">
       <img src="assets/img/logoSena.png" alt="SENA Logo" class="h-12" />
