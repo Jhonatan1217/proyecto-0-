@@ -11,7 +11,7 @@ try {
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // Si la conexion es exitosa
-    echo "Conexión exitosa a la base de datos MySQL con PDO.";
+    echo "Conexión exitosa a la base de datos MySQL.";
 } catch (PDOException $e) {
     // Si hay algun problema en la base de datos
     echo "Error al conectar con la base de datos: " . $e->getMessage();
