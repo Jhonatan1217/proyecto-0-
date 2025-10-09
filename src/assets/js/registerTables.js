@@ -153,10 +153,25 @@ function cerrarModal() {
 }
 
 // Función para confirmar la eliminación
-function confirmarEliminar() {
-	// *************************** Aquí va la logica de eliminación ***************************
-	alert('Trimestralización eliminada');
-	cerrarModal();
+async function confirmarEliminar() {
+	try {
+		const response = await fetch('../controllers/RegisterTablesController.php?action=vaciar_db', {
+			method: 'POST'
+		});
+
+		const data = await response.json();
+
+		if (data.status === 'success') {
+			location.reload(); // recarga la página
+		} else {
+			alert('Error: ' + data.mensaje);
+		}
+	} catch (error) {
+		console.error('Error al enviar la solicitud:', error);
+		alert('Error en la conexión con el servidor.');
+	} finally {
+		cerrarModal();
+	}
 }
 
 // Cerrar modal al hacer clic fuera de él

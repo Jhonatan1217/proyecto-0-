@@ -71,7 +71,7 @@ class Trimestralizacion {
         return ["error" => $e->getMessage()];
     }
 }
-    // Eliminar un registro por su ID
+    //******************************************************/ Eliminar datos DB ******************************************************
     public function eliminar() {
         try {
             // Listado de tablas que se deben vaciar
