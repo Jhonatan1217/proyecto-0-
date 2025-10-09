@@ -9,10 +9,13 @@ class Ficha {
 
     // Listar todas las fichas
     public function listar() {
+        // Intentamos ejecutar la consulta para listar todas las fichas
         try {
+            // Preparamos la consulta SQL para seleccionar todos los registros de la tabla de fichas
             $sql = "SELECT * FROM " . $this->table;
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute();
+            $stmt = $this->conn->prepare($sql); // Preparamos la sentencia
+            $stmt->execute(); // Ejecutamos la sentencia
+            // Retornamos todos los resultados como un arreglo asociativo
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             return ["error" => $e->getMessage()];

@@ -35,10 +35,14 @@ class Zona {
     // Crear una nueva zona (solo si agregas más campos)
     public function crear($id_zona = null) {
         try {
-            // Si la tabla tiene solo id_zona AUTO_INCREMENT, no necesitas pasar valores
+            // Si la tabla 'zonas' solo tiene el campo id_zona como AUTO_INCREMENT,
+            // no es necesario especificar columnas ni valores en el INSERT.
+            // Preparamos la consulta SQL para insertar una nueva zona.
             $sql = "INSERT INTO " . $this->table . " () VALUES ()";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute();
+            $stmt = $this->conn->prepare($sql); // Preparamos la sentencia
+            $stmt->execute(); // Ejecutamos la sentencia
+
+            // Retornamos un mensaje de éxito y el id_zona generado automáticamente
             return [
                 "mensaje" => "Zona creada exitosamente.",
                 "id_zona" => $this->conn->lastInsertId()

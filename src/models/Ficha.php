@@ -1,4 +1,5 @@
 <?php
+// Clase Ficha para manejar operaciones CRUD sobre la tabla 'fichas' en la base de datos
 class Ficha {
     private $conn;
     private $table = "fichas";
