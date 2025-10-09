@@ -30,12 +30,22 @@ class Horario {
     // Método para listar todos los horarios con información relacionada (zona, ficha, instructor)
     public function listar() {
         try {
-            $sql = "SELECT h.id_horario, h.dia, h.hora_inicio, h.hora_fin,
-                           z.nombre AS zona, f.codigo AS ficha, i.nombre AS instructor
+            $sql = "SELECT h.id_horario,
+                        h.dia,
+                        h.hora_inicio,
+                        h.hora_fin,
+                        h.id_zona,
+                        h.id_ficha,
+                        c.id_competencia,
+                        i.nombre_instructor,
+                        i.apellido_instructor,
+                        f.id_ficha AS ficha
                     FROM horarios h
                     INNER JOIN zonas z ON h.id_zona = z.id_zona
+                    INNER JOIN competencias c ON h.id_competencia = c.id_competencia
                     INNER JOIN fichas f ON h.id_ficha = f.id_ficha
-                    INNER JOIN instructores i ON h.id_instructor = i.id_instructor";
+                    INNER JOIN instructores i ON h.id_instructor = i.id_instructor;
+                    ";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute();
             // Devuelve todos los resultados como un array asociativo
