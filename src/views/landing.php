@@ -12,7 +12,6 @@
 
  
   </head>
-
   <body class="flex flex-col min-h-screen font-sans text-center bg-white text-gray-900">
     <!-- Contenido principal -->
     <main class="flex flex-col items-center mt-20 flex-1 px-4 lg:px-8 xl:px-16 2xl:px-32">
@@ -29,8 +28,15 @@
         <!-- Menú desplegable -->
          <div class="relative inline-block">
           <select id="zona" name="zona" required
-            class="appearance-none w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-gray-100 transition-colors duration-200 outline-none cursor-pointer pr-10">
-            <option value="" class="text-[#00324D]" selected hidden>VISUALIZAR ZONA</option>
+            class="appearance-none w-60 lg:w-72 xl:w-80 2xl:w-96 
+              px-6 py-2 lg:px-8 lg:py-3 
+              border border-gray-400 text-sm lg:text-base xl:text-lg 
+              rounded-md font-bold 
+              hover:bg-gray-100 
+              transition-colors duration-200 outline-none cursor-pointer pr-10"
+            style="color:#00324d;"
+          >
+            <option value="" hidden !impor>VISUALIZAR ZONA</option>
             <option value="zona1">Zona 1</option>
             <option value="zona2">Zona 2</option>
             <option value="zona3">Zona 3</option>
