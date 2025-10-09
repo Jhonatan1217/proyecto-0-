@@ -22,41 +22,34 @@
       <div class="flex flex-col gap-3 lg:gap-4 items-center">
         <!-- Botón de crear (abrirá el modal) -->
         <button type="button" id="btnAbrirModal"
-          class="w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md hover:bg-gray-100 flex items-center justify-between text-[#00324D] font-bold transition-colors duration-200">
+          class="w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-[#004A70] transition-colors duration-200 outline-none cursor-pointer hover:text-white">
           CREAR TRIMESTRALIZACIÓN
         </button>
 
         <!-- Menú desplegable -->
-        <select id="zona" name="zona" required
-          class="select-chev w-60 lg:w-72 xl:w-80 2xl:w-96 h-12 px-4 text-[13px] rounded-xl border border-gray-300 outline-none bg-white shadow placeholder-gray-400 mt-4">
-          <option value="">Seleccione una zona</option>
-          <option value="zona1">Zona 1</option>
-          <option value="zona2">Zona 2</option>
-          <option value="zona3">Zona 3</option>
-          <option value="zona4">Zona 4</option>
-          <option value="zona5">Zona 5</option>
-          <option value="zona6">Zona 6</option>
-        </select>
+         <div class="relative inline-block">
+          <select id="zona" name="zona" required
+            class="appearance-none w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-gray-100 transition-colors duration-200 outline-none cursor-pointer pr-10">
+            <option value="" class="text-[#00324D]" selected hidden>VISUALIZAR ZONA</option>
+            <option value="zona1">Zona 1</option>
+            <option value="zona2">Zona 2</option>
+            <option value="zona3">Zona 3</option>
+            <option value="zona5">Zona 5</option>
+            <option value="zona6">Zona 6</option>
+          </select>
 
-        <?php
-          // Opciones del menú
-          $zonas = ["Zona 1", "Zona 2", "Zona 3", "Zona 5", "Zona 6"];
-        ?>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 lg:h-5 lg:w-5 text-[#00324D]"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
 
         <div class="relative inline-block text-left">
-          <!-- Botón principal -->
-          <button
-            id="dropdownButton"
-            class="w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md hover:bg-gray-100 flex items-center justify-between text-[#00324D] font-bold transition-colors duration-200"
-            aria-haspopup="true"
-            aria-expanded="false"
-          >
-            VISUALIZAR ZONA
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 lg:h-5 lg:w-5 ml-2 transition-transform duration-200"
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
 
           <!-- Contenido desplegable -->
           <div
