@@ -32,15 +32,24 @@ class Competencia {
         }
     }
 
-    // Crear una nueva competencia
+    // Crear una nueva competencia en la base de datos
+    // Recibe la descripción de la competencia como parámetro
     public function crear($descripcion) {
         try {
+            // Prepara la consulta SQL para insertar una nueva competencia
             $sql = "INSERT INTO " . $this->table . " (descripcion) VALUES (:descripcion)";
             $stmt = $this->conn->prepare($sql);
+
+            // Asocia el parámetro :descripcion con el valor recibido
             $stmt->bindParam(':descripcion', $descripcion);
+
+            // Ejecuta la consulta
             $stmt->execute();
+
+            // Retorna un mensaje de éxito si la inserción fue correcta
             return ["mensaje" => "Competencia creada exitosamente."];
         } catch (PDOException $e) {
+            // Si ocurre un error, retorna el mensaje de error
             return ["error" => $e->getMessage()];
         }
     }
