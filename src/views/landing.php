@@ -10,7 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/formulario_crear_trimestralizacion.css">
 
- 
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   </head>
 
   <body class="flex flex-col min-h-screen font-sans text-center bg-white text-gray-900">
@@ -27,8 +28,8 @@
         </button>
 
         <!-- Menú desplegable -->
-         <div class="relative inline-block">
-          <select id="zona" name="id_zona" required
+        <div class="relative inline-block">
+          <select id="zona" name="id_zona" 
             class="appearance-none w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-gray-100 transition-colors duration-200 outline-none cursor-pointer pr-10">
             <option value="" class="text-[#00324D]" selected hidden>VISUALIZAR ZONA</option>
             <option value="1">Zona 1</option>
@@ -50,7 +51,6 @@
         </div>
 
         <div class="relative inline-block text-left">
-
           <!-- Contenido desplegable -->
           <div
             id="dropdownMenu"
@@ -105,8 +105,8 @@
           <div class="border-b border-[#dcdcdc] mb-[12px]"></div>
 
           <!-- Formulario -->
-          <form action="<?= BASE_URL ?>src/controllers/TrimestralizacionController.php?accion=crear" method="POST" class="trimestralizacion-form space-y-3">
-            <select name="zona" id="id_zona" required
+          <form id="formTrimestralizacion" action="<?= BASE_URL ?>src/controllers/TrimestralizacionController.php?accion=crear" method="POST" class="trimestralizacion-form space-y-3">
+            <select name="zona" id="id_zona" 
               class="select-chev w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
               <option value="">Seleccione la zona a la que pertenece la ficha</option>
               <option value="1">Zona 1</option>
@@ -116,7 +116,7 @@
               <option value="6">Zona 6</option>
             </select>
 
-            <select name="nivel_ficha" required
+            <select name="nivel_ficha" 
               class="select-chev w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
               <option value="">Seleccione el nivel de la ficha</option>
               <option value="tecnico">Tecnico</option>
@@ -124,21 +124,20 @@
             </select>
 
             <div class="flex flex-minw-0 gap-3 max-[420px]:flex-col">
-              <input type="text" name="numero_ficha" id="numero_ficha" placeholder="Número de la ficha" required
+              <input type="text" name="numero_ficha" id="numero_ficha" placeholder="Número de la ficha" 
                 class="basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400"/>
-              <input type="text" name="nombre_instructor" id="id_instructor" placeholder="Nombre del instructor" required
+              <input type="text" name="nombre_instructor" id="id_instructor" placeholder="Nombre del instructor" 
                 class="basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400"/>
             </div>
 
-            <select name="tipo_instructor" required
+            <select name="tipo_instructor" 
               class="select-chev w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
               <option value="">Seleccione el tipo de instructor</option>
               <option value="TECNICO">Técnico</option>
               <option value="TRANSVERSAL">Transversal</option>
-              
             </select>
 
-            <select name="dia_semana" id="dia" required
+            <select name="dia_semana" id="dia" 
               class="select-chev select-cal w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
               <option value="">Seleccione el día</option>
               <option value="lunes">Lunes</option>
@@ -147,11 +146,10 @@
               <option value="jueves">Jueves</option>
               <option value="viernes">Viernes</option>
               <option value="sabado">Sábado</option>
-              <option value="domingo">Domingo</option>
             </select>
 
             <div class="flex flex-minw-0 gap-3 max-[420px]:flex-col">
-              <select name="hora_inicio" id="hora_inicio" required
+              <select name="hora_inicio" id="hora_inicio" 
                 class="select-chev basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
                 <option value="">Hora de inicio</option>
                 <?php for ($i = 6; $i <= 22; $i++): ?>
@@ -159,7 +157,7 @@
                 <?php endfor; ?>
               </select>
 
-              <select name="hora_fin" id="hora_fin" required
+              <select name="hora_fin" id="hora_fin" 
                 class="select-chev basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
                 <option value="">Hora de fin</option>
                 <?php for ($i = 7; $i <= 22; $i++): ?>
@@ -168,7 +166,7 @@
               </select>
             </div>
 
-            <textarea name="descripcion" id="descripcion" rows="4" placeholder="Diligencie la competencia aquí" required
+            <textarea name="descripcion" id="descripcion" rows="4" placeholder="Diligencie la competencia aquí" 
               class="w-full min-h-[90px] px-4 py-3 text-[13px] rounded-xl border-0 outline-none bg-white resize-none shadow placeholder-gray-400"></textarea>
 
             <button type="submit"
@@ -184,5 +182,97 @@
     <!-- Script del menú desplegable + modal -->
     <script src="<?= BASE_URL ?>src/assets/js/landing.js"></script>
 
+    <!-- Validaciones con SweetAlert2 -->
+    <script>
+      // A dónde quieres ir al final (ajústalo a tu ruta real)
+      const REDIRECT_URL = "index.php?page=landing"; // o "index.php?page=main"
+
+      document.getElementById("formTrimestralizacion").addEventListener("submit", function (e) {
+        const form = e.target;
+
+        // ------- VALIDACIONES -------
+        const zona = form.querySelector("[name='zona']").value.trim();
+        const nivel = form.querySelector("[name='nivel_ficha']").value.trim();
+        const numeroFicha = form.querySelector("#numero_ficha").value.trim();
+        const instructor = form.querySelector("#id_instructor").value.trim();
+        const tipo = form.querySelector("[name='tipo_instructor']").value.trim();
+        const dia = form.querySelector("#dia").value.trim();
+        const horaInicio = form.querySelector("#hora_inicio").value.trim();
+        const horaFin = form.querySelector("#hora_fin").value.trim();
+        const descripcion = form.querySelector("#descripcion").value.trim();
+
+        const Toast = Swal.mixin({
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 2500,
+          timerProgressBar: true
+        });
+
+        const campos = [zona, nivel, numeroFicha, instructor, tipo, dia, horaInicio, horaFin, descripcion];
+        const vacios = campos.filter(v => v === "").length;
+
+        if (vacios === campos.length) {
+          e.preventDefault();
+          return Toast.fire({ icon: "warning", title: "Por favor llenar todos los campos" });
+        }
+        if (vacios > 1) {
+          e.preventDefault();
+          return Toast.fire({ icon: "warning", title: "Por favor completa todos los campos antes de enviar" });
+        }
+        if (!zona) { e.preventDefault(); return Toast.fire({ icon: "warning", title: "Seleccione la zona" }); }
+        if (!nivel) { e.preventDefault(); return Toast.fire({ icon: "warning", title: "Seleccione el nivel de la ficha" }); }
+        if (!numeroFicha || isNaN(numeroFicha)) { e.preventDefault(); return Toast.fire({ icon: "warning", title: "Ingrese un número de ficha válido" }); }
+        if (!instructor) { e.preventDefault(); return Toast.fire({ icon: "warning", title: "Ingrese el nombre del instructor" }); }
+        if (!tipo) { e.preventDefault(); return Toast.fire({ icon: "warning", title: "Seleccione el tipo de instructor" }); }
+        if (!dia) { e.preventDefault(); return Toast.fire({ icon: "warning", title: "Seleccione un día de la semana" }); }
+        if (!horaInicio) { e.preventDefault(); return Toast.fire({ icon: "warning", title: "Seleccione la hora de inicio" }); }
+        if (!horaFin) { e.preventDefault(); return Toast.fire({ icon: "warning", title: "Seleccione la hora de fin" }); }
+        if (parseInt(horaFin) <= parseInt(horaInicio)) {
+          e.preventDefault();
+          return Toast.fire({ icon: "error", title: "La hora de fin debe ser mayor a la de inicio" });
+        }
+        if (!descripcion) { e.preventDefault(); return Toast.fire({ icon: "warning", title: "Ingrese la competencia o descripción" }); }
+        // ---------------------------------------------------
+
+        // Enviar por fetch
+        e.preventDefault();
+        const fd = new FormData(form);
+
+        fetch(form.action, {
+          method: "POST",
+          body: fd,
+          redirect: "manual",
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+          credentials: "same-origin"
+        })
+        .then(async (res) => {
+          if (res.ok || (res.type === "opaqueredirect")) {
+            // Éxito -> toast + redirección
+            Toast.fire({
+              icon: "success",
+              title: "¡Trimestralización creada correctamente!"
+            });
+            setTimeout(() => window.location.replace(REDIRECT_URL), 1600);
+          } else {
+            let msg = "";
+            try { msg = (await res.text()).slice(0, 200); } catch {}
+            Toast.fire({
+              icon: "error",
+              title: "No se pudo crear",
+              text: msg || "Ocurrió un error. Intenta de nuevo."
+            });
+          }
+        })
+        .catch((err) => {
+          Toast.fire({
+            icon: "error",
+            title: "Error de red",
+            text: "Revisa tu conexión e intenta de nuevo."
+          });
+          console.error(err);
+        });
+      });
+    </script>
   </body>
 </html>

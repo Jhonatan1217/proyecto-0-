@@ -94,3 +94,5 @@
             window.location.href = `index.php?page=src/views/register_tables&zona=${zona}`;
         }
       });
+
+      
