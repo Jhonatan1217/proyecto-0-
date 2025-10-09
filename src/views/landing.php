@@ -9,8 +9,8 @@
     <!-- Fuente Work Sans (el modal la usa) -->
     <link href="https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/formulario_crear_trimestralizacion.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/landing.css">
 
- 
   </head>
   <body class="flex flex-col min-h-screen font-sans text-center bg-white text-gray-900">
     <!-- Contenido principal -->

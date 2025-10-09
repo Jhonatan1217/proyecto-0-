@@ -1,0 +1,7 @@
+select{
+    color:#00324D !important;
+}
+
+select:has(option:checked:not([value=""])){
+    color:#000 !important;
+}
