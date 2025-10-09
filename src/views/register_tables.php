@@ -187,7 +187,7 @@
         <div class="mt-6 mb-6 flex gap-6">
         <button onclick="mostrarModalEliminar()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">Eliminar Trimestralización</button>
         <button onclick="actualizar()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">Actualizar Trimestralización</button>
-        <button onclick="descargarPDF()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">Descargar PDF</button>
+        <button onclick="descargarPDF()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition" style= "display: flex;">Descargar PDF<img src="src/assets/img/descargar.png" style = "margin-left: 5px; width: 20px; height: 20px"><img/></button>
         </div>
     </main>
     <div id="modalEliminar" class="modal-overlay">
