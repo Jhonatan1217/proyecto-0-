@@ -13,7 +13,7 @@ if (!isset($conn)) {
 }
 
 $trimestral = new Trimestralizacion($conn);
-$accion = isset($_GET['accion']) ? $_GET['accion'] : null;
+$accion = $_GET['accion'] ?? null;
 
 if (!$accion) {
     echo json_encode(['error' => 'Debe especificar la acción en la URL, por ejemplo: ?accion=listar']);
@@ -33,7 +33,7 @@ switch ($accion) {
     case 'crear':
         $data = json_decode(file_get_contents("php://input"), true);
         if (!$data) {
-            echo json_encode(['error' => 'No se recibieron datos para crear la trimestralización']);
+            echo json_encode(['error' => 'No se recibieron datos']);
             exit;
         }
 
@@ -41,10 +41,7 @@ switch ($accion) {
         echo json_encode($res);
         break;
 
-    case 'actualizar':
-        $data = json_decode(file_get_contents("php://input"), true);
-        $id = $_GET['id'] ?? null;
-        $res = $trimestral->actualizar($id, $data);
+        $res = $trimestral->crear($data['id_horario']);
         echo json_encode($res);
         break;
 

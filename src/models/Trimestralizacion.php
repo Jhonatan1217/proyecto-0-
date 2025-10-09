@@ -7,9 +7,12 @@ class Trimestralizacion {
         $this->conn = $db;
     }
 
+    // Listar todas las trimestralizaciones
     public function listar() {
         try {
-            $sql = "SELECT * FROM " . $this->table;
+            $sql = "SELECT t.id_trimestral, h.id_horario, h.dia, h.hora_inicio, h.hora_fin, h.id_zona, h.id_ficha, h.id_instructor
+                    FROM {$this->table} t
+                    INNER JOIN horarios h ON t.id_horario = h.id_horario";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -18,9 +21,10 @@ class Trimestralizacion {
         }
     }
 
+    // Obtener una trimestralización específica
     public function obtenerPorId($id_trimestral) {
         try {
-            $sql = "SELECT * FROM " . $this->table . " WHERE id_trimestral = :id";
+            $sql = "SELECT * FROM {$this->table} WHERE id_trimestral = :id";
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(":id", $id_trimestral, PDO::PARAM_INT);
             $stmt->execute();
@@ -30,56 +34,51 @@ class Trimestralizacion {
         }
     }
 
+    // Crear una nueva trimestralización
     public function crear($data) {
-        try {
-            // Ajusta los nombres de las columnas según tu tabla
-            $sql = "INSERT INTO " . $this->table . " (columna1, columna2, columna3)
-                    VALUES (:columna1, :columna2, :columna3)";
-            $stmt = $this->conn->prepare($sql);
+    try {
+        // Crear el nuevo horario
+        $sqlHorario = "INSERT INTO horarios (dia, hora_inicio, hora_fin, id_zona, id_ficha, id_instructor)
+                       VALUES (:dia, :hora_inicio, :hora_fin, :id_zona, :id_ficha, :id_instructor)";
+        $stmtH = $this->conn->prepare($sqlHorario);
+        $stmtH->bindParam(":dia", $data['dia']);
+        $stmtH->bindParam(":hora_inicio", $data['hora_inicio']);
+        $stmtH->bindParam(":hora_fin", $data['hora_fin']);
+        $stmtH->bindParam(":id_zona", $data['id_zona'], PDO::PARAM_INT);
+        $stmtH->bindParam(":id_ficha", $data['id_ficha'], PDO::PARAM_INT);
+        $stmtH->bindParam(":id_instructor", $data['id_instructor'], PDO::PARAM_INT);
+        $stmtH->execute();
 
-            $stmt->bindParam(":columna1", $data['columna1']);
-            $stmt->bindParam(":columna2", $data['columna2']);
-            $stmt->bindParam(":columna3", $data['columna3']);
+        $id_horario = $this->conn->lastInsertId();
 
-            $stmt->execute();
+        // Crear la trimestralización asociada
+        $sqlTrimestral = "INSERT INTO {$this->table} (id_horario) VALUES (:id_horario)";
+        $stmtT = $this->conn->prepare($sqlTrimestral);
+        $stmtT->bindParam(":id_horario", $id_horario, PDO::PARAM_INT);
+        $stmtT->execute();
 
-            return [
-                "success" => true,
-                "message" => "Trimestralización creada correctamente",
-                "id_insertado" => $this->conn->lastInsertId()
-            ];
-        } catch (PDOException $e) {
-            return ["error" => $e->getMessage()];
-        }
+        $id_trimestral = $this->conn->lastInsertId();
+
+        return [
+            "success" => true,
+            "message" => "Horario y trimestralización creados correctamente",
+            "id_horario" => $id_horario,
+            "id_trimestral" => $id_trimestral
+        ];
+    } catch (PDOException $e) {
+        return ["error" => $e->getMessage()];
     }
+}
 
-    public function actualizar($id, $data) {
+    // Eliminar una trimestralización
+    public function eliminar($id_trimestral) {
         try {
-            $sql = "UPDATE " . $this->table . " 
-                    SET columna1 = :columna1, columna2 = :columna2, columna3 = :columna3
-                    WHERE id_trimestral = :id";
+            $sql = "DELETE FROM {$this->table} WHERE id_trimestral = :id";
             $stmt = $this->conn->prepare($sql);
-
-            $stmt->bindParam(":columna1", $data['columna1']);
-            $stmt->bindParam(":columna2", $data['columna2']);
-            $stmt->bindParam(":columna3", $data['columna3']);
-            $stmt->bindParam(":id", $id, PDO::PARAM_INT);
-
+            $stmt->bindParam(":id", $id_trimestral, PDO::PARAM_INT);
             $stmt->execute();
 
-            return ["success" => true, "message" => "Registro actualizado correctamente"];
-        } catch (PDOException $e) {
-            return ["error" => $e->getMessage()];
-        }
-    }
-
-    public function eliminar($id) {
-        try {
-            $sql = "DELETE FROM " . $this->table . " WHERE id_trimestral = :id";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(":id", $id, PDO::PARAM_INT);
-            $stmt->execute();
-            return ["success" => true, "message" => "Registro eliminado correctamente"];
+            return ["success" => true, "message" => "Trimestralización eliminada correctamente"];
         } catch (PDOException $e) {
             return ["error" => $e->getMessage()];
         }
