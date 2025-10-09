@@ -105,8 +105,8 @@
           <div class="border-b border-[#dcdcdc] mb-[12px]"></div>
 
           <!-- Formulario -->
-          <form action="guardar_trimestralizacion.php" method="POST" class="trimestralizacion-form space-y-3">
-            <select name="zona" required
+          <form action="<?= BASE_URL ?>src/controllers/TrimestralizacionController.php?accion=crear" method="POST" class="trimestralizacion-form space-y-3">
+            <select name="zona" id="id_zona" required
               class="select-chev w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
               <option value="">Seleccione la zona a la que pertenece la ficha</option>
               <option value="zona1">Zona 1</option>
@@ -124,9 +124,9 @@
             </select>
 
             <div class="flex flex-minw-0 gap-3 max-[420px]:flex-col">
-              <input type="text" name="numero_ficha" placeholder="Número de la ficha" required
+              <input type="text" name="numero_ficha" id="id_ficha" placeholder="Número de la ficha" required
                 class="basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400"/>
-              <input type="text" name="nombre_instructor" placeholder="Nombre del instructor" required
+              <input type="text" name="nombre_instructor" id="id_instructor" placeholder="Nombre del instructor" required
                 class="basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400"/>
             </div>
 
@@ -138,7 +138,7 @@
               <option value="clave">clave</option>
             </select>
 
-            <select name="dia_semana" required
+            <select name="dia_semana" id="dia" required
               class="select-chev select-cal w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
               <option value="">Seleccione el día</option>
               <option value="lunes">Lunes</option>
@@ -151,7 +151,7 @@
             </select>
 
             <div class="flex flex-minw-0 gap-3 max-[420px]:flex-col">
-              <select name="hora_inicio" required
+              <select name="hora_inicio" id="hora_inicio" required
                 class="select-chev basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
                 <option value="">Hora de inicio</option>
                 <?php for ($i = 6; $i <= 22; $i++): ?>
@@ -159,7 +159,7 @@
                 <?php endfor; ?>
               </select>
 
-              <select name="hora_fin" required
+              <select name="hora_fin" id="hora_fin" required
                 class="select-chev basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
                 <option value="">Hora de fin</option>
                 <?php for ($i = 7; $i <= 22; $i++): ?>
