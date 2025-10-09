@@ -27,21 +27,14 @@
 
         <!-- Menú desplegable -->
          <div class="relative inline-block">
-          <select id="zona" name="zona" required
-            class="appearance-none w-60 lg:w-72 xl:w-80 2xl:w-96 
-              px-6 py-2 lg:px-8 lg:py-3 
-              border border-gray-400 text-sm lg:text-base xl:text-lg 
-              rounded-md font-bold 
-              hover:bg-gray-100 
-              transition-colors duration-200 outline-none cursor-pointer pr-10"
-            style="color:#00324d;"
-          >
-            <option value="" hidden !impor>VISUALIZAR ZONA</option>
-            <option value="zona1">Zona 1</option>
-            <option value="zona2">Zona 2</option>
-            <option value="zona3">Zona 3</option>
-            <option value="zona5">Zona 5</option>
-            <option value="zona6">Zona 6</option>
+          <select id="zona" name="id_zona" required
+            class="appearance-none w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-gray-100 transition-colors duration-200 outline-none cursor-pointer pr-10">
+            <option value="" class="text-[#00324D]" selected hidden>VISUALIZAR ZONA</option>
+            <option value="1">Zona 1</option>
+            <option value="2">Zona 2</option>
+            <option value="3">Zona 3</option>
+            <option value="5">Zona 5</option>
+            <option value="6">Zona 6</option>
           </select>
 
           <svg
@@ -111,28 +104,28 @@
           <div class="border-b border-[#dcdcdc] mb-[12px]"></div>
 
           <!-- Formulario -->
-          <form action="guardar_trimestralizacion.php" method="POST" class="trimestralizacion-form space-y-3">
-            <select name="zona" required
+          <form action="<?= BASE_URL ?>src/controllers/TrimestralizacionController.php?accion=crear" method="POST" class="trimestralizacion-form space-y-3">
+            <select name="id_zona" id="id_zona" required
               class="select-chev w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
               <option value="">Seleccione la zona a la que pertenece la ficha</option>
-              <option value="zona1">Zona 1</option>
-              <option value="zona2">Zona 2</option>
-              <option value="zona3">Zona 3</option>
-              <option value="zona5">Zona 5</option>
-              <option value="zona6">Zona 6</option>
+              <option value="1">Zona 1</option>
+              <option value="2">Zona 2</option>
+              <option value="3">Zona 3</option>
+              <option value="5">Zona 5</option>
+              <option value="6">Zona 6</option>
             </select>
 
-            <select name="nivel" required
+            <select name="nivel_ficha" required
               class="select-chev w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
               <option value="">Seleccione el nivel de la ficha</option>
-              <option value="tecnico">Técnico</option>
-              <option value="tecnologo">Tecnólogo</option>
+              <option value="tecnico">Tecnico</option>
+              <option value="tecnologo">Tecnologo</option>
             </select>
 
             <div class="flex flex-minw-0 gap-3 max-[420px]:flex-col">
-              <input type="text" name="numero_ficha" placeholder="Número de la ficha" required
+              <input type="text" name="numero_ficha" id="numero_ficha" placeholder="Número de la ficha" required
                 class="basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400"/>
-              <input type="text" name="nombre_instructor" placeholder="Nombre del instructor" required
+              <input type="text" name="nombre_instructor" id="id_instructor" placeholder="Nombre del instructor" required
                 class="basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400"/>
             </div>
 
@@ -144,7 +137,7 @@
               <option value="clave">clave</option>
             </select>
 
-            <select name="dia_semana" required
+            <select name="dia_semana" id="dia" required
               class="select-chev select-cal w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
               <option value="">Seleccione el día</option>
               <option value="lunes">Lunes</option>
@@ -157,7 +150,7 @@
             </select>
 
             <div class="flex flex-minw-0 gap-3 max-[420px]:flex-col">
-              <select name="hora_inicio" required
+              <select name="hora_inicio" id="hora_inicio" required
                 class="select-chev basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
                 <option value="">Hora de inicio</option>
                 <?php for ($i = 6; $i <= 22; $i++): ?>
@@ -165,7 +158,7 @@
                 <?php endfor; ?>
               </select>
 
-              <select name="hora_fin" required
+              <select name="hora_fin" id="hora_fin" required
                 class="select-chev basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
                 <option value="">Hora de fin</option>
                 <?php for ($i = 7; $i <= 22; $i++): ?>
@@ -174,7 +167,7 @@
               </select>
             </div>
 
-            <textarea name="competencia" rows="4" placeholder="Diligencie la competencia aquí" required
+            <textarea name="competencia" id="descripcion" rows="4" placeholder="Diligencie la competencia aquí" required
               class="w-full min-h-[90px] px-4 py-3 text-[13px] rounded-xl border-0 outline-none bg-white resize-none shadow placeholder-gray-400"></textarea>
 
             <button type="submit"

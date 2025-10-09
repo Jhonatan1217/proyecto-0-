@@ -1,17 +1,12 @@
 <?php
-
-function getFichas($conexion) {
-    $sql = "SELECT id, nombre_programa, nivel_formativo 
-            FROM fichas 
-            WHERE nombre_programa = 'TGO ADSO'";
-    $result = $conexion->query($sql);
-    return $result->fetch_all(MYSQLI_ASSOC);
+function getFichas($conn) { // Funcion para extraer la informacion de la tabla fichas
+    try {
+        $sql = "SELECT * FROM fichas"; // Seleccion de tabla para extraer datos de la BD
+        $stmt = $conn->prepare($sql); // Conexion
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        die("Error al obtener fichas: " . $e->getMessage()); // Mensaje de Error
+    }
 }
-
-function getFichaPorId($conexion, $idFicha) {
-    $sql = "SELECT * FROM fichas WHERE id = $idFicha";
-    $result = $conexion->query($sql);
-    return $result->fetch_assoc();
-}
-
 ?>

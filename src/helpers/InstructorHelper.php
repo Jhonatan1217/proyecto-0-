@@ -1,26 +1,12 @@
 <?php
-
-function getInstructores($conn) {
-    $sql = "SELECT id, CONCAT(nombre, ' ', apellido) AS nombre, tipo_instructor 
-            FROM instructores";
-    $result = $conn->query($sql);
-    return $result->fetch_all(MYSQLI_ASSOC);
+function getInstructores($conn) { // Funcion para extraer la informacion de la tabla instructores
+    try {
+        $sql = "SELECT id_instructor, nombre_instructor, apellido_instructor, tipo_instructor FROM instructores"; // Imprimir los datos de la tabla
+        $stmt = $conn->prepare($sql); // Conexion
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        die("Error al obtener instructores: " . $e->getMessage()); // Mensaje de error
+    }
 }
-
-function getInstructorPorId($conn, $id) {
-    $sql = "SELECT * FROM instructores WHERE id = $id";
-    $result = $conn->query($sql);
-    return $result->fetch_assoc();
-}
-
-// Valida si el instructor está libre en un rango de horas
-function checkDisponibilidad($conn, $idInstructor, $dia, $horaInicio, $horaFin) {
-    $sql = "SELECT * FROM horarios 
-            WHERE instructor = $idInstructor 
-            AND dia = '$dia' 
-            AND (hora_inicio < '$horaFin' AND hora_fin > '$horaInicio')";
-    $result = $conn->query($sql);
-    return $result->num_rows == 0; // true = disponible
-}
-
 ?>
