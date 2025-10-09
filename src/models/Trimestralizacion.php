@@ -2,68 +2,75 @@
 require_once "../../config/database.php";
 // Clase que maneja las operaciones CRUD para la tabla 'trimestralizacion'
 class Trimestralizacion {
-    // Conexión a la base de datos
     private $conn;
-    // Nombre de la tabla
     private $table = "trimestralizacion";
 
-    // Constructor que recibe la conexión a la base de datos
     public function __construct($db) {
         $this->conn = $db;
     }
 
-    // Listar todos los registros de la tabla 'trimestralizacion'
+    // Listar todas las trimestralizaciones
     public function listar() {
         try {
-            // Consulta SQL para seleccionar todos los registros
-            $sql = "SELECT * FROM " . $this->table;
-            $stmt = $this->conn->prepare($sql); // Prepara la consulta
-            $stmt->execute(); // Ejecuta la consulta
-            // Devuelve todos los resultados como un array asociativo
+            $sql = "SELECT t.id_trimestral, h.id_horario, h.dia, h.hora_inicio, h.hora_fin, h.id_zona, h.id_ficha, h.id_instructor
+                    FROM {$this->table} t
+                    INNER JOIN horarios h ON t.id_horario = h.id_horario";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            // En caso de error, devuelve el mensaje de error
             return ["error" => $e->getMessage()];
         }
     }
 
-    // Obtener un registro específico por su ID
+    // Obtener una trimestralización específica
     public function obtenerPorId($id_trimestral) {
         try {
-            // Consulta SQL para seleccionar un registro por su ID
-            $sql = "SELECT * FROM " . $this->table . " WHERE id_trimestral = :id_trimestral";
-            $stmt = $this->conn->prepare($sql); // Prepara la consulta
-            // Asocia el parámetro :id_trimestral con el valor recibido
-            $stmt->bindParam(':id_trimestral', $id_trimestral, PDO::PARAM_INT);
-            $stmt->execute(); // Ejecuta la consulta
-            // Devuelve el registro encontrado como un array asociativo
+            $sql = "SELECT * FROM {$this->table} WHERE id_trimestral = :id";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(":id", $id_trimestral, PDO::PARAM_INT);
+            $stmt->execute();
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            // En caso de error, devuelve el mensaje de error
             return ["error" => $e->getMessage()];
         }
     }
 
-    // Crear un nuevo registro en la tabla 'trimestralizacion'
-    public function crear($id_horario) {
-        try {
-            // Consulta SQL para insertar un nuevo registro
-            $sql = "INSERT INTO " . $this->table . " (id_horario) VALUES (:id_horario)";
-            $stmt = $this->conn->prepare($sql); // Prepara la consulta
-            // Asocia el parámetro :id_horario con el valor recibido
-            $stmt->bindParam(':id_horario', $id_horario, PDO::PARAM_INT);
-            $stmt->execute(); // Ejecuta la consulta
-            // Devuelve un mensaje de éxito y el ID del nuevo registro
-            return [
-                "mensaje" => "Trimestralización creada exitosamente.",
-                "id_trimestral" => $this->conn->lastInsertId()
-            ];
-        } catch (PDOException $e) {
-            // En caso de error, devuelve el mensaje de error
-            return ["error" => $e->getMessage()];
-        }
-    }
+    // Crear una nueva trimestralización
+    public function crear($data) {
+    try {
+        // Crear el nuevo horario
+        $sqlHorario = "INSERT INTO horarios (dia, hora_inicio, hora_fin, id_zona, id_ficha, id_instructor)
+                       VALUES (:dia, :hora_inicio, :hora_fin, :id_zona, :id_ficha, :id_instructor)";
+        $stmtH = $this->conn->prepare($sqlHorario);
+        $stmtH->bindParam(":dia", $data['dia']);
+        $stmtH->bindParam(":hora_inicio", $data['hora_inicio']);
+        $stmtH->bindParam(":hora_fin", $data['hora_fin']);
+        $stmtH->bindParam(":id_zona", $data['id_zona'], PDO::PARAM_INT);
+        $stmtH->bindParam(":id_ficha", $data['id_ficha'], PDO::PARAM_INT);
+        $stmtH->bindParam(":id_instructor", $data['id_instructor'], PDO::PARAM_INT);
+        $stmtH->execute();
 
+        $id_horario = $this->conn->lastInsertId();
+
+        // Crear la trimestralización asociada
+        $sqlTrimestral = "INSERT INTO {$this->table} (id_horario) VALUES (:id_horario)";
+        $stmtT = $this->conn->prepare($sqlTrimestral);
+        $stmtT->bindParam(":id_horario", $id_horario, PDO::PARAM_INT);
+        $stmtT->execute();
+
+        $id_trimestral = $this->conn->lastInsertId();
+
+        return [
+            "success" => true,
+            "message" => "Horario y trimestralización creados correctamente",
+            "id_horario" => $id_horario,
+            "id_trimestral" => $id_trimestral
+        ];
+    } catch (PDOException $e) {
+        return ["error" => $e->getMessage()];
+    }
+}
     // Eliminar un registro por su ID
     public function eliminar() {
         try {
@@ -91,4 +98,3 @@ class Trimestralizacion {
         }
     }
 }
-?>

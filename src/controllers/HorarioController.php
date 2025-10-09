@@ -83,22 +83,22 @@ class Horario {
         }
     }
 
-    // Método para actualizar un horario existente
-    public function actualizar($id_horario, $dia, $hora_inicio, $hora_fin, $id_zona, $id_ficha, $id_instructor) {
+    // Método para actualizar solo ficha, instructor y competencia
+    public function actualizar($id_horario, $id_ficha, $id_instructor, $id_competencia) {
         try {
-            $sql = "UPDATE " . $this->table . " 
-                    SET dia = :dia, hora_inicio = :hora_inicio, hora_fin = :hora_fin,
-                        id_zona = :id_zona, id_ficha = :id_ficha, id_instructor = :id_instructor
+            $sql = "UPDATE " . $this->table . "
+                    SET id_ficha = :id_ficha,
+                        id_instructor = :id_instructor,
+                        id_competencia = :id_competencia
                     WHERE id_horario = :id_horario";
+            
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':id_horario', $id_horario);
-            $stmt->bindParam(':dia', $dia);
-            $stmt->bindParam(':hora_inicio', $hora_inicio);
-            $stmt->bindParam(':hora_fin', $hora_fin);
-            $stmt->bindParam(':id_zona', $id_zona);
             $stmt->bindParam(':id_ficha', $id_ficha);
             $stmt->bindParam(':id_instructor', $id_instructor);
+            $stmt->bindParam(':id_competencia', $id_competencia);
             $stmt->execute();
+
             // Devuelve un mensaje de éxito
             return ['mensaje' => 'Horario actualizado correctamente'];
         } catch (PDOException $e) {
@@ -106,6 +106,7 @@ class Horario {
             return ['error' => $e->getMessage()];
         }
     }
+
 
     // Método para eliminar un horario por su ID
     public function eliminar($id_horario) {
