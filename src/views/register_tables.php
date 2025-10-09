@@ -10,7 +10,8 @@
     <body class="text-center font-sans">
 
     <h1 class="text-3xl font-bold mt-6">
-        VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA X
+        VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA 
+        <?php echo isset($_GET['zona']) ? htmlspecialchars($_GET['zona']) : '—'; ?>
     </h1>
     <h2 class="text-xl text-gray-700 mb-6">
         Sistema de gestión de trimestralización <br> SENA

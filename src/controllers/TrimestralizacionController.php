@@ -37,7 +37,7 @@ switch ($accion) {
             exit;
         }
 
-        // ✅ Capturar los datos del formulario correctamente
+        //  Capturar los datos del formulario correctamente
         $data = [
             'dia'           => $_POST['dia_semana'] ?? null,
             'hora_inicio'   => $_POST['hora_inicio'] ?? null,
@@ -113,14 +113,6 @@ switch ($accion) {
 
             // 🔸 Crear la trimestralización
             $res = $trimestral->crear($id_horario);
-
-            echo json_encode([
-                'success' => true,
-                'mensaje' => 'Trimestralización creada correctamente.',
-                'id_ficha' => $data['id_ficha'],
-                'id_horario' => $id_horario,
-                'id_trimestral' => $res['id_trimestral'] ?? null
-            ]);
 
         } catch (PDOException $e) {
             echo json_encode(['error' => 'Error SQL: ' . $e->getMessage()]);
