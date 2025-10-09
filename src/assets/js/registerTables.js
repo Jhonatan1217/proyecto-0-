@@ -166,11 +166,6 @@ document.getElementById('modalEliminar').addEventListener('click', function(e) {
 	}
 });
 
-// Funciones placeholder para los otros botones
-function actualizar() {
-	alert('Actualizar trimestralización');
-}
-
 function descargarPDF() {
 	alert('Descargar PDF');
 }
