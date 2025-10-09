@@ -214,6 +214,9 @@
             </div>
         </div>
     </div>
+    <script>
+        const BASE_URL = "<?= BASE_URL ?>";
+    </script>
     <script src="<?= BASE_URL ?>src/assets/js/registerTables.js"></script>
 </body>
 </html>
