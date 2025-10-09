@@ -96,9 +96,7 @@ class Trimestralizacion {
     // 🔹 ELIMINAR / REINICIAR todas las tablas relacionadas
     public function eliminar() {
         try {
-            $tablas = ['trimestralizacion', 'horarios', 'fichas', 'instructores', 'competencias', 'zonas'];
-
-            $this->conn->beginTransaction();
+            $tablas = ['trimestralizacion', 'horarios', 'fichas', 'instructores', 'competencias'];
             $this->conn->exec("SET FOREIGN_KEY_CHECKS = 0");
 
             foreach ($tablas as $tabla) {
@@ -106,13 +104,16 @@ class Trimestralizacion {
             }
 
             $this->conn->exec("SET FOREIGN_KEY_CHECKS = 1");
-            $this->conn->commit();
 
-            return ["status" => "success", "mensaje" => "Base de datos reiniciada correctamente."];
+            return ["status" => "success",
+                    "mensaje" => "Las tablas se vaciaron correctamente"];
         } catch (PDOException $e) {
-            $this->conn->rollBack();
-            return ["status" => "error", "mensaje" => "Error al vaciar tablas: " . $e->getMessage()];
-        }
+                if ($this->conn->inTransaction()) {
+                    $this->conn->rollBack();
+                }
+                return ["status" => "error",
+                        "mensaje" => "Error al vaciar tablas: " . $e->getMessage()];
+            }
     }
 }
 ?>
