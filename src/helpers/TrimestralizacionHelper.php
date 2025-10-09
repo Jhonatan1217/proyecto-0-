@@ -2,7 +2,7 @@
 function getTrimestralizaciones($conn) {
     try {
         $sql = "SELECT t.id_trimestral, h.dia, h.hora_inicio, h.hora_fin,
-                       CONCAT(i.nombre_instructor, ' ', i.apellido_instructor) AS instructor
+                    CONCAT(i.nombre_instructor, ' ', i.apellido_instructor) AS instructor
                 FROM trimestralizacion t
                 INNER JOIN horarios h ON t.id_horario = h.id_horario
                 INNER JOIN instructores i ON h.id_instructor = i.id_instructor";
