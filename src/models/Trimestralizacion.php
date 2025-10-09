@@ -1,83 +1,87 @@
 <?php
-// Clase que maneja las operaciones CRUD para la tabla 'trimestralizacion'
 class Trimestralizacion {
-    // Conexión a la base de datos
     private $conn;
-    // Nombre de la tabla
     private $table = "trimestralizacion";
 
-    // Constructor que recibe la conexión a la base de datos
     public function __construct($db) {
         $this->conn = $db;
     }
 
-    // Listar todos los registros de la tabla 'trimestralizacion'
     public function listar() {
         try {
-            // Consulta SQL para seleccionar todos los registros
             $sql = "SELECT * FROM " . $this->table;
-            $stmt = $this->conn->prepare($sql); // Prepara la consulta
-            $stmt->execute(); // Ejecuta la consulta
-            // Devuelve todos los resultados como un array asociativo
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            // En caso de error, devuelve el mensaje de error
             return ["error" => $e->getMessage()];
         }
     }
 
-    // Obtener un registro específico por su ID
     public function obtenerPorId($id_trimestral) {
         try {
-            // Consulta SQL para seleccionar un registro por su ID
-            $sql = "SELECT * FROM " . $this->table . " WHERE id_trimestral = :id_trimestral";
-            $stmt = $this->conn->prepare($sql); // Prepara la consulta
-            // Asocia el parámetro :id_trimestral con el valor recibido
-            $stmt->bindParam(':id_trimestral', $id_trimestral, PDO::PARAM_INT);
-            $stmt->execute(); // Ejecuta la consulta
-            // Devuelve el registro encontrado como un array asociativo
+            $sql = "SELECT * FROM " . $this->table . " WHERE id_trimestral = :id";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(":id", $id_trimestral, PDO::PARAM_INT);
+            $stmt->execute();
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            // En caso de error, devuelve el mensaje de error
             return ["error" => $e->getMessage()];
         }
     }
 
-    // Crear un nuevo registro en la tabla 'trimestralizacion'
-    public function crear($id_horario) {
+    public function crear($data) {
         try {
-            // Consulta SQL para insertar un nuevo registro
-            $sql = "INSERT INTO " . $this->table . " (id_horario) VALUES (:id_horario)";
-            $stmt = $this->conn->prepare($sql); // Prepara la consulta
-            // Asocia el parámetro :id_horario con el valor recibido
-            $stmt->bindParam(':id_horario', $id_horario, PDO::PARAM_INT);
-            $stmt->execute(); // Ejecuta la consulta
-            // Devuelve un mensaje de éxito y el ID del nuevo registro
+            // Ajusta los nombres de las columnas según tu tabla
+            $sql = "INSERT INTO " . $this->table . " (columna1, columna2, columna3)
+                    VALUES (:columna1, :columna2, :columna3)";
+            $stmt = $this->conn->prepare($sql);
+
+            $stmt->bindParam(":columna1", $data['columna1']);
+            $stmt->bindParam(":columna2", $data['columna2']);
+            $stmt->bindParam(":columna3", $data['columna3']);
+
+            $stmt->execute();
+
             return [
-                "mensaje" => "Trimestralización creada exitosamente.",
-                "id_trimestral" => $this->conn->lastInsertId()
+                "success" => true,
+                "message" => "Trimestralización creada correctamente",
+                "id_insertado" => $this->conn->lastInsertId()
             ];
         } catch (PDOException $e) {
-            // En caso de error, devuelve el mensaje de error
             return ["error" => $e->getMessage()];
         }
     }
 
-    // Eliminar un registro por su ID
-    public function eliminar($id_trimestral) {
+    public function actualizar($id, $data) {
         try {
-            // Consulta SQL para eliminar un registro por su ID
-            $sql = "DELETE FROM " . $this->table . " WHERE id_trimestral = :id_trimestral";
-            $stmt = $this->conn->prepare($sql); // Prepara la consulta
-            // Asocia el parámetro :id_trimestral con el valor recibido
-            $stmt->bindParam(':id_trimestral', $id_trimestral, PDO::PARAM_INT);
-            $stmt->execute(); // Ejecuta la consulta
-            // Devuelve un mensaje de éxito
-            return ["mensaje" => "Trimestralización eliminada correctamente."];
+            $sql = "UPDATE " . $this->table . " 
+                    SET columna1 = :columna1, columna2 = :columna2, columna3 = :columna3
+                    WHERE id_trimestral = :id";
+            $stmt = $this->conn->prepare($sql);
+
+            $stmt->bindParam(":columna1", $data['columna1']);
+            $stmt->bindParam(":columna2", $data['columna2']);
+            $stmt->bindParam(":columna3", $data['columna3']);
+            $stmt->bindParam(":id", $id, PDO::PARAM_INT);
+
+            $stmt->execute();
+
+            return ["success" => true, "message" => "Registro actualizado correctamente"];
         } catch (PDOException $e) {
-            // En caso de error, devuelve el mensaje de error
+            return ["error" => $e->getMessage()];
+        }
+    }
+
+    public function eliminar($id) {
+        try {
+            $sql = "DELETE FROM " . $this->table . " WHERE id_trimestral = :id";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(":id", $id, PDO::PARAM_INT);
+            $stmt->execute();
+            return ["success" => true, "message" => "Registro eliminado correctamente"];
+        } catch (PDOException $e) {
             return ["error" => $e->getMessage()];
         }
     }
 }
-?>
