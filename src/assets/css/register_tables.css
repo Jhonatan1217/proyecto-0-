@@ -1,0 +1,27 @@
+*{
+    font-family: sans-serif;
+}
+
+
+h1 {
+
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+h2 {
+    color: #444;
+    margin-top: 0;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px auto;
+}
+
+
+
+th {
+    background-color: #39A900;
+}
