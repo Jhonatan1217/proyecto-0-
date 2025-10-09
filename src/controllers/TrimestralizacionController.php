@@ -37,25 +37,31 @@ switch ($accion) {
             exit;
         }
 
-        // 🔹 Capturar datos del formulario (ajustado al front)
+        // ✅ Capturar los datos del formulario correctamente
         $data = [
             'dia'           => $_POST['dia_semana'] ?? null,
             'hora_inicio'   => $_POST['hora_inicio'] ?? null,
             'hora_fin'      => $_POST['hora_fin'] ?? null,
-            'id_zona'       => $GET['zona'] ?? null,
+            'id_zona'       => $_POST['zona'] ?? null, // ← aquí estaba el error
             'numero_ficha'  => $_POST['numero_ficha'] ?? null,
-            'nivel_ficha'   => $_POST['nivel_ficha'] ?? 'tecnico',
-            'id_instructor' => $_POST['id_instructor'] ?? null
+            'nivel_ficha'   => $_POST['nivel_ficha'] ?? null,
+            'nombre_instructor' => $_POST['nombre_instructor'] ?? null,
+            'tipo_instructor'   => $_POST['tipo_instructor'] ?? null,
+            'descripcion'   => $_POST['descripcion'] ?? null,
         ];
 
         try {
-            // 🔸 Validar datos base
+            // 🔸 Validar campos obligatorios
             if (empty($data['dia']) || empty($data['hora_inicio']) || empty($data['hora_fin'])) {
                 throw new Exception("Faltan campos obligatorios del horario (día u horas).");
             }
 
             if (empty($data['numero_ficha'])) {
                 throw new Exception("Debe ingresar el número de ficha.");
+            }
+
+            if (empty($data['id_zona'])) {
+                throw new Exception("Debe seleccionar una zona válida.");
             }
 
             // 🔸 Buscar o crear ficha
@@ -74,53 +80,44 @@ switch ($accion) {
                 $data['id_ficha'] = (int)$conn->lastInsertId();
             }
 
-            // 🔸 Validar zona
-            if (empty($data['id_zona'])) {
-                throw new Exception("Debe seleccionar una zona válida.");
-            }
-
-            // 🔸 Verificar o crear instructor
-            if (empty($data['id_instructor'])) {
-                $stmt = $conn->prepare("INSERT INTO instructores (nombre_instructor, apellido_instructor, tipo_instructor)
-                                        VALUES ('Desconocido', '', 'TECNICO')");
+            // 🔸 Crear instructor
+                $stmt = $conn->prepare("INSERT INTO instructores (nombre_instructor, tipo_instructor)
+                VALUES (:nombre, :tipo)");
+                $stmt->bindParam(':nombre', $data['nombre_instructor']);
+                $stmt->bindParam(':tipo', $data['tipo_instructor']);
                 $stmt->execute();
                 $data['id_instructor'] = (int)$conn->lastInsertId();
-            } else {
-                $stmt = $conn->prepare("SELECT COUNT(*) FROM instructores WHERE id_instructor = :id");
-                $stmt->bindParam(':id', $data['id_instructor'], PDO::PARAM_INT);
+
+                // 🔸 Crear competencia (guardar descripción)
+                $stmt = $conn->prepare("INSERT INTO competencias (descripcion) VALUES (:descripcion)");
+                $stmt->bindParam(':descripcion', $data['descripcion']);
                 $stmt->execute();
-                if (!$stmt->fetchColumn()) {
-                    throw new Exception("El instructor no existe.");
-                }
-            }
+                $data['id_competencia'] = (int)$conn->lastInsertId();
 
-            // 🔸 Insertar horario con el ID de ficha correcto (no el número de ficha)
-            $stmt = $conn->prepare("
-                INSERT INTO horarios (dia, hora_inicio, hora_fin, id_zona, id_ficha, id_instructor)
-                VALUES (:dia, :hora_inicio, :hora_fin, :id_zona, :id_ficha, :id_instructor)
-            ");
+                // 🔸 Insertar horario con datos válidos (incluyendo competencia)
+                $stmt = $conn->prepare("
+                INSERT INTO horarios (dia, hora_inicio, hora_fin, id_zona, id_ficha, id_instructor, id_competencia)
+                VALUES (:dia, :hora_inicio, :hora_fin, :id_zona, :id_ficha, :id_instructor, :id_competencia)
+                ");
+                $stmt->bindParam(':dia', $data['dia']);
+                $stmt->bindParam(':hora_inicio', $data['hora_inicio']);
+                $stmt->bindParam(':hora_fin', $data['hora_fin']);
+                $stmt->bindParam(':id_zona', $data['id_zona'], PDO::PARAM_INT);
+                $stmt->bindParam(':id_ficha', $data['id_ficha'], PDO::PARAM_INT);
+                $stmt->bindParam(':id_instructor', $data['id_instructor'], PDO::PARAM_INT);
+                $stmt->bindParam(':id_competencia', $data['id_competencia'], PDO::PARAM_INT);
+                $stmt->execute();
 
-            $stmt->bindParam(':dia', $data['dia']);
-            $stmt->bindParam(':hora_inicio', $data['hora_inicio']);
-            $stmt->bindParam(':hora_fin', $data['hora_fin']);
-            $stmt->bindParam(':id_zona', $data['id_zona'], PDO::PARAM_INT);
+                $id_horario = (int)$conn->lastInsertId();
 
-            // ⚠️ Clave: forzamos a usar el ID autoincremental real
-            $idFichaReal = (int)$data['id_ficha'];
-            $stmt->bindParam(':id_ficha', $idFichaReal, PDO::PARAM_INT);
-
-            $stmt->bindParam(':id_instructor', $data['id_instructor'], PDO::PARAM_INT);
-            $stmt->execute();
-
-            $id_horario = (int)$conn->lastInsertId();
 
             // 🔸 Crear la trimestralización
             $res = $trimestral->crear($id_horario);
 
             echo json_encode([
                 'success' => true,
-                'mensaje' => 'Horario, ficha e instructor registrados correctamente.',
-                'id_ficha' => $idFichaReal,
+                'mensaje' => 'Trimestralización creada correctamente.',
+                'id_ficha' => $data['id_ficha'],
                 'id_horario' => $id_horario,
                 'id_trimestral' => $res['id_trimestral'] ?? null
             ]);
