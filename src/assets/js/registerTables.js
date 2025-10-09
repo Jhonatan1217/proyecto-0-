@@ -137,8 +137,40 @@ function cancelarEdicion() {
   document.querySelector('.mt-6.mb-6.flex.gap-6').style.display = 'flex';
 }
 
-// 🔹 Eliminar los botones de Confirmar/Cancelar
+// Eliminar los botones de Confirmar/Cancelar
 function eliminarBotonesConfirmacion() {
   const contenedor = document.querySelector('#botones-confirmacion');
   if (contenedor) contenedor.remove();
+}
+// Función para mostrar el modal
+function mostrarModalEliminar() {
+	document.getElementById('modalEliminar').classList.add('active');
+}
+
+// Función para cerrar el modal
+function cerrarModal() {
+	document.getElementById('modalEliminar').classList.remove('active');
+}
+
+// Función para confirmar la eliminación
+function confirmarEliminar() {
+	// *************************** Aquí va la logica de eliminación ***************************
+	alert('Trimestralización eliminada');
+	cerrarModal();
+}
+
+// Cerrar modal al hacer clic fuera de él
+document.getElementById('modalEliminar').addEventListener('click', function(e) {
+	if (e.target === this) {
+		cerrarModal();
+	}
+});
+
+// Funciones placeholder para los otros botones
+function actualizar() {
+	alert('Actualizar trimestralización');
+}
+
+function descargarPDF() {
+	alert('Descargar PDF');
 }

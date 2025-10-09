@@ -22,7 +22,7 @@
       <div class="flex flex-col gap-3 lg:gap-4 items-center">
         <!-- Botón de crear (abrirá el modal) -->
         <button type="button" id="btnAbrirModal"
-          class="border border-gray-400 px-4 py-1.5 lg:px-6 lg:py-2 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] hover:bg-[#004A70] font-bold hover:text-white transition-colors duration-200">
+          class="w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md hover:bg-gray-100 flex items-center justify-between text-[#00324D] font-bold transition-colors duration-200">
           CREAR TRIMESTRALIZACIÓN
         </button>
 
@@ -36,7 +36,7 @@
           <!-- Botón principal -->
           <button
             id="dropdownButton"
-            class="px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md hover:bg-gray-100 flex items-center justify-between w-60 lg:w-72 xl:w-80 2xl:w-96 text-[#00324D] font-bold transition-colors duration-200"
+            class="w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md hover:bg-gray-100 flex items-center justify-between text-[#00324D] font-bold transition-colors duration-200"
             aria-haspopup="true"
             aria-expanded="false"
           >
@@ -163,36 +163,6 @@
                 <?php endfor; ?>
               </select>
             </div>
-
-            <select name="color_instructor" required
-              class="select-chev w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
-              <option value="">Seleccione el color</option>
-              <option value="#001F3F">Azul marino</option>
-              <option value="#DC143C">Rojo carmesí</option>
-              <option value="#50C878">Verde esmeralda</option>
-              <option value="#FFDB58">Amarillo mostaza</option>
-              <option value="#CC5500">Naranja quemado</option>
-              <option value="#8A2BE2">Violeta</option>
-              <option value="#40E0D0">Turquesa</option>
-              <option value="#FF00FF">Rosa fucsia</option>
-              <option value="#D9DDDC">Gris perla</option>
-              <option value="#7B3F00">Marrón chocolate</option>
-              <option value="#F5F5DC">Beige arena</option>
-              <option value="#808000">Verde oliva</option>
-              <option value="#87CEEB">Azul celeste</option>
-              <option value="#2E2E2E">Negro carbón</option>
-              <option value="#FFFFF0">Blanco marfil</option>
-              <option value="#722F37">Rojo vino</option>
-              <option value="#003B46">Azul petróleo</option>
-              <option value="#98FF98">Verde menta</option>
-              <option value="#FFF44F">Amarillo limón</option>
-              <option value="#C8A2C8">Lila</option>
-              <option value="#FFD700">Dorado</option>
-              <option value="#C0C0C0">Plateado</option>
-              <option value="#FF7F50">Coral</option>
-              <option value="#00FFFF">Cian</option>
-              <option value="#FF00A8">Magenta</option>
-            </select>
 
             <textarea name="competencia" rows="4" placeholder="Diligencie la competencia aquí" required
               class="w-full min-h-[90px] px-4 py-3 text-[13px] rounded-xl border-0 outline-none bg-white resize-none shadow placeholder-gray-400"></textarea>

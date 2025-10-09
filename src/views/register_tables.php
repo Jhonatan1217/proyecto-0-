@@ -185,11 +185,35 @@
         </section>
 
         <div class="mt-6 mb-6 flex gap-6">
-        <button onclick="eliminar()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">Eliminar Trimestralización</button>
+        <button onclick="mostrarModalEliminar()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">Eliminar Trimestralización</button>
         <button onclick="actualizar()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">Actualizar Trimestralización</button>
         <button onclick="descargarPDF()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">Descargar PDF</button>
         </div>
     </main>
+    <div id="modalEliminar" class="modal-overlay">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-11/12 border-4 border-red-600">
+            <div class="warning-icon">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M50 10 L90 80 L10 80 Z" fill="none" stroke="#dc2626" stroke-width="6" stroke-linejoin="round"/>
+                    <circle cx="50" cy="65" r="3" fill="#dc2626"/>
+                    <line x1="50" y1="35" x2="50" y2="55" stroke="#dc2626" stroke-width="6" stroke-linecap="round"/>
+                </svg>
+            </div>
+
+            <h2 class="text-3xl font-bold text-center mb-8 text-gray-900">
+                ¿Estas seguro de querer<br>eliminar la trimestralización?
+            </h2>
+
+            <div class="flex gap-6 justify-center">
+                <button onclick="confirmarEliminar()" class="bg-green-600 hover:bg-green-700 text-white font-bold text-xl px-12 py-4 rounded-xl transition shadow-lg">
+                    Aceptar
+                </button>
+                <button onclick="cerrarModal()" class="bg-red-600 hover:bg-red-700 text-white font-bold text-xl px-12 py-4 rounded-xl transition shadow-lg">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
     <script src="../assets/js/registerTables.js"></script>
 </body>
 </html>
