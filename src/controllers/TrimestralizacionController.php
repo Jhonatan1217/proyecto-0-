@@ -21,6 +21,7 @@ if (!$accion) {
 }
 
 switch ($accion) {
+
     case 'listar':
         echo json_encode($trimestral->listar());
         break;
@@ -30,85 +31,109 @@ switch ($accion) {
         echo json_encode($trimestral->obtenerPorId($id));
         break;
 
-case 'crear':
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        echo json_encode(['error' => 'Método no permitido']);
-        exit;
-    }
-
-    // Mapeo de campos del formulario a los del modelo
-    $data = [
-        'dia'           => $_POST['dia_semana'] ?? null,
-        'hora_inicio'   => $_POST['hora_inicio'] ?? null,
-        'hora_fin'      => $_POST['hora_fin'] ?? null,
-        'id_zona'       => $_POST['zona'] ?? null,
-        'id_ficha'      => $_POST['numero_ficha'] ?? null,
-        'id_instructor' => $_POST['nombre_instructor'] ?? null
-    ];
-
-    try {
-        // ✅ --- FICHA ---
-        if (empty($data['id_ficha'])) {
-            $conn->exec("INSERT INTO fichas () VALUES ()");
-            $data['id_ficha'] = $conn->lastInsertId();
-        } else {
-            $stmt = $conn->prepare("SELECT COUNT(*) FROM fichas WHERE id_ficha = :id");
-            $stmt->bindParam(':id', $data['id_ficha'], PDO::PARAM_INT);
-            $stmt->execute();
-            if (!$stmt->fetchColumn()) {
-                $stmt = $conn->prepare("INSERT INTO fichas (id_ficha) VALUES (:id)");
-                $stmt->bindParam(':id', $data['id_ficha'], PDO::PARAM_INT);
-                $stmt->execute();
-            }
+    case 'crear':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['error' => 'Método no permitido']);
+            exit;
         }
 
-        // ✅ --- ZONA ---
-        if (empty($data['id_zona'])) {
-            $conn->exec("INSERT INTO zonas () VALUES ()");
-            $data['id_zona'] = $conn->lastInsertId();
-        } else {
-            $stmt = $conn->prepare("SELECT COUNT(*) FROM zonas WHERE id_zona = :id");
-            $stmt->bindParam(':id', $data['id_zona'], PDO::PARAM_INT);
-            $stmt->execute();
-            if (!$stmt->fetchColumn()) {
-                $stmt = $conn->prepare("INSERT INTO zonas (id_zona) VALUES (:id)");
-                $stmt->bindParam(':id', $data['id_zona'], PDO::PARAM_INT);
-                $stmt->execute();
-            }
-        }
+        // 🔹 Capturar datos del formulario (ajustado al front)
+        $data = [
+            'dia'           => $_POST['dia_semana'] ?? null,
+            'hora_inicio'   => $_POST['hora_inicio'] ?? null,
+            'hora_fin'      => $_POST['hora_fin'] ?? null,
+            'id_zona'       => $GET['zona'] ?? null,
+            'numero_ficha'  => $_POST['numero_ficha'] ?? null,
+            'nivel_ficha'   => $_POST['nivel_ficha'] ?? 'tecnico',
+            'id_instructor' => $_POST['id_instructor'] ?? null
+        ];
 
-        // ✅ --- INSTRUCTOR ---
-        if (empty($data['id_instructor'])) {
-            // Crear instructor genérico si no se envía nada
-            $stmt = $conn->prepare("INSERT INTO instructores (nombre_instructor, apellido_instructor, tipo_instructor) 
-                                    VALUES ('Desconocido', '', 'TECNICO')");
+        try {
+            // 🔸 Validar datos base
+            if (empty($data['dia']) || empty($data['hora_inicio']) || empty($data['hora_fin'])) {
+                throw new Exception("Faltan campos obligatorios del horario (día u horas).");
+            }
+
+            if (empty($data['numero_ficha'])) {
+                throw new Exception("Debe ingresar el número de ficha.");
+            }
+
+            // 🔸 Buscar o crear ficha
+            $stmt = $conn->prepare("SELECT id_ficha FROM fichas WHERE numero_ficha = :num");
+            $stmt->bindParam(':num', $data['numero_ficha'], PDO::PARAM_INT);
             $stmt->execute();
-            $data['id_instructor'] = $conn->lastInsertId();
-        } else {
-            // Verificar si existe instructor con ese ID
-            $stmt = $conn->prepare("SELECT COUNT(*) FROM instructores WHERE id_instructor = :id");
-            $stmt->bindParam(':id', $data['id_instructor'], PDO::PARAM_INT);
-            $stmt->execute();
-            if (!$stmt->fetchColumn()) {
-                // Si no existe, crearlo con nombre genérico
-                $stmt = $conn->prepare("INSERT INTO instructores (id_instructor, nombre_instructor, apellido_instructor, tipo_instructor) 
-                                        VALUES (:id, 'Instructor', '', 'TECNICO')");
+            $ficha = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($ficha) {
+                $data['id_ficha'] = (int)$ficha['id_ficha'];
+            } else {
+                $stmt = $conn->prepare("INSERT INTO fichas (numero_ficha, nivel_ficha) VALUES (:num, :nivel)");
+                $stmt->bindParam(':num', $data['numero_ficha'], PDO::PARAM_INT);
+                $stmt->bindParam(':nivel', $data['nivel_ficha'], PDO::PARAM_STR);
+                $stmt->execute();
+                $data['id_ficha'] = (int)$conn->lastInsertId();
+            }
+
+            // 🔸 Validar zona
+            if (empty($data['id_zona'])) {
+                throw new Exception("Debe seleccionar una zona válida.");
+            }
+
+            // 🔸 Verificar o crear instructor
+            if (empty($data['id_instructor'])) {
+                $stmt = $conn->prepare("INSERT INTO instructores (nombre_instructor, apellido_instructor, tipo_instructor)
+                                        VALUES ('Desconocido', '', 'TECNICO')");
+                $stmt->execute();
+                $data['id_instructor'] = (int)$conn->lastInsertId();
+            } else {
+                $stmt = $conn->prepare("SELECT COUNT(*) FROM instructores WHERE id_instructor = :id");
                 $stmt->bindParam(':id', $data['id_instructor'], PDO::PARAM_INT);
                 $stmt->execute();
+                if (!$stmt->fetchColumn()) {
+                    throw new Exception("El instructor no existe.");
+                }
             }
-        }
 
-        // ✅ Llamar al modelo con datos garantizados válidos
-        $res = $trimestral->crear($data);
-        echo json_encode($res);
-    } catch (PDOException $e) {
-        echo json_encode(['error' => $e->getMessage()]);
-    }
-    break;
+            // 🔸 Insertar horario con el ID de ficha correcto (no el número de ficha)
+            $stmt = $conn->prepare("
+                INSERT INTO horarios (dia, hora_inicio, hora_fin, id_zona, id_ficha, id_instructor)
+                VALUES (:dia, :hora_inicio, :hora_fin, :id_zona, :id_ficha, :id_instructor)
+            ");
+
+            $stmt->bindParam(':dia', $data['dia']);
+            $stmt->bindParam(':hora_inicio', $data['hora_inicio']);
+            $stmt->bindParam(':hora_fin', $data['hora_fin']);
+            $stmt->bindParam(':id_zona', $data['id_zona'], PDO::PARAM_INT);
+
+            // ⚠️ Clave: forzamos a usar el ID autoincremental real
+            $idFichaReal = (int)$data['id_ficha'];
+            $stmt->bindParam(':id_ficha', $idFichaReal, PDO::PARAM_INT);
+
+            $stmt->bindParam(':id_instructor', $data['id_instructor'], PDO::PARAM_INT);
+            $stmt->execute();
+
+            $id_horario = (int)$conn->lastInsertId();
+
+            // 🔸 Crear la trimestralización
+            $res = $trimestral->crear($id_horario);
+
+            echo json_encode([
+                'success' => true,
+                'mensaje' => 'Horario, ficha e instructor registrados correctamente.',
+                'id_ficha' => $idFichaReal,
+                'id_horario' => $id_horario,
+                'id_trimestral' => $res['id_trimestral'] ?? null
+            ]);
+
+        } catch (PDOException $e) {
+            echo json_encode(['error' => 'Error SQL: ' . $e->getMessage()]);
+        } catch (Exception $e) {
+            echo json_encode(['error' => 'Error: ' . $e->getMessage()]);
+        }
+        break;
 
     case 'eliminar':
-        $id = $_GET['id'] ?? null;
-        $res = $trimestral->eliminar($id);
+        $res = $trimestral->eliminar();
         echo json_encode($res);
         break;
 
@@ -116,3 +141,4 @@ case 'crear':
         echo json_encode(['error' => 'Acción no reconocida']);
         break;
 }
+?>

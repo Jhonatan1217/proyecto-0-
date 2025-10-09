@@ -1,6 +1,6 @@
 <?php
 require_once "../../config/database.php";
-// Clase que maneja las operaciones CRUD para la tabla 'trimestralizacion'
+
 class Trimestralizacion {
     private $conn;
     private $table = "trimestralizacion";
@@ -9,92 +9,110 @@ class Trimestralizacion {
         $this->conn = $db;
     }
 
-    // Listar todas las trimestralizaciones
+    // 🔹 LISTAR todas las trimestralizaciones con detalles
     public function listar() {
         try {
-            $sql = "SELECT t.id_trimestral, h.id_horario, h.dia, h.hora_inicio, h.hora_fin, h.id_zona, h.id_ficha, h.id_instructor
+            $sql = "SELECT 
+                        t.id_trimestral,
+                        h.id_horario,
+                        h.dia,
+                        h.hora_inicio,
+                        h.hora_fin,
+                        z.id_zona,
+                        f.numero_ficha,
+                        f.nivel_ficha,
+                        i.nombre_instructor,
+                        i.apellido_instructor
                     FROM {$this->table} t
-                    INNER JOIN horarios h ON t.id_horario = h.id_horario";
+                    INNER JOIN horarios h ON t.id_horario = h.id_horario
+                    INNER JOIN zonas z ON h.id_zona = z.id_zona
+                    INNER JOIN fichas f ON h.id_ficha = f.id_ficha
+                    INNER JOIN instructores i ON h.id_instructor = i.id_instructor
+                    ORDER BY t.id_trimestral DESC";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            return ["error" => $e->getMessage()];
+            return ["error" => "Error al listar: " . $e->getMessage()];
         }
     }
 
-    // Obtener una trimestralización específica
+    // 🔹 OBTENER una trimestralización específica
     public function obtenerPorId($id_trimestral) {
         try {
-            $sql = "SELECT * FROM {$this->table} WHERE id_trimestral = :id";
+            $sql = "SELECT 
+                        t.id_trimestral,
+                        h.dia,
+                        h.hora_inicio,
+                        h.hora_fin,
+                        z.id_zona,
+                        f.numero_ficha,
+                        f.nivel_ficha,
+                        i.nombre_instructor,
+                        i.apellido_instructor
+                    FROM {$this->table} t
+                    INNER JOIN horarios h ON t.id_horario = h.id_horario
+                    INNER JOIN zonas z ON h.id_zona = z.id_zona
+                    INNER JOIN fichas f ON h.id_ficha = f.id_ficha
+                    INNER JOIN instructores i ON h.id_instructor = i.id_instructor
+                    WHERE t.id_trimestral = :id";
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(":id", $id_trimestral, PDO::PARAM_INT);
             $stmt->execute();
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            return ["error" => $e->getMessage()];
+            return ["error" => "Error al obtener: " . $e->getMessage()];
         }
     }
 
-    // Crear una nueva trimestralización
-    public function crear($data) {
-    try {
-        // Crear el nuevo horario
-        $sqlHorario = "INSERT INTO horarios (dia, hora_inicio, hora_fin, id_zona, id_ficha, id_instructor)
-                       VALUES (:dia, :hora_inicio, :hora_fin, :id_zona, :id_ficha, :id_instructor)";
-        $stmtH = $this->conn->prepare($sqlHorario);
-        $stmtH->bindParam(":dia", $data['dia']);
-        $stmtH->bindParam(":hora_inicio", $data['hora_inicio']);
-        $stmtH->bindParam(":hora_fin", $data['hora_fin']);
-        $stmtH->bindParam(":id_zona", $data['id_zona'], PDO::PARAM_INT);
-        $stmtH->bindParam(":id_ficha", $data['id_ficha'], PDO::PARAM_INT);
-        $stmtH->bindParam(":id_instructor", $data['id_instructor'], PDO::PARAM_INT);
-        $stmtH->execute();
+    // 🔹 CREAR trimestralización (recibe un id_horario existente)
+    public function crear($id_horario) {
+        try {
+            // Validar que el horario exista
+            $check = $this->conn->prepare("SELECT COUNT(*) FROM horarios WHERE id_horario = :id");
+            $check->bindParam(":id", $id_horario, PDO::PARAM_INT);
+            $check->execute();
 
-        $id_horario = $this->conn->lastInsertId();
+            if (!$check->fetchColumn()) {
+                throw new PDOException("El horario con ID $id_horario no existe.");
+            }
 
-        // Crear la trimestralización asociada
-        $sqlTrimestral = "INSERT INTO {$this->table} (id_horario) VALUES (:id_horario)";
-        $stmtT = $this->conn->prepare($sqlTrimestral);
-        $stmtT->bindParam(":id_horario", $id_horario, PDO::PARAM_INT);
-        $stmtT->execute();
+            // Crear la trimestralización asociada
+            $sql = "INSERT INTO {$this->table} (id_horario) VALUES (:id_horario)";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(":id_horario", $id_horario, PDO::PARAM_INT);
+            $stmt->execute();
 
-        $id_trimestral = $this->conn->lastInsertId();
-
-        return [
-            "success" => true,
-            "message" => "Horario y trimestralización creados correctamente",
-            "id_horario" => $id_horario,
-            "id_trimestral" => $id_trimestral
-        ];
-    } catch (PDOException $e) {
-        return ["error" => $e->getMessage()];
+            return [
+                "success" => true,
+                "message" => "Trimestralización creada correctamente",
+                "id_trimestral" => $this->conn->lastInsertId()
+            ];
+        } catch (PDOException $e) {
+            return ["error" => "Error al crear trimestralización: " . $e->getMessage()];
+        }
     }
-}
-    // Eliminar un registro por su ID
+
+    // 🔹 ELIMINAR / REINICIAR todas las tablas relacionadas
     public function eliminar() {
         try {
-            // Listado de tablas que se deben vaciar
-            $tablas = ['competencias', 'fichas', 'horarios', 'instructores', 'trimestralizacion', 'zonas'];
+            $tablas = ['trimestralizacion', 'horarios', 'fichas', 'instructores', 'competencias', 'zonas'];
 
-            // Desactivar verificación de claves foráneas
             $this->conn->beginTransaction();
             $this->conn->exec("SET FOREIGN_KEY_CHECKS = 0");
 
-            // Vaciar todas las tablas listadas
             foreach ($tablas as $tabla) {
                 $this->conn->exec("TRUNCATE TABLE `$tabla`");
             }
 
-            // Reactivar claves foráneas
             $this->conn->exec("SET FOREIGN_KEY_CHECKS = 1");
             $this->conn->commit();
 
-            return ["status" => "success", "mensaje" => "Todas las tablas fueron vaciadas correctamente."];
+            return ["status" => "success", "mensaje" => "Base de datos reiniciada correctamente."];
         } catch (PDOException $e) {
-            // En caso de error, devuelve el mensaje de error
             $this->conn->rollBack();
             return ["status" => "error", "mensaje" => "Error al vaciar tablas: " . $e->getMessage()];
         }
     }
 }
+?>
