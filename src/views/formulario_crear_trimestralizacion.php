@@ -36,10 +36,10 @@
 
     /* Estilo especial SOLO para el select del día: reemplaza la flecha por un ícono de calendario */
     .select-cal {
-      background-image: url("../assets/img/calendar-1.svg") !important; /* ícono personalizado */
-      background-position: right 14px center !important;
-      background-size: 18px 18px !important;
-      padding-right: 2.85rem !important; /* un poco más de espacio por el ícono */
+    background-image: url("../assets/img/calendar-1.svg") !important; /* ícono personalizado */
+    background-position: right 14px center !important;
+    background-size: 18px 18px !important;
+    padding-right: 2.85rem !important; /* un poco más de espacio por el ícono */
     }
 
     /* Compatibilidad: ocultar flecha en IE/Edge antiguo */
@@ -131,16 +131,16 @@
 
         <!-- Hora fin: también generado dinámicamente con PHP -->
         <select name="hora_fin" required
-          class="select-chev basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
-          <option value="">Hora de fin</option>
-          <?php for ($i = 7; $i <= 22; $i++): ?>
+        class="select-chev basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
+        <option value="">Hora de fin</option>
+        <?php for ($i = 7; $i <= 22; $i++): ?>
             <option value="<?= $i ?>:00"><?= $i ?>:00</option>
-          <?php endfor; ?>
+        <?php endfor; ?>
         </select>
-      </div>
+    </div>
 
-      <!-- Selector de color para identificar instructor/horario -->
-      <select name="color_instructor" required
+    <!-- Selector de color para identificar instructor/horario -->
+    <select name="color_instructor" required
         class="select-chev w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
         <option value="">Seleccione el color</option>
         <option value="#001F3F">Azul marino</option>
