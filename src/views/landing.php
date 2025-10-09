@@ -27,6 +27,17 @@
         </button>
 
         <!-- Menú desplegable -->
+        <select id="zona" name="zona" required
+          class="select-chev w-60 lg:w-72 xl:w-80 2xl:w-96 h-12 px-4 text-[13px] rounded-xl border border-gray-300 outline-none bg-white shadow placeholder-gray-400 mt-4">
+          <option value="">Seleccione una zona</option>
+          <option value="zona1">Zona 1</option>
+          <option value="zona2">Zona 2</option>
+          <option value="zona3">Zona 3</option>
+          <option value="zona4">Zona 4</option>
+          <option value="zona5">Zona 5</option>
+          <option value="zona6">Zona 6</option>
+        </select>
+
         <?php
           // Opciones del menú
           $zonas = ["Zona 1", "Zona 2", "Zona 3", "Zona 5", "Zona 6"];

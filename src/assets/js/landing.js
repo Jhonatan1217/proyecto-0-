@@ -87,3 +87,10 @@
         });
 
       })();
+
+      document.getElementById('zona').addEventListener('change', function() {
+        const zona = this.value;
+        if (zona) {
+            window.location.href = `index.php?page=src/views/register_tables&zona=${zona}`;
+        }
+      });

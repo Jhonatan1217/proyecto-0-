@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="../assets/css/register_tables.css">
+    <link rel="stylesheet" href="src/assets/css/register_tables.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <title>Proyecto 0 - Visualización de registro de tablas</title>
     </head>
@@ -214,6 +214,6 @@
             </div>
         </div>
     </div>
-    <script src="../assets/js/registerTables.js"></script>
+    <script src="src/assets/js/registerTables.js"></script>
 </body>
 </html>
