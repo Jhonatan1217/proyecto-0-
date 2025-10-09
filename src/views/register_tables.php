@@ -17,9 +17,9 @@
     </h2>
 
     <main class="flex flex-col items-center">
-        <section id="tabla-horarios" class="w-11/12 overflow-x-auto">
+        <section id="tabla-horarios" class="w-11/12 max-h-[500px] overflow-y-auto">
         <table class="border border-gray-700 border-collapse w-full text-sm">
-            <thead>
+            <thead "sticky top-0 bg-green-600 text-white z-10">
             <tr class="bg-green-600 text-white">
                 <th class="border border-gray-700 p-6">Hora</th>
                 <th class="border border-gray-700 p-2">Lunes</th>
@@ -32,36 +32,20 @@
             </thead>
 
             <tbody>
-            <tr class="bg-gray-50 hover:bg-gray-100">
-                <td class="border border-gray-700 p-2 font-medium">6-7</td>
-                <td class="border border-gray-700 p-2">
-                2895664 TGO ADSO <br> J SEBASTIAN DUQUE <br>
-                    Comp: Lorem ipsum dolor sit amet consectetur adipisicing elit. Quae perspiciatis cum nostrum minus ut earum aspernatur doloremque nemo fuga sequi vitae, aliquid quasi quia atque. Ad quia eum recusandae non!
-                </td>
-                <td class="border border-gray-700 p-2">
-                2895664 TGO ADSO <br> J SEBASTIAN DUQUE <br>
-                    Comp: Lorem ipsum dolor sit amet consectetur adipisicing elit. Quae perspiciatis cum nostrum minus ut earum aspernatur doloremque nemo fuga sequi vitae, aliquid quasi quia atque. Ad quia eum recusandae non!
-                </td>
-                <td class="border border-gray-700 p-2">
-                2895664 TGO ADSO <br> J SEBASTIAN DUQUE <br>
-                    Comp: Lorem ipsum dolor sit amet consectetur adipisicing elit. Quae perspiciatis cum nostrum minus ut earum aspernatur doloremque nemo fuga sequi vitae, aliquid quasi quia atque. Ad quia eum recusandae non!
-                </td>
-                <td class="border border-gray-700 p-2">
-                2895664 TGO ADSO <br> J SEBASTIAN DUQUE <br>
-                    Comp: Lorem ipsum dolor sit amet consectetur adipisicing elit. Quae perspiciatis cum nostrum minus ut earum aspernatur doloremque nemo fuga sequi vitae, aliquid quasi quia atque. Ad quia eum recusandae non!
-                </td>
-                <td class="border border-gray-700 p-2">
-                2895664 TGO ADSO <br> J SEBASTIAN DUQUE <br>
-                    Comp: Lorem ipsum dolor sit amet consectetur adipisicing elit. Quae perspiciatis cum nostrum minus ut earum aspernatur doloremque nemo fuga sequi vitae, aliquid quasi quia atque. Ad quia eum recusandae non!
-                </td>
-                <td class="border border-gray-700 p-2">
-                2895664 TGO ADSO <br> J SEBASTIAN DUQUE <br>
-                    Comp: Lorem ipsum dolor sit amet consectetur adipisicing elit. Quae perspiciatis cum nostrum minus ut earum aspernatur doloremque nemo fuga sequi vitae, aliquid quasi quia atque. Ad quia eum recusandae non!
-                </td>
+            <tr class="bg-gray-50">
+            <td class="border border-gray-700 p-2 font-medium">6-7</td>
+
+            <!-- Repite este bloque para cada día -->
+            <td class="border border-gray-700 p-2"></td>
+            <td class="border border-gray-700 p-2"></td>
+            <td class="border border-gray-700 p-2"></td>
+            <td class="border border-gray-700 p-2"></td>
+            <td class="border border-gray-700 p-2"></td>
+            <td class="border border-gray-700 p-2"></td>
             </tr>
 
             <!-- RESTO DE FILAS VACÍAS -->
-            <tr class="bg-white hover:bg-gray-100">
+            <tr class="bg-white">
                 <td class="border border-gray-700 p-2">7-8</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
@@ -70,7 +54,7 @@
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
             </tr>
-            <tr class="bg-gray-50 hover:bg-gray-100">
+            <tr class="bg-gray-50">
                 <td class="border border-gray-700 p-2">8-9</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
@@ -79,7 +63,7 @@
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
             </tr>
-            <tr class="bg-gray-50 hover:bg-gray-100">
+            <tr class="bg-gray-50">
                 <td class="border border-gray-700 p-2">9-10</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
@@ -88,7 +72,7 @@
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
             </tr>
-            <tr class="bg-gray-50 hover:bg-gray-100">
+            <tr class="bg-gray-50">
                 <td class="border border-gray-700 p-2">10-11</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
@@ -97,7 +81,7 @@
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
             </tr>
-            <tr class="bg-white hover:bg-gray-100 ">
+            <tr class="bg-white ">
                 <td class="border border-gray-700 p-2">11-12</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
@@ -106,7 +90,7 @@
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
             </tr>
-            <tr class="bg-white hover:bg-gray-100">
+            <tr class="bg-white">
                 <td class="border border-gray-700 p-2">12-13</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
@@ -115,7 +99,7 @@
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
             </tr>
-            <tr class="bg-white hover:bg-gray-100">
+            <tr class="bg-white">
                 <td class="border border-gray-700 p-2">13-14</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
@@ -124,7 +108,7 @@
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
             </tr>
-            <tr class="bg-white hover:bg-gray-100">
+            <tr class="bg-white">
                 <td class="border border-gray-700 p-2">14-15</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
@@ -133,7 +117,7 @@
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
             </tr>
-            <tr class="bg-white hover:bg-gray-100">
+            <tr class="bg-white">
                 <td class="border border-gray-700 p-2">15-16</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
@@ -142,7 +126,7 @@
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
             </tr>
-            <tr class="bg-white hover:bg-gray-100">
+            <tr class="bg-white">
                 <td class="border border-gray-700 p-2">16-17</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
@@ -151,7 +135,7 @@
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
             </tr>
-            <tr class="bg-white hover:bg-gray-100">
+            <tr class="bg-white">
                 <td class="border border-gray-700 p-2">17-18</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
@@ -160,7 +144,7 @@
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
             </tr>
-            <tr class="bg-white hover:bg-gray-100">
+            <tr class="bg-white">
                 <td class="border border-gray-700 p-2">18-19</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
@@ -169,7 +153,7 @@
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
             </tr>
-            <tr class="bg-white hover:bg-gray-100">
+            <tr class="bg-white">
                 <td class="border border-gray-700 p-2">19-20</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
@@ -178,7 +162,7 @@
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
             </tr>
-            <tr class="bg-white hover:bg-gray-100">
+            <tr class="bg-white">
                 <td class="border border-gray-700 p-2">20-21</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
@@ -187,7 +171,7 @@
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
             </tr>
-            <tr class="bg-white hover:bg-gray-100">
+            <tr class="bg-white">
                 <td class="border border-gray-700 p-2">21-22</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
                 <td class="border border-gray-700 p-2">&nbsp;</td>
@@ -201,19 +185,11 @@
         </section>
 
         <div class="mt-6 mb-6 flex gap-6">
-        <button onclick="actualizar()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">Actualizar Registro</button>
+        <button onclick="eliminar()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">Eliminar Trimestralización</button>
+        <button onclick="actualizar()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">Actualizar Trimestralización</button>
         <button onclick="descargarPDF()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">Descargar PDF</button>
         </div>
     </main>
-
-    <script>
-        function actualizar() {
-        alert("El registro ha sido actualizado correctamente.");
-        }
-        function descargarPDF() {
-        alert("Descargando archivo PDF...");
-        }
-    </script>
-
+    <script src="../assets/js/registerTables.js"></script>
 </body>
 </html>
