@@ -22,7 +22,7 @@
       <div class="flex flex-col gap-3 lg:gap-4 items-center">
         <!-- Botón de crear (abrirá el modal) -->
         <button type="button" id="btnAbrirModal"
-          class="border border-gray-400 px-4 py-1.5 lg:px-6 lg:py-2 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] hover:bg-[#004A70] font-bold hover:text-white transition-colors duration-200">
+          class="w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md hover:bg-gray-100 flex items-center justify-between text-[#00324D] font-bold transition-colors duration-200">
           CREAR TRIMESTRALIZACIÓN
         </button>
 
@@ -36,7 +36,7 @@
           <!-- Botón principal -->
           <button
             id="dropdownButton"
-            class="px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md hover:bg-gray-100 flex items-center justify-between w-60 lg:w-72 xl:w-80 2xl:w-96 text-[#00324D] font-bold transition-colors duration-200"
+            class="w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md hover:bg-gray-100 flex items-center justify-between text-[#00324D] font-bold transition-colors duration-200"
             aria-haspopup="true"
             aria-expanded="false"
           >
