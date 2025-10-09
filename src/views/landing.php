@@ -105,7 +105,7 @@
 
           <!-- Formulario -->
           <form action="<?= BASE_URL ?>src/controllers/TrimestralizacionController.php?accion=crear" method="POST" class="trimestralizacion-form space-y-3">
-            <select name="id_zona" id="id_zona" required
+            <select name="zona" id="id_zona" required
               class="select-chev w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
               <option value="">Seleccione la zona a la que pertenece la ficha</option>
               <option value="1">Zona 1</option>
@@ -132,9 +132,9 @@
             <select name="tipo_instructor" required
               class="select-chev w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
               <option value="">Seleccione el tipo de instructor</option>
-              <option value="tecnico">Técnico</option>
-              <option value="trasnversal">Transversal</option>
-              <option value="clave">clave</option>
+              <option value="TECNICO">Técnico</option>
+              <option value="TRANSVERSAL">Transversal</option>
+              
             </select>
 
             <select name="dia_semana" id="dia" required
@@ -167,7 +167,7 @@
               </select>
             </div>
 
-            <textarea name="competencia" id="descripcion" rows="4" placeholder="Diligencie la competencia aquí" required
+            <textarea name="descripcion" id="descripcion" rows="4" placeholder="Diligencie la competencia aquí" required
               class="w-full min-h-[90px] px-4 py-3 text-[13px] rounded-xl border-0 outline-none bg-white resize-none shadow placeholder-gray-400"></textarea>
 
             <button type="submit"

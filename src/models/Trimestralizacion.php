@@ -11,31 +11,37 @@ class Trimestralizacion {
 
     // 🔹 LISTAR todas las trimestralizaciones con detalles
     public function listar() {
-        try {
-            $sql = "SELECT 
-                        t.id_trimestral,
-                        h.id_horario,
-                        h.dia,
-                        h.hora_inicio,
-                        h.hora_fin,
-                        z.id_zona,
-                        f.numero_ficha,
-                        f.nivel_ficha,
-                        i.nombre_instructor,
-                        i.apellido_instructor
-                    FROM {$this->table} t
-                    INNER JOIN horarios h ON t.id_horario = h.id_horario
-                    INNER JOIN zonas z ON h.id_zona = z.id_zona
-                    INNER JOIN fichas f ON h.id_ficha = f.id_ficha
-                    INNER JOIN instructores i ON h.id_instructor = i.id_instructor
-                    ORDER BY t.id_trimestral DESC";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            return ["error" => "Error al listar: " . $e->getMessage()];
-        }
+    try {
+        $sql = "SELECT 
+                    t.id_trimestral,
+                    h.id_horario,
+                    h.dia,
+                    h.hora_inicio,
+                    h.hora_fin,
+                    z.id_zona,
+                    z.nombre_zona,
+                    f.numero_ficha,
+                    f.nivel_ficha,
+                    i.nombre_instructor,
+                    i.tipo_instructor,
+                    c.descripcion
+                FROM {$this->table} t
+                INNER JOIN horarios h ON t.id_horario = h.id_horario
+                INNER JOIN zonas z ON h.id_zona = z.id_zona
+                INNER JOIN fichas f ON h.id_ficha = f.id_ficha
+                INNER JOIN instructores i ON h.id_instructor = i.id_instructor
+                INNER JOIN competencias c ON h.id_competencia = c.id_competencia
+                ORDER BY t.id_trimestral DESC";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        return ["error" => "Error al listar: " . $e->getMessage()];
     }
+}
+
 
     // 🔹 OBTENER una trimestralización específica
     public function obtenerPorId($id_trimestral) {
@@ -96,9 +102,7 @@ class Trimestralizacion {
     // 🔹 ELIMINAR / REINICIAR todas las tablas relacionadas
     public function eliminar() {
         try {
-            $tablas = ['trimestralizacion', 'horarios', 'fichas', 'instructores', 'competencias', 'zonas'];
-
-            $this->conn->beginTransaction();
+            $tablas = ['trimestralizacion', 'horarios', 'fichas', 'instructores', 'competencias'];
             $this->conn->exec("SET FOREIGN_KEY_CHECKS = 0");
 
             foreach ($tablas as $tabla) {
@@ -106,13 +110,16 @@ class Trimestralizacion {
             }
 
             $this->conn->exec("SET FOREIGN_KEY_CHECKS = 1");
-            $this->conn->commit();
 
-            return ["status" => "success", "mensaje" => "Base de datos reiniciada correctamente."];
+            return ["status" => "success",
+                    "mensaje" => "Las tablas se vaciaron correctamente"];
         } catch (PDOException $e) {
-            $this->conn->rollBack();
-            return ["status" => "error", "mensaje" => "Error al vaciar tablas: " . $e->getMessage()];
-        }
+                if ($this->conn->inTransaction()) {
+                    $this->conn->rollBack();
+                }
+                return ["status" => "error",
+                        "mensaje" => "Error al vaciar tablas: " . $e->getMessage()];
+            }
     }
 }
 ?>
