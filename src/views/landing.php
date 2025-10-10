@@ -29,7 +29,7 @@
 
         <!-- Menú desplegable -->
         <div class="relative inline-block">
-          <select id="zona" name="id_zona" 
+          <select id="id_zona" name="zona" 
             class="appearance-none w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-gray-100 transition-colors duration-200 outline-none cursor-pointer pr-10">
             <option value="" class="text-[#00324D]" selected hidden>VISUALIZAR ZONA</option>
             <option value="1">Zona 1</option>
@@ -105,7 +105,7 @@
           <div class="border-b border-[#dcdcdc] mb-[12px]"></div>
 
           <!-- Formulario -->
-          <form id="formTrimestralizacion" action="<?= BASE_URL ?>src/controllers/TrimestralizacionController.php?accion=crear" method="POST" class="trimestralizacion-form space-y-3">
+          <form id="formTrimestralizacionLanding" action="<?= BASE_URL ?>src/controllers/TrimestralizacionController.php?accion=crear" method="POST" class="trimestralizacion-form space-y-3">
             <select name="zona" id="id_zona" 
               class="select-chev w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
               <option value="">Seleccione la zona a la que pertenece la ficha</option>
@@ -187,7 +187,7 @@
       // A dónde quieres ir al final (ajústalo a tu ruta real)
       const REDIRECT_URL = "index.php?page=landing"; // o "index.php?page=main"
 
-      document.getElementById("formTrimestralizacion").addEventListener("submit", function (e) {
+      document.getElementById("formTrimestralizacionLanding").addEventListener("submit", function (e) {
         const form = e.target;
 
         // ------- VALIDACIONES -------
