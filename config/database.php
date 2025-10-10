@@ -6,14 +6,15 @@ $pass = '123456';
 
 try {
     $conn = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $pass);
-
-    // Validaciones seguun la respuesta
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-    // Si la conexion es exitosa
-    echo "Conexión exitosa a la base de datos MySQL.";
+    // No imprimir nada aquí: el controlador se encargará de responder en JSON
 } catch (PDOException $e) {
-    // Si hay algun problema en la base de datos
-    echo "Error al conectar con la base de datos: " . $e->getMessage();
+    // En caso de error, devolver un JSON de error y detener ejecución
+    header('Content-Type: application/json');
+    echo json_encode([
+        "status" => "error",
+        "mensaje" => "Error al conectar con la base de datos: " . $e->getMessage()
+    ]);
+    exit;
 }
 ?>
