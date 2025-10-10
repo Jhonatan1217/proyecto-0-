@@ -19,12 +19,10 @@ class Trimestralizacion {
                     h.hora_inicio,
                     h.hora_fin,
                     z.id_zona,
-                    z.nombre_zona,
                     f.numero_ficha,
                     f.nivel_ficha,
                     i.nombre_instructor,
-                    i.tipo_instructor,
-                    c.descripcion 
+                    c.descripcion
                 FROM {$this->table} t
                 INNER JOIN horarios h ON t.id_horario = h.id_horario
                 INNER JOIN zonas z ON h.id_zona = z.id_zona
@@ -32,10 +30,8 @@ class Trimestralizacion {
                 INNER JOIN instructores i ON h.id_instructor = i.id_instructor
                 INNER JOIN competencias c ON h.id_competencia = c.id_competencia
                 ORDER BY t.id_trimestral DESC";
-
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
-
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
         return ["error" => "Error al listar: " . $e->getMessage()];
