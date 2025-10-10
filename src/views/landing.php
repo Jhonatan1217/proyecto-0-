@@ -269,6 +269,7 @@
             icon: "error",
             title: "Error de red",
             text: "Revisa tu conexión e intenta de nuevo."
+            //quitar este comentario
           });
           console.error(err);
         });

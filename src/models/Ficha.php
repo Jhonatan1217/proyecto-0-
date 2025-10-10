@@ -75,5 +75,6 @@ class Ficha {
             return ["error" => $e->getMessage()];
         }
     }
+    //quitar este comentario
 }
 ?>

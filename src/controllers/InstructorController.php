@@ -125,5 +125,6 @@ switch ($accion) {
         // Acción no reconocida
         echo json_encode(['error' => 'Acción no válida']);
         break;
+        //quitar este comentario
 }
 ?>
