@@ -160,107 +160,11 @@
 
   <!-- Tu JS para abrir/cerrar modal (si ya lo tienes) -->
   <script src="src/assets/js/header.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/formulario_trimestralizacion.js"></script>
+
 
   <!-- Validaciones + envío por fetch + redirección -->
   <script>
-    // Ruta de redirección al éxito
-    const REDIRECT_URL = "index.php?page=landing";
-
-    // Enganchar envío del formulario
-    const form = document.getElementById("formTrimestralizacion");
-    if (form) {
-      form.addEventListener("submit", function(e) {
-        const zona = form.querySelector("[name='zona']").value.trim();
-        const nivel = form.querySelector("[name='nivel_ficha']").value.trim();
-        const numeroFicha = form.querySelector("#numero_ficha").value.trim();
-        const instructor = form.querySelector("#id_instructor").value.trim();
-        const tipo = form.querySelector("[name='tipo_instructor']").value.trim();
-        const dia = form.querySelector("#dia").value.trim();
-        const horaInicio = form.querySelector("#hora_inicio").value.trim();
-        const horaFin = form.querySelector("#hora_fin").value.trim();
-        const descripcion = form.querySelector("#descripcion").value.trim();
-
-        const Toast = Swal.mixin({
-          toast: true,
-          position: "top-end",
-          showConfirmButton: false,
-          timer: 2500,
-          timerProgressBar: true
-        });
-
-        const campos = [zona, nivel, numeroFicha, instructor, tipo, dia, horaInicio, horaFin, descripcion];
-        const vacios = campos.filter(v => v === "").length;
-
-        // Validaciones de presencia
-        if (vacios === campos.length) {
-          e.preventDefault();
-          return Toast.fire({ icon: "warning", title: "Por favor llenar todos los campos" });
-        }
-        if (vacios > 1) {
-          e.preventDefault();
-          return Toast.fire({ icon: "warning", title: "Por favor completa todos los campos antes de enviar" });
-        }
-        if (!zona) { e.preventDefault(); return Toast.fire({ icon: "warning", title: "Seleccione la zona" }); }
-        if (!nivel) { e.preventDefault(); return Toast.fire({ icon: "warning", title: "Seleccione el nivel de la ficha" }); }
-
-        // Número de ficha numérico
-        if (!numeroFicha || isNaN(numeroFicha)) {
-          e.preventDefault();
-          return Toast.fire({ icon: "warning", title: "Ingrese un número de ficha válido" });
-        }
-
-        if (!instructor) { e.preventDefault(); return Toast.fire({ icon: "warning", title: "Ingrese el nombre del instructor" }); }
-        if (!tipo) { e.preventDefault(); return Toast.fire({ icon: "warning", title: "Seleccione el tipo de instructor" }); }
-        if (!dia) { e.preventDefault(); return Toast.fire({ icon: "warning", title: "Seleccione un día de la semana" }); }
-        if (!horaInicio) { e.preventDefault(); return Toast.fire({ icon: "warning", title: "Seleccione la hora de inicio" }); }
-        if (!horaFin) { e.preventDefault(); return Toast.fire({ icon: "warning", title: "Seleccione la hora de fin" }); }
-
-        // Hora fin > hora inicio (valida con "6:00" -> 6)
-        if (parseInt(horaFin) <= parseInt(horaInicio)) {
-          e.preventDefault();
-          return Toast.fire({ icon: "error", title: "La hora de fin debe ser mayor a la de inicio" });
-        }
-
-        if (!descripcion) { e.preventDefault(); return Toast.fire({ icon: "warning", title: "Ingrese la competencia o descripción" }); }
-
-        // Envío por fetch (evita que el navegador redirija por sí solo)
-        e.preventDefault();
-        const fd = new FormData(form);
-
-        fetch(form.action, {
-          method: "POST",
-          body: fd,
-          redirect: "manual",
-          headers: { "X-Requested-With": "XMLHttpRequest" },
-          credentials: "same-origin"
-        })
-        .then(async (res) => {
-          if (res.ok || (res.type === "opaqueredirect")) {
-            // Éxito: toast + redirección a la landing
-            Toast.fire({ icon: "success", title: "¡Trimestralización creada correctamente!" });
-            setTimeout(() => window.location.replace(REDIRECT_URL), 1600);
-          } else {
-            // Muestra texto de error (si el backend lo envía)
-            let msg = "";
-            try { msg = (await res.text()).slice(0, 200); } catch {}
-            Toast.fire({
-              icon: "error",
-              title: "No se pudo crear",
-              text: msg || "Ocurrió un error. Intenta de nuevo."
-            });
-          }
-        })
-        .catch((err) => {
-          console.error(err);
-          Toast.fire({
-            icon: "error",
-            title: "Error de red",
-            text: "Revisa tu conexión e intenta de nuevo."
-          });
-        });
-      });
-    }
-
     // Cerrar modal con la X (si usas el modal en esta misma página)
     const btnCerrar = document.getElementById("btnCerrarModal");
     const modal = document.getElementById("modalCrearHeader");
