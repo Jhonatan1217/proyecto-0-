@@ -72,3 +72,18 @@ th {
 	height: 80px;
 	margin: 0 auto 20px;
 }
+
+/* Forzar ausencia de scroll al capturar */
+#tabla-horarios {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* Evitar comportamiento sticky en la captura (refuerzo) */
+thead {
+  position: static !important;
+  top: auto !important;
+}
+
+/* Ocultar elementos marcados */
+.no-print { display: inline-block; } /* en pantalla se ve normal */

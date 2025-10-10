@@ -117,6 +117,5 @@ class Trimestralizacion {
                         "mensaje" => "Error al vaciar tablas: " . $e->getMessage()];
             }
     }
-    //quitar este comentario
 }
 ?>

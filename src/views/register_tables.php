@@ -10,54 +10,58 @@
 
 <body class="text-center font-sans min-h-screen flex flex-col bg-gray-50">
 
-  <!-- Encabezado -->
-  <header class="mt-6">
-    <h1 class="text-3xl font-bold">
-      VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA 
-      <?php echo isset($_GET['zona']) ? htmlspecialchars($_GET['zona']) : '—'; ?>
-    </h1>
-    <h2 class="text-xl text-gray-700 mb-6">
-      Sistema de gestión de trimestralización <br> SENA
-    </h2>
-  </header>
+  <!-- CONTENIDO QUE IRÁ EN EL PDF -->
+  <div id="contenido-pdf">
 
-  <!-- Contenido principal -->
-  <main class="flex flex-col items-center flex-grow">
-    <section id="tabla-horarios" class="w-11/12 max-h-[500px] overflow-y-auto shadow-lg bg-white rounded-xl">
-      <table class="border border-gray-700 border-collapse w-full text-sm">
-        <thead class="sticky top-0 bg-green-600 text-white z-10">
-          <tr>
-            <th class="border border-gray-700 p-3">Hora</th>
-            <th class="border border-gray-700 p-2">Lunes</th>
-            <th class="border border-gray-700 p-2">Martes</th>
-            <th class="border border-gray-700 p-2">Miércoles</th>
-            <th class="border border-gray-700 p-2">Jueves</th>
-            <th class="border border-gray-700 p-2">Viernes</th>
-            <th class="border border-gray-700 p-2">Sábado</th>
-          </tr>
-        </thead>
-        <tbody id="tbody-horarios">
-          <tr><td colspan="7" class="p-4 text-gray-500">Cargando datos...</td></tr>
-        </tbody>
-      </table>
-    </section>
+    <!-- Encabezado -->
+    <header class="mt-6">
+      <h1 class="text-3xl font-bold">
+        VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA 
+        <?php echo isset($_GET['zona']) ? htmlspecialchars($_GET['zona']) : '—'; ?>
+      </h1>
+      <h2 class="text-xl text-gray-700 mb-6">
+        Sistema de gestión de trimestralización <br> SENA
+      </h2>
+    </header>
 
-    <!-- Botones -->
-    <div id="botones-principales" class="mt-6 mb-6 flex gap-6">
-      <button onclick="mostrarModalEliminar()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
-        Eliminar Trimestralización
-      </button>
+    <!-- Contenido principal -->
+    <main class="flex flex-col items-center flex-grow">
+      <section id="tabla-horarios" class="w-11/12 shadow-lg bg-white rounded-xl">
+        <table class="border border-gray-700 border-collapse w-full text-sm">
+          <thead class="sticky top-0 bg-green-600 text-white z-10">
+            <tr>
+              <th class="border border-gray-700 p-3">Hora</th>
+              <th class="border border-gray-700 p-2">Lunes</th>
+              <th class="border border-gray-700 p-2">Martes</th>
+              <th class="border border-gray-700 p-2">Miércoles</th>
+              <th class="border border-gray-700 p-2">Jueves</th>
+              <th class="border border-gray-700 p-2">Viernes</th>
+              <th class="border border-gray-700 p-2">Sábado</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-horarios">
+            <tr><td colspan="7" class="p-4 text-gray-500">Cargando datos...</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
 
-      <button id="btn-actualizar" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
-        Actualizar Trimestralización
-      </button>
+  <!-- Botones -->
+  <div id="botones-principales" class="mt-6 mb-6 flex gap-6">
+    <button onclick="mostrarModalEliminar()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+      Eliminar Trimestralización
+    </button>
 
-      <button onclick="descargarPDF()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center">
-        Descargar PDF
-        <img src="<?= BASE_URL ?>src/assets/img/descargar.png" class="ml-2 w-5 h-5" alt="descargar">
-      </button>
-    </div>
-  </main>
+    <button id="btn-actualizar" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+      Actualizar Trimestralización
+    </button>
+
+    <button onclick="descargarPDF()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center">
+      Descargar PDF
+      <img src="<?= BASE_URL ?>src/assets/img/descargar.png" class="ml-2 w-5 h-5" alt="descargar">
+    </button>
+  </div>
 
   <!-- Modal Eliminar -->
   <div id="modalEliminar" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -83,7 +87,11 @@
     </div>
   </div>
 
-  <script>const BASE_URL = "<?= BASE_URL ?>";</script>
-  <script src="<?= BASE_URL ?>src/assets/js/registerTables.js"></script>
+  <!-- Scripts -->
+    <script>const BASE_URL = "<?= BASE_URL ?>";</script>
+    <script src="<?= BASE_URL ?>src/assets/js/registerTables.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
 </body>
 </html>

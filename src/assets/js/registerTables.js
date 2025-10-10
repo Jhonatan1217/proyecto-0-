@@ -233,11 +233,103 @@ async function confirmarEliminar() {
 }
 
 // =======================
-// DESCARGAR PDF
+// DESCARGAR PDF ROBUSTO
 // =======================
-function descargarPDF() {
-  alert("Función de descarga en desarrollo.");
+async function descargarPDF() {
+  try {
+    const { jsPDF } = window.jspdf;
+
+    const original = document.getElementById('contenido-pdf');
+    if (!original) return alert("No se encontró #contenido-pdf");
+
+    // 1) Clonar y limpiar la copia (no tocar la UI visible)
+    const clone = original.cloneNode(true);
+
+    // eliminar botones, modales y elementos con clase no-print
+    clone.querySelectorAll('#botones-principales, #modalEliminar, .no-print').forEach(n => n.remove());
+
+    // quitar clases/sticky que causan problemas
+    clone.querySelectorAll('thead, .sticky, .top-0').forEach(el => {
+      el.style.position = 'static';
+      el.style.top = 'auto';
+      el.classList.remove('sticky', 'top-0');
+    });
+
+    // asegurar que la sección de la tabla no tenga overflow
+    clone.querySelectorAll('#tabla-horarios').forEach(s => {
+      s.style.maxHeight = 'none';
+      s.style.overflow = 'visible';
+    });
+
+    // 2) Insertar la copia off-screen para que se renderice estilos computados
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'fixed';
+    wrapper.style.left = '-10000px';
+    wrapper.style.top = '0';
+    // opcional: dar el ancho real para que las fuentes/bordes se comporten igual
+    wrapper.style.width = original.offsetWidth + 'px';
+    wrapper.style.background = '#ffffff';
+    wrapper.appendChild(clone);
+    document.body.appendChild(wrapper);
+
+    // 3) Esperar a que las fuentes se carguen (evita desajustes tipográficos)
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
+
+    // 4) Capturar con html2canvas
+    const canvas = await html2canvas(wrapper, {
+      scale: 2,            // mejora resolución
+      useCORS: true,       // si hay imágenes externas con CORS
+      backgroundColor: '#ffffff'
+    });
+
+    // eliminar la copia del DOM
+    document.body.removeChild(wrapper);
+
+    // 5) Preparar pdf y paginar porciones del canvas
+    const pdf = new jsPDF('landscape', 'pt', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+
+    // ratio px -> pts
+    const ratio = pdfWidth / canvasWidth;
+    const sliceHeightPx = Math.floor(pdfHeight / ratio);
+
+    let positionY = 0;
+    let pageIndex = 0;
+
+    while (positionY < canvasHeight) {
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = canvasWidth;
+      pageCanvas.height = Math.min(sliceHeightPx, canvasHeight - positionY);
+      const ctx = pageCanvas.getContext('2d');
+
+      // copiar segmento
+      ctx.drawImage(canvas, 0, positionY, canvasWidth, pageCanvas.height, 0, 0, canvasWidth, pageCanvas.height);
+
+      const pageData = pageCanvas.toDataURL('image/png');
+
+      if (pageIndex > 0) pdf.addPage();
+      pdf.addImage(pageData, 'PNG', 0, 0, pdfWidth, pageCanvas.height * ratio);
+
+      positionY += sliceHeightPx;
+      pageIndex++;
+    }
+
+    // 6) Guardar
+    pdf.save('Trimestralizacion.pdf');
+
+  } catch (err) {
+    console.error("Error generando PDF:", err);
+    alert("Hubo un error generando el PDF. Revisa la consola");
+  }
 }
+
+
 
 // =======================
 // INICIO
