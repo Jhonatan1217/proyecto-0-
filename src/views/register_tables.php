@@ -14,7 +14,7 @@
   <header class="mt-6">
     <h1 class="text-3xl font-bold">
       VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA 
-      <?php echo isset($_GET['zona']) ? htmlspecialchars($_GET['zona']) : '—'; ?>
+      <?php echo isset($_GET['id_zona']) ? htmlspecialchars($_GET['id_zona']) : '—'; ?>
     </h1>
     <h2 class="text-xl text-gray-700 mb-6">
       Sistema de gestión de trimestralización <br> SENA
@@ -43,7 +43,7 @@
     </section>
 
     <!-- Botones -->
-    <div id="botones-principales" class="mt-6 mb-6 flex gap-6">
+    <div id="botones-principales" class="mt-6 mb-6 flex  gap-6">
       <button onclick="mostrarModalEliminar()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
         Eliminar Trimestralización
       </button>

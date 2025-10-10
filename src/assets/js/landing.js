@@ -89,10 +89,10 @@
       })();
 
       document.getElementById('zona').addEventListener('change', function() {
-        const zona = this.value;
-        if (zona) {
-            window.location.href = `index.php?page=src/views/register_tables&zona=${zona}`;
-        }
-      });
+    const id_zona = this.value;
+    if (id_zona) {
+      window.location.href = `index.php?page=src/views/register_tables&id_zona=${id_zona}`;
+  }
+});
 
       

@@ -185,5 +185,7 @@
     <script src="<?= BASE_URL ?>src/assets/js/landing.js"></script>
     <script src="<?= BASE_URL ?>src/assets/js/formulario_trimestralizacion.js"></script>
 
+    //borrar despues del push
+
   </body>
 </html>
