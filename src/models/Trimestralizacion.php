@@ -118,6 +118,80 @@ class Trimestralizacion {
             }
     }
 
+    public function actualizar($id_horario, $data) {
+        try {
+            // Obtener las relaciones de la tabla horarios
+            $sql = "SELECT id_ficha, id_instructor, id_competencia 
+                    FROM horarios 
+                    WHERE id_horario = :id_horario";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':id_horario', $id_horario, PDO::PARAM_INT);
+            $stmt->execute();
+            $relaciones = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$relaciones) {
+                return ['error' => 'Horario no encontrado'];
+            }
+
+            // Actualizar Ficha
+            if (isset($data['numero_ficha']) || isset($data['nivel_ficha'])) {
+                $sqlFicha = "UPDATE fichas SET ";
+                $updates = [];
+                if (isset($data['numero_ficha'])) {
+                    $updates[] = "numero_ficha = :numero_ficha";
+                }
+                if (isset($data['nivel_ficha'])) {
+                    $updates[] = "nivel_ficha = :nivel_ficha";
+                }
+                $sqlFicha .= implode(", ", $updates) . " WHERE id_ficha = :id_ficha";
+                $stmtFicha = $this->conn->prepare($sqlFicha);
+                if (isset($data['numero_ficha'])) {
+                    $stmtFicha->bindParam(':numero_ficha', $data['numero_ficha']);
+                }
+                if (isset($data['nivel_ficha'])) {
+                    $stmtFicha->bindParam(':nivel_ficha', $data['nivel_ficha']);
+                }
+                $stmtFicha->bindParam(':id_ficha', $relaciones['id_ficha'], PDO::PARAM_INT);
+                $stmtFicha->execute();
+            }
+
+            // Actualizar Instructor
+            if (isset($data['nombre_instructor']) || isset($data['tipo_instructor'])) {
+                $sqlInstructor = "UPDATE instructores SET ";
+                $updates = [];
+                if (isset($data['nombre_instructor'])) {
+                    $updates[] = "nombre_instructor = :nombre_instructor";
+                }
+                if (isset($data['tipo_instructor'])) {
+                    $updates[] = "tipo_instructor = :tipo_instructor";
+                }
+                $sqlInstructor .= implode(", ", $updates) . " WHERE id_instructor = :id_instructor";
+                $stmtInst = $this->conn->prepare($sqlInstructor);
+                if (isset($data['nombre_instructor'])) {
+                    $stmtInst->bindParam(':nombre_instructor', $data['nombre_instructor']);
+                }
+                if (isset($data['tipo_instructor'])) {
+                    $stmtInst->bindParam(':tipo_instructor', $data['tipo_instructor']);
+                }
+                $stmtInst->bindParam(':id_instructor', $relaciones['id_instructor'], PDO::PARAM_INT);
+                $stmtInst->execute();
+            }
+
+            // Actualizar Competencia
+            if (isset($data['descripcion'])) {
+                $sqlComp = "UPDATE competencias SET descripcion = :descripcion WHERE id_competencia = :id_competencia";
+                $stmtComp = $this->conn->prepare($sqlComp);
+                $stmtComp->bindParam(':descripcion', $data['descripcion']);
+                $stmtComp->bindParam(':id_competencia', $relaciones['id_competencia'], PDO::PARAM_INT);
+                $stmtComp->execute();
+            }
+
+            return ["success" => true, "message" => "Actualización realizada correctamente"];
+        } catch (PDOException $e) {
+            return ["error" => "Error al actualizar: " . $e->getMessage()];
+        }
+    }
+
     
     //quitar este comentario
 }

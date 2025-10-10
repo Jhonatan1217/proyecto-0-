@@ -126,74 +126,37 @@ switch ($accion) {
         echo json_encode($res);
         break;
 
-        case 'actualizar':
-            try {
-                $id_horario = isset($data['id_horario']) ? (int)$data['id_horario'] : 0;
-                if ($id_horario <= 0) {
-                    echo json_encode(['error' => 'ID de horario no válido']);
-                    break;
-                }
-        
-                // Consultar las relaciones del horario
-                $stmt = $conn->prepare("
-                    SELECT id_ficha, id_instructor, id_competencia 
-                    FROM horarios 
-                    WHERE id_horario = :id
-                ");
-                $stmt->bindParam(':id', $id_horario, PDO::PARAM_INT);
-                $stmt->execute();
-                $rel = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-                if (!$rel) {
-                    echo json_encode(['error' => 'Horario no encontrado']);
-                    break;
-                }
-        
-                // Actualizar ficha (solo número o nivel, según tu estructura)
-                if (isset($data['numero_ficha']) || isset($data['nivel_ficha'])) {
-                    $sqlFicha = "UPDATE fichas 
-                                 SET numero_ficha = :numero_ficha, 
-                                     nivel_ficha = :nivel_ficha 
-                                 WHERE id_ficha = :id_ficha";
-                    $stmt = $conn->prepare($sqlFicha);
-                    $stmt->bindParam(':numero_ficha', $data['numero_ficha']);
-                    $stmt->bindParam(':nivel_ficha', $data['nivel_ficha']);
-                    $stmt->bindParam(':id_ficha', $rel['id_ficha'], PDO::PARAM_INT);
-                    $stmt->execute();
-                }
-        
-                // Actualizar instructor
-                if (isset($data['nombre_instructor']) || isset($data['tipo_instructor'])) {
-                    $sqlInstructor = "UPDATE instructores 
-                                      SET nombre_instructor = :nombre_instructor, 
-                                          tipo_instructor = :tipo_instructor 
-                                      WHERE id_instructor = :id_instructor";
-                    $stmt = $conn->prepare($sqlInstructor);
-                    $stmt->bindParam(':nombre_instructor', $data['nombre_instructor']);
-                    $stmt->bindParam(':tipo_instructor', $data['tipo_instructor']);
-                    $stmt->bindParam(':id_instructor', $rel['id_instructor'], PDO::PARAM_INT);
-                    $stmt->execute();
-                }
-        
-                // Actualizar competencia
-                if (isset($data['descripcion'])) {
-                    $sqlComp = "UPDATE competencias 
-                                SET descripcion = :descripcion 
-                                WHERE id_competencia = :id_competencia";
-                    $stmt = $conn->prepare($sqlComp);
-                    $stmt->bindParam(':descripcion', $data['descripcion']);
-                    $stmt->bindParam(':id_competencia', $rel['id_competencia'], PDO::PARAM_INT);
-                    $stmt->execute();
-                }
-        
-                echo json_encode(['success' => 'Actualización completada correctamente']);
-            } catch (PDOException $e) {
-                echo json_encode(['error' => 'Error SQL: ' . $e->getMessage()]);
-            } catch (Exception $e) {
-                echo json_encode(['error' => 'Error: ' . $e->getMessage()]);
-            }
+    case 'actualizar':
+        //Permite actualizar solamente ficha, instructor y competencia
+        $id_horario = isset($data['id_horario']) ? $data['id_horario'] : null;
+        if (!$id_horario) {
+            echo json_encode(['error' => 'Debe proporcionar id_horario']);
             break;
-        
+        }
+
+        // Solo dejamos pasar datos correspondientes a ficha, instructor y competencia
+        $camposPermitidos = [
+            'numero_ficha',
+            'nivel_ficha',
+            'nombre_instructor',
+            'tipo_instructor',
+            'descripcion'
+        ];
+        $actualizacion = [];
+        foreach ($camposPermitidos as $campo) {
+            if (isset($data[$campo])) {
+                $actualizacion[$campo] = $data[$campo];
+            }
+        }
+
+        if (empty($actualizacion)) {
+            echo json_encode(['error' => 'No se proporcionaron datos válidos para actualizar']);
+            break;
+        }
+
+        $res = $trimestral->actualizar($id_horario, $actualizacion);
+        echo json_encode($res);
+        break;
 
     default:
         echo json_encode(['error' => 'Acción no reconocida']);
