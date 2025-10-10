@@ -155,7 +155,7 @@ function cerrarModal() {
 // Función para confirmar la eliminación
 async function confirmarEliminar() {
 	try {
-		const response = await fetch('../controllers/RegisterTablesController.php?action=vaciar_db', {
+		const response = await fetch(`${BASE_URL}src/controllers/RegisterTablesController.php?action=vaciar_db`, {
 			method: 'POST'
 		});
 
