@@ -48,7 +48,7 @@
   </div>
 
   <!-- Botones -->
-  <div id="botones-principales" class="mt-6 mb-6 flex gap-6">
+  <div id="botones-principales" class="mt-6 mb-6 flex justify-center gap-6">
     <button onclick="mostrarModalEliminar()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
       Eliminar Trimestralización
     </button>
