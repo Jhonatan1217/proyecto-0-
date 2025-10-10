@@ -1,186 +1,248 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const rows = document.querySelectorAll('table tbody tr');
-  console.log('Filas encontradas:', rows.length);
+// =======================
+// CARGAR DATOS COMO TEXTO
+// =======================
+async function cargarTrimestralizacion() {
+  const tbody = document.getElementById("tbody-horarios");
+  tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500">Cargando datos...</td></tr>`;
 
-  rows.forEach(row => {
-    const cells = Array.from(row.querySelectorAll('td'));
-    cells.forEach((cell, index) => {
-      // Omitir columna "Hora"
-      if (index === 0) return;
+  try {
+    const res = await fetch(`${BASE_URL}src/controllers/trimestralizacionController.php?accion=listar`);
+    const data = await res.json();
 
-      // Evitar duplicados
-      if (cell.querySelector('.celda')) return;
+    if (!Array.isArray(data)) {
+      tbody.innerHTML = `<tr><td colspan="7" class="text-red-600 p-4">Error al cargar la información.</td></tr>`;
+      return;
+    }
 
-      // Crear los dos primeros textareas
-      for (let i = 0; i < 2; i++) {
-        const ta = document.createElement('textarea');
-        ta.className = 'celda';
-        ta.rows = 1;
-        ta.placeholder = i === 0 ? 'Ficha' : 'Instructor';
-        ta.style.resize = 'none';
-        ta.readOnly = true;
-        ta.classList.add('bg-gray-100', 'cursor-not-allowed');
-        ta.addEventListener('input', function () {
-          this.style.height = 'auto';
-          this.style.height = this.scrollHeight + 'px';
-        });
-        cell.appendChild(ta);
-      }
+    const dias = ["LUNES","MARTES","MIERCOLES","JUEVES","VIERNES","SABADO"];
+    const horas = Array.from({ length: 16 }, (_, i) => i + 6);
+    tbody.innerHTML = "";
 
-      // Crear textarea grande
-      const taBig = document.createElement('textarea');
-      taBig.className = 'celda celda-big';
-      taBig.rows = 2;
-      taBig.placeholder = 'Competencia / Observaciones';
-      taBig.style.resize = 'vertical';
-      taBig.readOnly = true;
-      taBig.classList.add('bg-gray-100', 'cursor-not-allowed');
-      taBig.addEventListener('input', function () {
-        this.style.height = 'auto';
-        this.style.height = this.scrollHeight + 'px';
+    horas.forEach((hora, idx) => {
+      const fila = document.createElement("tr");
+      fila.className = idx % 2 === 0 ? "bg-gray-50" : "bg-white";
+      fila.innerHTML = `<td class="border border-gray-700 p-2 font-medium">${hora}-${hora+1}</td>`;
+
+      dias.forEach(dia => {
+        const reg = data.find(r => 
+          r.dia?.toUpperCase() === dia && 
+          parseInt(r.hora_inicio.split(":")[0]) === hora
+        );
+
+        if (reg) {
+          fila.innerHTML += `
+            <td class="border border-gray-700 p-2 text-sm text-left leading-tight">
+              <div><strong>Ficha:</strong> ${reg.numero_ficha ?? ""}</div>
+              <div><strong>Instructor:</strong> ${reg.nombre_instructor ?? ""} (${reg.tipo_instructor ?? ""})</div>
+              <div><strong>Competencia:</strong> ${reg.descripcion ?? "Sin especificar"}</div>
+            </td>`;
+        } else {
+          fila.innerHTML += `<td class="border border-gray-700 p-2">&nbsp;</td>`;
+        }
       });
-      cell.appendChild(taBig);
+
+      tbody.appendChild(fila);
     });
-  });
-});
-
-// 🔹 Botón: Actualizar
-function actualizar() {
-  const textareas = document.querySelectorAll('.celda');
-  textareas.forEach(ta => {
-    ta.readOnly = false;
-    ta.classList.remove('bg-gray-100', 'cursor-not-allowed');
-    ta.classList.add('bg-white', 'cursor-text');
-  });
-
-  // Ocultar botones azules
-  document.querySelector('.mt-6.mb-6.flex.gap-6').style.display = 'none';
-
-  // Mostrar botones de confirmación y cancelación
-  mostrarBotonesConfirmacion();
-
-  alert("Ahora puedes editar la trimestralización.");
-}
-
-// 🔹 Botón: Eliminar
-function eliminar() {
-  if (confirm("¿Deseas eliminar esta trimestralización?")) {
-    alert("Trimestralización eliminada correctamente.");
+  } catch (error) {
+    console.error(error);
+    tbody.innerHTML = `<tr><td colspan="7" class="text-red-600 p-4">Error al conectar con el servidor.</td></tr>`;
   }
 }
 
-// 🔹 Botón: Descargar PDF
-function descargarPDF() {
-  alert("Descargando archivo PDF...");
+// =======================
+// MODO EDICIÓN (CONVERTIR DIVS A TEXTAREAS)
+// =======================
+function activarEdicion() {
+  const celdas = document.querySelectorAll("#tbody-horarios td:not(:first-child)");
+  celdas.forEach(celda => {
+    if (celda.innerHTML.trim() === "&nbsp;" || celda.innerHTML.trim() === "") return;
+
+    const contenido = celda.innerText.trim();
+    const textarea = document.createElement("textarea");
+    textarea.value = contenido;
+    textarea.className = "w-full p-1 border border-gray-300 rounded bg-white resize-none";
+    celda.innerHTML = "";
+    celda.appendChild(textarea);
+  });
+
+  document.getElementById("botones-principales").style.display = "none";
+  mostrarBotonesEdicion();
 }
 
-// 🔹 Mostrar botones de Confirmar y Cancelar
-function mostrarBotonesConfirmacion() {
-  if (document.querySelector('#botones-confirmacion')) return;
+// =======================
+// BOTONES EDICIÓN
+// =======================
+function mostrarBotonesEdicion() {
+  const div = document.createElement("div");
+  div.id = "botones-edicion";
+  div.className = "mt-4 flex justify-center gap-4";
 
-  const contenedor = document.createElement('div');
-  contenedor.id = 'botones-confirmacion';
-  contenedor.className = 'mt-4 flex justify-center gap-4';
+  const guardar = document.createElement("button");
+  guardar.textContent = "Guardar cambios";
+  guardar.className = "bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition";
+  guardar.onclick = guardarCambios;
 
-  // Botón Guardar
-  const btnGuardar = document.createElement('button');
-  btnGuardar.textContent = 'Guardar cambios';
-  btnGuardar.className =
-    'bg-[#39A900] text-white px-6 py-2 rounded-lg hover:bg-green-700 transition';
-  btnGuardar.onclick = guardarCambios;
+  const cancelar = document.createElement("button");
+  cancelar.textContent = "Cancelar edición";
+  cancelar.className = "bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition";
+  cancelar.onclick = cancelarEdicion;
 
-  // Botón Cancelar
-  const btnCancelar = document.createElement('button');
-  btnCancelar.textContent = 'Cancelar edición';
-  btnCancelar.className =
-    'bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition';
-  btnCancelar.onclick = cancelarEdicion;
-
-  contenedor.appendChild(btnGuardar);
-  contenedor.appendChild(btnCancelar);
-
-  document.querySelector('main').appendChild(contenedor);
+  div.appendChild(guardar);
+  div.appendChild(cancelar);
+  document.querySelector("main").appendChild(div);
 }
 
-// 🔹 Guardar cambios
+// =======================
+// GUARDAR Y CANCELAR
+// =======================
 function guardarCambios() {
-  const textareas = document.querySelectorAll('.celda');
+  const textareas = document.querySelectorAll("#tbody-horarios textarea");
   textareas.forEach(ta => {
-    ta.readOnly = true;
-    ta.classList.add('bg-gray-100', 'cursor-not-allowed');
-    ta.classList.remove('bg-white', 'cursor-text');
+    const valor = ta.value.trim();
+    const div = document.createElement("div");
+    div.textContent = valor;
+    ta.parentElement.innerHTML = div.outerHTML;
   });
 
-  alert('Cambios guardados correctamente.');
-  eliminarBotonesConfirmacion();
-
-  // Volver a mostrar los botones azules
-  document.querySelector('.mt-6.mb-6.flex.gap-6').style.display = 'flex';
+  document.getElementById("botones-edicion").remove();
+  document.getElementById("botones-principales").style.display = "flex";
+  alert("Cambios guardados (por ahora solo visualmente).");
 }
 
-// 🔹 Cancelar edición
 function cancelarEdicion() {
-  const confirmar = confirm('¿Deseas cancelar los cambios realizados?');
-  if (!confirmar) return;
+  if (!confirm("¿Deseas cancelar los cambios realizados?")) return;
+  cargarTrimestralizacion();
+  document.getElementById("botones-edicion").remove();
+  document.getElementById("botones-principales").style.display = "flex";
+}
 
-  const textareas = document.querySelectorAll('.celda');
-  textareas.forEach(ta => {
-    ta.readOnly = true;
-    ta.classList.add('bg-gray-100', 'cursor-not-allowed');
-    ta.classList.remove('bg-white', 'cursor-text');
+// =======================
+// ACTUALIZAR (MODO EDICIÓN CON 3 INPUTS)
+// =======================
+function activarEdicion() {
+  const celdas = document.querySelectorAll("#tbody-horarios td:not(:first-child)");
+
+  celdas.forEach(celda => {
+    // Si la celda está vacía, no crear inputs
+    if (celda.innerHTML.trim() === "&nbsp;" || celda.innerHTML.trim() === "") return;
+
+    // Extraer los textos actuales
+    const fichaMatch = celda.innerHTML.match(/Ficha:<\/strong>\s*([^<]*)/);
+    const instructorMatch = celda.innerHTML.match(/Instructor:<\/strong>\s*([^<]*)/);
+    const competenciaMatch = celda.innerHTML.match(/Competencia:<\/strong>\s*([^<]*)/);
+
+    const ficha = fichaMatch ? fichaMatch[1].trim() : "";
+    const instructor = instructorMatch ? instructorMatch[1].trim() : "";
+    const competencia = competenciaMatch ? competenciaMatch[1].trim() : "";
+
+    // Crear inputs
+    celda.innerHTML = `
+      <input type="text" value="${ficha}" placeholder="Ficha"
+        class="block w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm">
+      <input type="text" value="${instructor}" placeholder="Instructor"
+        class="block w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm">
+      <textarea placeholder="Competencia / Observaciones"
+        class="w-full px-2 py-1 border border-gray-400 rounded text-sm resize-none">${competencia}</textarea>
+    `;
   });
 
-  alert('Edición cancelada. Los campos vuelven a estar bloqueados.');
-  eliminarBotonesConfirmacion();
-
-  // Volver a mostrar los botones azules
-  document.querySelector('.mt-6.mb-6.flex.gap-6').style.display = 'flex';
+  // Ocultar botones principales y mostrar los de edición
+  document.getElementById("botones-principales").style.display = "none";
+  mostrarBotonesEdicion();
 }
 
-// Eliminar los botones de Confirmar/Cancelar
-function eliminarBotonesConfirmacion() {
-  const contenedor = document.querySelector('#botones-confirmacion');
-  if (contenedor) contenedor.remove();
+// =======================
+// BOTONES EDICIÓN
+// =======================
+function mostrarBotonesEdicion() {
+  const div = document.createElement("div");
+  div.id = "botones-edicion";
+  div.className = "mt-4 flex justify-center gap-4";
+
+  const guardar = document.createElement("button");
+  guardar.textContent = "Guardar cambios";
+  guardar.className = "bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition";
+  guardar.onclick = guardarCambios;
+
+  const cancelar = document.createElement("button");
+  cancelar.textContent = "Cancelar edición";
+  cancelar.className = "bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition";
+  cancelar.onclick = cancelarEdicion;
+
+  div.appendChild(guardar);
+  div.appendChild(cancelar);
+  document.querySelector("main").appendChild(div);
 }
-// Función para mostrar el modal
+
+// =======================
+// GUARDAR CAMBIOS (volver a texto)
+// =======================
+function guardarCambios() {
+  const celdas = document.querySelectorAll("#tbody-horarios td:not(:first-child)");
+
+  celdas.forEach(celda => {
+    const inputs = celda.querySelectorAll("input, textarea");
+    if (!inputs.length) return;
+
+    const ficha = inputs[0].value.trim();
+    const instructor = inputs[1].value.trim();
+    const competencia = inputs[2].value.trim();
+
+    celda.innerHTML = `
+      <div><strong>Ficha:</strong> ${ficha}</div>
+      <div><strong>Instructor:</strong> ${instructor}</div>
+      <div><strong>Competencia:</strong> ${competencia}</div>
+    `;
+  });
+
+  document.getElementById("botones-edicion").remove();
+  document.getElementById("botones-principales").style.display = "flex";
+  alert("Cambios guardados visualmente (aún no conectados a la base de datos).");
+}
+
+// =======================
+// CANCELAR EDICIÓN
+// =======================
+function cancelarEdicion() {
+  if (!confirm("¿Deseas cancelar los cambios realizados?")) return;
+  cargarTrimestralizacion();
+  document.getElementById("botones-edicion").remove();
+  document.getElementById("botones-principales").style.display = "flex";
+}
+
+// =======================
+// MODAL ELIMINAR
+// =======================
 function mostrarModalEliminar() {
-	document.getElementById('modalEliminar').classList.add('active');
+  document.getElementById("modalEliminar").classList.remove("hidden");
 }
-
-// Función para cerrar el modal
 function cerrarModal() {
-	document.getElementById('modalEliminar').classList.remove('active');
+  document.getElementById("modalEliminar").classList.add("hidden");
 }
-
-// Función para confirmar la eliminación
 async function confirmarEliminar() {
-	try {
-		const response = await fetch(`${BASE_URL}src/controllers/RegisterTablesController.php?action=vaciar_db`, {
-			method: 'POST'
-		});
-
-		const data = await response.json();
-
-		if (data.status === 'success') {
-			location.reload(); // recarga la página
-		} else {
-			alert('Error: ' + data.mensaje);
-		}
-	} catch (error) {
-		console.error('Error al enviar la solicitud:', error);
-		alert('Error en la conexión con el servidor.');
-	} finally {
-		cerrarModal();
-	}
+  try {
+    const res = await fetch(`${BASE_URL}src/controllers/trimestralizacionController.php?accion=eliminar`);
+    const data = await res.json();
+    alert(data.mensaje || "Trimestralización eliminada correctamente.");
+    cargarTrimestralizacion();
+  } catch {
+    alert("Error al eliminar.");
+  } finally {
+    cerrarModal();
+  }
 }
 
-// Cerrar modal al hacer clic fuera de él
-document.getElementById('modalEliminar').addEventListener('click', function(e) {
-	if (e.target === this) {
-		cerrarModal();
-	}
-});
-
+// =======================
+// DESCARGAR PDF
+// =======================
 function descargarPDF() {
-	alert('Descargar PDF');
+  alert("Función de descarga en desarrollo.");
 }
+
+// =======================
+// INICIO
+// =======================
+document.addEventListener("DOMContentLoaded", () => {
+  cargarTrimestralizacion();
+  document.getElementById("btn-actualizar").addEventListener("click", activarEdicion);
+});
