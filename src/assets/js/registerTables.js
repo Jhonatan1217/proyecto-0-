@@ -200,10 +200,63 @@ async function confirmarEliminar() {
 }
 
 // =======================
-// DESCARGAR PDF
+// DESCARGAR PDF (Incluye encabezado)
 // =======================
-function descargarPDF() {
-  alert("Función de descarga en desarrollo.");
+async function descargarPDF() {
+  const { jsPDF } = window.jspdf;
+
+  // 🔹 Seleccionamos el encabezado + la tabla completa
+  const header = document.getElementById("cabecera-trimestralizacion");
+  const main = document.querySelector("main");
+
+  // 🔹 Crear un contenedor temporal que combine encabezado + tabla
+  const contenedor = document.createElement("div");
+  contenedor.style.backgroundColor = "white";
+  contenedor.style.padding = "20px";
+  contenedor.style.textAlign = "center";
+  contenedor.style.width = "100%";
+
+  // Clonamos el encabezado y el contenido principal
+  const headerClone = header.cloneNode(true);
+  const mainClone = main.cloneNode(true);
+
+  // Ocultar los botones del clon
+  const botonesClone = mainClone.querySelector("#botones-principales");
+  if (botonesClone) botonesClone.style.display = "none";
+
+  contenedor.appendChild(headerClone);
+  contenedor.appendChild(mainClone);
+
+  // 🔹 Insertamos el contenedor temporal en el body (fuera de vista)
+  contenedor.style.position = "absolute";
+  contenedor.style.top = "-9999px";
+  document.body.appendChild(contenedor);
+
+  // 🔹 Generamos la captura con html2canvas
+  const canvas = await html2canvas(contenedor, {
+    scale: 2,
+    useCORS: true,
+    windowWidth: document.body.scrollWidth,
+    windowHeight: contenedor.scrollHeight,
+  });
+
+  const imgData = canvas.toDataURL("image/png");
+  const pdf = new jsPDF({
+    orientation: "landscape",
+    unit: "mm",
+    format: "a4",
+  });
+
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const imgWidth = pageWidth;
+  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+  pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+  pdf.save(`trimestralizacion_zona_${id_zona || 'sin_id'}.pdf`);
+
+  // 🔹 Limpiamos el DOM (quitamos el clon)
+  document.body.removeChild(contenedor);
 }
 
 // =======================
