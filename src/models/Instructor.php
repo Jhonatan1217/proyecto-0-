@@ -73,7 +73,5 @@ class Instructor {
         // Ejecuta la consulta
         $stmt->execute();
     }
-    //quitar este comentario
 }
 ?>
-//borrar despues del push

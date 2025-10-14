@@ -60,7 +60,5 @@ class Ficha {
             return ["error" => $e->getMessage()];
         }
     }
-    //quitar este comentario
 }
 ?>
-//borrar despues del push

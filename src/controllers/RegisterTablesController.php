@@ -38,5 +38,4 @@ switch ($accion) {
     default:
         echo json_encode(["status" => "error", "mensaje" => "Acción no válida: $accion"]);
         break;
-        //quitar este comentario
 }
