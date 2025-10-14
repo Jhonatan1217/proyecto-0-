@@ -200,9 +200,6 @@ async function confirmarEliminar() {
 }
 
 // =======================
-// DESCARGAR PDF (Incluye encabezado y todas las horas)
-// =======================
-// =======================
 // DESCARGAR PDF (Encabezado + Títulos + Thead visible arriba)
 // =======================
 async function descargarPDF() {
