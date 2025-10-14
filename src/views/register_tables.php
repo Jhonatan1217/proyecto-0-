@@ -10,9 +10,8 @@
 
 <body class="text-center font-sans min-h-screen flex flex-col bg-gray-50">
 
-  <!-- Encabezado -->
-  <header class="mt-6">
-    <h1 class="text-3xl font-bold">
+  <header class="mt-10 text-center" id="cabecera-trimestralizacion">
+    <h1 class="text-3xl font-bold text-gray-900">
       VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA 
       <?php echo isset($_GET['id_zona']) ? htmlspecialchars($_GET['id_zona']) : '—'; ?>
     </h1>
@@ -43,7 +42,7 @@
     </section>
 
     <!-- Botones -->
-    <div id="botones-principales" class="mt-6 mb-6 flex  gap-6">
+    <div id="botones-principales" class="mt-6 mb-6 flex justify-center gap-6">
       <button onclick="mostrarModalEliminar()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
         Eliminar Trimestralización
       </button>
@@ -85,5 +84,7 @@
 
   <script>const BASE_URL = "<?= BASE_URL ?>";</script>
   <script src="<?= BASE_URL ?>src/assets/js/registerTables.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
 </html>

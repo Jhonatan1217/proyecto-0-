@@ -27,7 +27,15 @@ async function cargarTrimestralizacion() {
       return;
     }
 
-    const dias = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"];
+    // Lectura segura de selects (pueden estar vacíos)
+    const selInicio = document.querySelector("select[name='hora_inicio']");
+    const selFin = document.querySelector("select[name='hora_fin']");
+    const horaInicioSel = selInicio && selInicio.value ? parseInt(selInicio.value.split(":")[0], 10) : null;
+    const horaFinSel = selFin && selFin.value ? parseInt(selFin.value.split(":")[0], 10) : null;
+    // Si ambos existen calculamos duracion, si no, duracion = 1 (comportamiento por fila)
+    const duracion = (horaInicioSel !== null && horaFinSel !== null) ? (horaFinSel - horaInicioSel) : 1;
+
+    const dias = ["LUNES","MARTES","MIERCOLES","JUEVES","VIERNES","SABADO"];
     const horas = Array.from({ length: 16 }, (_, i) => i + 6);
     tbody.innerHTML = "";
 
@@ -36,29 +44,59 @@ async function cargarTrimestralizacion() {
       fila.className = idx % 2 === 0 ? "bg-gray-50" : "bg-white";
       fila.innerHTML = `<td class="border border-gray-700 p-2 font-medium">${hora}:00-${hora + 1}:00</td>`;
 
-      dias.forEach((dia) => {
-        const registros = data.filter(
-          (r) => r.dia?.toUpperCase() === dia && parseInt(r.hora_inicio) === hora
-        );
+      dias.forEach(dia => {
+        // Filtrar registros: mismo día Y que su bloque horario se solape con la fila y (si hay selección) con el rango seleccionado
+        const registros = data.filter(r => {
+          if (!r.dia) return false;
+          if (r.dia.toUpperCase() !== dia) return false;
 
-        if (registros.length) {
-          const contenido = registros
-            .map(
-              (r) => `
-                <div class="registro" data-id="${r.id_horario}">
-                  <div class="ficha">${r.numero_ficha || ""}</div>
-                  <div class="instructor">${r.nombre_instructor || ""}</div>
-                  <div class="tipo_instructor">${r.tipo_instructor || ""}</div>
-                  <div class="competencia">${r.descripcion || ""}</div>
-                </div>
-              `
-            )
-            .join("<hr class='my-1 border-dashed border-gray-300'>");
+          // parsear horas del registro (fall back si no existe hora_fin)
+          const rStart = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
+          const rEnd = r.hora_fin ? parseInt(r.hora_fin.split(":")[0], 10) : (rStart + 1);
 
-          fila.innerHTML += `<td class="border border-gray-700 p-2 text-left text-sm">${contenido}</td>`;
-        } else {
-          fila.innerHTML += `<td class="border border-gray-700 p-2">&nbsp;</td>`;
-        }
+          // Coincide si esta hora pertenece al bloque del registro
+    const dentroDelBloque = hora >= rStart && hora < rEnd;
+
+    // Y además, si el usuario seleccionó un rango, que esté dentro de ese rango
+    const dentroDeSeleccion = (
+      (horaInicioSel === null || hora >= horaInicioSel) &&
+      (horaFinSel === null || hora < horaFinSel)
+    );
+
+    return dentroDelBloque && dentroDeSeleccion;
+  });
+        if (registros.length > 0) {
+        let contenido = "";
+
+        registros.forEach(r => {
+          const rStart = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
+          const rEnd = r.hora_fin ? parseInt(r.hora_fin.split(":")[0], 10) : rStart + 1;
+
+          // Si la hora actual es la de inicio del bloque, mostramos todo el detalle
+          if (hora === rStart) {
+            contenido += `
+              <div class="mb-1 border-gray-200 pb-1">
+                <div><strong>Ficha:</strong> ${r.numero_ficha ?? ""}</div>
+                <div><strong>Instructor:</strong> ${r.nombre_instructor ?? ""} (${r.tipo_instructor ?? ""})</div>
+                <div><strong>Competencia:</strong> ${r.descripcion ?? "Sin especificar"}</div>
+              </div>`;
+          } 
+          // Si es una hora dentro del bloque (no inicial), solo el nombre
+          else if (hora > rStart && hora < rEnd) {
+            contenido += `
+              <div class="mb-1  border-gray-200 pb-1 ">
+                <strong>Instructor:</strong> ${r.nombre_instructor ?? ""}
+              </div>`;
+          }
+        });
+
+        fila.innerHTML += `
+          <td class="border border-gray-700 p-2 text-sm text-left leading-tight">
+            ${contenido}
+          </td>`;
+      } else {
+        fila.innerHTML += `<td class="border border-gray-700 p-2 text-center text-gray-500 italic"></td>`;
+      }
       });
 
       tbody.appendChild(fila);
@@ -168,7 +206,7 @@ async function guardarCambios() {
 }
 
 // =======================
-// CANCELAR EDICIÓN
+// CANCELAR EDICIÓNZZZZZZ
 // =======================
 function cancelarEdicion() {
   if (!confirm("¿Deseas cancelar los cambios realizados?")) return;
@@ -200,10 +238,100 @@ async function confirmarEliminar() {
 }
 
 // =======================
-// DESCARGAR PDF
+// DESCARGAR PDF (Encabezado + Títulos + Thead visible arriba)
 // =======================
-function descargarPDF() {
-  alert("Función de descarga en desarrollo.");
+async function descargarPDF() {
+  const { jsPDF } = window.jspdf;
+
+  // 🔹 Elementos base
+  const main = document.querySelector("main");
+
+  // 🔹 Crear contenedor temporal
+  const contenedor = document.createElement("div");
+  contenedor.style.backgroundColor = "white";
+  contenedor.style.padding = "20px";
+  contenedor.style.width = "100%";
+  contenedor.style.position = "fixed";
+  contenedor.style.top = "-99999px";
+  contenedor.style.left = "0";
+  contenedor.style.zIndex = "0";
+  contenedor.style.opacity = "1";
+  contenedor.style.pointerEvents = "none";
+  contenedor.style.display = "flex";
+  contenedor.style.flexDirection = "column";
+  document.body.appendChild(contenedor);
+
+  // 🔹 Crear encabezado superior con títulos personalizados
+  const encabezadoTop = document.createElement("div");
+  encabezadoTop.style.textAlign = "center";
+  encabezadoTop.style.marginBottom = "20px";
+  encabezadoTop.innerHTML = `
+    <h1 style="font-size:22px; font-weight:bold; color:#111;">
+      VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA ${id_zona || ""}
+    </h1>
+    <h2 style="font-size:16px; color:#333;">
+      Sistema de gestión de trimestralización<br>SENA
+    </h2>
+  `;
+  contenedor.appendChild(encabezadoTop);
+
+  // 🔹 Clonar tabla principal
+  const tablaOriginal = document.querySelector("#tabla-horarios");
+  if (tablaOriginal) {
+    const tablaClone = tablaOriginal.cloneNode(true);
+
+    // 🟢 Asegurar que el THEAD (verde) se vea siempre
+    const thead = tablaClone.querySelector("thead");
+    if (thead) {
+      thead.style.position = "relative";
+      thead.style.top = "0";
+      thead.style.backgroundColor = "#16a34a"; // verde SENA
+      thead.style.color = "white";
+      thead.style.zIndex = "10";
+    }
+
+    tablaClone.style.width = "100%";
+    tablaClone.style.borderCollapse = "collapse";
+    tablaClone.style.maxHeight = "none";
+    tablaClone.style.overflow = "visible";
+    tablaClone.style.height = "auto";
+
+    contenedor.appendChild(tablaClone);
+  }
+
+  // 🔹 Esperar render
+  await new Promise((resolve) => setTimeout(resolve, 400));
+
+  // 🔹 Capturar el contenedor entero
+  const canvas = await html2canvas(contenedor, {
+    scale: 2,
+    useCORS: true,
+    scrollY: 0,
+    windowWidth: document.body.scrollWidth,
+    windowHeight: contenedor.scrollHeight,
+  });
+
+  // 🔹 Crear PDF
+  const pdf = new jsPDF({
+    orientation: "landscape",
+    unit: "mm",
+    format: "a4",
+  });
+
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const imgWidth = pageWidth;
+  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+  let y = 0;
+  while (y < imgHeight) {
+    if (y > 0) pdf.addPage();
+    pdf.addImage(canvas, "PNG", 0, -y, imgWidth, imgHeight);
+    y += pageHeight;
+  }
+
+  pdf.save(`trimestralizacion_zona_${id_zona || "sin_id"}.pdf`);
+  contenedor.remove();
 }
 
 // =======================
