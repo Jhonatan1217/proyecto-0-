@@ -131,26 +131,6 @@ function activarEdicion() {
 // =======================
 // BOTONES DE EDICIÓN
 // =======================
-function mostrarBotonesEdicion() {
-  const div = document.createElement("div");
-  div.id = "botones-edicion";
-  div.className = "mt-4 flex justify-center gap-4";
-
-  const guardar = document.createElement("button");
-  guardar.textContent = "Guardar cambios";
-  guardar.className = "bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition";
-  guardar.onclick = guardarCambios;
-
-  const cancelar = document.createElement("button");
-  cancelar.textContent = "Cancelar edición";
-  cancelar.className = "bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition";
-  cancelar.onclick = cancelarEdicion;
-
-  div.appendChild(guardar);
-  div.appendChild(cancelar);
-  document.querySelector("main").appendChild(div);
-}
-
 // =======================
 // GUARDAR CAMBIOS EN BD
 // =======================
@@ -166,8 +146,7 @@ async function guardarCambios() {
       id_horario: reg.getAttribute("data-id"),
       numero_ficha: inputs[0].value.trim(),
       nombre_instructor: inputs[1].value.trim(),
-      tipo_instructor: inputs[2].value.trim(),
-      descripcion: inputs[3].value.trim(),
+      descripcion: inputs[3].value.trim(), // ✅ quitamos tipo_instructor
     });
   });
 
@@ -193,6 +172,7 @@ async function guardarCambios() {
     alert("No se pudo guardar los cambios.");
   }
 }
+
 
 // =======================
 // CANCELAR EDICIÓNZZZZZZ
