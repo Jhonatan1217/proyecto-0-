@@ -34,21 +34,20 @@ switch ($accion) {
         try {
             $stmt = $conn->prepare("
                 SELECT h.id_horario,
-                    h.dia,
-                    h.hora_inicio,
-                    h.hora_fin,
-                    f.numero_ficha,
-                    f.nivel_ficha,         -- ✅ nuevo campo agregado
-                    i.nombre_instructor,
-                    i.tipo_instructor,
-                    c.descripcion
+                       h.dia,
+                       h.hora_inicio,
+                       h.hora_fin,
+                       f.numero_ficha,
+                       i.nombre_instructor,
+                       i.tipo_instructor,
+                       c.descripcion
                 FROM horarios h
                 LEFT JOIN fichas f ON h.id_ficha = f.id_ficha
                 LEFT JOIN instructores i ON h.id_instructor = i.id_instructor
                 LEFT JOIN competencias c ON h.id_competencia = c.id_competencia
                 WHERE h.id_zona = :id_zona
                 ORDER BY 
-                CASE h.dia
+                  CASE h.dia
                     WHEN 'LUNES' THEN 1
                     WHEN 'MARTES' THEN 2
                     WHEN 'MIERCOLES' THEN 3
@@ -56,10 +55,9 @@ switch ($accion) {
                     WHEN 'VIERNES' THEN 5
                     WHEN 'SABADO' THEN 6
                     ELSE 7
-                END,
-                h.hora_inicio
+                  END,
+                  h.hora_inicio
             ");
-
             $stmt->bindParam(':id_zona', $id_zona, PDO::PARAM_INT);
             $stmt->execute();
             $registros = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -238,23 +236,19 @@ switch ($accion) {
             foreach ($registros as $r) {
                 if (empty($r['id_horario'])) continue;
 
-                // Actualizar ficha (número y nivel)
-                if (!empty($r['numero_ficha']) || !empty($r['nivel_ficha'])) {
+                // Actualizar ficha
+                if (!empty($r['numero_ficha'])) {
                     $stmtFicha = $conn->prepare("
                         UPDATE fichas f
                         INNER JOIN horarios h ON f.id_ficha = h.id_ficha
-                        SET 
-                            f.numero_ficha = COALESCE(:numero_ficha, f.numero_ficha),
-                            f.nivel_ficha = COALESCE(:nivel_ficha, f.nivel_ficha)
+                        SET f.numero_ficha = :numero_ficha
                         WHERE h.id_horario = :id_horario
                     ");
                     $stmtFicha->execute([
-                        ':numero_ficha' => $r['numero_ficha'] ?? null,
-                        ':nivel_ficha' => $r['nivel_ficha'] ?? null,
+                        ':numero_ficha' => $r['numero_ficha'],
                         ':id_horario' => $r['id_horario']
                     ]);
                 }
-
 
                 // Actualizar instructor
                 // ✅ Actualizar solo el nombre del instructor (NO el tipo)
