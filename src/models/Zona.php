@@ -67,4 +67,3 @@ class Zona {
     }
 }
 ?>
-//borrar despues del push

@@ -85,4 +85,3 @@ class Competencia {
     }
 }
 ?>
-//borrar despues del push
