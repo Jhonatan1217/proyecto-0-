@@ -19,16 +19,16 @@ select::placeholder{
     -moz-appearance:none;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a8f98' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
     background-repeat:no-repeat;
-    background-position:right 16px center;
+    background-position:right 18px center;
     background-size:16px 16px;
-    padding-right:2.75rem;
+    padding-right:3rem;
 }
 
 .select-cal{
     background-image:url("../img/calendar-1.svg") !important;
-    background-position:right 14px center !important;
+    background-position:right 18px center !important;
     background-size:18px 18px !important;
-    padding-right:2.85rem !important;
+    padding-right:3rem !important;
 }
 
 select::-ms-expand{
@@ -46,6 +46,26 @@ select:has(option:checked:not([value=""])){
 
 .flex-minw-0 > * { 
     min-width: 0; 
+}
+
+/* Clase para unificar apariencia de campos (selects, inputs, textarea) */
+.form-field{
+    height:48px; /* coincide con h-12 de Tailwind */
+    min-height:48px;
+    padding-left:1rem; /* px-4 */
+    padding-right:3rem; /* espacio para icono/chevron */
+    line-height:1.1;
+    font-size:13px;
+    border-radius:0.75rem; /* rounded-xl */
+    background-color:#ffffff;
+}
+
+/* Textarea usa min-height mayor, respetar eso */
+.form-field--textarea{
+    min-height:90px;
+    height:auto;
+    padding-top:0.75rem;
+    padding-bottom:0.75rem;
 }
 
  /* Animación sutil al abrir */
