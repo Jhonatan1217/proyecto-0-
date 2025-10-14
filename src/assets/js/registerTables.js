@@ -5,6 +5,7 @@
 // --- Obtener id_zona actual desde la URL ---
 const urlParams = new URLSearchParams(window.location.search);
 const id_zona = urlParams.get("id_zona");
+
 // =======================
 // CARGAR DATOS
 // =======================
@@ -20,6 +21,8 @@ async function cargarTrimestralizacion() {
   try {
     const res = await fetch(`${BASE_URL}src/controllers/trimestralizacionController.php?accion=listar&id_zona=${id_zona}`);
     const data = await res.json();
+
+    // 🔹 Limpiar por completo el tbody ANTES de agregar nuevas filas
     tbody.innerHTML = "";
 
     if (!Array.isArray(data) || data.length === 0) {
@@ -27,6 +30,7 @@ async function cargarTrimestralizacion() {
       return;
     }
 
+    // 🔹 Detectar rangos de hora seleccionados
     const selInicio = document.querySelector("select[name='hora_inicio']");
     const selFin = document.querySelector("select[name='hora_fin']");
     const horaInicioSel = selInicio?.value ? parseInt(selInicio.value.split(":")[0], 10) : null;
@@ -35,12 +39,14 @@ async function cargarTrimestralizacion() {
     const dias = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"];
     const horas = Array.from({ length: 16 }, (_, i) => i + 6);
 
+    // 🔹 Generar la tabla fila por fila
     horas.forEach((hora, idx) => {
       const fila = document.createElement("tr");
       fila.className = idx % 2 === 0 ? "bg-gray-50" : "bg-white";
       fila.innerHTML = `<td class="border border-gray-700 p-2 font-medium">${hora}:00-${hora + 1}:00</td>`;
 
       dias.forEach((dia) => {
+        // Filtrar registros que coincidan con el día y rango de horas
         const registros = data.filter((r) => {
           if (!r.dia || r.dia.toUpperCase() !== dia) return false;
 
@@ -64,16 +70,14 @@ async function cargarTrimestralizacion() {
             if (hora === rStart) {
               contenido += `
                 <div class="registro border-gray-300 pb-1 mb-1" data-id="${r.id_horario || ""}">
-                  <div><strong>Ficha:</strong> <span class="ficha">${r.numero_ficha ?? ""}</span></div>
-                  <div><strong>Instructor:</strong> <span class="instructor">${r.nombre_instructor ?? ""}</span> 
-                    (<span class="tipo_instructor">${r.tipo_instructor ?? ""}</span>)
-                  </div>
-                  <div><strong>Competencia:</strong> <span class="competencia">${r.descripcion ?? "Sin especificar"}</span></div>
+                  <div><strong>Ficha:</strong> ${r.numero_ficha ?? ""}</div>
+                  <div><strong>Instructor:</strong> ${r.nombre_instructor ?? ""} (${r.tipo_instructor ?? ""})</div>
+                  <div><strong>Competencia:</strong> ${r.descripcion ?? "Sin especificar"}</div>
                 </div>`;
             } else if (hora > rStart && hora < rEnd) {
               contenido += `
-                <div class="registro border-gray-200 pb-1 mb-1" data-id="${r.id_horario || ""}">
-                  <strong>Instructor:</strong> <span class="instructor">${r.nombre_instructor ?? ""}</span>
+                <div class="registro  border-gray-200 pb-1 mb-1" data-id="${r.id_horario || ""}">
+                  <strong>Instructor:</strong> ${r.nombre_instructor ?? ""}
                 </div>`;
             }
           });
@@ -93,18 +97,17 @@ async function cargarTrimestralizacion() {
   }
 }
 
-
 // =======================
-// ACTIVAR MODO EDICIÓN (CORREGIDO)
+// ACTIVAR MODO EDICIÓN
 // =======================
 function activarEdicion() {
   const registros = document.querySelectorAll("#tbody-horarios .registro");
 
   registros.forEach((reg) => {
-    const ficha = reg.querySelector(".ficha")?.textContent.trim() || "";
-    const nombre_instructor = reg.querySelector(".instructor")?.textContent.trim() || "";
-    const tipo_instructor = reg.querySelector(".tipo_instructor")?.textContent.trim() || "";
-    const competencia = reg.querySelector(".competencia")?.textContent.trim() || "";
+    const ficha = reg.querySelector(".ficha")?.innerText || "";
+    const nombre_instructor = reg.querySelector(".instructor")?.innerText || "";
+    const tipo_instructor = reg.querySelector(".tipo_instructor")?.innerText || "";
+    const competencia = reg.querySelector(".competencia")?.innerText || "";
 
     reg.innerHTML = `
       <input type="text" value="${ficha}" placeholder="Número de ficha"
@@ -156,49 +159,77 @@ async function guardarCambios() {
   const filas = [];
   const registros = document.querySelectorAll("#tbody-horarios .registro");
 
-  const ficha = reg.querySelector("input[placeholder='Número de ficha']")?.value.trim() || "";
-    const nombre_instructor = reg.querySelector("input[placeholder='Nombre instructor']")?.value.trim() || "";
-    const tipo_instructor = reg.querySelector(".tipo_instructor")?.textContent.trim() ||
-                            reg.querySelector("input[placeholder='Tipo instructor']")?.value.trim() || "";
-    const descripcion = reg.querySelector("textarea")?.value.trim() || "";
+  registros.forEach((reg) => {
+    const inputs = reg.querySelectorAll("input, textarea");
+    if (!inputs.length) return;
 
     filas.push({
       id_horario: reg.getAttribute("data-id"),
-      numero_ficha: ficha,
-      nombre_instructor,
-      tipo_instructor,
-      descripcion
+      numero_ficha: inputs[0].value.trim(),
+      nombre_instructor: inputs[1].value.trim(),
+      tipo_instructor: inputs[2].value.trim(),
+      descripcion: inputs[3].value.trim(),
     });
+  });
 
   try {
-    const res = await fetch(
-      `${BASE_URL}src/controllers/trimestralizacionController.php?accion=actualizar&id_zona=${id_zona}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(filas),
-      }
-    );
+    const res = await fetch(`${BASE_URL}src/controllers/trimestralizacionController.php?accion=actualizar&id_zona=${id_zona}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(filas),
+    });
 
     const data = await res.json();
 
     if (data.success) {
-      alert("✅ Cambios guardados correctamente.");
-      document.getElementById("botones-edicion").remove();
-      document.getElementById("botones-principales").style.display = "flex";
-      cargarTrimestralizacion();
-    } else {
-      alert("⚠ Error al guardar: " + (data.error || "Desconocido"));
-    }
-  } catch (err) {
-    console.error("❌ Error al actualizar:", err);
-    alert("No se pudo guardar los cambios.");
-  }
+  Swal.fire({
+    toast: true,
+    icon: "success",
+    title: "Cambios guardados correctamente",
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 2500,
+    timerProgressBar: true,
+    background: "#ffffffff",
+    color: "#000000ff"
+  });
+
+  document.getElementById("botones-edicion").remove();
+  document.getElementById("botones-principales").style.display = "flex";
+  cargarTrimestralizacion();
+
+} else {
+  Swal.fire({
+    toast: true,
+    icon: "error",
+    title: "Error al guardar: " + (data.error || "Desconocido"),
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 2500,
+    timerProgressBar: true,
+    background: "#ffffffff",
+    color: "#000000ff"
+  });
 }
 
+ } catch (err) {
+  console.error("Error al actualizar:", err);
+  Swal.fire({
+    toast: true,
+    icon: "error",
+    title: "No se pudo guardar los cambios",
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 2500,
+    timerProgressBar: true,
+    background: "#ffffffff",
+    color: "#000000ff"
+  });
+}
+}
 
 // =======================
-// CANCELAR EDICIÓNZZZZZZ
+// CANCELAR EDICIÓN
 // =======================
 function cancelarEdicion() {
   if (!confirm("¿Deseas cancelar los cambios realizados?")) return;
