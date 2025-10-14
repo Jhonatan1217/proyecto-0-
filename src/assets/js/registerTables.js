@@ -95,7 +95,7 @@ async function cargarTrimestralizacion() {
             ${contenido}
           </td>`;
       } else {
-        fila.innerHTML += `<td class="border border-gray-700 p-2 text-center text-gray-500 italic"></td>`;
+        fila.innerHTML += `<td class="border border-gray-700 p-2 text-center text-gray-500 italic">ZONA DISPONIBLE</td>`;
       }
       });
 
@@ -206,7 +206,7 @@ async function guardarCambios() {
 }
 
 // =======================
-// CANCELAR EDICIÓNZZZZZZ
+// CANCELAR EDICIÓN
 // =======================
 function cancelarEdicion() {
   if (!confirm("¿Deseas cancelar los cambios realizados?")) return;
