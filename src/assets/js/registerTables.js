@@ -21,8 +21,6 @@ async function cargarTrimestralizacion() {
   try {
     const res = await fetch(`${BASE_URL}src/controllers/trimestralizacionController.php?accion=listar&id_zona=${id_zona}`);
     const data = await res.json();
-
-    // 🔹 Limpiar por completo el tbody ANTES de agregar nuevas filas
     tbody.innerHTML = "";
 
     if (!Array.isArray(data) || data.length === 0) {
@@ -30,7 +28,6 @@ async function cargarTrimestralizacion() {
       return;
     }
 
-    // 🔹 Detectar rangos de hora seleccionados
     const selInicio = document.querySelector("select[name='hora_inicio']");
     const selFin = document.querySelector("select[name='hora_fin']");
     const horaInicioSel = selInicio?.value ? parseInt(selInicio.value.split(":")[0], 10) : null;
@@ -39,14 +36,12 @@ async function cargarTrimestralizacion() {
     const dias = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"];
     const horas = Array.from({ length: 16 }, (_, i) => i + 6);
 
-    // 🔹 Generar la tabla fila por fila
     horas.forEach((hora, idx) => {
       const fila = document.createElement("tr");
       fila.className = idx % 2 === 0 ? "bg-gray-50" : "bg-white";
       fila.innerHTML = `<td class="border border-gray-700 p-2 font-medium">${hora}:00-${hora + 1}:00</td>`;
 
       dias.forEach((dia) => {
-        // Filtrar registros que coincidan con el día y rango de horas
         const registros = data.filter((r) => {
           if (!r.dia || r.dia.toUpperCase() !== dia) return false;
 
@@ -70,16 +65,18 @@ async function cargarTrimestralizacion() {
             if (hora === rStart) {
               contenido += `
                 <div class="registro border-gray-300 pb-1 mb-1" data-id="${r.id_horario || ""}">
-                  <div><strong>Ficha:</strong> ${r.numero_ficha ?? ""}</div>
-                  <div><strong>Instructor:</strong> ${r.nombre_instructor ?? ""} (${r.tipo_instructor ?? ""})</div>
-                  <div><strong>Competencia:</strong> ${r.descripcion ?? "Sin especificar"}</div>
+                  <div><strong>Ficha:</strong> <span class="ficha">${r.numero_ficha ?? ""}</span></div>
+                  <div><strong>Instructor:</strong> <span class="instructor">${r.nombre_instructor ?? ""}</span> 
+                    (<span class="tipo_instructor">${r.tipo_instructor ?? ""}</span>)
+                  </div>
+                  <div><strong>Competencia:</strong> <span class="competencia">${r.descripcion ?? "Sin especificar"}</span></div>
                 </div>`;
             } else if (hora > rStart && hora < rEnd) {
-              contenido += `
-                <div class="registro  border-gray-200 pb-1 mb-1" data-id="${r.id_horario || ""}">
-                  <strong>Instructor:</strong> ${r.nombre_instructor ?? ""}
-                </div>`;
-            }
+            contenido += `
+              <div class="mb-1  border-gray-200 pb-1 ">
+                <strong>Instructor:</strong> ${r.nombre_instructor ?? ""}(${r.tipo_instructor ?? ""})
+              </div>`;
+          }
           });
         }
 
@@ -98,16 +95,19 @@ async function cargarTrimestralizacion() {
 }
 
 // =======================
-// ACTIVAR MODO EDICIÓN
+// ACTIVAR MODO EDICIÓN (CORREGIDO Y FUNCIONAL)
 // =======================
 function activarEdicion() {
   const registros = document.querySelectorAll("#tbody-horarios .registro");
 
   registros.forEach((reg) => {
-    const ficha = reg.querySelector(".ficha")?.innerText || "";
-    const nombre_instructor = reg.querySelector(".instructor")?.innerText || "";
-    const tipo_instructor = reg.querySelector(".tipo_instructor")?.innerText || "";
-    const competencia = reg.querySelector(".competencia")?.innerText || "";
+    const ficha = reg.querySelector(".ficha")?.textContent.trim() || "";
+    const nombre_instructor = reg.querySelector(".instructor")?.textContent.trim() || "";
+    const tipo_instructor = reg.querySelector(".tipo_instructor")?.textContent.trim() || "";
+    const competencia = reg.querySelector(".competencia")?.textContent.trim() || "";
+
+    // Guardar tipo de instructor como atributo para no perderlo
+    reg.setAttribute("data-tipo", tipo_instructor);
 
     reg.innerHTML = `
       <input type="text" value="${ficha}" placeholder="Número de ficha"
@@ -116,9 +116,9 @@ function activarEdicion() {
       <input type="text" value="${nombre_instructor}" placeholder="Nombre instructor"
         class="block w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm">
 
-      <input type="text" value="${tipo_instructor}" placeholder="Tipo instructor"
-        readonly
-        class="block w-full mb-1 px-2 py-1 border border-gray-300 rounded text-sm bg-gray-100 text-gray-600 cursor-not-allowed">
+      <div class="block w-full mb-1 px-2 py-1 border border-gray-300 rounded text-sm bg-gray-100 text-gray-600 cursor-not-allowed">
+        <strong>Tipo:</strong> ${tipo_instructor}
+      </div>
 
       <textarea placeholder="Competencia / Observaciones"
         class="w-full px-2 py-1 border border-gray-400 rounded text-sm resize-none">${competencia}</textarea>
@@ -153,22 +153,24 @@ function mostrarBotonesEdicion() {
 }
 
 // =======================
-// GUARDAR CAMBIOS EN BD
+// GUARDAR CAMBIOS EN BD (FUNCIONAL Y MANTIENE TIPO)
 // =======================
 async function guardarCambios() {
   const filas = [];
   const registros = document.querySelectorAll("#tbody-horarios .registro");
 
   registros.forEach((reg) => {
-    const inputs = reg.querySelectorAll("input, textarea");
-    if (!inputs.length) return;
+    const ficha = reg.querySelector("input[placeholder='Número de ficha']")?.value.trim() || "";
+    const nombre_instructor = reg.querySelector("input[placeholder='Nombre instructor']")?.value.trim() || "";
+    const tipo_instructor = reg.getAttribute("data-tipo") || "";
+    const descripcion = reg.querySelector("textarea")?.value.trim() || "";
 
     filas.push({
       id_horario: reg.getAttribute("data-id"),
-      numero_ficha: inputs[0].value.trim(),
-      nombre_instructor: inputs[1].value.trim(),
-      tipo_instructor: inputs[2].value.trim(),
-      descripcion: inputs[3].value.trim(),
+      numero_ficha: ficha,
+      nombre_instructor,
+      tipo_instructor,
+      descripcion
     });
   });
 
@@ -182,50 +184,17 @@ async function guardarCambios() {
     const data = await res.json();
 
     if (data.success) {
-  Swal.fire({
-    toast: true,
-    icon: "success",
-    title: "Cambios guardados correctamente",
-    position: "top-end",
-    showConfirmButton: false,
-    timer: 2500,
-    timerProgressBar: true,
-    background: "#ffffffff",
-    color: "#000000ff"
-  });
-
-  document.getElementById("botones-edicion").remove();
-  document.getElementById("botones-principales").style.display = "flex";
-  cargarTrimestralizacion();
-
-} else {
-  Swal.fire({
-    toast: true,
-    icon: "error",
-    title: "Error al guardar: " + (data.error || "Desconocido"),
-    position: "top-end",
-    showConfirmButton: false,
-    timer: 2500,
-    timerProgressBar: true,
-    background: "#ffffffff",
-    color: "#000000ff"
-  });
-}
-
- } catch (err) {
-  console.error("Error al actualizar:", err);
-  Swal.fire({
-    toast: true,
-    icon: "error",
-    title: "No se pudo guardar los cambios",
-    position: "top-end",
-    showConfirmButton: false,
-    timer: 2500,
-    timerProgressBar: true,
-    background: "#ffffffff",
-    color: "#000000ff"
-  });
-}
+      alert("✅ Cambios guardados correctamente.");
+      document.getElementById("botones-edicion").remove();
+      document.getElementById("botones-principales").style.display = "flex";
+      cargarTrimestralizacion();
+    } else {
+      alert("⚠️ Error al guardar: " + (data.error || "Desconocido"));
+    }
+  } catch (err) {
+    console.error("❌ Error al actualizar:", err);
+    alert("No se pudo guardar los cambios.");
+  }
 }
 
 // =======================
