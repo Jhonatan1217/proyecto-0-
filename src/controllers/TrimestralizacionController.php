@@ -1,4 +1,3 @@
-
 <?php
 header('Content-Type: application/json; charset=utf-8');
 error_reporting(E_ALL);
@@ -88,10 +87,10 @@ switch ($accion) {
         }
 
         $data = [
-            'dia'               => $_POST['dia_semana'] ?? null,
+            'dia'               => strtoupper($_POST['dia_semana'] ?? ''), // convertir a MAYÚSCULAS
             'hora_inicio'       => $_POST['hora_inicio'] ?? null,
             'hora_fin'          => $_POST['hora_fin'] ?? null,
-            'id_zona'           => $_POST['zona'] ?? null,
+            'id_zona'           => preg_replace('/\D/', '', $_POST['zona'] ?? ''), // extraer solo número
             'numero_ficha'      => $_POST['numero_ficha'] ?? null,
             'nivel_ficha'       => $_POST['nivel_ficha'] ?? null,
             'nombre_instructor' => $_POST['nombre_instructor'] ?? null,
@@ -100,6 +99,9 @@ switch ($accion) {
         ];
 
         try {
+            // ----------------------------
+            // Validaciones básicas
+            // ----------------------------
             if (empty($data['dia']) || empty($data['hora_inicio']) || empty($data['hora_fin'])) {
                 throw new Exception("Faltan campos obligatorios del horario (día u horas).");
             }
@@ -112,7 +114,42 @@ switch ($accion) {
                 throw new Exception("Debe seleccionar una zona válida.");
             }
 
+            // Validar coherencia de horas
+            $horaInicio = date("H:i:s", strtotime($data['hora_inicio']));
+            $horaFin = date("H:i:s", strtotime($data['hora_fin']));
+
+            if ($horaFin <= $horaInicio) {
+                throw new Exception("La hora de finalización debe ser mayor que la hora de inicio.");
+            }
+
+            // =====================================================
+            // VALIDAR QUE NO EXISTA CRUCE DE HORARIOS EN LA MISMA ZONA Y DÍA
+            // =====================================================
+            $consultaCruce = $conn->prepare("
+                SELECT id_horario
+                FROM horarios
+                WHERE dia = :dia
+                  AND id_zona = :id_zona
+                  AND (
+                        (hora_inicio < :hora_fin)
+                    AND (hora_fin > :hora_inicio)
+                  )
+                LIMIT 1
+            ");
+            $consultaCruce->execute([
+                ':dia' => $data['dia'],
+                ':id_zona' => $data['id_zona'],
+                ':hora_inicio' => $horaInicio,
+                ':hora_fin' => $horaFin
+            ]);
+
+            if ($consultaCruce->fetch()) {
+                throw new Exception("Este horario ya se encuentra ocupado.");
+            }
+
+            // ----------------------------
             // Buscar o crear ficha
+            // ----------------------------
             $stmt = $conn->prepare("SELECT id_ficha FROM fichas WHERE numero_ficha = :num");
             $stmt->bindParam(':num', $data['numero_ficha'], PDO::PARAM_INT);
             $stmt->execute();
@@ -128,7 +165,9 @@ switch ($accion) {
                 $data['id_ficha'] = (int)$conn->lastInsertId();
             }
 
+            // ----------------------------
             // Crear instructor
+            // ----------------------------
             $stmt = $conn->prepare("INSERT INTO instructores (nombre_instructor, tipo_instructor)
                                     VALUES (:nombre, :tipo)");
             $stmt->bindParam(':nombre', $data['nombre_instructor']);
@@ -136,20 +175,24 @@ switch ($accion) {
             $stmt->execute();
             $data['id_instructor'] = (int)$conn->lastInsertId();
 
+            // ----------------------------
             // Crear competencia
+            // ----------------------------
             $stmt = $conn->prepare("INSERT INTO competencias (descripcion) VALUES (:descripcion)");
             $stmt->bindParam(':descripcion', $data['descripcion']);
             $stmt->execute();
             $data['id_competencia'] = (int)$conn->lastInsertId();
 
+            // ----------------------------
             // Crear horario (asociado a zona específica)
+            // ----------------------------
             $stmt = $conn->prepare("
                 INSERT INTO horarios (dia, hora_inicio, hora_fin, id_zona, id_ficha, id_instructor, id_competencia)
                 VALUES (:dia, :hora_inicio, :hora_fin, :id_zona, :id_ficha, :id_instructor, :id_competencia)
             ");
             $stmt->bindParam(':dia', $data['dia']);
-            $stmt->bindParam(':hora_inicio', $data['hora_inicio']);
-            $stmt->bindParam(':hora_fin', $data['hora_fin']);
+            $stmt->bindParam(':hora_inicio', $horaInicio);
+            $stmt->bindParam(':hora_fin', $horaFin);
             $stmt->bindParam(':id_zona', $data['id_zona'], PDO::PARAM_INT);
             $stmt->bindParam(':id_ficha', $data['id_ficha'], PDO::PARAM_INT);
             $stmt->bindParam(':id_instructor', $data['id_instructor'], PDO::PARAM_INT);
@@ -158,7 +201,9 @@ switch ($accion) {
 
             $id_horario = (int)$conn->lastInsertId();
 
+            // ----------------------------
             // Crear registro trimestralización
+            // ----------------------------
             $res = $trimestral->crear($id_horario);
             echo json_encode($res);
 
@@ -265,4 +310,3 @@ switch ($accion) {
         break;
 }
 ?>
-    
