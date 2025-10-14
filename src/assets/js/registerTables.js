@@ -156,25 +156,29 @@ async function guardarCambios() {
   const filas = [];
   const registros = document.querySelectorAll("#tbody-horarios .registro");
 
-  registros.forEach((reg) => {
-    const inputs = reg.querySelectorAll("input, textarea");
-    if (!inputs.length) return;
+  const ficha = reg.querySelector("input[placeholder='Número de ficha']")?.value.trim() || "";
+    const nombre_instructor = reg.querySelector("input[placeholder='Nombre instructor']")?.value.trim() || "";
+    const tipo_instructor = reg.querySelector(".tipo_instructor")?.textContent.trim() ||
+                            reg.querySelector("input[placeholder='Tipo instructor']")?.value.trim() || "";
+    const descripcion = reg.querySelector("textarea")?.value.trim() || "";
 
     filas.push({
       id_horario: reg.getAttribute("data-id"),
-      numero_ficha: inputs[0].value.trim(),
-      nombre_instructor: inputs[1].value.trim(),
-      tipo_instructor: inputs[2].value.trim(),
-      descripcion: inputs[3].value.trim(),
+      numero_ficha: ficha,
+      nombre_instructor,
+      tipo_instructor,
+      descripcion
     });
-  });
 
   try {
-    const res = await fetch(`${BASE_URL}src/controllers/trimestralizacionController.php?accion=actualizar&id_zona=${id_zona}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(filas),
-    });
+    const res = await fetch(
+      `${BASE_URL}src/controllers/trimestralizacionController.php?accion=actualizar&id_zona=${id_zona}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(filas),
+      }
+    );
 
     const data = await res.json();
 
@@ -184,13 +188,14 @@ async function guardarCambios() {
       document.getElementById("botones-principales").style.display = "flex";
       cargarTrimestralizacion();
     } else {
-      alert("⚠️ Error al guardar: " + (data.error || "Desconocido"));
+      alert("⚠ Error al guardar: " + (data.error || "Desconocido"));
     }
   } catch (err) {
     console.error("❌ Error al actualizar:", err);
     alert("No se pudo guardar los cambios.");
   }
 }
+
 
 // =======================
 // CANCELAR EDICIÓNZZZZZZ
