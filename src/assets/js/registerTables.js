@@ -200,47 +200,83 @@ async function confirmarEliminar() {
 }
 
 // =======================
-// DESCARGAR PDF (Incluye encabezado)
+// DESCARGAR PDF (Incluye encabezado y todas las horas)
+// =======================
+// =======================
+// DESCARGAR PDF (Encabezado + Títulos + Thead visible arriba)
 // =======================
 async function descargarPDF() {
   const { jsPDF } = window.jspdf;
 
-  // 🔹 Seleccionamos el encabezado + la tabla completa
-  const header = document.getElementById("cabecera-trimestralizacion");
+  // 🔹 Elementos base
   const main = document.querySelector("main");
 
-  // 🔹 Crear un contenedor temporal que combine encabezado + tabla
+  // 🔹 Crear contenedor temporal
   const contenedor = document.createElement("div");
   contenedor.style.backgroundColor = "white";
   contenedor.style.padding = "20px";
-  contenedor.style.textAlign = "center";
   contenedor.style.width = "100%";
-
-  // Clonamos el encabezado y el contenido principal
-  const headerClone = header.cloneNode(true);
-  const mainClone = main.cloneNode(true);
-
-  // Ocultar los botones del clon
-  const botonesClone = mainClone.querySelector("#botones-principales");
-  if (botonesClone) botonesClone.style.display = "none";
-
-  contenedor.appendChild(headerClone);
-  contenedor.appendChild(mainClone);
-
-  // 🔹 Insertamos el contenedor temporal en el body (fuera de vista)
-  contenedor.style.position = "absolute";
-  contenedor.style.top = "-9999px";
+  contenedor.style.position = "fixed";
+  contenedor.style.top = "-99999px";
+  contenedor.style.left = "0";
+  contenedor.style.zIndex = "0";
+  contenedor.style.opacity = "1";
+  contenedor.style.pointerEvents = "none";
+  contenedor.style.display = "flex";
+  contenedor.style.flexDirection = "column";
   document.body.appendChild(contenedor);
 
-  // 🔹 Generamos la captura con html2canvas
+  // 🔹 Crear encabezado superior con títulos personalizados
+  const encabezadoTop = document.createElement("div");
+  encabezadoTop.style.textAlign = "center";
+  encabezadoTop.style.marginBottom = "20px";
+  encabezadoTop.innerHTML = `
+    <h1 style="font-size:22px; font-weight:bold; color:#111;">
+      VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA ${id_zona || ""}
+    </h1>
+    <h2 style="font-size:16px; color:#333;">
+      Sistema de gestión de trimestralización<br>SENA
+    </h2>
+  `;
+  contenedor.appendChild(encabezadoTop);
+
+  // 🔹 Clonar tabla principal
+  const tablaOriginal = document.querySelector("#tabla-horarios");
+  if (tablaOriginal) {
+    const tablaClone = tablaOriginal.cloneNode(true);
+
+    // 🟢 Asegurar que el THEAD (verde) se vea siempre
+    const thead = tablaClone.querySelector("thead");
+    if (thead) {
+      thead.style.position = "relative";
+      thead.style.top = "0";
+      thead.style.backgroundColor = "#16a34a"; // verde SENA
+      thead.style.color = "white";
+      thead.style.zIndex = "10";
+    }
+
+    tablaClone.style.width = "100%";
+    tablaClone.style.borderCollapse = "collapse";
+    tablaClone.style.maxHeight = "none";
+    tablaClone.style.overflow = "visible";
+    tablaClone.style.height = "auto";
+
+    contenedor.appendChild(tablaClone);
+  }
+
+  // 🔹 Esperar render
+  await new Promise((resolve) => setTimeout(resolve, 400));
+
+  // 🔹 Capturar el contenedor entero
   const canvas = await html2canvas(contenedor, {
     scale: 2,
     useCORS: true,
+    scrollY: 0,
     windowWidth: document.body.scrollWidth,
     windowHeight: contenedor.scrollHeight,
   });
 
-  const imgData = canvas.toDataURL("image/png");
+  // 🔹 Crear PDF
   const pdf = new jsPDF({
     orientation: "landscape",
     unit: "mm",
@@ -252,11 +288,15 @@ async function descargarPDF() {
   const imgWidth = pageWidth;
   const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-  pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-  pdf.save(`trimestralizacion_zona_${id_zona || 'sin_id'}.pdf`);
+  let y = 0;
+  while (y < imgHeight) {
+    if (y > 0) pdf.addPage();
+    pdf.addImage(canvas, "PNG", 0, -y, imgWidth, imgHeight);
+    y += pageHeight;
+  }
 
-  // 🔹 Limpiamos el DOM (quitamos el clon)
-  document.body.removeChild(contenedor);
+  pdf.save(`trimestralizacion_zona_${id_zona || "sin_id"}.pdf`);
+  contenedor.remove();
 }
 
 // =======================
