@@ -21,82 +21,69 @@ async function cargarTrimestralizacion() {
   try {
     const res = await fetch(`${BASE_URL}src/controllers/trimestralizacionController.php?accion=listar&id_zona=${id_zona}`);
     const data = await res.json();
+    tbody.innerHTML = "";
 
     if (!Array.isArray(data) || data.length === 0) {
       tbody.innerHTML = `<tr><td colspan="7" class="text-gray-500 p-4">No hay registros para esta zona.</td></tr>`;
       return;
     }
 
-    // Lectura segura de selects (pueden estar vacíos)
     const selInicio = document.querySelector("select[name='hora_inicio']");
     const selFin = document.querySelector("select[name='hora_fin']");
-    const horaInicioSel = selInicio && selInicio.value ? parseInt(selInicio.value.split(":")[0], 10) : null;
-    const horaFinSel = selFin && selFin.value ? parseInt(selFin.value.split(":")[0], 10) : null;
-    // Si ambos existen calculamos duracion, si no, duracion = 1 (comportamiento por fila)
-    const duracion = (horaInicioSel !== null && horaFinSel !== null) ? (horaFinSel - horaInicioSel) : 1;
+    const horaInicioSel = selInicio?.value ? parseInt(selInicio.value.split(":")[0], 10) : null;
+    const horaFinSel = selFin?.value ? parseInt(selFin.value.split(":")[0], 10) : null;
 
-    const dias = ["LUNES","MARTES","MIERCOLES","JUEVES","VIERNES","SABADO"];
+    const dias = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"];
     const horas = Array.from({ length: 16 }, (_, i) => i + 6);
-    tbody.innerHTML = "";
 
     horas.forEach((hora, idx) => {
       const fila = document.createElement("tr");
       fila.className = idx % 2 === 0 ? "bg-gray-50" : "bg-white";
       fila.innerHTML = `<td class="border border-gray-700 p-2 font-medium">${hora}:00-${hora + 1}:00</td>`;
 
-      dias.forEach(dia => {
-        // Filtrar registros: mismo día Y que su bloque horario se solape con la fila y (si hay selección) con el rango seleccionado
-        const registros = data.filter(r => {
-          if (!r.dia) return false;
-          if (r.dia.toUpperCase() !== dia) return false;
+      dias.forEach((dia) => {
+        const registros = data.filter((r) => {
+          if (!r.dia || r.dia.toUpperCase() !== dia) return false;
 
-          // parsear horas del registro (fall back si no existe hora_fin)
-          const rStart = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
-          const rEnd = r.hora_fin ? parseInt(r.hora_fin.split(":")[0], 10) : (rStart + 1);
-
-          // Coincide si esta hora pertenece al bloque del registro
-    const dentroDelBloque = hora >= rStart && hora < rEnd;
-
-    // Y además, si el usuario seleccionó un rango, que esté dentro de ese rango
-    const dentroDeSeleccion = (
-      (horaInicioSel === null || hora >= horaInicioSel) &&
-      (horaFinSel === null || hora < horaFinSel)
-    );
-
-    return dentroDelBloque && dentroDeSeleccion;
-  });
-        if (registros.length > 0) {
-        let contenido = "";
-
-        registros.forEach(r => {
           const rStart = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
           const rEnd = r.hora_fin ? parseInt(r.hora_fin.split(":")[0], 10) : rStart + 1;
 
-          // Si la hora actual es la de inicio del bloque, mostramos todo el detalle
-          if (hora === rStart) {
-            contenido += `
-              <div class="mb-1 border-gray-200 pb-1">
-                <div><strong>Ficha:</strong> ${r.numero_ficha ?? ""}${r.nivel_ficha}</div>
-                <div><strong>Instructor:</strong> ${r.nombre_instructor ?? ""} (${r.tipo_instructor ?? ""})</div>
-                <div><strong>Competencia:</strong> ${r.descripcion ?? "Sin especificar"}</div>
-              </div>`;
-          } 
-          // Si es una hora dentro del bloque (no inicial), solo el nombre
-          else if (hora > rStart && hora < rEnd) {
+          const dentroDelBloque = hora >= rStart && hora < rEnd;
+          const dentroDeSeleccion =
+            (horaInicioSel === null || hora >= horaInicioSel) &&
+            (horaFinSel === null || hora < horaFinSel);
+
+          return dentroDelBloque && dentroDeSeleccion;
+        });
+
+        let contenido = "";
+        if (registros.length > 0) {
+          registros.forEach((r) => {
+            const rStart = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
+            const rEnd = r.hora_fin ? parseInt(r.hora_fin.split(":")[0], 10) : rStart + 1;
+
+            if (hora === rStart) {
+              contenido += `
+                <div class="registro border-gray-300 pb-1 mb-1" data-id="${r.id_horario || ""}">
+                  <div><strong>Ficha:</strong> <span class="ficha">${r.numero_ficha ?? ""}</span></div>
+                  <div><strong>Instructor:</strong> <span class="instructor">${r.nombre_instructor ?? ""}</span> 
+                    (<span class="tipo_instructor">${r.tipo_instructor ?? ""}</span>)
+                  </div>
+                  <div><strong>Competencia:</strong> <span class="competencia">${r.descripcion ?? "Sin especificar"}</span></div>
+                </div>`;
+            } else if (hora > rStart && hora < rEnd) {
             contenido += `
               <div class="mb-1  border-gray-200 pb-1 ">
                 <strong>Instructor:</strong> ${r.nombre_instructor ?? ""}(${r.tipo_instructor ?? ""})
               </div>`;
           }
-        });
+          });
+        }
 
         fila.innerHTML += `
           <td class="border border-gray-700 p-2 text-sm text-left leading-tight">
-            ${contenido}
+            ${contenido || '<span class="text-gray-400 italic">zona libre</span>'}
           </td>`;
-      } else {
-        fila.innerHTML += `<td class="border border-gray-700 p-2 text-center text-gray-500 italic">ZONA DISPONIBLE</td>`;
-      }
       });
 
       tbody.appendChild(fila);
@@ -108,16 +95,19 @@ async function cargarTrimestralizacion() {
 }
 
 // =======================
-// ACTIVAR MODO EDICIÓN
+// ACTIVAR MODO EDICIÓN (CORREGIDO Y FUNCIONAL)
 // =======================
 function activarEdicion() {
   const registros = document.querySelectorAll("#tbody-horarios .registro");
 
   registros.forEach((reg) => {
-    const ficha = reg.querySelector(".ficha")?.innerText || "";
-    const nombre_instructor = reg.querySelector(".instructor")?.innerText || "";
-    const tipo_instructor = reg.querySelector(".tipo_instructor")?.innerText || "";
-    const competencia = reg.querySelector(".competencia")?.innerText || "";
+    const ficha = reg.querySelector(".ficha")?.textContent.trim() || "";
+    const nombre_instructor = reg.querySelector(".instructor")?.textContent.trim() || "";
+    const tipo_instructor = reg.querySelector(".tipo_instructor")?.textContent.trim() || "";
+    const competencia = reg.querySelector(".competencia")?.textContent.trim() || "";
+
+    // Guardar tipo de instructor como atributo para no perderlo
+    reg.setAttribute("data-tipo", tipo_instructor);
 
     reg.innerHTML = `
       <input type="text" value="${ficha}" placeholder="Número de ficha"
@@ -126,9 +116,9 @@ function activarEdicion() {
       <input type="text" value="${nombre_instructor}" placeholder="Nombre instructor"
         class="block w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm">
 
-      <input type="text" value="${tipo_instructor}" placeholder="Tipo instructor"
-        readonly
-        class="block w-full mb-1 px-2 py-1 border border-gray-300 rounded text-sm bg-gray-100 text-gray-600 cursor-not-allowed">
+      <div class="block w-full mb-1 px-2 py-1 border border-gray-300 rounded text-sm bg-gray-100 text-gray-600 cursor-not-allowed">
+        <strong>Tipo:</strong> ${tipo_instructor}
+      </div>
 
       <textarea placeholder="Competencia / Observaciones"
         class="w-full px-2 py-1 border border-gray-400 rounded text-sm resize-none">${competencia}</textarea>
@@ -163,22 +153,24 @@ function mostrarBotonesEdicion() {
 }
 
 // =======================
-// GUARDAR CAMBIOS EN BD
+// GUARDAR CAMBIOS EN BD (FUNCIONAL Y MANTIENE TIPO)
 // =======================
 async function guardarCambios() {
   const filas = [];
   const registros = document.querySelectorAll("#tbody-horarios .registro");
 
   registros.forEach((reg) => {
-    const inputs = reg.querySelectorAll("input, textarea");
-    if (!inputs.length) return;
+    const ficha = reg.querySelector("input[placeholder='Número de ficha']")?.value.trim() || "";
+    const nombre_instructor = reg.querySelector("input[placeholder='Nombre instructor']")?.value.trim() || "";
+    const tipo_instructor = reg.getAttribute("data-tipo") || "";
+    const descripcion = reg.querySelector("textarea")?.value.trim() || "";
 
     filas.push({
       id_horario: reg.getAttribute("data-id"),
-      numero_ficha: inputs[0].value.trim(),
-      nombre_instructor: inputs[1].value.trim(),
-      tipo_instructor: inputs[2].value.trim(),
-      descripcion: inputs[3].value.trim(),
+      numero_ficha: ficha,
+      nombre_instructor,
+      tipo_instructor,
+      descripcion
     });
   });
 

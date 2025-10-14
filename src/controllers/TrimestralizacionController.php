@@ -251,20 +251,20 @@ switch ($accion) {
                 }
 
                 // Actualizar instructor
-                if (!empty($r['nombre_instructor']) || !empty($r['tipo_instructor'])) {
+                // ✅ Actualizar solo el nombre del instructor (NO el tipo)
+                if (!empty($r['nombre_instructor'])) {
                     $stmtInst = $conn->prepare("
                         UPDATE instructores i
                         INNER JOIN horarios h ON i.id_instructor = h.id_instructor
-                        SET i.nombre_instructor = :nombre_instructor,
-                            i.tipo_instructor = :tipo_instructor
+                        SET i.nombre_instructor = :nombre_instructor
                         WHERE h.id_horario = :id_horario
                     ");
                     $stmtInst->execute([
                         ':nombre_instructor' => $r['nombre_instructor'],
-                        ':tipo_instructor' => $r['tipo_instructor'],
                         ':id_horario' => $r['id_horario']
                     ]);
                 }
+
 
                 // Actualizar competencia
                 if (!empty($r['descripcion'])) {
@@ -277,7 +277,7 @@ switch ($accion) {
                     $stmtComp->execute([
                         ':descripcion' => $r['descripcion'],
                         ':id_horario' => $r['id_horario']
-                    ]);
+                    ]); 
                 }
 
                 $actualizados++;

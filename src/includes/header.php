@@ -50,7 +50,7 @@
     <div class="fixed inset-0 flex items-center justify-center p-4">
       <div
         id="modalCard"
-        class="bg-white w-[420px] max-w-[92vw] rounded-2xl shadow-md border border-[#d8d8d8] px-[26px] pt-[28px] pb-[36px]"
+        class="bg-white w-full max-w-[420px] sm:max-w-[520px] md:max-w-[640px] lg:max-w-[720px] xl:max-w-[860px] rounded-2xl shadow-md border border-[#d8d8d8] px-4 sm:px-6 md:px-8 lg:px-10 pt-6 sm:pt-8 pb-8 sm:pb-10 mx-3 lg:mx-0"
       >
         <!-- Cabecera con botón cerrar -->
         <div class="flex items-start justify-between">
@@ -78,7 +78,7 @@
         >
           <!-- Selección de zona -->
           <select name="zona" id="id_zona" 
-            class="select-chev w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
+            class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
             <option value="">Seleccione la zona a la que pertenece la ficha</option>
             <option value="1">Zona 1</option>
             <option value="2">Zona 2</option>
@@ -89,24 +89,24 @@
 
           <!-- Selección de nivel -->
           <select name="nivel_ficha" 
-            class="select-chev w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
+            class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
             <option value="">Seleccione el nivel de la ficha</option>
             <option value="tecnico">Técnico</option>
             <option value="tecnologo">Tecnólogo</option>
           </select>
 
           <!-- Dos columnas -->
-          <div class="flex flex-minw-0 gap-3 max-[420px]:flex-col">
+            <div class="flex flex-minw-0 gap-3 flex-col sm:flex-row lg:flex-row">
             <input type="text" name="numero_ficha" id="numero_ficha" placeholder="Número de la ficha" 
-              class="basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400"/>
+              class="form-field basis-1/2 w-full h-12 px-4 pr-12 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm"/>
             
             <input type="text" name="nombre_instructor" id="id_instructor" placeholder="Nombre del instructor" 
-              class="basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400"/>
+              class="form-field basis-1/2 w-full h-12 px-4 pr-12 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm"/>
           </div>
 
           <!-- Tipo de instructor -->
           <select name="tipo_instructor" 
-            class="select-chev w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
+            class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
             <option value="">Seleccione el tipo de instructor</option>
             <option value="TECNICO">Técnico</option>
             <option value="TRANSVERSAL">Transversal</option>
@@ -114,7 +114,7 @@
 
           <!-- Día con icono calendario -->
           <select name="dia_semana" id="dia" 
-            class="select-chev select-cal w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
+            class="select-chev select-cal form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
             <option value="">Seleccione el día</option>
             <option value="lunes">Lunes</option>
             <option value="martes">Martes</option>
@@ -125,9 +125,9 @@
           </select>
 
           <!-- Horarios -->
-          <div class="flex flex-minw-0 gap-3 max-[420px]:flex-col">
+          <div class="flex flex-minw-0 gap-3 flex-col sm:flex-row lg:flex-row">
             <select name="hora_inicio" id="hora_inicio" 
-              class="select-chev basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
+              class="select-chev form-field basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
               <option value="">Hora de inicio</option>
               <?php for ($i = 6; $i <= 22; $i++): ?>
                 <option value="<?= $i ?>:00"><?= $i ?>:00</option>
@@ -135,7 +135,7 @@
             </select>
 
             <select name="hora_fin" id="hora_fin" 
-              class="select-chev basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
+              class="select-chev form-field basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
               <option value="">Hora de fin</option>
               <?php for ($i = 7; $i <= 22; $i++): ?>
                 <option value="<?= $i ?>:00"><?= $i ?>:00</option>
@@ -145,7 +145,7 @@
 
           <!-- Competencia -->
           <textarea name="descripcion" id="descripcion" rows="4" placeholder="Diligencie la competencia aquí" 
-            class="w-full min-h-[90px] px-4 py-3 text-[13px] rounded-xl border-0 outline-none bg-white resize-none shadow placeholder-gray-400"></textarea>
+            class="form-field form-field--textarea w-full min-h-[90px] px-4 pr-12 py-3 text-[13px] rounded-xl border-0 outline-none bg-white resize-none shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm"></textarea>
 
           <!-- Guardar -->
           <button type="submit"
