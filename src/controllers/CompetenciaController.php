@@ -105,6 +105,5 @@ switch ($accion) {
         // Si la acción no es válida, retorna un error
         echo json_encode(['error' => 'Acción no válida']);
         break;
-        //quitar este comentario
 }
 ?>

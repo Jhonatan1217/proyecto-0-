@@ -81,7 +81,6 @@ class Competencia {
         } catch (PDOException $e) {
             return ["error" => $e->getMessage()];
         }
-        //quitar este comentario
     }
 }
 ?>
