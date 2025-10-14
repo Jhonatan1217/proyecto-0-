@@ -9,8 +9,9 @@
     <!-- Fuente Work Sans (el modal la usa) -->
     <link href="https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/formulario_crear_trimestralizacion.css">
-    <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/landing.css">
 
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   </head>
   <body class="flex flex-col min-h-screen font-sans text-center bg-white text-gray-900">
     <!-- Contenido principal -->
@@ -26,8 +27,8 @@
         </button>
 
         <!-- Menú desplegable -->
-         <div class="relative inline-block">
-          <select id="zona" name="id_zona" required
+        <div class="relative inline-block">
+          <select id="zona" name="id_zona" 
             class="appearance-none w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-gray-100 transition-colors duration-200 outline-none cursor-pointer pr-10">
             <option value="" class="text-[#00324D]" selected hidden>VISUALIZAR ZONA</option>
             <option value="1">Zona 1</option>
@@ -49,7 +50,6 @@
         </div>
 
         <div class="relative inline-block text-left">
-
           <!-- Contenido desplegable -->
           <div
             id="dropdownMenu"
@@ -104,8 +104,8 @@
           <div class="border-b border-[#dcdcdc] mb-[12px]"></div>
 
           <!-- Formulario -->
-          <form action="<?= BASE_URL ?>src/controllers/TrimestralizacionController.php?accion=crear" method="POST" class="trimestralizacion-form space-y-3">
-            <select name="zona" id="id_zona" required
+          <form id="formTrimestralizacion" action="<?= BASE_URL ?>src/controllers/TrimestralizacionController.php?accion=crear" method="POST" class="trimestralizacion-form space-y-3">
+            <select name="zona" id="id_zona" 
               class="select-chev w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
               <option value="">Seleccione la zona a la que pertenece la ficha</option>
               <option value="1">Zona 1</option>
@@ -115,7 +115,7 @@
               <option value="6">Zona 6</option>
             </select>
 
-            <select name="nivel_ficha" required
+            <select name="nivel_ficha" 
               class="select-chev w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
               <option value="">Seleccione el nivel de la ficha</option>
               <option value="tecnico">Tecnico</option>
@@ -123,21 +123,20 @@
             </select>
 
             <div class="flex flex-minw-0 gap-3 max-[420px]:flex-col">
-              <input type="text" name="numero_ficha" id="numero_ficha" placeholder="Número de la ficha" required
+              <input type="text" name="numero_ficha" id="numero_ficha" placeholder="Número de la ficha" 
                 class="basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400"/>
-              <input type="text" name="nombre_instructor" id="id_instructor" placeholder="Nombre del instructor" required
+              <input type="text" name="nombre_instructor" id="id_instructor" placeholder="Nombre del instructor" 
                 class="basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400"/>
             </div>
 
-            <select name="tipo_instructor" required
+            <select name="tipo_instructor" 
               class="select-chev w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
               <option value="">Seleccione el tipo de instructor</option>
               <option value="TECNICO">Técnico</option>
               <option value="TRANSVERSAL">Transversal</option>
-              
             </select>
 
-            <select name="dia_semana" id="dia" required
+            <select name="dia_semana" id="dia" 
               class="select-chev select-cal w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
               <option value="">Seleccione el día</option>
               <option value="lunes">Lunes</option>
@@ -146,11 +145,10 @@
               <option value="jueves">Jueves</option>
               <option value="viernes">Viernes</option>
               <option value="sabado">Sábado</option>
-              <option value="domingo">Domingo</option>
             </select>
 
             <div class="flex flex-minw-0 gap-3 max-[420px]:flex-col">
-              <select name="hora_inicio" id="hora_inicio" required
+              <select name="hora_inicio" id="hora_inicio" 
                 class="select-chev basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
                 <option value="">Hora de inicio</option>
                 <?php for ($i = 6; $i <= 22; $i++): ?>
@@ -158,7 +156,7 @@
                 <?php endfor; ?>
               </select>
 
-              <select name="hora_fin" id="hora_fin" required
+              <select name="hora_fin" id="hora_fin" 
                 class="select-chev basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
                 <option value="">Hora de fin</option>
                 <?php for ($i = 7; $i <= 22; $i++): ?>
@@ -167,7 +165,7 @@
               </select>
             </div>
 
-            <textarea name="descripcion" id="descripcion" rows="4" placeholder="Diligencie la competencia aquí" required
+            <textarea name="descripcion" id="descripcion" rows="4" placeholder="Diligencie la competencia aquí" 
               class="w-full min-h-[90px] px-4 py-3 text-[13px] rounded-xl border-0 outline-none bg-white resize-none shadow placeholder-gray-400"></textarea>
 
             <button type="submit"
@@ -179,9 +177,11 @@
       </div>
     </div>
     <!-- ============== /MODAL ============== -->
-
+    <script>
+        const BASE_URL = "<?= BASE_URL ?>";
+    </script>                
     <!-- Script del menú desplegable + modal -->
     <script src="<?= BASE_URL ?>src/assets/js/landing.js"></script>
-
+    <script src="<?= BASE_URL ?>src/assets/js/formulario_trimestralizacion.js"></script>
   </body>
 </html>

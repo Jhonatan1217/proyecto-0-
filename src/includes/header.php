@@ -4,8 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Document</title>
+
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Fuente -->
   <link href="https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet"/>
+
+  <!-- Tu CSS -->
   <link rel="stylesheet" href="src/assets/css/formulario_crear_trimestralizacion.css">
 </head>
 
@@ -16,17 +25,17 @@
     <nav class="flex flex-col lg:flex-row items-center gap-3 lg:gap-6 text-sm lg:text-base xl:text-lg 2xl:text-xl">
       <a href="index.php?page=landing" class="hover:text-[#39A900] font-semibold transition-colors duration-200">Inicio</a>
 
-      <!-- Botón que abre el modal -->
+      <!-- Botón que abre el modal (si tu header.js lo usa) -->
       <a
         href="index.php?page=formulario_crear_trimestralizacion"
         id="btnAbrirModalHeader"
         class="border border-gray-400 px-4 py-1.5 lg:px-6 lg:py-2 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] hover:bg-[#004A70] font-bold hover:text-white transition-colors duration-200">
         CREAR TRIMESTRALIZACIÓN
       </a>
-    </nav>
+    </nav> 
   </header>
 
-  <!-- ============== MODAL CREAR TRIMESTRALIZACIÓN (importado) ============== -->
+  <!-- ============== MODAL CREAR TRIMESTRALIZACIÓN ============== -->
   <div
     id="modalCrearHeader"
     class="fixed inset-0 z-40 hidden"
@@ -53,6 +62,7 @@
             class="ml-3 -mt-2 text-gray-500 hover:text-gray-700"
             aria-label="Cerrar modal"
             title="Cerrar"
+            type="button"
           >
             ✕
           </button>
@@ -60,20 +70,25 @@
         <div class="border-b border-[#dcdcdc] mb-[12px]"></div>
 
         <!-- Formulario del modal -->
-        <form action="guardar_trimestralizacion.php" method="POST" class="trimestralizacion-form space-y-3">
+        <form
+          id="formTrimestralizacion"
+          action="<?= BASE_URL ?>src/controllers/TrimestralizacionController.php?accion=crear"
+          method="POST"
+          class="trimestralizacion-form space-y-3"
+        >
           <!-- Selección de zona -->
-          <select name="zona" required
+          <select name="zona" id="id_zona" 
             class="select-chev w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
             <option value="">Seleccione la zona a la que pertenece la ficha</option>
-            <option value="zona1">Zona 1</option>
-            <option value="zona2">Zona 2</option>
-            <option value="zona3">Zona 3</option>
-            <option value="zona5">Zona 5</option>
-            <option value="zona6">Zona 6</option>
+            <option value="1">Zona 1</option>
+            <option value="2">Zona 2</option>
+            <option value="3">Zona 3</option>
+            <option value="5">Zona 5</option>
+            <option value="6">Zona 6</option>
           </select>
 
           <!-- Selección de nivel -->
-          <select name="nivel" required
+          <select name="nivel_ficha" 
             class="select-chev w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
             <option value="">Seleccione el nivel de la ficha</option>
             <option value="tecnico">Técnico</option>
@@ -82,23 +97,23 @@
 
           <!-- Dos columnas -->
           <div class="flex flex-minw-0 gap-3 max-[420px]:flex-col">
-            <input type="text" name="numero_ficha" placeholder="Número de la ficha" required
+            <input type="text" name="numero_ficha" id="numero_ficha" placeholder="Número de la ficha" 
               class="basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400"/>
-            <input type="text" name="nombre_instructor" placeholder="Nombre del instructor" required
+            
+            <input type="text" name="nombre_instructor" id="id_instructor" placeholder="Nombre del instructor" 
               class="basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400"/>
           </div>
 
           <!-- Tipo de instructor -->
-          <select name="tipo_instructor" required
+          <select name="tipo_instructor" 
             class="select-chev w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
             <option value="">Seleccione el tipo de instructor</option>
-            <option value="tecnico">Técnico</option>
-            <option value="trasnversal">Transversal</option>
-            <option value="clave">clave</option>
+            <option value="TECNICO">Técnico</option>
+            <option value="TRANSVERSAL">Transversal</option>
           </select>
 
           <!-- Día con icono calendario -->
-          <select name="dia_semana" required
+          <select name="dia_semana" id="dia" 
             class="select-chev select-cal w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
             <option value="">Seleccione el día</option>
             <option value="lunes">Lunes</option>
@@ -107,12 +122,11 @@
             <option value="jueves">Jueves</option>
             <option value="viernes">Viernes</option>
             <option value="sabado">Sábado</option>
-            <option value="domingo">Domingo</option>
           </select>
 
           <!-- Horarios -->
           <div class="flex flex-minw-0 gap-3 max-[420px]:flex-col">
-            <select name="hora_inicio" required
+            <select name="hora_inicio" id="hora_inicio" 
               class="select-chev basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
               <option value="">Hora de inicio</option>
               <?php for ($i = 6; $i <= 22; $i++): ?>
@@ -120,7 +134,7 @@
               <?php endfor; ?>
             </select>
 
-            <select name="hora_fin" required
+            <select name="hora_fin" id="hora_fin" 
               class="select-chev basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
               <option value="">Hora de fin</option>
               <?php for ($i = 7; $i <= 22; $i++): ?>
@@ -130,7 +144,7 @@
           </div>
 
           <!-- Competencia -->
-          <textarea name="competencia" rows="4" placeholder="Diligencie la competencia aquí" required
+          <textarea name="descripcion" id="descripcion" rows="4" placeholder="Diligencie la competencia aquí" 
             class="w-full min-h-[90px] px-4 py-3 text-[13px] rounded-xl border-0 outline-none bg-white resize-none shadow placeholder-gray-400"></textarea>
 
           <!-- Guardar -->
@@ -144,6 +158,21 @@
   </div>
   <!-- ============== /MODAL ============== -->
 
+  <!-- Tu JS para abrir/cerrar modal (si ya lo tienes) -->
   <script src="src/assets/js/header.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/formulario_trimestralizacion.js"></script>
+
+
+  <!-- Validaciones + envío por fetch + redirección -->
+  <script>
+    // Cerrar modal con la X (si usas el modal en esta misma página)
+    const btnCerrar = document.getElementById("btnCerrarModal");
+    const modal = document.getElementById("modalCrearHeader");
+    if (btnCerrar && modal) {
+      btnCerrar.addEventListener("click", () => {
+        modal.classList.add("hidden");
+      });
+    }
+  </script>
 </body>
 </html>
