@@ -14,6 +14,14 @@ async function cargarTrimestralizacion() {
       return;
     }
 
+    // Lectura segura de selects (pueden estar vacíos)
+    const selInicio = document.querySelector("select[name='hora_inicio']");
+    const selFin = document.querySelector("select[name='hora_fin']");
+    const horaInicioSel = selInicio && selInicio.value ? parseInt(selInicio.value.split(":")[0], 10) : null;
+    const horaFinSel = selFin && selFin.value ? parseInt(selFin.value.split(":")[0], 10) : null;
+    // Si ambos existen calculamos duracion, si no, duracion = 1 (comportamiento por fila)
+    const duracion = (horaInicioSel !== null && horaFinSel !== null) ? (horaFinSel - horaInicioSel) : 1;
+
     const dias = ["LUNES","MARTES","MIERCOLES","JUEVES","VIERNES","SABADO"];
     const horas = Array.from({ length: 16 }, (_, i) => i + 6);
     tbody.innerHTML = "";
@@ -24,21 +32,58 @@ async function cargarTrimestralizacion() {
       fila.innerHTML = `<td class="border border-gray-700 p-2 font-medium">${hora}-${hora+1}</td>`;
 
       dias.forEach(dia => {
-        const reg = data.find(r => 
-          r.dia?.toUpperCase() === dia && 
-          parseInt(r.hora_inicio.split(":")[0]) === hora
-        );
+        // Filtrar registros: mismo día Y que su bloque horario se solape con la fila y (si hay selección) con el rango seleccionado
+        const registros = data.filter(r => {
+          if (!r.dia) return false;
+          if (r.dia.toUpperCase() !== dia) return false;
 
-        if (reg) {
-          fila.innerHTML += `
-            <td class="border border-gray-700 p-2 text-sm text-left leading-tight">
-              <div><strong>Ficha:</strong> ${reg.numero_ficha ?? ""}</div>
-              <div><strong>Instructor:</strong> ${reg.nombre_instructor ?? ""} (${reg.tipo_instructor ?? ""})</div>
-              <div><strong>Competencia:</strong> ${reg.descripcion ?? "Sin especificar"}</div>
-            </td>`;
-        } else {
-          fila.innerHTML += `<td class="border border-gray-700 p-2">&nbsp;</td>`;
-        }
+          // parsear horas del registro (fall back si no existe hora_fin)
+          const rStart = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
+          const rEnd = r.hora_fin ? parseInt(r.hora_fin.split(":")[0], 10) : (rStart + 1);
+
+          // Coincide si esta hora pertenece al bloque del registro
+    const dentroDelBloque = hora >= rStart && hora < rEnd;
+
+    // Y además, si el usuario seleccionó un rango, que esté dentro de ese rango
+    const dentroDeSeleccion = (
+      (horaInicioSel === null || hora >= horaInicioSel) &&
+      (horaFinSel === null || hora < horaFinSel)
+    );
+
+    return dentroDelBloque && dentroDeSeleccion;
+  });
+        if (registros.length > 0) {
+        let contenido = "";
+
+        registros.forEach(r => {
+          const rStart = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
+          const rEnd = r.hora_fin ? parseInt(r.hora_fin.split(":")[0], 10) : rStart + 1;
+
+          // Si la hora actual es la de inicio del bloque, mostramos todo el detalle
+          if (hora === rStart) {
+            contenido += `
+              <div class="mb-1 border-gray-200 pb-1">
+                <div><strong>Ficha:</strong> ${r.numero_ficha ?? ""}</div>
+                <div><strong>Instructor:</strong> ${r.nombre_instructor ?? ""} (${r.tipo_instructor ?? ""})</div>
+                <div><strong>Competencia:</strong> ${r.descripcion ?? "Sin especificar"}</div>
+              </div>`;
+          } 
+          // Si es una hora dentro del bloque (no inicial), solo el nombre
+          else if (hora > rStart && hora < rEnd) {
+            contenido += `
+              <div class="mb-1  border-gray-200 pb-1 ">
+                <strong>Instructor:</strong> ${r.nombre_instructor ?? ""}
+              </div>`;
+          }
+        });
+
+        fila.innerHTML += `
+          <td class="border border-gray-700 p-2 text-sm text-left leading-tight">
+            ${contenido}
+          </td>`;
+      } else {
+        fila.innerHTML += `<td class="border border-gray-700 p-2 text-center text-gray-500 italic"></td>`;
+      }
       });
 
       tbody.appendChild(fila);
@@ -201,7 +246,7 @@ function guardarCambios() {
 }
 
 // =======================
-// CANCELAR EDICIÓN
+// CANCELAR EDICIÓNZZZZZZ
 // =======================
 function cancelarEdicion() {
   if (!confirm("¿Deseas cancelar los cambios realizados?")) return;

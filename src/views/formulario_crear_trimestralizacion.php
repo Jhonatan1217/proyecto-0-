@@ -139,36 +139,6 @@
         </select>
     </div>
 
-    <!-- Selector de color para identificar instructor/horario -->
-    <select name="color_instructor" required
-        class="select-chev w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
-        <option value="">Seleccione el color</option>
-        <option value="#001F3F">Azul marino</option>
-        <option value="#DC143C">Rojo carmesí</option>
-        <option value="#50C878">Verde esmeralda</option>
-        <option value="#FFDB58">Amarillo mostaza</option>
-        <option value="#CC5500">Naranja quemado</option>
-        <option value="#8A2BE2">Violeta</option>
-        <option value="#40E0D0">Turquesa</option>
-        <option value="#FF00FF">Rosa fucsia</option>
-        <option value="#D9DDDC">Gris perla</option>
-        <option value="#7B3F00">Marrón chocolate</option>
-        <option value="#F5F5DC">Beige arena</option>
-        <option value="#808000">Verde oliva</option>
-        <option value="#87CEEB">Azul celeste</option>
-        <option value="#2E2E2E">Negro carbón</option>
-        <option value="#FFFFF0">Blanco marfil</option>
-        <option value="#722F37">Rojo vino</option>
-        <option value="#003B46">Azul petróleo</option>
-        <option value="#98FF98">Verde menta</option>
-        <option value="#FFF44F">Amarillo limón</option>
-        <option value="#C8A2C8">Lila</option>
-        <option value="#FFD700">Dorado</option>
-        <option value="#C0C0C0">Plateado</option>
-        <option value="#FF7F50">Coral</option>
-        <option value="#00FFFF">Cian</option>
-        <option value="#FF00A8">Magenta</option>
-      </select>
 
       <!-- Campo de texto largo para escribir la competencia -->
       <textarea name="competencia" rows="4" placeholder="Diligencie la competencia aquí" required
