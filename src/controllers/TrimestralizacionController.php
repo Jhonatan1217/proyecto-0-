@@ -256,6 +256,7 @@ switch ($accion) {
                         UPDATE instructores i
                         INNER JOIN horarios h ON i.id_instructor = h.id_instructor
                         SET i.nombre_instructor = :nombre_instructor,
+                            i.tipo_instructor = :tipo_instructor
                         WHERE h.id_horario = :id_horario
                     ");
                     $stmtInst->execute([
