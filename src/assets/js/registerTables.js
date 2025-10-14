@@ -5,6 +5,7 @@
 // --- Obtener id_zona actual desde la URL ---
 const urlParams = new URLSearchParams(window.location.search);
 const id_zona = urlParams.get("id_zona");
+
 // =======================
 // CARGAR DATOS
 // =======================
@@ -71,11 +72,11 @@ async function cargarTrimestralizacion() {
                   <div><strong>Competencia:</strong> <span class="competencia">${r.descripcion ?? "Sin especificar"}</span></div>
                 </div>`;
             } else if (hora > rStart && hora < rEnd) {
-              contenido += `
-                <div class="registro border-gray-200 pb-1 mb-1" data-id="${r.id_horario || ""}">
-                  <strong>Instructor:</strong> <span class="instructor">${r.nombre_instructor ?? ""}</span>
-                </div>`;
-            }
+            contenido += `
+              <div class="mb-1  border-gray-200 pb-1 ">
+                <strong>Instructor:</strong> ${r.nombre_instructor ?? ""}(${r.tipo_instructor ?? ""})
+              </div>`;
+          }
           });
         }
 
@@ -93,9 +94,8 @@ async function cargarTrimestralizacion() {
   }
 }
 
-
 // =======================
-// ACTIVAR MODO EDICIÓN (CORREGIDO)
+// ACTIVAR MODO EDICIÓN (CORREGIDO Y FUNCIONAL)
 // =======================
 function activarEdicion() {
   const registros = document.querySelectorAll("#tbody-horarios .registro");
@@ -106,6 +106,9 @@ function activarEdicion() {
     const tipo_instructor = reg.querySelector(".tipo_instructor")?.textContent.trim() || "";
     const competencia = reg.querySelector(".competencia")?.textContent.trim() || "";
 
+    // Guardar tipo de instructor como atributo para no perderlo
+    reg.setAttribute("data-tipo", tipo_instructor);
+
     reg.innerHTML = `
       <input type="text" value="${ficha}" placeholder="Número de ficha"
         class="block w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm">
@@ -113,9 +116,9 @@ function activarEdicion() {
       <input type="text" value="${nombre_instructor}" placeholder="Nombre instructor"
         class="block w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm">
 
-      <input type="text" value="${tipo_instructor}" placeholder="Tipo instructor"
-        readonly
-        class="block w-full mb-1 px-2 py-1 border border-gray-300 rounded text-sm bg-gray-100 text-gray-600 cursor-not-allowed">
+      <div class="block w-full mb-1 px-2 py-1 border border-gray-300 rounded text-sm bg-gray-100 text-gray-600 cursor-not-allowed">
+        <strong>Tipo:</strong> ${tipo_instructor}
+      </div>
 
       <textarea placeholder="Competencia / Observaciones"
         class="w-full px-2 py-1 border border-gray-400 rounded text-sm resize-none">${competencia}</textarea>
@@ -150,16 +153,16 @@ function mostrarBotonesEdicion() {
 }
 
 // =======================
-// GUARDAR CAMBIOS EN BD
+// GUARDAR CAMBIOS EN BD (FUNCIONAL Y MANTIENE TIPO)
 // =======================
 async function guardarCambios() {
   const filas = [];
   const registros = document.querySelectorAll("#tbody-horarios .registro");
 
-  const ficha = reg.querySelector("input[placeholder='Número de ficha']")?.value.trim() || "";
+  registros.forEach((reg) => {
+    const ficha = reg.querySelector("input[placeholder='Número de ficha']")?.value.trim() || "";
     const nombre_instructor = reg.querySelector("input[placeholder='Nombre instructor']")?.value.trim() || "";
-    const tipo_instructor = reg.querySelector(".tipo_instructor")?.textContent.trim() ||
-                            reg.querySelector("input[placeholder='Tipo instructor']")?.value.trim() || "";
+    const tipo_instructor = reg.getAttribute("data-tipo") || "";
     const descripcion = reg.querySelector("textarea")?.value.trim() || "";
 
     filas.push({
@@ -169,16 +172,14 @@ async function guardarCambios() {
       tipo_instructor,
       descripcion
     });
+  });
 
   try {
-    const res = await fetch(
-      `${BASE_URL}src/controllers/trimestralizacionController.php?accion=actualizar&id_zona=${id_zona}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(filas),
-      }
-    );
+    const res = await fetch(`${BASE_URL}src/controllers/trimestralizacionController.php?accion=actualizar&id_zona=${id_zona}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(filas),
+    });
 
     const data = await res.json();
 
@@ -188,7 +189,7 @@ async function guardarCambios() {
       document.getElementById("botones-principales").style.display = "flex";
       cargarTrimestralizacion();
     } else {
-      alert("⚠ Error al guardar: " + (data.error || "Desconocido"));
+      alert("⚠️ Error al guardar: " + (data.error || "Desconocido"));
     }
   } catch (err) {
     console.error("❌ Error al actualizar:", err);
@@ -196,9 +197,8 @@ async function guardarCambios() {
   }
 }
 
-
 // =======================
-// CANCELAR EDICIÓNZZZZZZ
+// CANCELAR EDICIÓN
 // =======================
 function cancelarEdicion() {
   if (!confirm("¿Deseas cancelar los cambios realizados?")) return;
