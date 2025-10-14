@@ -21,8 +21,6 @@ async function cargarTrimestralizacion() {
   try {
     const res = await fetch(`${BASE_URL}src/controllers/trimestralizacionController.php?accion=listar&id_zona=${id_zona}`);
     const data = await res.json();
-
-    // 🔹 Limpiar por completo el tbody ANTES de agregar nuevas filas
     tbody.innerHTML = "";
 
     if (!Array.isArray(data) || data.length === 0) {
@@ -30,7 +28,6 @@ async function cargarTrimestralizacion() {
       return;
     }
 
-    // 🔹 Detectar rangos de hora seleccionados
     const selInicio = document.querySelector("select[name='hora_inicio']");
     const selFin = document.querySelector("select[name='hora_fin']");
     const horaInicioSel = selInicio?.value ? parseInt(selInicio.value.split(":")[0], 10) : null;
@@ -39,14 +36,12 @@ async function cargarTrimestralizacion() {
     const dias = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"];
     const horas = Array.from({ length: 16 }, (_, i) => i + 6);
 
-    // 🔹 Generar la tabla fila por fila
     horas.forEach((hora, idx) => {
       const fila = document.createElement("tr");
       fila.className = idx % 2 === 0 ? "bg-gray-50" : "bg-white";
       fila.innerHTML = `<td class="border border-gray-700 p-2 font-medium">${hora}:00-${hora + 1}:00</td>`;
 
       dias.forEach((dia) => {
-        // Filtrar registros que coincidan con el día y rango de horas
         const registros = data.filter((r) => {
           if (!r.dia || r.dia.toUpperCase() !== dia) return false;
 
@@ -70,14 +65,16 @@ async function cargarTrimestralizacion() {
             if (hora === rStart) {
               contenido += `
                 <div class="registro border-gray-300 pb-1 mb-1" data-id="${r.id_horario || ""}">
-                  <div><strong>Ficha:</strong> ${r.numero_ficha ?? ""}</div>
-                  <div><strong>Instructor:</strong> ${r.nombre_instructor ?? ""} (${r.tipo_instructor ?? ""})</div>
-                  <div><strong>Competencia:</strong> ${r.descripcion ?? "Sin especificar"}</div>
+                  <div><strong>Ficha:</strong> <span class="ficha">${r.numero_ficha ?? ""}</span></div>
+                  <div><strong>Instructor:</strong> <span class="instructor">${r.nombre_instructor ?? ""}</span> 
+                    (<span class="tipo_instructor">${r.tipo_instructor ?? ""}</span>)
+                  </div>
+                  <div><strong>Competencia:</strong> <span class="competencia">${r.descripcion ?? "Sin especificar"}</span></div>
                 </div>`;
             } else if (hora > rStart && hora < rEnd) {
               contenido += `
-                <div class="registro  border-gray-200 pb-1 mb-1" data-id="${r.id_horario || ""}">
-                  <strong>Instructor:</strong> ${r.nombre_instructor ?? ""}
+                <div class="registro border-gray-200 pb-1 mb-1" data-id="${r.id_horario || ""}">
+                  <strong>Instructor:</strong> <span class="instructor">${r.nombre_instructor ?? ""}</span>
                 </div>`;
             }
           });
@@ -97,17 +94,18 @@ async function cargarTrimestralizacion() {
   }
 }
 
+
 // =======================
-// ACTIVAR MODO EDICIÓN
+// ACTIVAR MODO EDICIÓN (CORREGIDO)
 // =======================
 function activarEdicion() {
   const registros = document.querySelectorAll("#tbody-horarios .registro");
 
   registros.forEach((reg) => {
-    const ficha = reg.querySelector(".ficha")?.innerText || "";
-    const nombre_instructor = reg.querySelector(".instructor")?.innerText || "";
-    const tipo_instructor = reg.querySelector(".tipo_instructor")?.innerText || "";
-    const competencia = reg.querySelector(".competencia")?.innerText || "";
+    const ficha = reg.querySelector(".ficha")?.textContent.trim() || "";
+    const nombre_instructor = reg.querySelector(".instructor")?.textContent.trim() || "";
+    const tipo_instructor = reg.querySelector(".tipo_instructor")?.textContent.trim() || "";
+    const competencia = reg.querySelector(".competencia")?.textContent.trim() || "";
 
     reg.innerHTML = `
       <input type="text" value="${ficha}" placeholder="Número de ficha"
@@ -128,6 +126,7 @@ function activarEdicion() {
   document.getElementById("botones-principales").style.display = "none";
   mostrarBotonesEdicion();
 }
+
 
 // =======================
 // BOTONES DE EDICIÓN
