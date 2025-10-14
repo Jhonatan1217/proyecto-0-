@@ -131,7 +131,6 @@ class Horario {
             // En caso de error, devuelve el mensaje de error
             return ['error' => $e->getMessage()];
         }
-        //quitar este comentario
     }
 }
 ?>

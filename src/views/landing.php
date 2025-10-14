@@ -184,6 +184,5 @@
     <!-- Script del menú desplegable + modal -->
     <script src="<?= BASE_URL ?>src/assets/js/landing.js"></script>
     <script src="<?= BASE_URL ?>src/assets/js/formulario_trimestralizacion.js"></script>
-
   </body>
 </html>

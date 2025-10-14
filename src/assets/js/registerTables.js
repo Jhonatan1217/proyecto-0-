@@ -1,16 +1,29 @@
+// ===============================
+// REGISTER TABLES - FUNCIONAL 2025 (EDICIÓN Y ELIMINACIÓN COMPLETAS)
+// ===============================
+
+// --- Obtener id_zona actual desde la URL ---
+const urlParams = new URLSearchParams(window.location.search);
+const id_zona = urlParams.get("id_zona");
+
 // =======================
-// CARGAR DATOS COMO TEXTO
+// CARGAR DATOS
 // =======================
 async function cargarTrimestralizacion() {
   const tbody = document.getElementById("tbody-horarios");
   tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500">Cargando datos...</td></tr>`;
 
+  if (!id_zona) {
+    tbody.innerHTML = `<tr><td colspan="7" class="text-red-600 p-4">⚠️ No se especificó la zona.</td></tr>`;
+    return;
+  }
+
   try {
-    const res = await fetch(`${BASE_URL}src/controllers/trimestralizacionController.php?accion=listar`);
+    const res = await fetch(`${BASE_URL}src/controllers/trimestralizacionController.php?accion=listar&id_zona=${id_zona}`);
     const data = await res.json();
 
-    if (!Array.isArray(data)) {
-      tbody.innerHTML = `<tr><td colspan="7" class="text-red-600 p-4">Error al cargar la información.</td></tr>`;
+    if (!Array.isArray(data) || data.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="text-gray-500 p-4">No hay registros para esta zona.</td></tr>`;
       return;
     }
 
@@ -29,7 +42,7 @@ async function cargarTrimestralizacion() {
     horas.forEach((hora, idx) => {
       const fila = document.createElement("tr");
       fila.className = idx % 2 === 0 ? "bg-gray-50" : "bg-white";
-      fila.innerHTML = `<td class="border border-gray-700 p-2 font-medium">${hora}-${hora+1}</td>`;
+      fila.innerHTML = `<td class="border border-gray-700 p-2 font-medium">${hora}:00-${hora + 1}:00</td>`;
 
       dias.forEach(dia => {
         // Filtrar registros: mismo día Y que su bloque horario se solape con la fila y (si hay selección) con el rango seleccionado
@@ -89,115 +102,45 @@ async function cargarTrimestralizacion() {
       tbody.appendChild(fila);
     });
   } catch (error) {
-    console.error(error);
+    console.error("Error al cargar:", error);
     tbody.innerHTML = `<tr><td colspan="7" class="text-red-600 p-4">Error al conectar con el servidor.</td></tr>`;
   }
 }
 
 // =======================
-// MODO EDICIÓN (CONVERTIR DIVS A TEXTAREAS)
+// ACTIVAR MODO EDICIÓN
 // =======================
 function activarEdicion() {
-  const celdas = document.querySelectorAll("#tbody-horarios td:not(:first-child)");
-  celdas.forEach(celda => {
-    if (celda.innerHTML.trim() === "&nbsp;" || celda.innerHTML.trim() === "") return;
+  const registros = document.querySelectorAll("#tbody-horarios .registro");
 
-    const contenido = celda.innerText.trim();
-    const textarea = document.createElement("textarea");
-    textarea.value = contenido;
-    textarea.className = "w-full p-1 border border-gray-300 rounded bg-white resize-none";
-    celda.innerHTML = "";
-    celda.appendChild(textarea);
-  });
+  registros.forEach((reg) => {
+    const ficha = reg.querySelector(".ficha")?.innerText || "";
+    const nombre_instructor = reg.querySelector(".instructor")?.innerText || "";
+    const tipo_instructor = reg.querySelector(".tipo_instructor")?.innerText || "";
+    const competencia = reg.querySelector(".competencia")?.innerText || "";
 
-  document.getElementById("botones-principales").style.display = "none";
-  mostrarBotonesEdicion();
-}
-
-// =======================
-// BOTONES EDICIÓN
-// =======================
-function mostrarBotonesEdicion() {
-  const div = document.createElement("div");
-  div.id = "botones-edicion";
-  div.className = "mt-4 flex justify-center gap-4";
-
-  const guardar = document.createElement("button");
-  guardar.textContent = "Guardar cambios";
-  guardar.className = "bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition";
-  guardar.onclick = guardarCambios;
-
-  const cancelar = document.createElement("button");
-  cancelar.textContent = "Cancelar edición";
-  cancelar.className = "bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition";
-  cancelar.onclick = cancelarEdicion;
-
-  div.appendChild(guardar);
-  div.appendChild(cancelar);
-  document.querySelector("main").appendChild(div);
-}
-
-// =======================
-// GUARDAR Y CANCELAR
-// =======================
-function guardarCambios() {
-  const textareas = document.querySelectorAll("#tbody-horarios textarea");
-  textareas.forEach(ta => {
-    const valor = ta.value.trim();
-    const div = document.createElement("div");
-    div.textContent = valor;
-    ta.parentElement.innerHTML = div.outerHTML;
-  });
-
-  document.getElementById("botones-edicion").remove();
-  document.getElementById("botones-principales").style.display = "flex";
-  alert("Cambios guardados (por ahora solo visualmente).");
-}
-
-function cancelarEdicion() {
-  if (!confirm("¿Deseas cancelar los cambios realizados?")) return;
-  cargarTrimestralizacion();
-  document.getElementById("botones-edicion").remove();
-  document.getElementById("botones-principales").style.display = "flex";
-}
-
-// =======================
-// ACTUALIZAR (MODO EDICIÓN CON 3 INPUTS)
-// =======================
-function activarEdicion() {
-  const celdas = document.querySelectorAll("#tbody-horarios td:not(:first-child)");
-
-  celdas.forEach(celda => {
-    // Si la celda está vacía, no crear inputs
-    if (celda.innerHTML.trim() === "&nbsp;" || celda.innerHTML.trim() === "") return;
-
-    // Extraer los textos actuales
-    const fichaMatch = celda.innerHTML.match(/Ficha:<\/strong>\s*([^<]*)/);
-    const instructorMatch = celda.innerHTML.match(/Instructor:<\/strong>\s*([^<]*)/);
-    const competenciaMatch = celda.innerHTML.match(/Competencia:<\/strong>\s*([^<]*)/);
-
-    const ficha = fichaMatch ? fichaMatch[1].trim() : "";
-    const instructor = instructorMatch ? instructorMatch[1].trim() : "";
-    const competencia = competenciaMatch ? competenciaMatch[1].trim() : "";
-
-    // Crear inputs
-    celda.innerHTML = `
-      <input type="text" value="${ficha}" placeholder="Ficha"
+    reg.innerHTML = `
+      <input type="text" value="${ficha}" placeholder="Número de ficha"
         class="block w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm">
-      <input type="text" value="${instructor}" placeholder="Instructor"
+
+      <input type="text" value="${nombre_instructor}" placeholder="Nombre instructor"
         class="block w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm">
+
+      <input type="text" value="${tipo_instructor}" placeholder="Tipo instructor"
+        readonly
+        class="block w-full mb-1 px-2 py-1 border border-gray-300 rounded text-sm bg-gray-100 text-gray-600 cursor-not-allowed">
+
       <textarea placeholder="Competencia / Observaciones"
         class="w-full px-2 py-1 border border-gray-400 rounded text-sm resize-none">${competencia}</textarea>
     `;
   });
 
-  // Ocultar botones principales y mostrar los de edición
   document.getElementById("botones-principales").style.display = "none";
   mostrarBotonesEdicion();
 }
 
 // =======================
-// BOTONES EDICIÓN
+// BOTONES DE EDICIÓN
 // =======================
 function mostrarBotonesEdicion() {
   const div = document.createElement("div");
@@ -220,29 +163,46 @@ function mostrarBotonesEdicion() {
 }
 
 // =======================
-// GUARDAR CAMBIOS (volver a texto)
+// GUARDAR CAMBIOS EN BD
 // =======================
-function guardarCambios() {
-  const celdas = document.querySelectorAll("#tbody-horarios td:not(:first-child)");
+async function guardarCambios() {
+  const filas = [];
+  const registros = document.querySelectorAll("#tbody-horarios .registro");
 
-  celdas.forEach(celda => {
-    const inputs = celda.querySelectorAll("input, textarea");
+  registros.forEach((reg) => {
+    const inputs = reg.querySelectorAll("input, textarea");
     if (!inputs.length) return;
 
-    const ficha = inputs[0].value.trim();
-    const instructor = inputs[1].value.trim();
-    const competencia = inputs[2].value.trim();
-
-    celda.innerHTML = `
-      <div><strong>Ficha:</strong> ${ficha}</div>
-      <div><strong>Instructor:</strong> ${instructor}</div>
-      <div><strong>Competencia:</strong> ${competencia}</div>
-    `;
+    filas.push({
+      id_horario: reg.getAttribute("data-id"),
+      numero_ficha: inputs[0].value.trim(),
+      nombre_instructor: inputs[1].value.trim(),
+      tipo_instructor: inputs[2].value.trim(),
+      descripcion: inputs[3].value.trim(),
+    });
   });
 
-  document.getElementById("botones-edicion").remove();
-  document.getElementById("botones-principales").style.display = "flex";
-  alert("Cambios guardados visualmente (aún no conectados a la base de datos).");
+  try {
+    const res = await fetch(`${BASE_URL}src/controllers/trimestralizacionController.php?accion=actualizar&id_zona=${id_zona}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(filas),
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      alert("✅ Cambios guardados correctamente.");
+      document.getElementById("botones-edicion").remove();
+      document.getElementById("botones-principales").style.display = "flex";
+      cargarTrimestralizacion();
+    } else {
+      alert("⚠️ Error al guardar: " + (data.error || "Desconocido"));
+    }
+  } catch (err) {
+    console.error("❌ Error al actualizar:", err);
+    alert("No se pudo guardar los cambios.");
+  }
 }
 
 // =======================
@@ -250,13 +210,13 @@ function guardarCambios() {
 // =======================
 function cancelarEdicion() {
   if (!confirm("¿Deseas cancelar los cambios realizados?")) return;
-  cargarTrimestralizacion();
   document.getElementById("botones-edicion").remove();
   document.getElementById("botones-principales").style.display = "flex";
+  cargarTrimestralizacion();
 }
 
 // =======================
-// MODAL ELIMINAR
+// ELIMINAR TODO
 // =======================
 function mostrarModalEliminar() {
   document.getElementById("modalEliminar").classList.remove("hidden");
@@ -266,9 +226,9 @@ function cerrarModal() {
 }
 async function confirmarEliminar() {
   try {
-    const res = await fetch(`${BASE_URL}src/controllers/trimestralizacionController.php?accion=eliminar`);
+    const res = await fetch(`${BASE_URL}src/controllers/trimestralizacionController.php?accion=eliminar&id_zona=${id_zona}`);
     const data = await res.json();
-    alert(data.mensaje || "Trimestralización eliminada correctamente.");
+    alert(data.message || data.mensaje || "Trimestralización eliminada correctamente.");
     cargarTrimestralizacion();
   } catch {
     alert("Error al eliminar.");
@@ -278,10 +238,100 @@ async function confirmarEliminar() {
 }
 
 // =======================
-// DESCARGAR PDF
+// DESCARGAR PDF (Encabezado + Títulos + Thead visible arriba)
 // =======================
-function descargarPDF() {
-  alert("Función de descarga en desarrollo.");
+async function descargarPDF() {
+  const { jsPDF } = window.jspdf;
+
+  // 🔹 Elementos base
+  const main = document.querySelector("main");
+
+  // 🔹 Crear contenedor temporal
+  const contenedor = document.createElement("div");
+  contenedor.style.backgroundColor = "white";
+  contenedor.style.padding = "20px";
+  contenedor.style.width = "100%";
+  contenedor.style.position = "fixed";
+  contenedor.style.top = "-99999px";
+  contenedor.style.left = "0";
+  contenedor.style.zIndex = "0";
+  contenedor.style.opacity = "1";
+  contenedor.style.pointerEvents = "none";
+  contenedor.style.display = "flex";
+  contenedor.style.flexDirection = "column";
+  document.body.appendChild(contenedor);
+
+  // 🔹 Crear encabezado superior con títulos personalizados
+  const encabezadoTop = document.createElement("div");
+  encabezadoTop.style.textAlign = "center";
+  encabezadoTop.style.marginBottom = "20px";
+  encabezadoTop.innerHTML = `
+    <h1 style="font-size:22px; font-weight:bold; color:#111;">
+      VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA ${id_zona || ""}
+    </h1>
+    <h2 style="font-size:16px; color:#333;">
+      Sistema de gestión de trimestralización<br>SENA
+    </h2>
+  `;
+  contenedor.appendChild(encabezadoTop);
+
+  // 🔹 Clonar tabla principal
+  const tablaOriginal = document.querySelector("#tabla-horarios");
+  if (tablaOriginal) {
+    const tablaClone = tablaOriginal.cloneNode(true);
+
+    // 🟢 Asegurar que el THEAD (verde) se vea siempre
+    const thead = tablaClone.querySelector("thead");
+    if (thead) {
+      thead.style.position = "relative";
+      thead.style.top = "0";
+      thead.style.backgroundColor = "#16a34a"; // verde SENA
+      thead.style.color = "white";
+      thead.style.zIndex = "10";
+    }
+
+    tablaClone.style.width = "100%";
+    tablaClone.style.borderCollapse = "collapse";
+    tablaClone.style.maxHeight = "none";
+    tablaClone.style.overflow = "visible";
+    tablaClone.style.height = "auto";
+
+    contenedor.appendChild(tablaClone);
+  }
+
+  // 🔹 Esperar render
+  await new Promise((resolve) => setTimeout(resolve, 400));
+
+  // 🔹 Capturar el contenedor entero
+  const canvas = await html2canvas(contenedor, {
+    scale: 2,
+    useCORS: true,
+    scrollY: 0,
+    windowWidth: document.body.scrollWidth,
+    windowHeight: contenedor.scrollHeight,
+  });
+
+  // 🔹 Crear PDF
+  const pdf = new jsPDF({
+    orientation: "landscape",
+    unit: "mm",
+    format: "a4",
+  });
+
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const imgWidth = pageWidth;
+  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+  let y = 0;
+  while (y < imgHeight) {
+    if (y > 0) pdf.addPage();
+    pdf.addImage(canvas, "PNG", 0, -y, imgWidth, imgHeight);
+    y += pageHeight;
+  }
+
+  pdf.save(`trimestralizacion_zona_${id_zona || "sin_id"}.pdf`);
+  contenedor.remove();
 }
 
 // =======================
@@ -289,5 +339,5 @@ function descargarPDF() {
 // =======================
 document.addEventListener("DOMContentLoaded", () => {
   cargarTrimestralizacion();
-  document.getElementById("btn-actualizar").addEventListener("click", activarEdicion);
+  document.getElementById("btn-actualizar")?.addEventListener("click", activarEdicion);
 });
