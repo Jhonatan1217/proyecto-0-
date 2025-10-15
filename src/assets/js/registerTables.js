@@ -63,19 +63,25 @@ async function cargarTrimestralizacion() {
             const rEnd = r.hora_fin ? parseInt(r.hora_fin.split(":")[0], 10) : rStart + 1;
 
             if (hora === rStart) {
-              contenido += `
-                <div class="registro border-gray-300 pb-1 mb-1" data-id="${r.id_horario || ""}">
-                  <div><strong>Ficha:</strong> <span class="ficha">${r.numero_ficha ?? ""} (${r.nivel_ficha})</span></div>
-                  <div><strong>Instructor:</strong> <span class="instructor">${r.nombre_instructor ?? ""}</span> 
-                    (<span class="tipo_instructor">${r.tipo_instructor ?? ""}</span>)
-                  </div>
-                  <div><strong>Competencia:</strong> <span class="competencia">${r.descripcion ?? "Sin especificar"}</span></div>
-                </div>`;
+            contenido += `
+              <div class="registro border-gray-300 pb-1 mb-1" data-id="${r.id_horario || ""}">
+                <div><strong>Ficha:</strong> <span class="ficha">${r.numero_ficha ?? ""}</span>
+                  (<span class="nivel_ficha">${(r.nivel_ficha ?? "").toUpperCase()}</span>)
+                </div>
+                <div><strong>Instructor:</strong> <span class="instructor">${r.nombre_instructor ?? ""}</span> 
+                  (<span class="tipo_instructor">${r.tipo_instructor ?? ""}</span>)
+                </div>
+                <div><strong>Competencia:</strong> <span class="competencia">${r.descripcion ?? "Sin especificar"}</span></div>
+              </div>`;
             } else if (hora > rStart && hora < rEnd) {
             contenido += `
               <div class="mb-1  border-gray-200 pb-1 ">
+                <strong>Instructor:</strong> ${r.numero_ficha ?? ""}(${r.nivel_ficha ?? ""})
+              </div>
+              <div class="mb-1  border-gray-200 pb-1 ">
                 <strong>Instructor:</strong> ${r.nombre_instructor ?? ""}(${r.tipo_instructor ?? ""})
               </div>`;
+            
           }
           });
         }
@@ -95,7 +101,7 @@ async function cargarTrimestralizacion() {
 }
 
 // =======================
-// ACTIVAR MODO EDICIÓN (CORREGIDO Y FUNCIONAL)
+// ACTIVAR MODO EDICIÓN 
 // =======================
 function activarEdicion() {
   const registros = document.querySelectorAll("#tbody-horarios .registro");
@@ -105,9 +111,11 @@ function activarEdicion() {
     const nombre_instructor = reg.querySelector(".instructor")?.textContent.trim() || "";
     const tipo_instructor = reg.querySelector(".tipo_instructor")?.textContent.trim() || "";
     const competencia = reg.querySelector(".competencia")?.textContent.trim() || "";
+    const nivel_ficha = reg.querySelector(".nivel_ficha")?.textContent.trim() || "";
 
-    // Guardar tipo de instructor como atributo para no perderlo
+    // Guardar tipo de instructor y nivel_ficha como atributo para no perderlos
     reg.setAttribute("data-tipo", tipo_instructor);
+    reg.setAttribute("data-nivel", nivel_ficha);  
 
     reg.innerHTML = `
       <input type="text" value="${ficha}" placeholder="Número de ficha"
@@ -120,6 +128,11 @@ function activarEdicion() {
         <strong>Tipo:</strong> ${tipo_instructor}
       </div>
 
+      <!-- Cambio: Campo de nivel de ficha, ahora solo visualización -->
+      <div class="block w-full mb-1 px-2 py-1 border border-gray-300 rounded text-sm bg-gray-100 text-gray-600 cursor-not-allowed">
+        <strong>Nivel Ficha:</strong> ${nivel_ficha}
+      </div>
+
       <textarea placeholder="Competencia / Observaciones"
         class="w-full px-2 py-1 border border-gray-400 rounded text-sm resize-none">${competencia}</textarea>
     `;
@@ -128,6 +141,7 @@ function activarEdicion() {
   document.getElementById("botones-principales").style.display = "none";
   mostrarBotonesEdicion();
 }
+
 
 // =======================
 // BOTONES DE EDICIÓN
@@ -163,6 +177,7 @@ async function guardarCambios() {
     const ficha = reg.querySelector("input[placeholder='Número de ficha']")?.value.trim() || "";
     const nombre_instructor = reg.querySelector("input[placeholder='Nombre instructor']")?.value.trim() || "";
     const tipo_instructor = reg.getAttribute("data-tipo") || "";
+    const nivel_ficha = reg.getAttribute("data-nivel") || "";
     const descripcion = reg.querySelector("textarea")?.value.trim() || "";
 
     filas.push({
@@ -170,6 +185,7 @@ async function guardarCambios() {
       numero_ficha: ficha,
       nombre_instructor,
       tipo_instructor,
+      nivel_ficha,
       descripcion
     });
   });
@@ -227,7 +243,6 @@ async function guardarCambios() {
     });
   }
 }
-
 
 // =======================
 // CANCELAR EDICIÓN
