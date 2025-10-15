@@ -2,7 +2,7 @@
 $host = 'localhost';
 $dbname = 'proyecto_0';
 $user = 'root';
-$pass = '';
+$pass = ''; //contraseña de la base de datos (Es la de tu base de datos)
 
 try {
     $conn = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $pass);
