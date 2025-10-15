@@ -75,9 +75,7 @@ async function cargarTrimestralizacion() {
               </div>`;
             } else if (hora > rStart && hora < rEnd) {
             contenido += `
-              <div class="mb-1  border-gray-200 pb-1 ">
-                <strong>Instructor:</strong> ${r.numero_ficha ?? ""}(${r.nivel_ficha ?? ""})
-              </div>
+              
               <div class="mb-1  border-gray-200 pb-1 ">
                 <strong>Instructor:</strong> ${r.nombre_instructor ?? ""}(${r.tipo_instructor ?? ""})
               </div>`;
