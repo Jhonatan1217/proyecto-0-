@@ -153,7 +153,7 @@ function mostrarBotonesEdicion() {
 }
 
 // =======================
-// GUARDAR CAMBIOS EN BD (FUNCIONAL Y MANTIENE TIPO)
+// GUARDAR CAMBIOS EN BD (FUNCIONAL CON TOAST SWEETALERT)
 // =======================
 async function guardarCambios() {
   const filas = [];
@@ -184,27 +184,92 @@ async function guardarCambios() {
     const data = await res.json();
 
     if (data.success) {
-      alert("✅ Cambios guardados correctamente.");
+      Swal.fire({
+        toast: true,
+        icon: "success",
+        title: "Cambios guardados correctamente",
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 2500,
+        timerProgressBar: true,
+        background: "#fff",
+        color: "#000"
+      });
+
       document.getElementById("botones-edicion").remove();
       document.getElementById("botones-principales").style.display = "flex";
       cargarTrimestralizacion();
     } else {
-      alert("⚠️ Error al guardar: " + (data.error || "Desconocido"));
+      Swal.fire({
+        toast: true,
+        icon: "error",
+        title: "Error al guardar: " + (data.error || "Desconocido"),
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 2500,
+        timerProgressBar: true,
+        background: "#fff",
+        color: "#000"
+      });
     }
   } catch (err) {
-    console.error("❌ Error al actualizar:", err);
-    alert("No se pudo guardar los cambios.");
+    console.error("Error al actualizar:", err);
+    Swal.fire({
+      toast: true,
+      icon: "error",
+      title: "No se pudo guardar los cambios",
+      position: "top-end",
+      showConfirmButton: false,
+      timer: 2500,
+      timerProgressBar: true,
+      background: "#fff",
+      color: "#000"
+    });
   }
 }
+
 
 // =======================
 // CANCELAR EDICIÓN
 // =======================
 function cancelarEdicion() {
-  if (!confirm("¿Deseas cancelar los cambios realizados?")) return;
-  document.getElementById("botones-edicion").remove();
-  document.getElementById("botones-principales").style.display = "flex";
-  cargarTrimestralizacion();
+    Swal.fire({
+        title: '¿Deseas cancelar los cambios realizados?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, cancelar',
+        cancelButtonText: 'No, continuar',
+        reverseButtons: true,
+        customClass: {
+            confirmButton: 'bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded ml-5',
+            cancelButton: 'bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded'
+        },
+        buttonsStyling: false, 
+        background: '#f9fafb',
+        color: '#111827'  
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById("botones-edicion").remove();
+            document.getElementById("botones-principales").style.display = "flex";
+            cargarTrimestralizacion();
+
+          Swal.fire({
+            toast: true,     
+            position: 'top-end',
+            icon: 'success',
+            title: 'Edición cancelada',
+            showConfirmButton: false,
+            timer: 2500,
+            timerProgressBar: true, 
+            background: '#ffffff',    
+            color: '#000000',     
+            padding: '10px 20px',
+            customClass: {
+            popup: 'shadow-lg rounded-lg'
+    }
+});
+        }
+    });
 }
 
 // =======================
@@ -220,7 +285,18 @@ async function confirmarEliminar() {
   try {
     const res = await fetch(`${BASE_URL}src/controllers/trimestralizacionController.php?accion=eliminar&id_zona=${id_zona}`);
     const data = await res.json();
-    alert(data.message || data.mensaje || "Trimestralización eliminada correctamente.");
+    Swal.fire({
+    toast: true,            
+    position: 'top-end',         
+    icon: 'success',              
+    title: data.message || data.mensaje || "Trimestralización eliminada correctamente.",
+    showConfirmButton: false,  
+    timer: 2500,           
+    timerProgressBar: true,     
+    background: '#ffffffff',       
+    color: '#000000ff',             
+    customClass: { popup: 'shadow-lg rounded-lg px-4 py-2' }
+});
     cargarTrimestralizacion();
   } catch {
     alert("Error al eliminar.");
