@@ -68,9 +68,6 @@ async function cargarTrimestralizacion() {
                 <div><strong>Ficha:</strong> <span class="ficha">${r.numero_ficha ?? ""}</span>
                   (<span class="nivel_ficha">${(r.nivel_ficha ?? "").toUpperCase()}</span>)
                 </div>
-                <div><strong>Instructor:</strong> <span class="instructor">${r.nombre_instructor ?? ""}</span> 
-                  (<span class="tipo_instructor">${r.tipo_instructor ?? ""}</span>)
-                </div>
                 <div><strong>Competencia:</strong> <span class="competencia">${r.descripcion ?? "Sin especificar"}</span></div>
               </div>`;
             } else if (hora > rStart && hora < rEnd) {
