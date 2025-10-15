@@ -12,167 +12,34 @@
   <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- Fuente -->
-  <link href="https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
 
   <!-- Tu CSS -->
   <link rel="stylesheet" href="src/assets/css/formulario_crear_trimestralizacion.css">
 </head>
 
-<body class="flex flex-col min-h-screen font-sans text-center bg-white text-gray-900">
-  <!-- Barra superior -->
-  <header class="flex flex-col lg:flex-row lg:items-center lg:justify-between px-4 lg:px-8 xl:px-16 py-4 border-b gap-4 lg:gap-0">
-    <img src="src/assets/img/logoSena.png" alt="SENA Logo" class="h-10 lg:h-12 xl:h-14 2xl:h-16 mx-auto lg:mx-0" />
-    <nav class="flex flex-col lg:flex-row items-center gap-3 lg:gap-6 text-sm lg:text-base xl:text-lg 2xl:text-xl">
-      <a href="index.php?page=landing" class="hover:text-[#39A900] font-semibold transition-colors duration-200">Inicio</a>
+<body class="flex flex-col min-h-screen font-sans bg-white text-gray-900">
 
-      <!-- Botón que abre el modal (si tu header.js lo usa) -->
-      <a
-        href="index.php?page=formulario_crear_trimestralizacion"
-        id="btnAbrirModalHeader"
-        class="border border-gray-400 px-4 py-1.5 lg:px-6 lg:py-2 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] hover:bg-[#004A70] font-bold hover:text-white transition-colors duration-200">
-        CREAR TRIMESTRALIZACIÓN
-      </a>
-    </nav> 
+  <!-- Barra superior -->
+  <header class="flex items-center justify-between px-6 py-4 border-b shadow-sm">
+    <img src="src/assets/img/logoSena.png" alt="SENA Logo" class="h-10" />
+
+    <!-- Imagen del menú -->
+    <img src="src/assets/img/menu.svg" alt="Menú" id="menu-hamburguesa" class="h-8 w-8 cursor-pointer block" />
+    
+    <!-- Menú -->
+    <nav id="menu" class="hidden absolute top-16 right-4 bg-white shadow-lg rounded-lg border w-48 text-left">
+      <ul class="flex flex-col divide-y">
+        <li><a href="#" class="block px-4 py-2 hover:bg-gray-100">Inicio</a></li>
+        <li><a href="#" class="block px-4 py-2 hover:bg-gray-100">Trimestralización</a></li>
+        <li><a href="#" class="block px-4 py-2 hover:bg-gray-100">Zonas</a></li>
+        <li><a href="#" class="block px-4 py-2 hover:bg-gray-100">Cerrar sesión</a></li>
+      </ul>
+    </nav>
   </header>
 
-  <!-- ============== MODAL CREAR TRIMESTRALIZACIÓN ============== -->
-  <div
-    id="modalCrearHeader"
-    class="fixed inset-0 z-40 hidden"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="tituloModalCrear"
-  >
-    <!-- Backdrop -->
-    <div id="modalBackdrop" class="fixed inset-0 bg-black/40"></div>
-
-    <!-- Contenedor centrado -->
-    <div class="fixed inset-0 flex items-center justify-center p-4">
-      <div
-        id="modalCard"
-        class="bg-white w-full max-w-[420px] sm:max-w-[520px] md:max-w-[640px] lg:max-w-[720px] xl:max-w-[860px] rounded-2xl shadow-md border border-[#d8d8d8] px-4 sm:px-6 md:px-8 lg:px-10 pt-6 sm:pt-8 pb-8 sm:pb-10 mx-3 lg:mx-0"
-      >
-        <!-- Cabecera con botón cerrar -->
-        <div class="flex items-start justify-between">
-          <h2 id="tituloModalCrear" class="text-center w-full text-[1.1rem] mb-[6px] text-[#0c2443] font-semibold">
-            CREAR TRIMESTRALIZACIÓN
-          </h2>
-          <button
-            id="btnCerrarModal"
-            class="ml-3 -mt-2 text-gray-500 hover:text-gray-700"
-            aria-label="Cerrar modal"
-            title="Cerrar"
-            type="button"
-          >
-            ✕
-          </button>
-        </div>
-        <div class="border-b border-[#dcdcdc] mb-[12px]"></div>
-
-        <!-- Formulario del modal -->
-        <form
-          id="formTrimestralizacion"
-          action="<?= BASE_URL ?>src/controllers/TrimestralizacionController.php?accion=crear"
-          method="POST"
-          class="trimestralizacion-form space-y-3"
-        >
-          <!-- Selección de zona -->
-          <select name="zona" id="id_zona" 
-            class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
-            <option value="">Seleccione la zona a la que pertenece la ficha</option>
-            <option value="1">Zona 1</option>
-            <option value="2">Zona 2</option>
-            <option value="3">Zona 3</option>
-            <option value="5">Zona 5</option>
-            <option value="6">Zona 6</option>
-          </select>
-
-          <!-- Selección de nivel -->
-          <select name="nivel_ficha" 
-            class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
-            <option value="">Seleccione el nivel de la ficha</option>
-            <option value="tecnico">Técnico</option>
-            <option value="tecnologo">Tecnólogo</option>
-          </select>
-
-          <!-- Dos columnas -->
-            <div class="flex flex-minw-0 gap-3 flex-col sm:flex-row lg:flex-row">
-            <input type="text" name="numero_ficha" id="numero_ficha" placeholder="Número de la ficha" 
-              class="form-field basis-1/2 w-full h-12 px-4 pr-12 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm"/>
-            
-            <input type="text" name="nombre_instructor" id="id_instructor" placeholder="Nombre del instructor" 
-              class="form-field basis-1/2 w-full h-12 px-4 pr-12 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm"/>
-          </div>
-
-          <!-- Tipo de instructor -->
-          <select name="tipo_instructor" 
-            class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
-            <option value="">Seleccione el tipo de instructor</option>
-            <option value="TECNICO">Técnico</option>
-            <option value="TRANSVERSAL">Transversal</option>
-          </select>
-
-          <!-- Día con icono calendario -->
-          <select name="dia_semana" id="dia" 
-            class="select-chev select-cal form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
-            <option value="">Seleccione el día</option>
-            <option value="lunes">Lunes</option>
-            <option value="martes">Martes</option>
-            <option value="miercoles">Miércoles</option>
-            <option value="jueves">Jueves</option>
-            <option value="viernes">Viernes</option>
-            <option value="sabado">Sábado</option>
-          </select>
-
-          <!-- Horarios -->
-          <div class="flex flex-minw-0 gap-3 flex-col sm:flex-row lg:flex-row">
-            <select name="hora_inicio" id="hora_inicio" 
-              class="select-chev form-field basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
-              <option value="">Hora de inicio</option>
-              <?php for ($i = 6; $i <= 22; $i++): ?>
-                <option value="<?= $i ?>:00"><?= $i ?>:00</option>
-              <?php endfor; ?>
-            </select>
-
-            <select name="hora_fin" id="hora_fin" 
-              class="select-chev form-field basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
-              <option value="">Hora de fin</option>
-              <?php for ($i = 7; $i <= 22; $i++): ?>
-                <option value="<?= $i ?>:00"><?= $i ?>:00</option>
-              <?php endfor; ?>
-            </select>
-          </div>
-
-          <!-- Competencia -->
-          <textarea name="descripcion" id="descripcion" rows="4" placeholder="Diligencie la competencia aquí" 
-            class="form-field form-field--textarea w-full min-h-[90px] px-4 pr-12 py-3 text-[13px] rounded-xl border-0 outline-none bg-white resize-none shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm"></textarea>
-
-          <!-- Guardar -->
-          <button type="submit"
-            class="w-full h-12 bg-[#0b2d5b] text-white rounded-lg text-sm font-semibold hover:bg-[#082244] transition-colors">
-            GUARDAR TRIMESTRALIZACIÓN
-          </button>
-        </form>
-      </div>
-    </div>
-  </div>
-  <!-- ============== /MODAL ============== -->
-
-  <!-- Tu JS para abrir/cerrar modal (si ya lo tienes) -->
+  <!-- Script del menú -->
   <script src="src/assets/js/header.js"></script>
-  <script src="<?= BASE_URL ?>src/assets/js/formulario_trimestralizacion.js"></script>
 
-
-  <!-- Validaciones + envío por fetch + redirección -->
-  <script>
-    // Cerrar modal con la X (si usas el modal en esta misma página)
-    const btnCerrar = document.getElementById("btnCerrarModal");
-    const modal = document.getElementById("modalCrearHeader");
-    if (btnCerrar && modal) {
-      btnCerrar.addEventListener("click", () => {
-        modal.classList.add("hidden");
-      });
-    }
-  </script>
 </body>
 </html>
