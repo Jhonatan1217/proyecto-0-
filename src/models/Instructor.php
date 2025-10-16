@@ -1,12 +1,8 @@
 <?php
-// Clase Instructor para manejar operaciones CRUD sobre la tabla 'instructores'
 class Instructor {
-    // Conexión a la base de datos
     private $conn;
-    // Nombre de la tabla
     private $table = "instructores";
 
-    // Constructor que recibe la conexión a la base de datos
     public function __construct($db) {
         $this->conn = $db;
     }
@@ -21,7 +17,7 @@ class Instructor {
 
     // Obtener un instructor por su ID
     public function obtenerPorId($id) {
-        $sql = "SELECT * FROM " . $this->table . " WHERE id = :id";
+        $sql = "SELECT * FROM " . $this->table . " WHERE id_instructor = :id";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':id', $id);
         $stmt->execute();
@@ -29,45 +25,42 @@ class Instructor {
     }
 
     // Crear un nuevo instructor
-    public function crear($nombre, $apellido, $tipo) {
-        $sql = "INSERT INTO " . $this->table . " (nombre, apellido, tipo_instructor)
-                VALUES (:nombre, :apellido, :tipo)";
+    public function crear($nombre, $tipo) {
+        $sql = "INSERT INTO " . $this->table . " (nombre_instructor, tipo_instructor)
+                VALUES (:nombre, :tipo)";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':nombre', $nombre);
-        $stmt->bindParam(':apellido', $apellido);
         $stmt->bindParam(':tipo', $tipo);
         $stmt->execute();
     }
 
     // Actualizar un instructor existente
-    public function actualizar($id, $nombre, $apellido, $tipo) {
+    public function actualizar($id, $nombre, $tipo) {
         $sql = "UPDATE " . $this->table . " 
-                SET nombre = :nombre, apellido = :apellido, tipo_instructor = :tipo
-                WHERE id = :id";
+                SET nombre_instructor = :nombre, tipo_instructor = :tipo
+                WHERE id_instructor = :id";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':id', $id);
         $stmt->bindParam(':nombre', $nombre);
-        $stmt->bindParam(':apellido', $apellido);
         $stmt->bindParam(':tipo', $tipo);
         $stmt->execute();
     }
 
-    // Eliminar un instructor por su ID
+    // Eliminar un instructor
     public function eliminar($id) {
-        $sql = "DELETE FROM " . $this->table . " WHERE id = :id";
+        $sql = "DELETE FROM " . $this->table . " WHERE id_instructor = :id";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':id', $id);
         $stmt->execute();
     }
 
-    //Cambiar el estado (activo/inactivo)
+    // Cambiar el estado (activo/inactivo)
     public function cambiarEstado($id, $nuevoEstado) {
-        // Aseguramos que el estado sea 1 (activo) o 0 (inactivo)
         if ($nuevoEstado != 1 && $nuevoEstado != 0) {
             throw new Exception("El estado debe ser 1 (activo) o 0 (inactivo).");
         }
 
-        $sql = "UPDATE " . $this->table . " SET estado = :estado WHERE id = :id";
+        $sql = "UPDATE " . $this->table . " SET estado = :estado WHERE id_instructor = :id";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':estado', $nuevoEstado);
         $stmt->bindParam(':id', $id);
