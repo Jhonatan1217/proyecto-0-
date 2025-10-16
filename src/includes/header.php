@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Document</title>
+  <title>Proyecto 0</title>
 
   <!-- SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -13,33 +13,44 @@
 
   <!-- Fuente -->
   <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
-
-  <!-- Tu CSS -->
-  <link rel="stylesheet" href="src/assets/css/formulario_crear_trimestralizacion.css">
 </head>
 
 <body class="flex flex-col min-h-screen font-sans bg-white text-gray-900">
 
-  <!-- Barra superior -->
+  <!-- Header -->
   <header class="flex items-center justify-between px-6 py-4 border-b shadow-sm">
     <img src="src/assets/img/logoSena.png" alt="SENA Logo" class="h-10" />
 
-    <!-- Imagen del menú -->
-    <img src="src/assets/img/menu.svg" alt="Menú" id="menu-hamburguesa" class="h-8 w-8 cursor-pointer block" />
-    
-    <!-- Menú -->
-    <nav id="menu" class="hidden absolute top-16 right-4 bg-white shadow-lg rounded-lg border w-48 text-left">
-      <ul class="flex flex-col divide-y">
-        <li><a href="#" class="block px-4 py-2 hover:bg-gray-100">Inicio</a></li>
-        <li><a href="#" class="block px-4 py-2 hover:bg-gray-100">Trimestralización</a></li>
-        <li><a href="#" class="block px-4 py-2 hover:bg-gray-100">Zonas</a></li>
-        <li><a href="#" class="block px-4 py-2 hover:bg-gray-100">Cerrar sesión</a></li>
-      </ul>
-    </nav>
+    <!-- Botón imagen menú -->
+    <img src="src/assets/img/menu.svg" alt="Menú" id="menu-hamburguesa" class="h-8 w-8 cursor-pointer" />
   </header>
 
-  <!-- Script del menú -->
-  <script src="src/assets/js/header.js"></script>
+  <!-- Menú lateral -->
+  <nav id="menu-lateral" class="fixed top-0 right-0 h-full w-80 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out z-50">
+    <div class="flex justify-between items-center p-4 border-b border-gray-400 mx-4">
+      <h2 class="font-semibold text-gray-800 text-xl">Menú de navegación</h2>
+      <button id="cerrar-menu" class="text-gray-600 text-2xl hover:text-black">×</button>
+    </div>
+    <ul class="p-4 space-y-4 text-gray-700">
+      <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
+        <img src="src/assets/img/map-pin.svg" alt="Icono de Zonas">
+        <a href="#">Zonas</a>
+      </li>
+      <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
+        <img src="src/assets/img/users.svg" alt="Icono de Instructores">
+        <a href="#">Instructores</a>
+      </li>
+      <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
+        <img src="src/assets/img/house-plus.svg" alt="Icono no Áreas">
+        <a href="#">Áreas</a>
+      </li>
+      <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
+        <img src="src/assets/img/calendar-days.svg" alt="Icono de Horarios">
+        <a href="#">Horarios</a>
+      </li>
+    </ul>
+  </nav>
 
+  <script src="src/assets/js/header.js"></script>
 </body>
 </html>

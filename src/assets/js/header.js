@@ -1,15 +1,13 @@
 document.addEventListener("DOMContentLoaded", () => {
   const menuBtn = document.getElementById("menu-hamburguesa");
-  const menu = document.getElementById("menu");
+  const menuLateral = document.getElementById("menu-lateral");
+  const cerrarMenu = document.getElementById("cerrar-menu");
 
   menuBtn.addEventListener("click", () => {
-    menu.classList.toggle("hidden");
+    menuLateral.classList.remove("translate-x-full");
   });
 
-  // Cierra el menú al hacer clic fuera
-  document.addEventListener("click", (e) => {
-    if (!menu.contains(e.target) && !menuBtn.contains(e.target)) {
-      menu.classList.add("hidden");
-    }
+  cerrarMenu.addEventListener("click", () => {
+    menuLateral.classList.add("translate-x-full");
   });
 });
