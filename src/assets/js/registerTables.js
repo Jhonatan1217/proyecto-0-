@@ -23,8 +23,13 @@ async function cargarTrimestralizacion() {
     const data = await res.json();
     tbody.innerHTML = "";
 
-    if (!Array.isArray(data) || data.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" class="text-gray-500 p-4">No hay registros para esta zona.</td></tr>`;
+    // Asegurarse de usar solo registros activos (por seguridad)
+    const activos = Array.isArray(data)
+      ? data.filter(d => d && (d.estado === 1 || d.estado === "1" || d.estado === true || d.estado === "true"))
+      : [];
+
+    if (!Array.isArray(activos) || activos.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500">No hay registros activos para esta zona.</td></tr>`;
       return;
     }
 
@@ -42,7 +47,7 @@ async function cargarTrimestralizacion() {
       fila.innerHTML = `<td class="border border-gray-700 p-2 font-medium">${hora}:00-${hora + 1}:00</td>`;
 
       dias.forEach((dia) => {
-        const registros = data.filter((r) => {
+        const registros = activos.filter((r) => {   // <-- usar 'activos' en vez de 'data'
           if (!r.dia || r.dia.toUpperCase() !== dia) return false;
 
           const rStart = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
