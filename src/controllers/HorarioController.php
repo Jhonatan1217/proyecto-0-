@@ -18,12 +18,13 @@ if (!isset($conn)) {
 
 
 $horario = new Horario($conn);
+$accion = $_POST["accion"] ?? $_GET["accion"] ?? null;
 
 // Respuesta base
 $response = ["status" => "error", "message" => "Acción no válida"];
 
-if (isset($_POST["accion"])) {
-    switch ($_POST["accion"]) {
+if ($accion) {
+    switch ($accion) {
 
         // ===============================
         // CREAR HORARIO
@@ -101,10 +102,9 @@ if (isset($_POST["accion"])) {
         // LISTAR HORARIOS (opcional)
         // ===============================
         case "listar":
-            $estado = isset($_POST["estado"]) ? $_POST["estado"] : 1;
+            $estado = $_POST["estado"] ?? $_GET["estado"] ?? 1;
             $stmt = $horario->listarHorarios($estado);
             $data = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
-
             $response = ["status" => "success", "data" => $data];
             break;
     }
