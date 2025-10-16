@@ -33,96 +33,100 @@ if (!$accion) {
 switch ($accion) {
 
     case 'listar':
-        // Llama al método listar() para obtener todos los instructores
         $res = $instructor->listar();
         echo json_encode($res);
         break;
 
     case 'obtener':
-        // Verifica que se haya enviado el parámetro id_instructor
         if (!isset($_GET['id_instructor'])) {
             echo json_encode(['error' => 'Debe enviar el parámetro id_instructor']);
             exit;
         }
-        // Obtiene el instructor por su ID
         $res = $instructor->obtenerPorId($_GET['id_instructor']);
         echo json_encode($res);
         break;
 
     case 'crear':
-        // Decodifica los datos recibidos en formato JSON
         $data = json_decode(file_get_contents("php://input"), true);
 
-        // Obtiene los datos del instructor desde el cuerpo de la petición o desde POST
         $nombre = $data['nombre_instructor'] ?? $_POST['nombre_instructor'] ?? null;
         $apellido = $data['apellido_instructor'] ?? $_POST['apellido_instructor'] ?? null;
         $tipo = $data['tipo_instructor'] ?? $_POST['tipo_instructor'] ?? null;
 
-        // Valida que todos los campos requeridos estén presentes
         if (!$nombre || !$apellido || !$tipo) {
             echo json_encode(['error' => 'Debe enviar nombre_instructor, apellido_instructor y tipo_instructor']);
             exit;
         }
 
-        // Valida que el tipo de instructor sea válido
         $tiposValidos = ['TRANSVERSAL', 'TECNICO'];
         if (!in_array(strtoupper($tipo), $tiposValidos)) {
             echo json_encode(['error' => 'El tipo_instructor debe ser TRANSVERSAL o TECNICO']);
             exit;
         }
 
-        // Llama al método crear() para insertar un nuevo instructor
         $res = $instructor->crear($nombre, $apellido, strtoupper($tipo));
-        echo json_encode($res);
+        echo json_encode(['mensaje' => 'Instructor creado correctamente']);
         break;
 
     case 'actualizar':
-        // Decodifica los datos recibidos en formato JSON
         $data = json_decode(file_get_contents("php://input"), true);
 
-        // Obtiene los datos del instructor desde el cuerpo de la petición o desde POST
         $id_instructor = $data['id_instructor'] ?? $_POST['id_instructor'] ?? null;
         $nombre = $data['nombre_instructor'] ?? $_POST['nombre_instructor'] ?? null;
         $apellido = $data['apellido_instructor'] ?? $_POST['apellido_instructor'] ?? null;
         $tipo = $data['tipo_instructor'] ?? $_POST['tipo_instructor'] ?? null;
 
-        // Valida que todos los campos requeridos estén presentes
         if (!$id_instructor || !$nombre || !$apellido || !$tipo) {
             echo json_encode(['error' => 'Debe enviar id_instructor, nombre_instructor, apellido_instructor y tipo_instructor']);
             exit;
         }
 
-        // Valida que el tipo de instructor sea válido
         $tiposValidos = ['TRANSVERSAL', 'TECNICO'];
         if (!in_array(strtoupper($tipo), $tiposValidos)) {
             echo json_encode(['error' => 'El tipo_instructor debe ser TRANSVERSAL o TECNICO']);
             exit;
         }
 
-        // Llama al método actualizar() para modificar el instructor
-        $res = $instructor->actualizar($id_instructor, $nombre, $apellido, strtoupper($tipo));
-        echo json_encode($res);
+        $instructor->actualizar($id_instructor, $nombre, $apellido, strtoupper($tipo));
+        echo json_encode(['mensaje' => 'Instructor actualizado correctamente']);
         break;
 
     case 'eliminar':
-        // Decodifica los datos recibidos en formato JSON
         $data = json_decode(file_get_contents("php://input"), true);
-        // Obtiene el id_instructor desde el cuerpo de la petición o desde POST
         $id_instructor = $data['id_instructor'] ?? $_POST['id_instructor'] ?? null;
 
-        // Valida que se haya enviado el id_instructor
         if (!$id_instructor) {
             echo json_encode(['error' => 'Debe enviar el parámetro id_instructor']);
             exit;
         }
 
-        // Llama al método eliminar() para borrar el instructor
-        $res = $instructor->eliminar($id_instructor);
-        echo json_encode($res);
+        $instructor->eliminar($id_instructor);
+        echo json_encode(['mensaje' => 'Instructor eliminado correctamente']);
+        break;
+
+    //Cambiar estado activo/inactivo
+    case 'cambiar_estado':
+        // Puedes enviar los parámetros por JSON, POST o GET
+        $data = json_decode(file_get_contents("php://input"), true);
+        $id_instructor = $data['id_instructor'] ?? $_POST['id_instructor'] ?? $_GET['id_instructor'] ?? null;
+        $estado = $data['estado'] ?? $_POST['estado'] ?? $_GET['estado'] ?? null;
+
+        if ($id_instructor === null || $estado === null) {
+            echo json_encode(['error' => 'Debe enviar id_instructor y estado (1 o 0)']);
+            exit;
+        }
+
+        // Valida que el estado sea 1 o 0
+        if ($estado != 1 && $estado != 0) {
+            echo json_encode(['error' => 'El estado debe ser 1 (activo) o 0 (inactivo)']);
+            exit;
+        }
+
+        $instructor->cambiarEstado($id_instructor, $estado);
+        echo json_encode(['mensaje' => 'Estado del instructor actualizado correctamente']);
         break;
 
     default:
-        // Acción no reconocida
         echo json_encode(['error' => 'Acción no válida']);
         break;
 }

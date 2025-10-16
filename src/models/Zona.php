@@ -32,21 +32,37 @@ class Zona {
         }
     }
 
-    // Crear una nueva zona (solo si agregas más campos)
-    public function crear($id_zona = null) {
+    // Crear una nueva zona
+    public function crear($id_area = null, $estado = 1) {
         try {
-            // Si la tabla 'zonas' solo tiene el campo id_zona como AUTO_INCREMENT,
-            // no es necesario especificar columnas ni valores en el INSERT.
-            // Preparamos la consulta SQL para insertar una nueva zona.
-            $sql = "INSERT INTO " . $this->table . " () VALUES ()";
-            $stmt = $this->conn->prepare($sql); // Preparamos la sentencia
-            $stmt->execute(); // Ejecutamos la sentencia
+            $sql = "INSERT INTO " . $this->table . " (id_area, estado) VALUES (:id_area, :estado)";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':id_area', $id_area);
+            $stmt->bindParam(':estado', $estado, PDO::PARAM_INT);
+            $stmt->execute();
 
-            // Retornamos un mensaje de éxito y el id_zona generado automáticamente
             return [
                 "mensaje" => "Zona creada exitosamente.",
                 "id_zona" => $this->conn->lastInsertId()
             ];
+        } catch (PDOException $e) {
+            return ["error" => $e->getMessage()];
+        }
+    }
+
+    // Actualizar una zona (opcional)
+    public function actualizar($id_zona, $id_area, $estado) {
+        try {
+            $sql = "UPDATE " . $this->table . " 
+                    SET id_area = :id_area, estado = :estado 
+                    WHERE id_zona = :id_zona";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':id_area', $id_area);
+            $stmt->bindParam(':estado', $estado, PDO::PARAM_INT);
+            $stmt->bindParam(':id_zona', $id_zona, PDO::PARAM_INT);
+            $stmt->execute();
+
+            return ["mensaje" => "Zona actualizada correctamente."];
         } catch (PDOException $e) {
             return ["error" => $e->getMessage()];
         }
@@ -61,6 +77,27 @@ class Zona {
             $stmt->execute();
             return ["mensaje" => "Zona eliminada correctamente."];
         } catch (PDOException $e) {
+            return ["error" => $e->getMessage()];
+        }
+    }
+
+    //Cambiar el estado (activo/inactivo)
+    public function cambiarEstado($id_zona, $nuevo_estado) {
+        try {
+            if ($nuevo_estado != 1 && $nuevo_estado != 0) {
+                throw new Exception("El estado debe ser 1 (activo) o 0 (inactivo).");
+            }
+
+            $sql = "UPDATE " . $this->table . " 
+                    SET estado = :estado 
+                    WHERE id_zona = :id_zona";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':estado', $nuevo_estado, PDO::PARAM_INT);
+            $stmt->bindParam(':id_zona', $id_zona, PDO::PARAM_INT);
+            $stmt->execute();
+
+            return ["mensaje" => "Estado de la zona actualizado correctamente."];
+        } catch (Exception $e) {
             return ["error" => $e->getMessage()];
         }
     }
