@@ -38,8 +38,17 @@ class Trimestre {
         return $stmt->execute();
     }
 
+    // 🔹 Suspender (estado = 0)
     public function eliminar($numero_trimestre) {
-        $sql = "DELETE FROM {$this->table} WHERE numero_trimestre = :numero_trimestre";
+        $sql = "UPDATE {$this->table} SET estado = 0 WHERE numero_trimestre = :numero_trimestre";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':numero_trimestre', $numero_trimestre);
+        return $stmt->execute();
+    }
+
+    // 🔹 Reactivar (estado = 1)
+    public function reactivar($numero_trimestre) {
+        $sql = "UPDATE {$this->table} SET estado = 1 WHERE numero_trimestre = :numero_trimestre";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':numero_trimestre', $numero_trimestre);
         return $stmt->execute();
