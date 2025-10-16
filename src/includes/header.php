@@ -26,7 +26,7 @@
   </header>
 
   <!-- Menú lateral -->
-  <nav id="menu-lateral" class="fixed top-0 right-0 h-full w-80 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out z-50">
+  <nav id="menu-lateral" class="fixed top-0 right-0 h-full w-80 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out z-50 pointer-events-none">
     <div class="flex justify-between items-center p-4 border-b border-gray-400 mx-4">
       <h2 class="font-semibold text-gray-800 text-xl">Menú de navegación</h2>
       <button id="cerrar-menu" class="text-gray-600 text-2xl hover:text-black">×</button>
@@ -47,6 +47,10 @@
       <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
         <img src="src/assets/img/calendar-days.svg" alt="Icono de Horarios">
         <a href="#">Horarios</a>
+      </li>
+      <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
+        <img src="src/assets/img/calendar-range.svg" alt="Icono de Trimestres">
+        <a href="#">Trimestres</a>
       </li>
     </ul>
   </nav>
