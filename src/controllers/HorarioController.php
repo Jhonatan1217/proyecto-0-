@@ -1,6 +1,5 @@
+
 <?php
-// Establece el tipo de contenido de la respuesta como JSON y la codificación de caracteres
-header('Content-Type: application/json; charset=utf-8');
 
 // Habilita la visualización de todos los errores para facilitar la depuración
 error_reporting(E_ALL);
@@ -17,120 +16,102 @@ if (!isset($conn)) {
     exit;
 }
 
-// Definición de la clase Horario para manejar operaciones CRUD sobre la tabla 'horarios'
-class Horario {
-    private $conn; // Conexión a la base de datos
-    private $table = "horarios"; // Nombre de la tabla
 
-    // Constructor que recibe la conexión a la base de datos
-    public function __construct($db) {
-        $this->conn = $db;
-    }
+$horario = new Horario($conn);
 
-    // Método para listar todos los horarios con información relacionada (zona, ficha, instructor)
-    public function listar() {
-        try {
-            $sql = "SELECT h.id_horario,
-                        h.dia,
-                        h.hora_inicio,
-                        h.hora_fin,
-                        h.id_zona,
-                        h.id_ficha,
-                        c.id_competencia,
-                        i.nombre_instructor,
-                        i.apellido_instructor,
-                        f.id_ficha AS ficha
-                    FROM horarios h
-                    INNER JOIN zonas z ON h.id_zona = z.id_zona
-                    INNER JOIN competencias c ON h.id_competencia = c.id_competencia
-                    INNER JOIN fichas f ON h.id_ficha = f.id_ficha
-                    INNER JOIN instructores i ON h.id_instructor = i.id_instructor;
-                    ";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute();
-            // Devuelve todos los resultados como un array asociativo
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            // En caso de error, devuelve el mensaje de error
-            return ['error' => $e->getMessage()];
-        }
-    }
+// Respuesta base
+$response = ["status" => "error", "message" => "Acción no válida"];
 
-    // Método para obtener un horario específico por su ID
-    public function obtenerPorId($id_horario) {
-        try {
-            $sql = "SELECT * FROM " . $this->table . " WHERE id_horario = :id_horario";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':id_horario', $id_horario, PDO::PARAM_INT);
-            $stmt->execute();
-            // Devuelve el horario encontrado como un array asociativo
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            // En caso de error, devuelve el mensaje de error
-            return ['error' => $e->getMessage()];
-        }
-    }
+if (isset($_POST["accion"])) {
+    switch ($_POST["accion"]) {
 
-    // Método para crear un nuevo horario
-    public function crear($dia, $hora_inicio, $hora_fin, $id_zona, $id_ficha, $id_instructor) {
-        try {
-            $sql = "INSERT INTO " . $this->table . "
-                    (dia, hora_inicio, hora_fin, id_zona, id_ficha, id_instructor)
-                    VALUES (:dia, :hora_inicio, :hora_fin, :id_zona, :id_ficha, :id_instructor)";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':dia', $dia);
-            $stmt->bindParam(':hora_inicio', $hora_inicio);
-            $stmt->bindParam(':hora_fin', $hora_fin);
-            $stmt->bindParam(':id_zona', $id_zona);
-            $stmt->bindParam(':id_ficha', $id_ficha);
-            $stmt->bindParam(':id_instructor', $id_instructor);
-            $stmt->execute();
-            // Devuelve un mensaje de éxito
-            return ['mensaje' => 'Horario creado correctamente'];
-        } catch (PDOException $e) {
-            // En caso de error, devuelve el mensaje de error
-            return ['error' => $e->getMessage()];
-        }
-    }
+        // ===============================
+        // CREAR HORARIO
+        // ===============================
+        case "crear":
+            $dia = $_POST["dia"];
+            $hora_inicio = $_POST["hora_inicio"];
+            $hora_fin = $_POST["hora_fin"];
+            $id_zona = $_POST["id_zona"];
+            $id_area = $_POST["id_area"];
+            $id_ficha = $_POST["id_ficha"];
+            $id_instructor = $_POST["id_instructor"];
+            $id_competencia = $_POST["id_competencia"];
+            $numero_trimestre = $_POST["numero_trimestre"];
 
-    // Método para actualizar solo ficha, instructor y competencia
-    public function actualizar($id_horario, $id_ficha, $id_instructor, $id_competencia) {
-        try {
-            $sql = "UPDATE " . $this->table . "
-                    SET id_ficha = :id_ficha,
-                        id_instructor = :id_instructor,
-                        id_competencia = :id_competencia
-                    WHERE id_horario = :id_horario";
-            
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':id_horario', $id_horario);
-            $stmt->bindParam(':id_ficha', $id_ficha);
-            $stmt->bindParam(':id_instructor', $id_instructor);
-            $stmt->bindParam(':id_competencia', $id_competencia);
-            $stmt->execute();
+            $resultado = $horario->crearHorario($dia, $hora_inicio, $hora_fin, $id_zona, $id_area, $id_ficha, $id_instructor, $id_competencia, $numero_trimestre);
 
-            // Devuelve un mensaje de éxito
-            return ['mensaje' => 'Horario actualizado correctamente'];
-        } catch (PDOException $e) {
-            // En caso de error, devuelve el mensaje de error
-            return ['error' => $e->getMessage()];
-        }
-    }
+            if ($resultado) {
+                $response = ["status" => "success", "message" => "Horario creado correctamente."];
+            } else {
+                $response = ["status" => "error", "message" => "Error al crear el horario."];
+            }
+            break;
 
+        // ===============================
+        // ACTUALIZAR HORARIO
+        // ===============================
+        case "actualizar":
+            $id_horario = $_POST["id_horario"];
+            $id_ficha = $_POST["id_ficha"];
+            $numero_trimestre = $_POST["numero_trimestre"];
+            $id_instructor = $_POST["id_instructor"];
+            $id_competencia = $_POST["id_competencia"];
 
-    // Método para eliminar un horario por su ID
-    public function eliminar($id_horario) {
-        try {
-            $sql = "DELETE FROM " . $this->table . " WHERE id_horario = :id_horario";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':id_horario', $id_horario, PDO::PARAM_INT);
-            $stmt->execute();
-            // Devuelve un mensaje de éxito
-            return ['mensaje' => 'Horario eliminado correctamente'];
-        } catch (PDOException $e) {
-            // En caso de error, devuelve el mensaje de error
-            return ['error' => $e->getMessage()];
-        }
+            $resultado = $horario->actualizarHorario($id_horario, $id_ficha, $numero_trimestre, $id_instructor, $id_competencia);
+
+            if ($resultado) {
+                $response = ["status" => "success", "message" => "Horario actualizado correctamente."];
+            } else {
+                $response = ["status" => "error", "message" => "Error al actualizar el horario."];
+            }
+            break;
+
+        // ===============================
+        // INHABILITAR HORARIOS POR ZONA
+        // ===============================
+        case "inhabilitarZona":
+            $id_zona = $_POST["id_zona"];
+
+            $resultado = $horario->inhabilitarPorZona($id_zona);
+
+            if ($resultado) {
+                $response = ["status" => "success", "message" => "Horario de la zona inhabilitado correctamente."];
+            } else {
+                $response = ["status" => "error", "message" => "Error al inhabilitar los horarios de la zona."];
+            }
+            break;
+
+        // ===============================
+        // ACTIVAR HORARIO
+        // ===============================
+        case "activar":
+            $id_horario = $_POST["id_horario"];
+
+            $resultado = $horario->activarHorario($id_horario);
+
+            if ($resultado) {
+                $response = ["status" => "success", "message" => "Horario activado correctamente."];
+            } else {
+                $response = ["status" => "error", "message" => "Error al activar el horario."];
+            }
+            break;
+
+        // ===============================
+        // LISTAR HORARIOS (opcional)
+        // ===============================
+        case "listar":
+            $estado = isset($_POST["estado"]) ? $_POST["estado"] : 1;
+            $stmt = $horario->listarHorarios($estado);
+            $data = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+
+            $response = ["status" => "success", "data" => $data];
+            break;
     }
 }
+
+// Devuelve respuesta JSON al frontend
+header("Content-Type: application/json; charset=utf-8");
+echo json_encode($response);
 ?>
+
