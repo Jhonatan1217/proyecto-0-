@@ -1,133 +1,159 @@
 <?php
-// Establece el tipo de contenido de la respuesta como JSON y la codificación de caracteres
+// ===============================
+// CONFIGURACIÓN INICIAL
+// ===============================
 header('Content-Type: application/json; charset=utf-8');
-
-// Habilita la visualización de todos los errores para facilitar la depuración
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 
-// Incluye el archivo de configuración de la base de datos y el modelo de Instructor
 include_once __DIR__ . '/../../config/database.php';
-include_once __DIR__ . '/../models/Instructor.php';
+include_once __DIR__ . '/../models/Zona.php';
 
-// Verifica que la conexión a la base de datos se haya establecido correctamente
+// Verificar conexión
 if (!isset($conn)) {
-    echo json_encode(['error' => 'No se pudo establecer conexión con la base de datos']);
+    echo json_encode(['status' => 'error', 'message' => 'No se pudo establecer conexión con la base de datos']);
     exit;
 }
 
-// Instancia el modelo Instructor pasando la conexión a la base de datos
-$instructor = new Instructor($conn);
+// Instancia del modelo
+$zona = new Zona($conn);
+$response = ["status" => "error", "message" => "Acción no válida"];
 
-// Obtiene la acción a realizar desde la URL (?accion=)
-$accion = isset($_GET['accion']) ? $_GET['accion'] : null;
+// ===============================
+// OBTENER ACCIÓN Y DATOS
+// ===============================
+$accion = $_POST["accion"] ?? $_GET["accion"] ?? null;
 
-// Si no se especifica una acción, retorna un error
-if (!$accion) {
-    echo json_encode(['error' => 'Debe especificar la acción en la URL, por ejemplo: ?accion=listar']);
-    exit;
+// Permitir recibir JSON (php://input)
+$inputJSON = file_get_contents("php://input");
+if ($inputJSON) {
+    $data = json_decode($inputJSON, true);
+    if (is_array($data)) {
+        $_POST = array_merge($_POST, $data);
+    }
 }
 
-// Estructura principal para manejar las diferentes acciones solicitadas
-switch ($accion) {
+if ($accion) {
+    switch ($accion) {
 
-    case 'listar':
-        $res = $instructor->listar();
-        echo json_encode($res);
-        break;
+        // ===============================
+        // CREAR ZONA
+        // ===============================
+        case "crear":
+            $id_zona = $_POST["id_zona"] ?? null;
+            $id_area = $_POST["id_area"] ?? null;
 
-    case 'obtener':
-        if (!isset($_GET['id_instructor'])) {
-            echo json_encode(['error' => 'Debe enviar el parámetro id_instructor']);
-            exit;
-        }
-        $res = $instructor->obtenerPorId($_GET['id_instructor']);
-        echo json_encode($res);
-        break;
+            if (!$id_zona || !$id_area) {
+                $response = ["status" => "error", "message" => "Debe enviar id_zona y id_area."];
+                break;
+            }
 
-    case 'crear':
-        $data = json_decode(file_get_contents("php://input"), true);
+            // Verificar si ya existe la zona con ese número
+            $existe = $zona->obtenerPorId($id_zona);
+            if ($existe) {
+                $response = ["status" => "error", "message" => "Ya existe una zona con ese número."];
+                break;
+            }
 
-        $nombre = $data['nombre_instructor'] ?? $_POST['nombre_instructor'] ?? null;
-        $apellido = $data['apellido_instructor'] ?? $_POST['apellido_instructor'] ?? null;
-        $tipo = $data['tipo_instructor'] ?? $_POST['tipo_instructor'] ?? null;
+            $resultado = $zona->crear($id_zona, $id_area);
 
-        if (!$nombre || !$apellido || !$tipo) {
-            echo json_encode(['error' => 'Debe enviar nombre_instructor, apellido_instructor y tipo_instructor']);
-            exit;
-        }
+            if ($resultado) {
+                $response = ["status" => "success", "message" => "Zona creada correctamente."];
+            } else {
+                $response = ["status" => "error", "message" => "Error al crear la zona."];
+            }
+            break;
 
-        $tiposValidos = ['TRANSVERSAL', 'TECNICO'];
-        if (!in_array(strtoupper($tipo), $tiposValidos)) {
-            echo json_encode(['error' => 'El tipo_instructor debe ser TRANSVERSAL o TECNICO']);
-            exit;
-        }
+        // ===============================
+        // ACTUALIZAR ZONA (número + área)
+        // ===============================
+        case "actualizar":
+            $id_zona_actual = $_POST["id_zona_actual"] ?? null;
+            $id_zona_nueva = $_POST["id_zona_nueva"] ?? null;
+            $id_area = $_POST["id_area"] ?? null;
 
-        $res = $instructor->crear($nombre, $apellido, strtoupper($tipo));
-        echo json_encode(['mensaje' => 'Instructor creado correctamente']);
-        break;
+            if (!$id_zona_actual || !$id_zona_nueva || !$id_area) {
+                $response = ["status" => "error", "message" => "Debe enviar id_zona_actual, id_zona_nueva e id_area."];
+                break;
+            }
 
-    case 'actualizar':
-        $data = json_decode(file_get_contents("php://input"), true);
+            // Si el número nuevo es diferente, validar que no exista ya
+            if ($id_zona_actual != $id_zona_nueva) {
+                $existeNueva = $zona->obtenerPorId($id_zona_nueva);
+                if ($existeNueva) {
+                    $response = ["status" => "error", "message" => "Ya existe otra zona con el número ingresado."];
+                    break;
+                }
+            }
 
-        $id_instructor = $data['id_instructor'] ?? $_POST['id_instructor'] ?? null;
-        $nombre = $data['nombre_instructor'] ?? $_POST['nombre_instructor'] ?? null;
-        $apellido = $data['apellido_instructor'] ?? $_POST['apellido_instructor'] ?? null;
-        $tipo = $data['tipo_instructor'] ?? $_POST['tipo_instructor'] ?? null;
+            $resultado = $zona->actualizar($id_zona_actual, $id_zona_nueva, $id_area);
 
-        if (!$id_instructor || !$nombre || !$apellido || !$tipo) {
-            echo json_encode(['error' => 'Debe enviar id_instructor, nombre_instructor, apellido_instructor y tipo_instructor']);
-            exit;
-        }
+            if ($resultado) {
+                $response = ["status" => "success", "message" => "Zona actualizada correctamente."];
+            } else {
+                $response = ["status" => "error", "message" => "Error al actualizar la zona."];
+            }
+            break;
 
-        $tiposValidos = ['TRANSVERSAL', 'TECNICO'];
-        if (!in_array(strtoupper($tipo), $tiposValidos)) {
-            echo json_encode(['error' => 'El tipo_instructor debe ser TRANSVERSAL o TECNICO']);
-            exit;
-        }
+        // ===============================
+        // CAMBIAR ESTADO (activar/desactivar)
+        // ===============================
+        case "cambiarEstado":
+            $id_zona = $_POST["id_zona"] ?? null;
+            $estado = $_POST["estado"] ?? null;
 
-        $instructor->actualizar($id_instructor, $nombre, $apellido, strtoupper($tipo));
-        echo json_encode(['mensaje' => 'Instructor actualizado correctamente']);
-        break;
+            if ($id_zona === null || $estado === null) {
+                $response = ["status" => "error", "message" => "Debe enviar id_zona y estado (1 o 0)."];
+                break;
+            }
 
-    case 'eliminar':
-        $data = json_decode(file_get_contents("php://input"), true);
-        $id_instructor = $data['id_instructor'] ?? $_POST['id_instructor'] ?? null;
+            if (!in_array($estado, [0, 1, "0", "1"], true)) {
+                $response = ["status" => "error", "message" => "El estado debe ser 1 (activo) o 0 (inactivo)."];
+                break;
+            }
 
-        if (!$id_instructor) {
-            echo json_encode(['error' => 'Debe enviar el parámetro id_instructor']);
-            exit;
-        }
+            $resultado = $zona->cambiarEstado($id_zona, $estado);
 
-        $instructor->eliminar($id_instructor);
-        echo json_encode(['mensaje' => 'Instructor eliminado correctamente']);
-        break;
+            if ($resultado) {
+                $response = ["status" => "success", "message" => "Estado de la zona actualizado correctamente."];
+            } else {
+                $response = ["status" => "error", "message" => "Error al cambiar el estado de la zona."];
+            }
+            break;
 
-    //Cambiar estado activo/inactivo
-    case 'cambiar_estado':
-        // Puedes enviar los parámetros por JSON, POST o GET
-        $data = json_decode(file_get_contents("php://input"), true);
-        $id_instructor = $data['id_instructor'] ?? $_POST['id_instructor'] ?? $_GET['id_instructor'] ?? null;
-        $estado = $data['estado'] ?? $_POST['estado'] ?? $_GET['estado'] ?? null;
+        // ===============================
+        // LISTAR ZONAS
+        // ===============================
+        case "listar":
+            $stmt = $zona->listar();
+            $data = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+            $response = ["status" => "success", "data" => $data];
+            break;
 
-        if ($id_instructor === null || $estado === null) {
-            echo json_encode(['error' => 'Debe enviar id_instructor y estado (1 o 0)']);
-            exit;
-        }
+        // ===============================
+        // OBTENER ZONA POR ID
+        // ===============================
+        case "obtener":
+            $id_zona = $_POST["id_zona"] ?? $_GET["id_zona"] ?? null;
+            if (!$id_zona) {
+                $response = ["status" => "error", "message" => "Debe enviar id_zona."];
+                break;
+            }
 
-        // Valida que el estado sea 1 o 0
-        if ($estado != 1 && $estado != 0) {
-            echo json_encode(['error' => 'El estado debe ser 1 (activo) o 0 (inactivo)']);
-            exit;
-        }
+            $zonaData = $zona->obtenerPorId($id_zona);
 
-        $instructor->cambiarEstado($id_instructor, $estado);
-        echo json_encode(['mensaje' => 'Estado del instructor actualizado correctamente']);
-        break;
-
-    default:
-        echo json_encode(['error' => 'Acción no válida']);
-        break;
+            if ($zonaData) {
+                $response = ["status" => "success", "data" => $zonaData];
+            } else {
+                $response = ["status" => "error", "message" => "Zona no encontrada."];
+            }
+            break;
+    }
 }
+
+// ===============================
+// RESPUESTA FINAL
+// ===============================
+echo json_encode($response);
 ?>
