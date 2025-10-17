@@ -37,7 +37,6 @@ switch ($method) {
                         echo json_encode(['error' => 'Falta el número de trimestre']);
                     }
                     break;
-
                 case 'reactivar':
                     if (!empty($input['numero_trimestre'])) {
                         $ok = $trimestre->reactivar($input['numero_trimestre']);
@@ -46,7 +45,14 @@ switch ($method) {
                         echo json_encode(['error' => 'Falta el número de trimestre']);
                     }
                     break;
-
+                case 'editar':
+                    if (!empty($input['numero_trimestre']) && !empty($input['nuevo_numero'])) {
+                        $ok = $trimestre->editar($input['numero_trimestre'], $input['nuevo_numero']);
+                        echo json_encode(['status' => $ok ? 'success' : 'error', 'mensaje' => $ok ? 'Trimestre actualizado correctamente' : 'Error al actualizar']);
+                    } else {
+                        echo json_encode(['status' => 'error', 'mensaje' => 'Faltan datos para editar']);
+                    }
+                    break;
                 default:
                     echo json_encode(['error' => 'Acción no reconocida']);
                     break;
