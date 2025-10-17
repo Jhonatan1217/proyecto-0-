@@ -1,3 +1,38 @@
+<?php
+// Cargar datos desde la base de datos para los selects
+require_once __DIR__ . '/../../config/database.php';
+
+$areas = [];
+$zonas = [];
+$instructores = [];
+$trimestres = [];
+
+try {
+    if (isset($conn)) {
+        // Áreas
+        $s = $conn->prepare("SELECT id_area, nombre_area FROM areas WHERE estado = 1 ORDER BY nombre_area ASC");
+        $s->execute();
+        $areas = $s->fetchAll(PDO::FETCH_ASSOC);
+
+        // Zonas (si no hay nombre, muestro "Zona X")
+        $s = $conn->prepare("SELECT id_zona, id_area FROM zonas WHERE estado = 1 ORDER BY id_zona ASC");
+        $s->execute();
+        $zonas = $s->fetchAll(PDO::FETCH_ASSOC);
+
+        // Instructores (nombre + tipo)
+        $s = $conn->prepare("SELECT nombre_instructor, tipo_instructor FROM instructores WHERE estado = 1 ORDER BY nombre_instructor ASC");
+        $s->execute();
+        $instructores = $s->fetchAll(PDO::FETCH_ASSOC);
+
+        // Trimestres (listado)
+        $s = $conn->prepare("SELECT numero_trimestre, estado FROM trimestre ORDER BY numero_trimestre ASC");
+        $s->execute();
+        $trimestres = $s->fetchAll(PDO::FETCH_ASSOC);
+    }
+} catch (PDOException $e) {
+    // No interrumpo la vista si falla la carga, se muestran los selects vacíos
+}
+?>
 <!DOCTYPE html>
 <html lang="es">
   <head>
@@ -71,14 +106,23 @@
 
           <!-- Formulario -->
           <form id="formTrimestralizacion" action="<?= BASE_URL ?>src/controllers/TrimestralizacionController.php?accion=crear" method="POST" class="trimestralizacion-form space-y-3 text-sm lg:text-base">
+            <!-- AREA (desde DB) -->
+            <select name="area" id="id_area" 
+              class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
+              <option value="">Seleccione el area a la que pertenece la ficha</option>
+              <?php foreach ($areas as $a): ?>
+                <option value="<?= htmlspecialchars($a['id_area']) ?>"><?= htmlspecialchars($a['nombre_area']) ?></option>
+              <?php endforeach; ?>
+            </select>
+
+            <!-- ZONA (desde DB) -->
             <select name="zona" id="id_zona" 
               class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
               <option value="">Seleccione la zona a la que pertenece la ficha</option>
-              <option value="1">Zona 1</option>
-              <option value="2">Zona 2</option>
-              <option value="3">Zona 3</option>
-              <option value="5">Zona 5</option>
-              <option value="6">Zona 6</option>
+              <?php foreach ($zonas as $z): ?>
+                <?php $label = isset($z['id_zona']) ? "Zona " . $z['id_zona'] : "Zona"; ?>
+                <option value="<?= htmlspecialchars($z['id_zona']) ?>"><?= htmlspecialchars($label) ?></option>
+              <?php endforeach; ?>
             </select>
 
             <select name="nivel_ficha" 
@@ -88,19 +132,32 @@
               <option value="tecnologo">Tecnologo</option>
             </select>
 
+            <!-- TRIMESTRE (desde DB) -->
+            <select name="numero_trimestre" 
+              class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
+              <option value="">Seleccione el trimestre que cursa la ficha</option>
+              <?php foreach ($trimestres as $t): ?>
+                <option value="<?= htmlspecialchars($t['numero_trimestre']) ?>" <?= ($t['estado']==1) ? '' : '' ?>>
+                  <?= "Trimestre " . htmlspecialchars($t['numero_trimestre']) . (($t['estado']==1) ? " (activo)" : "") ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+
             <div class="flex flex-minw-0 gap-3 flex-col sm:flex-row lg:flex-row">
               <input type="text" name="numero_ficha" id="numero_ficha" placeholder="Número de la ficha" 
                 class="form-field basis-1/2 w-full h-12 px-4 pr-12 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm"/>
-              <input type="text" name="nombre_instructor" id="id_instructor" placeholder="Nombre del instructor" 
-                class="form-field basis-1/2 w-full h-12 px-4 pr-12 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm"/>
+                
+              <!-- INSTRUCTOR (desde DB) -->
+              <select name="nombre_instructor" id="nombre_instructor"
+                class="select-chev form-field basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
+                <option value="">Seleccione el instructor</option>
+                <?php foreach ($instructores as $ins): ?>
+                  <option value="<?= htmlspecialchars($ins['nombre_instructor']) ?>" data-tipo="<?= htmlspecialchars($ins['tipo_instructor']) ?>">
+                    <?= htmlspecialchars($ins['nombre_instructor']) ?> <?= isset($ins['tipo_instructor']) ? "— " . htmlspecialchars($ins['tipo_instructor']) : "" ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
             </div>
-
-            <select name="tipo_instructor" 
-              class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
-              <option value="">Seleccione el tipo de instructor</option>
-              <option value="TECNICO">Técnico</option>
-              <option value="TRANSVERSAL">Transversal</option>
-            </select>
 
             <select name="dia_semana" id="dia" 
               class="select-chev select-cal form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
@@ -145,8 +202,9 @@
     <!-- ============== /MODAL ============== -->
     <script>
         const BASE_URL = "<?= BASE_URL ?>";
-    </script>                
-    <!-- Script del menú desplegable + modal -->
+    </script>
+
+    <!-- tipo_instructor se determina en el servidor, no hay select correspondiente -->
     <script src="<?= BASE_URL ?>src/assets/js/landing.js"></script>
     <script src="<?= BASE_URL ?>src/assets/js/formulario_trimestralizacion.js"></script>
   </body>

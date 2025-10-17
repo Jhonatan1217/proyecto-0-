@@ -120,21 +120,29 @@ switch ($accion) {
         try {
             $conn->beginTransaction();
 
-            // Obtener id_area desde la zona (si existe)
-            $stmtZona = $conn->prepare("SELECT id_area FROM zonas WHERE id_zona = :id_zona LIMIT 1");
-            $stmtZona->execute([':id_zona' => $id_zona]);
-            $rowArea = $stmtZona->fetch(PDO::FETCH_ASSOC);
-            if ($rowArea === false || !array_key_exists('id_area', $rowArea) || $rowArea['id_area'] === null) {
-                $id_area = null;
+            // Obtener id_area desde POST si fue enviado, si no buscar por zona (comportamiento previo)
+            if (!empty($_POST['area'])) {
+                $id_area = intval($_POST['area']);
             } else {
-                $id_area = (int)$rowArea['id_area'];
+                $stmtZona = $conn->prepare("SELECT id_area FROM zonas WHERE id_zona = :id_zona LIMIT 1");
+                $stmtZona->execute([':id_zona' => $id_zona]);
+                $rowArea = $stmtZona->fetch(PDO::FETCH_ASSOC);
+                if ($rowArea === false || !array_key_exists('id_area', $rowArea) || $rowArea['id_area'] === null) {
+                    $id_area = null;
+                } else {
+                    $id_area = (int)$rowArea['id_area'];
+                }
             }
 
-            // Obtener numero_trimestre activo (si existe)
-            $stmtTrim = $conn->prepare("SELECT numero_trimestre FROM trimestre WHERE estado = 1 LIMIT 1");
-            $stmtTrim->execute();
-            $numero_trimestre = $stmtTrim->fetchColumn();
-            $numero_trimestre = $numero_trimestre !== false ? intval($numero_trimestre) : null;
+            // Usar numero_trimestre enviado por POST si existe, si no obtener el activo
+            if (!empty($_POST['numero_trimestre'])) {
+                $numero_trimestre = intval($_POST['numero_trimestre']);
+            } else {
+                $stmtTrim = $conn->prepare("SELECT numero_trimestre FROM trimestre WHERE estado = 1 LIMIT 1");
+                $stmtTrim->execute();
+                $numero_trimestre = $stmtTrim->fetchColumn();
+                $numero_trimestre = $numero_trimestre !== false ? intval($numero_trimestre) : null;
+            }
 
             // 1) Verificar cruce con horarios ACTIVOS en la misma zona y día
             $stmtCruce = $conn->prepare("
@@ -183,14 +191,16 @@ switch ($accion) {
                 $ins->execute([':num' => $numero, ':nivel' => $nivel]);
                 return $conn->lastInsertId();
             };
-            $getOrCreateInstructor = function($nombre, $tipo) use ($conn) {
+            $getOrCreateInstructor = function($nombre) use ($conn) {
                 if (empty($nombre)) return null;
-                $s = $conn->prepare("SELECT id_instructor FROM instructores WHERE nombre_instructor = :nom LIMIT 1");
+                // Buscar por nombre y devolver id (y tipo si se necesita más adelante)
+                $s = $conn->prepare("SELECT id_instructor, tipo_instructor FROM instructores WHERE nombre_instructor = :nom LIMIT 1");
                 $s->execute([':nom' => $nombre]);
                 $r = $s->fetch(PDO::FETCH_ASSOC);
                 if ($r) return $r['id_instructor'];
+                // Si no existe, insertar con tipo por defecto 'TECNICO'
                 $ins = $conn->prepare("INSERT INTO instructores (nombre_instructor, tipo_instructor) VALUES (:nom, :tipo)");
-                $ins->execute([':nom' => $nombre, ':tipo' => $tipo]);
+                $ins->execute([':nom' => $nombre, ':tipo' => 'TECNICO']);
                 return $conn->lastInsertId();
             };
             $getOrCreateCompetencia = function($desc) use ($conn) {
@@ -206,7 +216,7 @@ switch ($accion) {
 
             // Obtener/crear ids relacionados
             $id_ficha = $getOrCreateFicha($numero_ficha, $nivel_ficha);
-            $id_instructor = $nombre_instructor !== '' ? $getOrCreateInstructor($nombre_instructor, $tipo_instructor) : null;
+            $id_instructor = $nombre_instructor !== '' ? $getOrCreateInstructor($nombre_instructor) : null;
             $id_competencia = $descripcion !== '' ? $getOrCreateCompetencia($descripcion) : null;
 
             if ($horarioExist) {

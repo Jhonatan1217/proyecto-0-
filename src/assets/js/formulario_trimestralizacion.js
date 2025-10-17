@@ -24,13 +24,12 @@ if (!window.TRIMESTRALIZACION_INIT) {
         const nivel = form.querySelector("[name='nivel_ficha']").value.trim();
         const numeroFicha = form.querySelector("[name='numero_ficha']").value.trim();
         const instructor = form.querySelector("[name='nombre_instructor']").value.trim();
-        const tipo = form.querySelector("[name='tipo_instructor']").value.trim();
         const dia = form.querySelector("[name='dia_semana']").value.trim();
         const horaInicio = form.querySelector("[name='hora_inicio']").value.trim();
         const horaFin = form.querySelector("[name='hora_fin']").value.trim();
         const descripcion = form.querySelector("[name='descripcion']").value.trim();
 
-        const campos = [zona, nivel, numeroFicha, instructor, tipo, dia, horaInicio, horaFin, descripcion];
+        const campos = [zona, nivel, numeroFicha, instructor, dia, horaInicio, horaFin, descripcion];
         const vacios = campos.filter(v => v === "").length;
 
         // ========== VALIDACIONES ==========
@@ -45,7 +44,6 @@ if (!window.TRIMESTRALIZACION_INIT) {
         if (!numeroFicha || isNaN(numeroFicha))
           return Toast.fire({ icon: "warning", title: "Ingrese un número de ficha válido" });
         if (!instructor) return Toast.fire({ icon: "warning", title: "Ingrese el nombre del instructor" });
-        if (!tipo) return Toast.fire({ icon: "warning", title: "Seleccione el tipo de instructor" });
         if (!dia) return Toast.fire({ icon: "warning", title: "Seleccione un día de la semana" });
         if (!horaInicio) return Toast.fire({ icon: "warning", title: "Seleccione la hora de inicio" });
         if (!horaFin) return Toast.fire({ icon: "warning", title: "Seleccione la hora de fin" });
