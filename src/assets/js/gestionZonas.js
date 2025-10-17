@@ -1,7 +1,10 @@
 (() => {
   console.log("✅ gestionZonas.js cargado correctamente");
 
-  const BASE_URL = "../../src/controllers/zonaController.php";
+  // 🔹 Ruta base de tu controlador principal
+  const API_URL = "src/controllers/zonaController.php";
+
+  // Elementos del DOM
   const modal = document.getElementById("modalZonas");
   const formZona = document.getElementById("formNuevaZona");
   const openBtn = document.getElementById("btnAbrirModalZonas");
@@ -30,44 +33,44 @@
   openBtn?.addEventListener("click", openModal);
   closeBtn?.addEventListener("click", closeModal);
   cancelBtn?.addEventListener("click", closeModal);
-  backdrop?.addEventListener("click", (e) => { if (e.target === backdrop) closeModal(); });
+  backdrop?.addEventListener("click", (e) => {
+    if (e.target === backdrop) closeModal();
+  });
 
-// -------------------- Cargar Áreas dinámicamente --------------------
-async function cargarAreas() {
-  const selectArea = document.getElementById("id_area");
-  selectArea.innerHTML = `<option disabled selected value="">Cargando áreas...</option>`;
+  // -------------------- Cargar Áreas dinámicamente --------------------
+  async function cargarAreas() {
+    const selectArea = document.getElementById("id_area");
+    selectArea.innerHTML = `<option disabled selected value="">Cargando áreas...</option>`;
 
-  try {
-    const res = await fetch("../../src/controllers/areaController.php?accion=listar");
-    const json = await res.json();
+    try {
+      const res = await fetch("src/controllers/areaController.php?accion=listar");
+      const json = await res.json();
 
-    if (Array.isArray(json) && json.length > 0) {
-      selectArea.innerHTML = `<option disabled selected value="">Seleccione un Área</option>`;
-      json.forEach(area => {
-        const option = document.createElement("option");
-        option.value = area.id_area;
-        option.textContent = area.nombre_area;
-        selectArea.appendChild(option);
-      });
-    } else {
-      selectArea.innerHTML = `<option disabled selected value="">No hay áreas disponibles</option>`;
+      if (Array.isArray(json) && json.length > 0) {
+        selectArea.innerHTML = `<option disabled selected value="">Seleccione un Área</option>`;
+        json.forEach((area) => {
+          const option = document.createElement("option");
+          option.value = area.id_area;
+          option.textContent = area.nombre_area;
+          selectArea.appendChild(option);
+        });
+      } else {
+        selectArea.innerHTML = `<option disabled selected value="">No hay áreas disponibles</option>`;
+      }
+    } catch (err) {
+      console.error("Error al cargar áreas:", err);
+      selectArea.innerHTML = `<option disabled selected value="">Error al cargar áreas</option>`;
     }
-  } catch (err) {
-    console.error("Error al cargar áreas:", err);
-    selectArea.innerHTML = `<option disabled selected value="">Error al cargar áreas</option>`;
   }
-}
 
-// Llamar al cargar la página
-cargarAreas();
-
-
+  // Llamar al cargar la página
+  cargarAreas();
 
   // -------------------- Cargar Zonas --------------------
   async function cargarZonas() {
     tablaBody.innerHTML = `<tr><td colspan="3" class="p-4 text-gray-500 text-center">Cargando zonas...</td></tr>`;
     try {
-      const res = await fetch(`${BASE_URL}?accion=listar`);
+      const res = await fetch(`${API_URL}?accion=listar`);
       const json = await res.json();
 
       if (json.status === "success") {
@@ -76,28 +79,36 @@ cargarAreas();
           return;
         }
 
-        tablaBody.innerHTML = json.data.map(z => `
+        tablaBody.innerHTML = json.data
+          .map(
+            (z) => `
           <tr data-id="${z.id_zona}" class="border-b">
             <td class="px-6 py-4">${z.id_zona}</td>
             <td class="px-6 py-4 text-center">
-              <span class="bg-${z.nombre_area === 'Confecciones' ? 'blue' : 'green'}-600 text-white text-xs px-3 py-1 rounded-full">
-                ${z.nombre_area || '—'}
+              <span class="bg-${
+                z.nombre_area === "Confecciones" ? "blue" : "green"
+              }-600 text-white text-xs px-3 py-1 rounded-full">
+                ${z.nombre_area || "—"}
               </span>
             </td>
             <td class="px-6 py-4 text-right">
               <div class="flex justify-end items-center gap-3">
                 <button class="btn-editar p-2 border rounded-xl hover:bg-gray-50 transition" title="Editar">
-                  <img class="w-5 h-5" src="../assets/img/pencil-line.svg" alt="Editar" />
+                  <img class="w-5 h-5" src="src/assets/img/pencil-line.svg" alt="Editar" />
                 </button>
                 <label class="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" class="sr-only peer" ${z.estado == 1 ? "checked" : ""}>
+                  <input type="checkbox" class="sr-only peer" ${
+                    z.estado == 1 ? "checked" : ""
+                  }>
                   <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-green-500 transition"></div>
                   <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition peer-checked:translate-x-5"></div>
                 </label>
               </div>
             </td>
           </tr>
-        `).join("");
+        `
+          )
+          .join("");
       } else {
         tablaBody.innerHTML = `<tr><td colspan="3" class="text-center p-4 text-red-500">${json.message}</td></tr>`;
       }
@@ -123,7 +134,7 @@ cargarAreas();
     console.log("🟢 Enviando creación:", { accion: "crear", id_zona, id_area });
 
     try {
-      const res = await fetch(BASE_URL, {
+      const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ accion: "crear", id_zona, id_area }),
@@ -163,7 +174,7 @@ cargarAreas();
     const nuevoEstado = chk.checked ? 1 : 0;
 
     try {
-      const res = await fetch(BASE_URL, {
+      const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ accion: "cambiarEstado", id_zona, estado: nuevoEstado }),
@@ -205,11 +216,13 @@ cargarAreas();
     // Cancelar edición
     tdAcc.querySelector(".btn-cancelar").addEventListener("click", () => {
       tdZona.textContent = zonaOriginal;
-      tdArea.innerHTML = `<span class="bg-${areaOriginal === "Confecciones" ? "blue" : "green"}-600 text-white text-xs px-3 py-1 rounded-full">${areaOriginal}</span>`;
+      tdArea.innerHTML = `<span class="bg-${
+        areaOriginal === "Confecciones" ? "blue" : "green"
+      }-600 text-white text-xs px-3 py-1 rounded-full">${areaOriginal}</span>`;
       tdAcc.innerHTML = `
         <div class="flex justify-end items-center gap-3">
           <button class="btn-editar p-2 border rounded-xl hover:bg-gray-50 transition" title="Editar">
-            <img class="w-5 h-5" src="../assets/img/pencil-line.svg" alt="Editar" />
+            <img class="w-5 h-5" src="src/assets/img/pencil-line.svg" alt="Editar" />
           </button>
         </div>
       `;
@@ -228,7 +241,7 @@ cargarAreas();
       console.log("🟢 Enviando actualización:", { id_zona_actual, id_zona_nueva, id_area });
 
       try {
-        const res = await fetch(BASE_URL, {
+        const res = await fetch(API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -262,4 +275,4 @@ cargarAreas();
       }
     });
   });
-})();  
+})();
