@@ -34,6 +34,11 @@
 
     <ul class="p-4 space-y-4 text-gray-700">
       <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
+        <img src="<?= BASE_URL ?>src/assets/img/house.svg" alt="Icono de Inicio">
+        <a href="<?= BASE_URL ?>index.php">Inicio</a>
+      </li>
+
+      <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/map-pin.svg" alt="Icono de Zonas">
         <a href="<?= BASE_URL ?>index.php?page=src/views/gestionZonas">Zonas</a>
       </li>
