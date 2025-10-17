@@ -1,5 +1,8 @@
 (() => {
-  const API_URL = "../controllers/InstructorController.php";
+  // Usa la URL que define la vista (segura con BASE_URL). Mantengo tu valor original como último fallback.
+  const API_URL = (typeof window !== "undefined" && window.API_URL)
+    ? window.API_URL
+    : "../controllers/InstructorController.php";
 
   const $ = (s, c = document) => c.querySelector(s);
   const modal = $("#modalInstructor");
@@ -47,23 +50,35 @@
   backdrop?.addEventListener("click", (e) => { if (e.target === backdrop) closeModal(); });
 
   // ---------- API helpers ----------
+  async function parseJsonOrThrow(res) {
+    const txt = await res.text();
+    try {
+      return JSON.parse(txt);
+    } catch {
+      console.error("No JSON desde API:\n", txt);
+      const status = res.status;
+      const msg = status >= 400
+        ? `Error ${status} del servidor`
+        : "La API no devolvió JSON.";
+      throw new Error(msg);
+    }
+  }
+
   async function apiGet(params) {
     const url = `${API_URL}?${new URLSearchParams(params).toString()}`;
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
-    const text = await res.text();
-    try { return JSON.parse(text); }
-    catch { console.error("No JSON desde API:\n", text); throw new Error("La API no devolvió JSON."); }
+    const res = await fetch(url, { headers: { Accept: "application/json" }, credentials: "same-origin" });
+    return parseJsonOrThrow(res);
   }
+
   async function apiPost(accion, payload) {
     const url = `${API_URL}?accion=${encodeURIComponent(accion)}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json; charset=utf-8", Accept: "application/json" },
+      credentials: "same-origin",
       body: JSON.stringify(payload),
     });
-    const text = await res.text();
-    try { return JSON.parse(text); }
-    catch { console.error("No JSON desde API:\n", text); throw new Error("La API no devolvió JSON."); }
+    return parseJsonOrThrow(res);
   }
 
   // ---------- UI helpers ----------
@@ -80,7 +95,6 @@
     return `<span class="${klass} text-xs px-3 py-1 rounded-full">${prettyTipo(u)}</span>`;
   }
 
-  // Renderiza TODOS (activos e inactivos) y marca switch según estado
   function renderRows(lista) {
     if (!Array.isArray(lista)) {
       tbody.innerHTML = `<tr><td class="px-6 py-6 text-red-600" colspan="3">Respuesta inesperada del servidor.</td></tr>`;
@@ -102,7 +116,7 @@
           <td class="px-6 py-4 align-middle text-right">
             <div class="flex justify-end items-center gap-3">
               <button class="btn-editar p-2 border rounded-xl hover:bg-gray-50 transition" type="button" title="Editar">
-                <img class="w-5 h-5" src="../assets/img/pencil-line.svg" alt="Editar" />
+                <img class="w-5 h-5" src="src/assets/img/pencil-line.svg" alt="Editar" />
               </button>
               <label class="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" class="sr-only peer switch-estado" ${activo ? "checked" : ""}>
@@ -173,7 +187,6 @@
       const tipoActualPretty = cellTipo.textContent.trim();
       const tipoActual = tipoActualPretty.toUpperCase();
 
-      // Inputs de edición
       cellNombre.innerHTML = `
         <input type="text" class="w-full rounded-lg border border-gray-200 px-3 py-2 focus:outline-none focus:border-gray-300"
                value="${nombreActual}" data-edit="nombre" />`;
@@ -190,7 +203,6 @@
           </svg>
         </div>`;
 
-      // Botones estilo outline con MENOS radius (rounded-xl)
       acciones.innerHTML = `
         <button
           class="btn-guardar inline-flex items-center gap-2 px-5 py-2 rounded-xl border border-green-600 text-green-600 hover:bg-green-50 transition"
@@ -213,7 +225,6 @@
         const nombreNuevo = row.querySelector('input[data-edit="nombre"]').value.trim();
         const tipoNuevo = row.querySelector('select[data-edit="tipo"]').value.trim();
 
-        // 👉 Validación: si no cambió NADA, avisar y no llamar a la API
         const noCambioNombre = nombreNuevo === nombreActual;
         const noCambioTipo = tipoNuevo.toUpperCase() === tipoActual;
         if (noCambioNombre && noCambioTipo) {

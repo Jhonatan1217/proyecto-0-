@@ -104,6 +104,12 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- 🔧 Define la URL absoluta del controlador SIN tocar tu JS base -->
+  <script>
+    window.API_URL = "<?= BASE_URL ?>src/controllers/InstructorController.php";
+  </script>
+
   <script src="<?= BASE_URL ?>src/assets/js/gestionarInstructor.js"></script>
 </body>
 </html>
