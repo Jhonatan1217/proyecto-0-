@@ -59,7 +59,7 @@
                 <div class="flex justify-end items-center gap-3">
                   <!-- Editar -->
                   <button class="btn-editar p-2 border rounded-xl hover:bg-gray-50 transition" type="button" title="Editar">
-                    <img class="w-5 h-5" src="../assets/img/pencil-line.svg" alt="Editar" />
+                    <img class="w-5 h-5" src="<?= BASE_URL ?> src/assets/img/pencil-line.svg" alt="Editar" />
                   </button>
                   <!-- Switch -->
                   <label class="relative inline-flex items-center cursor-pointer">
@@ -144,7 +144,8 @@
       </div>
     </div>
   </div>
-  <script src="../assets/js/gestionZonas.js"></script>
+  <script>const BASE_URL = "<?= BASE_URL ?>";</script>
+  <script src="<?= BASE_URL ?>src/assets/js/gestionZonas.js"></script>
 
 
 </body>

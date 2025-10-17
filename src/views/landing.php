@@ -26,7 +26,7 @@
           CREAR TRIMESTRALIZACIÓN
         </button>
 
-        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionTrimestres"
+        <a href="<?= BASE_URL ?>index.php?page=src/views/register_tables"
           class="block text-center w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-[#004A70] transition-colors duration-200 outline-none cursor-pointer hover:text-white">
           VISUALIZAR HORARIO
         </a>
