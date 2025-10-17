@@ -3,18 +3,14 @@ header('Content-Type: application/json; charset=utf-8');
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// ✅ tu conexión actual devuelve $conn, no una clase
 include_once __DIR__ . '/../../config/database.php';
 include_once __DIR__ . '/../models/Trimestre.php';
 
-// Usa directamente la variable $conn
 $trimestre = new Trimestre($conn);
-
-// Detectar el método HTTP
 $method = $_SERVER['REQUEST_METHOD'];
 
 switch ($method) {
-    // 🔹 LISTAR todos o uno por número
+
     case 'GET':
         if (isset($_GET['numero_trimestre'])) {
             $stmt = $trimestre->obtenerPorId($_GET['numero_trimestre']);
@@ -22,41 +18,47 @@ switch ($method) {
             echo json_encode($data ?: ['mensaje' => 'No encontrado']);
         } else {
             $stmt = $trimestre->listar();
-            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            echo json_encode($data);
+            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
         }
         break;
 
-    // 🔹 CREAR nuevo trimestre
     case 'POST':
+        // Soporte tanto para crear, suspender o reactivar
         $input = json_decode(file_get_contents('php://input'), true);
-        if (!empty($input['numero_trimestre'])) {
-            $ok = $trimestre->crear($input['numero_trimestre'], $input['estado'] ?? 1);
-            echo json_encode(['mensaje' => $ok ? 'Trimestre creado correctamente' : 'Error al crear']);
-        } else {
-            echo json_encode(['error' => 'Faltan datos obligatorios']);
-        }
-        break;
+        if (!$input) $input = $_POST; // Si no viene en JSON, tomarlo como formulario
 
-    // 🔹 ACTUALIZAR trimestre
-    case 'PUT':
-        $input = json_decode(file_get_contents('php://input'), true);
-        if (!empty($input['numero_trimestre'])) {
-            $ok = $trimestre->actualizar($input['numero_trimestre'], $input['estado']);
-            echo json_encode(['mensaje' => $ok ? 'Trimestre actualizado correctamente' : 'Error al actualizar']);
-        } else {
-            echo json_encode(['error' => 'Datos incompletos']);
-        }
-        break;
+        if (isset($input['accion'])) {
+            switch ($input['accion']) {
+                case 'suspender':
+                    if (!empty($input['numero_trimestre'])) {
+                        $ok = $trimestre->eliminar($input['numero_trimestre']);
+                        echo json_encode(['mensaje' => $ok ? 'Trimestre suspendido correctamente' : 'Error al suspender']);
+                    } else {
+                        echo json_encode(['error' => 'Falta el número de trimestre']);
+                    }
+                    break;
 
-    // 🔹 ELIMINAR trimestre
-    case 'DELETE':
-        parse_str(file_get_contents("php://input"), $_DELETE);
-        if (!empty($_DELETE['numero_trimestre'])) {
-            $ok = $trimestre->eliminar($_DELETE['numero_trimestre']);
-            echo json_encode(['mensaje' => $ok ? 'Trimestre eliminado correctamente' : 'Error al eliminar']);
+                case 'reactivar':
+                    if (!empty($input['numero_trimestre'])) {
+                        $ok = $trimestre->reactivar($input['numero_trimestre']);
+                        echo json_encode(['mensaje' => $ok ? 'Trimestre reactivado correctamente' : 'Error al reactivar']);
+                    } else {
+                        echo json_encode(['error' => 'Falta el número de trimestre']);
+                    }
+                    break;
+
+                default:
+                    echo json_encode(['error' => 'Acción no reconocida']);
+                    break;
+            }
         } else {
-            echo json_encode(['error' => 'Falta el número de trimestre']);
+            // Crear trimestre
+            if (!empty($input['numero_trimestre'])) {
+                $ok = $trimestre->crear($input['numero_trimestre'], $input['estado'] ?? 1);
+                echo json_encode(['mensaje' => $ok ? 'Trimestre creado correctamente' : 'Error al crear']);
+            } else {
+                echo json_encode(['error' => 'Faltan datos obligatorios']);
+            }
         }
         break;
 

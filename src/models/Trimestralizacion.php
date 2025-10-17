@@ -198,57 +198,22 @@ class Trimestralizacion {
     }
 
     // ============================================================
-    // ELIMINAR TRIMESTRALIZACIONES POR ZONA (completo)
+    // ELIMINAR TRIMESTRALIZACIONES POR ZONA (marcar como INACTIVO)
     // ============================================================
     public function eliminarPorZona($id_zona) {
         try {
             $this->conn->beginTransaction();
 
-            // Obtener registros de horarios de la zona
-            $stmt = $this->conn->prepare("
-                SELECT id_horario, id_ficha, id_instructor, id_competencia
-                FROM horarios
-                WHERE id_zona = :id_zona
-            ");
+            // Marcar todos los horarios de la zona como inactivos (estado = 0)
+            $stmt = $this->conn->prepare("UPDATE horarios SET estado = 0 WHERE id_zona = :id_zona");
             $stmt->bindParam(':id_zona', $id_zona, PDO::PARAM_INT);
             $stmt->execute();
-            $registros = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            // Eliminar de trimestralizacion
-            $stmtDel = $this->conn->prepare("DELETE FROM {$this->table} WHERE id_horario = :id_horario");
-            foreach ($registros as $r) {
-                $stmtDel->execute([':id_horario' => $r['id_horario']]);
-            }
-
-            // Eliminar horarios
-            $stmt = $this->conn->prepare("DELETE FROM horarios WHERE id_zona = :id_zona");
-            $stmt->bindParam(':id_zona', $id_zona, PDO::PARAM_INT);
-            $stmt->execute();
-
-            // Eliminar fichas, instructores y competencias si no están en otros horarios
-            foreach ($registros as $r) {
-                $this->conn->prepare("
-                    DELETE FROM fichas 
-                    WHERE id_ficha = :id_ficha AND NOT EXISTS (SELECT 1 FROM horarios WHERE id_ficha = :id_ficha2)
-                ")->execute([':id_ficha' => $r['id_ficha'], ':id_ficha2' => $r['id_ficha']]);
-
-                $this->conn->prepare("
-                    DELETE FROM instructores 
-                    WHERE id_instructor = :id_instructor AND NOT EXISTS (SELECT 1 FROM horarios WHERE id_instructor = :id_instructor2)
-                ")->execute([':id_instructor' => $r['id_instructor'], ':id_instructor2' => $r['id_instructor']]);
-
-                $this->conn->prepare("
-                    DELETE FROM competencias 
-                    WHERE id_competencia = :id_comp AND NOT EXISTS (SELECT 1 FROM horarios WHERE id_competencia = :id_comp2)
-                ")->execute([':id_comp' => $r['id_competencia'], ':id_comp2' => $r['id_competencia']]);
-            }
 
             $this->conn->commit();
-            return ["success" => true, "message" => "Todos los registros de la zona eliminados correctamente."];
-
+            return ["success" => true, "message" => "Trimestralización marcada como inactiva correctamente para la zona."];
         } catch (PDOException $e) {
             $this->conn->rollBack();
-            return ["error" => "Error al eliminar: " . $e->getMessage()];
+            return ["error" => "Error al marcar como inactivo: " . $e->getMessage()];
         }
     }
 }
