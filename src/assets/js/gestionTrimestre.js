@@ -114,9 +114,9 @@ function agregarEventosTabla() {
       const nuevoNumero = tr.querySelector("input[data-edit='numero']").value.trim();
       const original = tr.dataset.originalNumero;
 
-      if (!nuevoNumero) {
-        toast("Ingresa un número de trimestre válido", "warning");
-        return;
+      if (!nuevoNumero) return toast("Ingresa un número de trimestre válido", "warning");
+      if (isNaN(nuevoNumero) || nuevoNumero.includes(",") || !Number.isInteger(Number(nuevoNumero))) {
+        return toast("Solo se permiten números enteros sin comas ni decimales", "warning");
       }
 
       try {
@@ -127,6 +127,10 @@ function agregarEventosTabla() {
         });
 
         const data = await res.json();
+
+        if (data.mensaje?.toLowerCase().includes("existe") || data.mensaje?.toLowerCase().includes("repetido")) {
+          return toast("Ya existe un trimestre con ese número", "warning");
+        }
 
         if (data.status === "success" || data.mensaje?.includes("correctamente")) {
           tdNumero.innerHTML = `Trimestre ${nuevoNumero}`;
@@ -206,6 +210,9 @@ function agregarEventosTabla() {
   });
 }
 
+/* ================================
+   RESTAURAR ACCIONES
+================================= */
 function restaurarAcciones(tdAcc) {
   const accionesBox = tdAcc.querySelector(".flex");
   accionesBox.querySelector(".btnEditar")?.classList.remove("hidden");
@@ -220,9 +227,9 @@ document.getElementById("formNuevoTrimestre").addEventListener("submit", async (
   e.preventDefault();
   const numero = document.getElementById("inputNumeroTrimestre").value.trim();
 
-  if (!numero) {
-    toast("Ingresa el número del trimestre", "warning");
-    return;
+  if (!numero) return toast("Ingresa el número del trimestre", "warning");
+  if (isNaN(numero) || numero.includes(",") || !Number.isInteger(Number(numero))) {
+    return toast("Solo se permiten números enteros sin comas ni decimales", "warning");
   }
 
   const body = { numero_trimestre: numero, estado: 1 };
@@ -235,6 +242,10 @@ document.getElementById("formNuevoTrimestre").addEventListener("submit", async (
     });
 
     const data = await res.json();
+
+    if (data.mensaje?.toLowerCase().includes("existe") || data.mensaje?.toLowerCase().includes("repetido")) {
+      return toast("Ya existe un trimestre con ese número", "warning");
+    }
 
     if (data.status === "success" || data.mensaje?.includes("correctamente")) {
       toast(data.mensaje || "Trimestre creado correctamente", "success");
@@ -250,7 +261,7 @@ document.getElementById("formNuevoTrimestre").addEventListener("submit", async (
 });
 
 /* ================================
-   EVITAR NÚMEROS NEGATIVOS EN INPUTS
+   EVITAR NÚMEROS NEGATIVOS
 ================================= */
 document.addEventListener("input", (e) => {
   if (e.target.type === "number") {

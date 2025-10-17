@@ -47,6 +47,14 @@ class Trimestre {
     $stmt->bindParam(':numero_trimestre', $numero_trimestre);
     return $stmt->execute();
     }
+    public function existe($numero_trimestre) {
+    $sql = "SELECT COUNT(*) as total FROM {$this->table} WHERE numero_trimestre = :numero_trimestre";
+    $stmt = $this->conn->prepare($sql);
+    $stmt->bindParam(':numero_trimestre', $numero_trimestre);
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row['total'] > 0;
+}
 
     // 🔹 Suspender (estado = 0)
     public function eliminar($numero_trimestre) {
