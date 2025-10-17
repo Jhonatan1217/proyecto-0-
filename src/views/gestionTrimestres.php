@@ -79,7 +79,7 @@
 
   <!-- JS -->
 <script>
-const API_URL = "../controllers/TrimestreController.php";
+const API_URL = "src/controllers/TrimestreController.php";
 
 /* ================================
    CONFIGURACIÓN DE TOAST GLOBAL
