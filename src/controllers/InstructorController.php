@@ -17,6 +17,15 @@ if (!isset($conn)) {
     exit;
 }
 
+// ---------- Helpers mínimos añadidos (no rompen tu base) ----------
+function validarSoloTexto($s) {
+    // Solo letras (incluye acentos/ñ) y espacios
+    return preg_match('/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+$/u', $s) === 1;
+}
+function colapsarEspacios($s) {
+    return trim(preg_replace('/\s{2,}/u', ' ', (string)$s));
+}
+
 // Instancia el modelo Instructor pasando la conexión a la base de datos
 $instructor = new Instructor($conn);
 
@@ -53,10 +62,17 @@ switch ($accion) {
         $data = json_decode(file_get_contents("php://input"), true);
 
         $nombre = $data['nombre_instructor'] ?? $_POST['nombre_instructor'] ?? null;
-        $tipo = $data['tipo_instructor'] ?? $_POST['tipo_instructor'] ?? null;
+        $tipo   = $data['tipo_instructor']    ?? $_POST['tipo_instructor']    ?? null;
 
         if (!$nombre || !$tipo) {
             echo json_encode(['error' => 'Debe enviar nombre_instructor y tipo_instructor']);
+            exit;
+        }
+
+        // Normalizar y validar nombre (solo letras y espacios)
+        $nombre = colapsarEspacios($nombre);
+        if ($nombre === '' || !validarSoloTexto($nombre)) {
+            echo json_encode(['error' => 'El nombre solo puede contener letras y espacios']);
             exit;
         }
 
@@ -74,12 +90,19 @@ switch ($accion) {
     case 'actualizar':
         $data = json_decode(file_get_contents("php://input"), true);
 
-        $id_instructor = $data['id_instructor'] ?? $_POST['id_instructor'] ?? null;
-        $nombre = $data['nombre_instructor'] ?? $_POST['nombre_instructor'] ?? null;
-        $tipo = $data['tipo_instructor'] ?? $_POST['tipo_instructor'] ?? null;
+        $id_instructor = $data['id_instructor']      ?? $_POST['id_instructor']      ?? null;
+        $nombre        = $data['nombre_instructor']  ?? $_POST['nombre_instructor']  ?? null;
+        $tipo          = $data['tipo_instructor']    ?? $_POST['tipo_instructor']    ?? null;
 
         if (!$id_instructor || !$nombre || !$tipo) {
             echo json_encode(['error' => 'Debe enviar id_instructor, nombre_instructor y tipo_instructor']);
+            exit;
+        }
+
+        // Normalizar y validar nombre (solo letras y espacios)
+        $nombre = colapsarEspacios($nombre);
+        if ($nombre === '' || !validarSoloTexto($nombre)) {
+            echo json_encode(['error' => 'El nombre solo puede contener letras y espacios']);
             exit;
         }
 
@@ -111,7 +134,7 @@ switch ($accion) {
     case 'cambiar_estado':
         $data = json_decode(file_get_contents("php://input"), true);
         $id_instructor = $data['id_instructor'] ?? $_POST['id_instructor'] ?? $_GET['id_instructor'] ?? null;
-        $estado = $data['estado'] ?? $_POST['estado'] ?? $_GET['estado'] ?? null;
+        $estado        = $data['estado']        ?? $_POST['estado']        ?? $_GET['estado']        ?? null;
 
         if ($id_instructor === null || $estado === null) {
             echo json_encode(['error' => 'Debe enviar id_instructor y estado (1 o 0)']);

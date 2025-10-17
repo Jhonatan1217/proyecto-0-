@@ -1,11 +1,13 @@
-<?php ?>
+<?php /* views/instructores.php */ ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <title>Gestión de Instructores</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="../assets/css/register_tables.css">
   <script src="https://cdn.tailwindcss.com"></script>
+
 </head>
 <body class="bg-white text-gray-900 font-sans">
 
@@ -29,7 +31,7 @@
         </button>
       </div>
 
-      <div class="overflow-x-auto">
+      <div id="wrapTabla" class="overflow-x-auto overflow-y-auto">
         <table class="w-full text-left" id="tablaInstructores">
           <thead>
             <tr class="text-gray-600 text-sm border-b">
@@ -76,7 +78,6 @@
                   class="w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 py-3 pr-10 shadow-sm
                          focus:ring-0 focus:outline-none focus:border-gray-300">
                   <option disabled selected>Seleccione un tipo</option>
-                  <!-- 👇 valores EXACTOS que espera el controller -->
                   <option value="TECNICO">Tecnico</option>
                   <option value="TRANSVERSAL">Transversal</option>
                   <option value="MIXTO">Mixto</option>
@@ -99,12 +100,21 @@
             </div>
           </form>
         </div>
-
       </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="../assets/js/gestionarInstructor.js"></script>
+
+  <!-- 1) Primero defino la URL del controlador -->
+  <script>
+    window.API_URL = "<?= BASE_URL ?>src/controllers/InstructorController.php";
+  </script>
+
+  <!-- 2) Luego cargo el JS de la pantalla (usa la URL de arriba) -->
+  <!-- IMPORTANTE: ajusta la ruta si tu /public está en medio, por ejemplo:
+       src="<?= BASE_URL ?>public/src/assets/js/gestionarInstructor.js"
+  -->
+  <script src="<?= BASE_URL ?>src/assets/js/gestionarInstructor.js?v=2" defer></script>
 </body>
 </html>

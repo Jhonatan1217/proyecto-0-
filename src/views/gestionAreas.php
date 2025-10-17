@@ -30,7 +30,7 @@
           class="bg-[#00324D] text-white px-5 py-2 rounded-lg flex items-center gap-2 hover:bg-[#00283D] active:scale-[0.98] transition"
           type="button"
         >
-          <img class="w-4" src="../assets/img/plus.svg" alt="Agregar" />
+          <img class="w-4" src="<?= BASE_URL ?>src/assets/img/plus.svg" alt="Agregar" />
           <span class="text-sm font-medium">Nueva Área</span>
         </button>
       </div>
@@ -52,7 +52,7 @@
               <td class="px-6 py-4 text-right">
                 <div class="flex justify-end items-center gap-3">
                   <button class="btn-editar p-2 border rounded-lg hover:bg-gray-50 transition" type="button" title="Editar">
-                    <img class="w-5 h-5" src="../assets/img/pencil-line.svg" alt="Editar" />
+                    <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/pencil-line.svg" alt="Editar" />
                   </button>
                   <!-- Switch -->
                   <label class="relative inline-flex items-center cursor-pointer">
@@ -69,7 +69,7 @@
               <td class="px-6 py-4 text-right">
                 <div class="flex justify-end items-center gap-3">
                   <button class="btn-editar p-2 border rounded-lg hover:bg-gray-50 transition" type="button" title="Editar">
-                    <img class="w-5 h-5" src="../assets/img/pencil-line.svg" alt="Editar" />
+                    <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/pencil-line.svg" alt="Editar" />
                   </button>
                   <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" class="sr-only peer">
@@ -138,10 +138,11 @@
     </div>
   </div>
 
-  <!-- Librería de toasts (para los avisos del JS) -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <!-- Tu JS que consume AreaController.php -->
-  <script src="../assets/js/gestionAreas.js"></script>
+  <script>
+    window.API_URL = "<?= BASE_URL ?>src/controllers/AreaController.php";
+  </script>
+
+  <script src="<?= BASE_URL ?>src/assets/js/gestionAreas.js"></script>
 
 </body>
 </html>

@@ -1,5 +1,8 @@
+/* src/assets/js/gestionarInstructor.js */
 (() => {
-  const API_URL = "../controllers/InstructorController.php";
+  const API_URL = (typeof window !== "undefined" && window.API_URL)
+    ? window.API_URL
+    : "../controllers/InstructorController.php";
 
   const $ = (s, c = document) => c.querySelector(s);
   const modal = $("#modalInstructor");
@@ -10,35 +13,28 @@
   const btnCancel = $("#btnCancelarModalInstructor");
   const form = $("#formNuevoInstructor");
   const tbody = $("#tbodyInstructores");
+  const wrapTabla = document.getElementById("wrapTabla");
 
   function toast(msg, type = "success") {
     if (window.Swal) {
-      Swal.fire({
-        toast: true,
-        position: "top-end",
-        icon: type,
-        title: msg,
-        showConfirmButton: false,
-        timer: 2200,
-        timerProgressBar: true
-      });
+      Swal.fire({ toast:true, position:"top-end", icon:type, title:msg, showConfirmButton:false, timer:2200, timerProgressBar:true });
     } else {
       alert((type === "error" ? "❌ " : type === "warning" ? "⚠️ " : "✅ ") + msg);
     }
   }
 
-  // ---------- Modal ----------
+  // ===== Modal =====
   function openModal() {
     modal.classList.remove("hidden");
     requestAnimationFrame(() => {
       backdrop.classList.remove("opacity-0");
-      panel.classList.remove("opacity-0", "scale-95", "translate-y-2");
+      panel.classList.remove("opacity-0","scale-95","translate-y-2");
     });
   }
   function closeModal() {
     form?.reset();
     backdrop.classList.add("opacity-0");
-    panel.classList.add("opacity-0", "scale-95", "translate-y-2");
+    panel.classList.add("opacity-0","scale-95","translate-y-2");
     setTimeout(() => modal.classList.add("hidden"), 180);
   }
   btnOpen?.addEventListener("click", openModal);
@@ -46,27 +42,34 @@
   btnCancel?.addEventListener("click", closeModal);
   backdrop?.addEventListener("click", (e) => { if (e.target === backdrop) closeModal(); });
 
-  // ---------- API helpers ----------
+  // ===== API =====
+  async function parseJsonOrThrow(res) {
+    const txt = await res.text();
+    try { return JSON.parse(txt); }
+    catch {
+      console.error("No JSON desde API:\n", txt);
+      const status = res.status;
+      const msg = status >= 400 ? `Error ${status} del servidor` : "La API no devolvió JSON.";
+      throw new Error(msg);
+    }
+  }
   async function apiGet(params) {
     const url = `${API_URL}?${new URLSearchParams(params).toString()}`;
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
-    const text = await res.text();
-    try { return JSON.parse(text); }
-    catch { console.error("No JSON desde API:\n", text); throw new Error("La API no devolvió JSON."); }
+    const res = await fetch(url, { headers:{Accept:"application/json"}, credentials:"same-origin" });
+    return parseJsonOrThrow(res);
   }
   async function apiPost(accion, payload) {
     const url = `${API_URL}?accion=${encodeURIComponent(accion)}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json; charset=utf-8", Accept: "application/json" },
+      credentials: "same-origin",
       body: JSON.stringify(payload),
     });
-    const text = await res.text();
-    try { return JSON.parse(text); }
-    catch { console.error("No JSON desde API:\n", text); throw new Error("La API no devolvió JSON."); }
+    return parseJsonOrThrow(res);
   }
 
-  // ---------- UI helpers ----------
+  // ===== Helpers UI =====
   function prettyTipo(t) {
     const u = (t || "").toString().toUpperCase();
     if (u === "TECNICO") return "Tecnico";
@@ -80,14 +83,15 @@
     return `<span class="${klass} text-xs px-3 py-1 rounded-full">${prettyTipo(u)}</span>`;
   }
 
-  // Renderiza TODOS (activos e inactivos) y marca switch según estado
   function renderRows(lista) {
     if (!Array.isArray(lista)) {
       tbody.innerHTML = `<tr><td class="px-6 py-6 text-red-600" colspan="3">Respuesta inesperada del servidor.</td></tr>`;
+      ajustarAltoTabla();
       return;
     }
     if (lista.length === 0) {
       tbody.innerHTML = `<tr><td class="px-6 py-6 text-gray-500 text-center" colspan="3">No hay instructores.</td></tr>`;
+      ajustarAltoTabla();
       return;
     }
     tbody.innerHTML = lista.map((it) => {
@@ -102,7 +106,7 @@
           <td class="px-6 py-4 align-middle text-right">
             <div class="flex justify-end items-center gap-3">
               <button class="btn-editar p-2 border rounded-xl hover:bg-gray-50 transition" type="button" title="Editar">
-                <img class="w-5 h-5" src="../assets/img/pencil-line.svg" alt="Editar" />
+                <img class="w-5 h-5" src="src/assets/img/pencil-line.svg" alt="Editar" />
               </button>
               <label class="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" class="sr-only peer switch-estado" ${activo ? "checked" : ""}>
@@ -113,6 +117,8 @@
           </td>
         </tr>`;
     }).join("");
+
+    ajustarAltoTabla(); // fija altura para 5 filas
   }
 
   function extraerLista(res) {
@@ -129,18 +135,22 @@
       console.error(e);
       tbody.innerHTML = `<tr><td class="px-6 py-6 text-red-600" colspan="3">${e.message}</td></tr>`;
       toast(e.message || "Error al listar", "error");
+      ajustarAltoTabla();
     }
   }
 
-  // ---------- Crear ----------
+  // ===== Crear (con bloqueo de navegación) =====
   form?.addEventListener("submit", async (e) => {
-    e.preventDefault();
+    e.preventDefault();           // bloquea envío nativo
+    e.stopPropagation();
+    e.stopImmediatePropagation(); // refuerzo
+
     const nombre = (form.nombre_instructor.value || "").trim();
     const tipo = (form.tipo_instructor.value || "").trim();
 
     if (!nombre || !tipo || tipo === "Seleccione un tipo") {
       toast("Complete nombre y tipo de instructor", "warning");
-      return;
+      return false;
     }
 
     try {
@@ -149,12 +159,14 @@
       toast(res?.mensaje || "Instructor creado correctamente", "success");
       closeModal();
       await cargarInstructores();
+      return false; // nada de navegación
     } catch (e2) {
       toast(e2.message || "Error al crear", "error");
+      return false;
     }
   });
 
-  // ---------- Editar en línea / Guardar / Cancelar ----------
+  // ===== Editar en línea / Guardar / Cancelar =====
   tbody?.addEventListener("click", async (e) => {
     const row = e.target.closest("tr[data-id]");
     if (!row) return;
@@ -173,7 +185,6 @@
       const tipoActualPretty = cellTipo.textContent.trim();
       const tipoActual = tipoActualPretty.toUpperCase();
 
-      // Inputs de edición
       cellNombre.innerHTML = `
         <input type="text" class="w-full rounded-lg border border-gray-200 px-3 py-2 focus:outline-none focus:border-gray-300"
                value="${nombreActual}" data-edit="nombre" />`;
@@ -190,18 +201,9 @@
           </svg>
         </div>`;
 
-      // Botones estilo outline con MENOS radius (rounded-xl)
       acciones.innerHTML = `
-        <button
-          class="btn-guardar inline-flex items-center gap-2 px-5 py-2 rounded-xl border border-green-600 text-green-600 hover:bg-green-50 transition"
-          type="button">
-          Guardar
-        </button>
-        <button
-          class="btn-cancelar inline-flex items-center gap-2 px-5 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
-          type="button">
-          Cancelar
-        </button>
+        <button class="btn-guardar inline-flex items-center gap-2 px-5 py-2 rounded-xl border border-green-600 text-green-600 hover:bg-green-50 transition" type="button">Guardar</button>
+        <button class="btn-cancelar inline-flex items-center gap-2 px-5 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition" type="button">Cancelar</button>
       `;
 
       acciones.querySelector(".btn-cancelar").addEventListener("click", async () => {
@@ -213,25 +215,14 @@
         const nombreNuevo = row.querySelector('input[data-edit="nombre"]').value.trim();
         const tipoNuevo = row.querySelector('select[data-edit="tipo"]').value.trim();
 
-        // 👉 Validación: si no cambió NADA, avisar y no llamar a la API
         const noCambioNombre = nombreNuevo === nombreActual;
         const noCambioTipo = tipoNuevo.toUpperCase() === tipoActual;
-        if (noCambioNombre && noCambioTipo) {
-          toast("Debes modificar al menos un campo antes de guardar", "warning");
-          return;
-        }
+        if (noCambioNombre && noCambioTipo) return toast("Debes modificar al menos un campo antes de guardar", "warning");
 
-        if (!nombreNuevo || !tipoNuevo) {
-          toast("Complete nombre y tipo de instructor", "warning");
-          return;
-        }
+        if (!nombreNuevo || !tipoNuevo) return toast("Complete nombre y tipo de instructor", "warning");
 
         try {
-          const res = await apiPost("actualizar", {
-            id_instructor: id,
-            nombre_instructor: nombreNuevo,
-            tipo_instructor: tipoNuevo
-          });
+          const res = await apiPost("actualizar", { id_instructor: id, nombre_instructor: nombreNuevo, tipo_instructor: tipoNuevo });
           if (res?.error) throw new Error(res.error);
           toast(res?.mensaje || "Instructor actualizado", "success");
           row.classList.remove("editando");
@@ -243,7 +234,7 @@
     }
   });
 
-  // ---------- Cambiar estado (mantener fila visible) ----------
+  // ===== Cambiar estado =====
   tbody?.addEventListener("change", async (e) => {
     const sw = e.target.closest(".switch-estado");
     if (!sw) return;
@@ -254,17 +245,28 @@
     try {
       const res = await apiPost("cambiar_estado", { id_instructor: id, estado: nuevoEstado });
       if (res?.error) throw new Error(res.error);
-
-      if (nuevoEstado === 0) {
-        toast("Usuario deshabilitado correctamente", "success");
-      } else {
-        toast(res?.mensaje || "Usuario habilitado correctamente", "success");
-      }
+      toast(nuevoEstado === 0 ? "Usuario deshabilitado correctamente" : (res?.mensaje || "Usuario habilitado correctamente"), "success");
     } catch (e4) {
       sw.checked = !sw.checked;
       toast(e4.message || "No se pudo cambiar el estado", "error");
     }
   });
 
-  document.addEventListener("DOMContentLoaded", cargarInstructores);
+  // ===== Scroll interno: 5 filas visibles =====
+  function ajustarAltoTabla() {
+    if (!wrapTabla) return;
+    const thead = document.querySelector("#tablaInstructores thead");
+    const firstRow = document.querySelector("#tablaInstructores tbody tr");
+    const headH = thead ? thead.getBoundingClientRect().height : 44;
+    const rowH  = firstRow ? firstRow.getBoundingClientRect().height : 56;
+    const maxH = headH + rowH * 5;
+    wrapTabla.style.maxHeight = `${Math.ceil(maxH)}px`;
+  }
+  window.addEventListener("resize", ajustarAltoTabla);
+
+  // Init
+  document.addEventListener("DOMContentLoaded", async () => {
+    await cargarInstructores();
+    ajustarAltoTabla();
+  });
 })();

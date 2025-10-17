@@ -38,6 +38,24 @@ class Trimestre {
         return $stmt->execute();
     }
 
+    public function editar($numero_trimestre, $nuevo_numero) {
+    $sql = "UPDATE {$this->table} 
+            SET numero_trimestre = :nuevo_numero 
+            WHERE numero_trimestre = :numero_trimestre";
+    $stmt = $this->conn->prepare($sql);
+    $stmt->bindParam(':nuevo_numero', $nuevo_numero);
+    $stmt->bindParam(':numero_trimestre', $numero_trimestre);
+    return $stmt->execute();
+    }
+    public function existe($numero_trimestre) {
+    $sql = "SELECT COUNT(*) as total FROM {$this->table} WHERE numero_trimestre = :numero_trimestre";
+    $stmt = $this->conn->prepare($sql);
+    $stmt->bindParam(':numero_trimestre', $numero_trimestre);
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row['total'] > 0;
+}
+
     // 🔹 Suspender (estado = 0)
     public function eliminar($numero_trimestre) {
         $sql = "UPDATE {$this->table} SET estado = 0 WHERE numero_trimestre = :numero_trimestre";
