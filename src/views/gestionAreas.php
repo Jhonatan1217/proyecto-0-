@@ -138,10 +138,11 @@
     </div>
   </div>
 
-  <!-- Librería de toasts (para los avisos del JS) -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <!-- Tu JS que consume AreaController.php -->
-  <script src="../assets/js/gestionAreas.js"></script>
+  <script>
+    window.API_URL = "<?= BASE_URL ?>src/controllers/AreaController.php";
+  </script>
+
+  <script src="<?= BASE_URL ?>src/assets/js/gestionAreas.js"></script>
 
 </body>
 </html>
