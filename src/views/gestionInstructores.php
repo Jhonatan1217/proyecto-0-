@@ -99,12 +99,11 @@
             </div>
           </form>
         </div>
-
       </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="../assets/js/gestionarInstructor.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/gestionarInstructor.js"></script>
 </body>
 </html>
