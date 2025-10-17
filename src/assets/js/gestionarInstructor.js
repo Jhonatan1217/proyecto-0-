@@ -1,6 +1,5 @@
 /* src/assets/js/gestionarInstructor.js */
 (() => {
-  // Usa la URL que define la vista (segura con BASE_URL). Mantengo tu valor original como último fallback.
   const API_URL = (typeof window !== "undefined" && window.API_URL)
     ? window.API_URL
     : "../controllers/InstructorController.php";
@@ -18,32 +17,24 @@
 
   function toast(msg, type = "success") {
     if (window.Swal) {
-      Swal.fire({
-        toast: true,
-        position: "top-end",
-        icon: type,
-        title: msg,
-        showConfirmButton: false,
-        timer: 2200,
-        timerProgressBar: true
-      });
+      Swal.fire({ toast:true, position:"top-end", icon:type, title:msg, showConfirmButton:false, timer:2200, timerProgressBar:true });
     } else {
       alert((type === "error" ? "❌ " : type === "warning" ? "⚠️ " : "✅ ") + msg);
     }
   }
 
-  // ---------- Modal ----------
+  // ===== Modal =====
   function openModal() {
     modal.classList.remove("hidden");
     requestAnimationFrame(() => {
       backdrop.classList.remove("opacity-0");
-      panel.classList.remove("opacity-0", "scale-95", "translate-y-2");
+      panel.classList.remove("opacity-0","scale-95","translate-y-2");
     });
   }
   function closeModal() {
     form?.reset();
     backdrop.classList.add("opacity-0");
-    panel.classList.add("opacity-0", "scale-95", "translate-y-2");
+    panel.classList.add("opacity-0","scale-95","translate-y-2");
     setTimeout(() => modal.classList.add("hidden"), 180);
   }
   btnOpen?.addEventListener("click", openModal);
@@ -51,27 +42,22 @@
   btnCancel?.addEventListener("click", closeModal);
   backdrop?.addEventListener("click", (e) => { if (e.target === backdrop) closeModal(); });
 
-  // ---------- API helpers ----------
+  // ===== API =====
   async function parseJsonOrThrow(res) {
     const txt = await res.text();
-    try {
-      return JSON.parse(txt);
-    } catch {
+    try { return JSON.parse(txt); }
+    catch {
       console.error("No JSON desde API:\n", txt);
       const status = res.status;
-      const msg = status >= 400
-        ? `Error ${status} del servidor`
-        : "La API no devolvió JSON.";
+      const msg = status >= 400 ? `Error ${status} del servidor` : "La API no devolvió JSON.";
       throw new Error(msg);
     }
   }
-
   async function apiGet(params) {
     const url = `${API_URL}?${new URLSearchParams(params).toString()}`;
-    const res = await fetch(url, { headers: { Accept: "application/json" }, credentials: "same-origin" });
+    const res = await fetch(url, { headers:{Accept:"application/json"}, credentials:"same-origin" });
     return parseJsonOrThrow(res);
   }
-
   async function apiPost(accion, payload) {
     const url = `${API_URL}?accion=${encodeURIComponent(accion)}`;
     const res = await fetch(url, {
@@ -83,7 +69,7 @@
     return parseJsonOrThrow(res);
   }
 
-  // ---------- UI helpers ----------
+  // ===== Helpers UI =====
   function prettyTipo(t) {
     const u = (t || "").toString().toUpperCase();
     if (u === "TECNICO") return "Tecnico";
@@ -132,7 +118,7 @@
         </tr>`;
     }).join("");
 
-    ajustarAltoTabla(); // ⬅️ fija altura para 5 filas al renderizar
+    ajustarAltoTabla(); // fija altura para 5 filas
   }
 
   function extraerLista(res) {
@@ -153,7 +139,34 @@
     }
   }
 
-  // ---------- Editar en línea / Guardar / Cancelar ----------
+  // ===== Crear (con bloqueo de navegación) =====
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();           // bloquea envío nativo
+    e.stopPropagation();
+    e.stopImmediatePropagation(); // refuerzo
+
+    const nombre = (form.nombre_instructor.value || "").trim();
+    const tipo = (form.tipo_instructor.value || "").trim();
+
+    if (!nombre || !tipo || tipo === "Seleccione un tipo") {
+      toast("Complete nombre y tipo de instructor", "warning");
+      return false;
+    }
+
+    try {
+      const res = await apiPost("crear", { nombre_instructor: nombre, tipo_instructor: tipo });
+      if (res?.error) throw new Error(res.error);
+      toast(res?.mensaje || "Instructor creado correctamente", "success");
+      closeModal();
+      await cargarInstructores();
+      return false; // nada de navegación
+    } catch (e2) {
+      toast(e2.message || "Error al crear", "error");
+      return false;
+    }
+  });
+
+  // ===== Editar en línea / Guardar / Cancelar =====
   tbody?.addEventListener("click", async (e) => {
     const row = e.target.closest("tr[data-id]");
     if (!row) return;
@@ -189,16 +202,8 @@
         </div>`;
 
       acciones.innerHTML = `
-        <button
-          class="btn-guardar inline-flex items-center gap-2 px-5 py-2 rounded-xl border border-green-600 text-green-600 hover:bg-green-50 transition"
-          type="button">
-          Guardar
-        </button>
-        <button
-          class="btn-cancelar inline-flex items-center gap-2 px-5 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
-          type="button">
-          Cancelar
-        </button>
+        <button class="btn-guardar inline-flex items-center gap-2 px-5 py-2 rounded-xl border border-green-600 text-green-600 hover:bg-green-50 transition" type="button">Guardar</button>
+        <button class="btn-cancelar inline-flex items-center gap-2 px-5 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition" type="button">Cancelar</button>
       `;
 
       acciones.querySelector(".btn-cancelar").addEventListener("click", async () => {
@@ -212,22 +217,12 @@
 
         const noCambioNombre = nombreNuevo === nombreActual;
         const noCambioTipo = tipoNuevo.toUpperCase() === tipoActual;
-        if (noCambioNombre && noCambioTipo) {
-          toast("Debes modificar al menos un campo antes de guardar", "warning");
-          return;
-        }
+        if (noCambioNombre && noCambioTipo) return toast("Debes modificar al menos un campo antes de guardar", "warning");
 
-        if (!nombreNuevo || !tipoNuevo) {
-          toast("Complete nombre y tipo de instructor", "warning");
-          return;
-        }
+        if (!nombreNuevo || !tipoNuevo) return toast("Complete nombre y tipo de instructor", "warning");
 
         try {
-          const res = await apiPost("actualizar", {
-            id_instructor: id,
-            nombre_instructor: nombreNuevo,
-            tipo_instructor: tipoNuevo
-          });
+          const res = await apiPost("actualizar", { id_instructor: id, nombre_instructor: nombreNuevo, tipo_instructor: tipoNuevo });
           if (res?.error) throw new Error(res.error);
           toast(res?.mensaje || "Instructor actualizado", "success");
           row.classList.remove("editando");
@@ -239,7 +234,7 @@
     }
   });
 
-  // ---------- Cambiar estado ----------
+  // ===== Cambiar estado =====
   tbody?.addEventListener("change", async (e) => {
     const sw = e.target.closest(".switch-estado");
     if (!sw) return;
@@ -250,7 +245,6 @@
     try {
       const res = await apiPost("cambiar_estado", { id_instructor: id, estado: nuevoEstado });
       if (res?.error) throw new Error(res.error);
-
       toast(nuevoEstado === 0 ? "Usuario deshabilitado correctamente" : (res?.mensaje || "Usuario habilitado correctamente"), "success");
     } catch (e4) {
       sw.checked = !sw.checked;
@@ -258,14 +252,13 @@
     }
   });
 
-  // ===== Scroll interno: exactamente 5 filas visibles =====
+  // ===== Scroll interno: 5 filas visibles =====
   function ajustarAltoTabla() {
     if (!wrapTabla) return;
     const thead = document.querySelector("#tablaInstructores thead");
     const firstRow = document.querySelector("#tablaInstructores tbody tr");
-    const headH = thead ? thead.getBoundingClientRect().height : 44;   // fallback
-    const rowH  = firstRow ? firstRow.getBoundingClientRect().height : 56; // fallback
-    // Altura = encabezado + 5 filas
+    const headH = thead ? thead.getBoundingClientRect().height : 44;
+    const rowH  = firstRow ? firstRow.getBoundingClientRect().height : 56;
     const maxH = headH + rowH * 5;
     wrapTabla.style.maxHeight = `${Math.ceil(maxH)}px`;
   }
@@ -274,6 +267,6 @@
   // Init
   document.addEventListener("DOMContentLoaded", async () => {
     await cargarInstructores();
-    ajustarAltoTabla(); // asegura altura incluso si la lista llega vacía
+    ajustarAltoTabla();
   });
 })();
