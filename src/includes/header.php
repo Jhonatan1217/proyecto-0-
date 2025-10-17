@@ -19,10 +19,10 @@
 
   <!-- Header -->
   <header class="flex items-center justify-between px-6 py-4 border-b shadow-sm">
-    <img src="src/assets/img/logoSena.png" alt="SENA Logo" class="h-10" />
+    <img src="<?= BASE_URL ?>src/assets/img/logoSena.png" alt="SENA Logo" class="h-10" />
 
     <!-- Botón imagen menú -->
-    <img src="src/assets/img/menu.svg" alt="Menú" id="menu-hamburguesa" class="h-8 w-8 cursor-pointer" />
+    <img src="<?= BASE_URL ?>src/assets/img/menu.svg" alt="Menú" id="menu-hamburguesa" class="h-8 w-8 cursor-pointer" />
   </header>
 
   <!-- Menú lateral -->
@@ -31,30 +31,35 @@
       <h2 class="font-semibold text-gray-800 text-xl">Menú de navegación</h2>
       <button id="cerrar-menu" class="text-gray-600 text-2xl hover:text-black">×</button>
     </div>
+
     <ul class="p-4 space-y-4 text-gray-700">
       <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
-        <img src="src/assets/img/map-pin.svg" alt="Icono de Zonas">
-        <a href="#">Zonas</a>
+        <img src="<?= BASE_URL ?>src/assets/img/map-pin.svg" alt="Icono de Zonas">
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionZonas">Zonas</a>
       </li>
+
       <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
-        <img src="src/assets/img/users.svg" alt="Icono de Instructores">
-        <a href="#">Instructores</a>
+        <img src="<?= BASE_URL ?>src/assets/img/users.svg" alt="Icono de Instructores">
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionInstructores">Instructores</a>
       </li>
+
       <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
-        <img src="src/assets/img/house-plus.svg" alt="Icono no Áreas">
-        <a href="#">Áreas</a>
+        <img src="<?= BASE_URL ?>src/assets/img/house-plus.svg" alt="Icono de Áreas">
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionAreas">Áreas</a>
       </li>
+
       <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
-        <img src="src/assets/img/calendar-days.svg" alt="Icono de Horarios">
-        <a href="#">Horarios</a>
+        <img src="<?= BASE_URL ?>src/assets/img/calendar-days.svg" alt="Icono de Horarios">
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionHorarios">Horarios</a>
       </li>
+
       <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
-        <img src="src/assets/img/calendar-range.svg" alt="Icono de Trimestres">
-        <a href="#">Trimestres</a>
+        <img src="<?= BASE_URL ?>src/assets/img/calendar-range.svg" alt="Icono de Trimestres">
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionTrimestres">Trimestres</a>
       </li>
     </ul>
   </nav>
 
-  <script src="src/assets/js/header.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/header.js"></script>
 </body>
 </html>
