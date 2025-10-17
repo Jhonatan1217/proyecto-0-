@@ -121,7 +121,9 @@ try {
               <option value="">Seleccione la zona a la que pertenece la ficha</option>
               <?php foreach ($zonas as $z): ?>
                 <?php $label = isset($z['id_zona']) ? "Zona " . $z['id_zona'] : "Zona"; ?>
-                <option value="<?= htmlspecialchars($z['id_zona']) ?>"><?= htmlspecialchars($label) ?></option>
+                <option value="<?= htmlspecialchars($z['id_zona']) ?>" data-area="<?= htmlspecialchars($z['id_area'] ?? '') ?>">
+                  <?= htmlspecialchars($label) ?>
+                </option>
               <?php endforeach; ?>
             </select>
 
@@ -207,5 +209,40 @@ try {
     <!-- tipo_instructor se determina en el servidor, no hay select correspondiente -->
     <script src="<?= BASE_URL ?>src/assets/js/landing.js"></script>
     <script src="<?= BASE_URL ?>src/assets/js/formulario_trimestralizacion.js"></script>
+    <script>
+      (function(){
+        const selArea = document.getElementById('id_area');
+        const selZona = document.getElementById('id_zona');
+        if (!selArea || !selZona) return;
+
+        function filterZonas() {
+          const areaVal = selArea.value;
+          let hasVisible = false;
+
+          for (const opt of selZona.options) {
+            if (opt.value === "") { // always keep placeholder visible
+              opt.hidden = false;
+              opt.disabled = false;
+              continue;
+            }
+            const optArea = opt.dataset.area ?? "";
+            // Si hay un área seleccionada, mostrar sólo zonas con esa área.
+            // Si no hay área seleccionada, mostrar todas las zonas.
+            const show = areaVal !== "" ? (String(optArea) === String(areaVal)) : true;
+            opt.hidden = !show;
+            opt.disabled = !show;
+            if (show) hasVisible = true;
+          }
+
+          // Si la zona actualmente seleccionada queda oculta, limpiarla
+          const selectedOpt = selZona.selectedOptions[0];
+          if (selectedOpt && selectedOpt.hidden) selZona.value = "";
+        }
+
+        selArea.addEventListener('change', filterZonas);
+        // Ejecutar una vez al cargar para sincronizar (útil si el formulario se reutiliza)
+        document.addEventListener('DOMContentLoaded', filterZonas);
+      })();
+    </script>
   </body>
 </html>
