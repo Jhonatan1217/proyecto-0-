@@ -5,19 +5,9 @@
   <meta charset="UTF-8">
   <title>Gestión de Instructores</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="../assets/css/register_tables.css">
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Scrollbar estilizado -->
-  <style>
-    #wrapTabla {
-      scrollbar-width: thin;
-      scrollbar-color: #00324D #E5E7EB;
-    }
-    #wrapTabla::-webkit-scrollbar { width: 10px; }
-    #wrapTabla::-webkit-scrollbar-track { background: #F3F4F6; border-radius: 12px; }
-    #wrapTabla::-webkit-scrollbar-thumb { background: #00324D; border-radius: 12px; border: 2px solid #F3F4F6; }
-    #wrapTabla::-webkit-scrollbar-thumb:hover { background: #00273A; }
-  </style>
 </head>
 <body class="bg-white text-gray-900 font-sans">
 
