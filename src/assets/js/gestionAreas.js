@@ -13,6 +13,8 @@
   const form = $("#formNuevaArea");
   const tbody = $("#tablaAreas tbody");
 
+  let listaAreas = []; // 🔹 Guardar en memoria la lista de áreas actuales
+
   // ---------- Toast ----------
   function toast(msg, type = "success") {
     if (window.Swal) {
@@ -129,7 +131,8 @@
   async function cargarAreas() {
     try {
       const res = await apiGet({ accion: "listar" });
-      renderRows(Array.isArray(res) ? res : res?.data || []);
+      listaAreas = Array.isArray(res) ? res : res?.data || []; // 🔹 Guardamos lista en memoria
+      renderRows(listaAreas);
     } catch (e) {
       console.error(e);
       tbody.innerHTML = `
@@ -150,6 +153,16 @@
       toast("Debe ingresar el nombre del área", "warning");
       return;
     }
+
+    // 🔹 Validar duplicado antes de crear
+    const duplicado = listaAreas.some(
+      (a) => a.nombre_area.trim().toLowerCase() === nombre.toLowerCase()
+    );
+    if (duplicado) {
+      toast("Ya existe un área con ese nombre", "warning");
+      return;
+    }
+
     try {
       const res = await apiPost("crear", { nombre_area: nombre });
       if (res?.error) throw new Error(res.error);
@@ -198,10 +211,21 @@
           toast("Debe ingresar nombre del área", "warning");
           return;
         }
+
+        // 🔹 Validar duplicado al editar
+        const duplicadoEditar = listaAreas.some(
+          (a) => a.id_area != id && a.nombre_area.trim().toLowerCase() === nombreNuevo.toLowerCase()
+        );
+        if (duplicadoEditar) {
+          toast("Ya existe un área con ese nombre", "warning");
+          return;
+        }
+
         if (nombreNuevo === nombreActual) {
           toast("Debes modificar el campo antes de guardar", "warning");
           return;
         }
+
         try {
           const res = await apiPost("actualizar", { id_area: id, nombre_area: nombreNuevo });
           if (res?.error) throw new Error(res.error);
