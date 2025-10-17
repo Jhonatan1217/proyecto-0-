@@ -1,4 +1,4 @@
-<?php ?>
+<?php /* views/instructores.php */ ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -6,6 +6,31 @@
   <title>Gestión de Instructores</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Scrollbar estilizado (no requiere plugins) -->
+  <style>
+    /* Firefox */
+    #wrapTabla {
+      scrollbar-width: thin;                 /* fino */
+      scrollbar-color: #00324D #E5E7EB;     /* pulgar / pista */
+    }
+    /* Chromium/WebKit */
+    #wrapTabla::-webkit-scrollbar {
+      width: 10px;
+    }
+    #wrapTabla::-webkit-scrollbar-track {
+      background: #F3F4F6;                  /* gris-100 Tailwind */
+      border-radius: 12px;
+    }
+    #wrapTabla::-webkit-scrollbar-thumb {
+      background: #00324D;                  /* tu color principal */
+      border-radius: 12px;
+      border: 2px solid #F3F4F6;            /* “gap” visual */
+    }
+    #wrapTabla::-webkit-scrollbar-thumb:hover {
+      background: #00273A;                  /* hover más oscuro */
+    }
+  </style>
 </head>
 <body class="bg-white text-gray-900 font-sans">
 
@@ -29,7 +54,8 @@
         </button>
       </div>
 
-      <div class="overflow-x-auto">
+      <!-- 👇 contenedor con scroll interno -->
+      <div id="wrapTabla" class="overflow-x-auto overflow-y-auto">
         <table class="w-full text-left" id="tablaInstructores">
           <thead>
             <tr class="text-gray-600 text-sm border-b">
@@ -76,7 +102,7 @@
                   class="w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 py-3 pr-10 shadow-sm
                          focus:ring-0 focus:outline-none focus:border-gray-300">
                   <option disabled selected>Seleccione un tipo</option>
-                  <!-- 👇 valores EXACTOS que espera el controller -->
+                  <!-- valores EXACTOS que espera el controller -->
                   <option value="TECNICO">Tecnico</option>
                   <option value="TRANSVERSAL">Transversal</option>
                   <option value="MIXTO">Mixto</option>
@@ -103,13 +129,15 @@
     </div>
   </div>
 
+  <!-- Lib -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-  <!-- 🔧 Define la URL absoluta del controlador SIN tocar tu JS base -->
+  <!-- URL del controlador (sin tocar tu base) -->
   <script>
     window.API_URL = "<?= BASE_URL ?>src/controllers/InstructorController.php";
   </script>
 
+  <!-- Tu JS separado -->
   <script src="<?= BASE_URL ?>src/assets/js/gestionarInstructor.js"></script>
 </body>
 </html>

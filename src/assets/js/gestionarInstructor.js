@@ -1,3 +1,4 @@
+/* src/assets/js/gestionarInstructor.js */
 (() => {
   // Usa la URL que define la vista (segura con BASE_URL). Mantengo tu valor original como último fallback.
   const API_URL = (typeof window !== "undefined" && window.API_URL)
@@ -13,6 +14,7 @@
   const btnCancel = $("#btnCancelarModalInstructor");
   const form = $("#formNuevoInstructor");
   const tbody = $("#tbodyInstructores");
+  const wrapTabla = document.getElementById("wrapTabla");
 
   function toast(msg, type = "success") {
     if (window.Swal) {
@@ -98,10 +100,12 @@
   function renderRows(lista) {
     if (!Array.isArray(lista)) {
       tbody.innerHTML = `<tr><td class="px-6 py-6 text-red-600" colspan="3">Respuesta inesperada del servidor.</td></tr>`;
+      ajustarAltoTabla();
       return;
     }
     if (lista.length === 0) {
       tbody.innerHTML = `<tr><td class="px-6 py-6 text-gray-500 text-center" colspan="3">No hay instructores.</td></tr>`;
+      ajustarAltoTabla();
       return;
     }
     tbody.innerHTML = lista.map((it) => {
@@ -127,6 +131,8 @@
           </td>
         </tr>`;
     }).join("");
+
+    ajustarAltoTabla(); // ⬅️ fija altura para 5 filas al renderizar
   }
 
   function extraerLista(res) {
@@ -143,30 +149,9 @@
       console.error(e);
       tbody.innerHTML = `<tr><td class="px-6 py-6 text-red-600" colspan="3">${e.message}</td></tr>`;
       toast(e.message || "Error al listar", "error");
+      ajustarAltoTabla();
     }
   }
-
-  // ---------- Crear ----------
-  form?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const nombre = (form.nombre_instructor.value || "").trim();
-    const tipo = (form.tipo_instructor.value || "").trim();
-
-    if (!nombre || !tipo || tipo === "Seleccione un tipo") {
-      toast("Complete nombre y tipo de instructor", "warning");
-      return;
-    }
-
-    try {
-      const res = await apiPost("crear", { nombre_instructor: nombre, tipo_instructor: tipo });
-      if (res?.error) throw new Error(res.error);
-      toast(res?.mensaje || "Instructor creado correctamente", "success");
-      closeModal();
-      await cargarInstructores();
-    } catch (e2) {
-      toast(e2.message || "Error al crear", "error");
-    }
-  });
 
   // ---------- Editar en línea / Guardar / Cancelar ----------
   tbody?.addEventListener("click", async (e) => {
@@ -254,7 +239,7 @@
     }
   });
 
-  // ---------- Cambiar estado (mantener fila visible) ----------
+  // ---------- Cambiar estado ----------
   tbody?.addEventListener("change", async (e) => {
     const sw = e.target.closest(".switch-estado");
     if (!sw) return;
@@ -266,16 +251,29 @@
       const res = await apiPost("cambiar_estado", { id_instructor: id, estado: nuevoEstado });
       if (res?.error) throw new Error(res.error);
 
-      if (nuevoEstado === 0) {
-        toast("Usuario deshabilitado correctamente", "success");
-      } else {
-        toast(res?.mensaje || "Usuario habilitado correctamente", "success");
-      }
+      toast(nuevoEstado === 0 ? "Usuario deshabilitado correctamente" : (res?.mensaje || "Usuario habilitado correctamente"), "success");
     } catch (e4) {
       sw.checked = !sw.checked;
       toast(e4.message || "No se pudo cambiar el estado", "error");
     }
   });
 
-  document.addEventListener("DOMContentLoaded", cargarInstructores);
+  // ===== Scroll interno: exactamente 5 filas visibles =====
+  function ajustarAltoTabla() {
+    if (!wrapTabla) return;
+    const thead = document.querySelector("#tablaInstructores thead");
+    const firstRow = document.querySelector("#tablaInstructores tbody tr");
+    const headH = thead ? thead.getBoundingClientRect().height : 44;   // fallback
+    const rowH  = firstRow ? firstRow.getBoundingClientRect().height : 56; // fallback
+    // Altura = encabezado + 5 filas
+    const maxH = headH + rowH * 5;
+    wrapTabla.style.maxHeight = `${Math.ceil(maxH)}px`;
+  }
+  window.addEventListener("resize", ajustarAltoTabla);
+
+  // Init
+  document.addEventListener("DOMContentLoaded", async () => {
+    await cargarInstructores();
+    ajustarAltoTabla(); // asegura altura incluso si la lista llega vacía
+  });
 })();
