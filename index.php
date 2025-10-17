@@ -28,7 +28,7 @@ define('BASE_URL', $protocol . $host . $script_dir);
         <?php require_once BASE_PATH . '/src/includes/main.php'; ?>
     </main>
 
-    <footer class="border-t text-center py-4 text-gray-600">
+    <footer>
         <?php require_once BASE_PATH . '/src/includes/footer.php'; ?>
     </footer>
 </body>

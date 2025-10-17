@@ -55,7 +55,7 @@
 
       <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/calendar-days.svg" alt="Icono de Horarios">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionHorarios">Horarios</a>
+        <a href="<?= BASE_URL ?>index.php?page=src/views/register_tables  ">Horarios</a>
       </li>
 
       <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
