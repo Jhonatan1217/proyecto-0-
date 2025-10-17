@@ -1,26 +1,4 @@
-(() => {
-        const ddBtn   = document.getElementById("dropdownButton");
-        const ddMenu  = document.getElementById("dropdownMenu");
-        const ddArrow = ddBtn?.querySelector("svg");
-
-        ddBtn?.addEventListener("click", () => {
-          const isHidden = ddMenu?.classList.toggle("hidden");
-          ddArrow?.classList.toggle("rotate-180", !isHidden);
-          ddBtn.setAttribute("aria-expanded", String(!isHidden));
-        });
-
-        window.addEventListener("click", (e) => {
-          const inBtn  = e.target.closest("#dropdownButton");
-          const inMenu = e.target.closest("#dropdownMenu");
-          if (!inBtn && !inMenu) {
-            ddMenu?.classList.add("hidden");
-            ddArrow?.classList.remove("rotate-180");
-            ddBtn?.setAttribute("aria-expanded", "false");
-          }
-        });
-      })();
-
-      /* ========== Modal (aislado, sin colisiones de nombres) ========== */
+/* ========== Modal (aislado, sin colisiones de nombres) ========== */
       (() => {
         const landing_openBtn   = document.getElementById("btnAbrirModal");
         const landing_modal     = document.getElementById("modalCrearLanding");
@@ -88,11 +66,14 @@
 
       })();
 
-      document.getElementById('zona').addEventListener('change', function() {
-    const id_zona = this.value;
-    if (id_zona) {
-      window.location.href = `index.php?page=src/views/register_tables&id_zona=${id_zona}`;
-  }
-});
+      // Redirige al hacer clic en el botón "Visualizar horario"
+      const btnVisualizar = document.getElementById("btnVisualizarHorario");
+      if (btnVisualizar) {
+        btnVisualizar.addEventListener("click", () => {
+          window.location.href = `${BASE_URL}index.php?page=src/views/register_tables`;
+        });
+      }
+
+
 
       
