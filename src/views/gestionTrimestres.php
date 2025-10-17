@@ -166,9 +166,85 @@
       /* ---------- Edición inline en la tabla (delegación) ---------- */
       const tabla = document.getElementById('tablaTrimestres');
 
-      tabla.addEventListener('click', (e) => {
-        const btn = e.target.closest('button');
-        if (!btn) return;
+      tablaBody.addEventListener("click", async (e) => {
+  const btnEditar = e.target.closest(".btn-editar");
+  if (!btnEditar) return;
+
+  const tr = btnEditar.closest("tr");
+  const id_zona_actual = tr.dataset.id;
+  const tdZona = tr.children[0];
+  const tdArea = tr.children[1];
+  const tdAcc = tr.children[2];
+
+  const zonaOriginal = tdZona.textContent.trim();
+  const areaOriginal = tdArea.textContent.trim();
+
+  // Reemplazar por inputs
+  tdZona.innerHTML = `<input type="number" value="${zonaOriginal}" class="w-20 border rounded-lg text-center">`;
+  tdArea.innerHTML = `
+    <select class="border rounded-lg px-2 py-1">
+      <option value="1" ${areaOriginal === "Polivalente" ? "selected" : ""}>Polivalente</option>
+      <option value="2" ${areaOriginal === "Confecciones" ? "selected" : ""}>Confecciones</option>
+    </select>
+  `;
+
+  tdAcc.innerHTML = `
+    <button class="btn-guardar bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 transition">Guardar</button>
+    <button class="btn-cancelar bg-gray-400 text-white px-3 py-1 rounded-lg hover:bg-gray-500 transition">Cancelar</button>
+  `;
+
+  // Cancelar edición
+  tdAcc.querySelector(".btn-cancelar").addEventListener("click", () => {
+    tdZona.textContent = zonaOriginal;
+    tdArea.innerHTML = `<span class="bg-${areaOriginal === "Confecciones" ? "blue" : "green"}-600 text-white text-xs px-3 py-1 rounded-full">${areaOriginal}</span>`;
+    tdAcc.innerHTML = `
+      <div class="flex justify-end items-center gap-3">
+        <button class="btn-editar p-2 border rounded-xl hover:bg-gray-50 transition" title="Editar">
+          <img class="w-5 h-5" src="../assets/img/pencil-line.svg" alt="Editar" />
+        </button>
+      </div>
+    `;
+  });
+
+  // Guardar cambios
+  tdAcc.querySelector(".btn-guardar").addEventListener("click", async () => {
+    const id_zona_nueva = tdZona.querySelector("input").value.trim();
+    const id_area = tdArea.querySelector("select").value.trim();
+
+    if (!id_zona_nueva || !id_area) {
+      alert("⚠️ Debes ingresar los datos completos antes de guardar.");
+      return;
+    }
+
+    console.log("🟢 Enviando actualización:", { id_zona_actual, id_zona_nueva, id_area });
+
+    try {
+      const res = await fetch(BASE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accion: "actualizar",
+          id_zona_actual,
+          id_zona_nueva,
+          id_area
+        }),
+      });
+
+      const json = await res.json();
+      console.log("🟣 Respuesta actualizar:", json);
+
+      if (json.status === "success") {
+        alert("✅ Zona actualizada correctamente");
+        cargarZonas();
+      } else {
+        alert("❌ " + json.message);
+      }
+    } catch (err) {
+      console.error("Error al actualizar zona:", err);
+    }
+  });
+});
+
 
         // Guardar
         if (btn.classList.contains('btn-guardar')) {

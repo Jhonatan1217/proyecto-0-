@@ -42,7 +42,7 @@ class Zona {
             $stmt->bindParam(':id_zona_actual', $id_zona_actual, PDO::PARAM_INT);
             return $stmt->execute();
         } catch (PDOException $e) {
-            echo "Error al actualizar zona: " . $e->getMessage();
+            error_log("Error al actualizar zona: " . $e->getMessage());
             return false;
         }
     }
@@ -69,19 +69,25 @@ class Zona {
      * Listar todas las zonas con su área correspondiente
      */
     public function listar() {
-        try {
-            $sql = "SELECT z.id_zona, z.id_area, a.nombre_area, z.estado
-                    FROM " . $this->table . " z
-                    LEFT JOIN areas a ON z.id_area = a.id_area
-                    ORDER BY z.id_zona ASC";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute();
-            return $stmt;
-        } catch (PDOException $e) {
-            echo "Error al listar zonas: " . $e->getMessage();
-            return null;
-        }
+    try {
+        $sql = "SELECT 
+                    z.id_zona, 
+                    z.id_area, 
+                    a.nombre_area, 
+                    z.estado
+                FROM {$this->table} z
+                LEFT JOIN areas a ON z.id_area = a.id_area
+                ORDER BY z.id_zona ASC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        // ❌ No hagas echo aquí
+        return [];
     }
+}
+
+
 
     /**
      * Obtener una zona específica por su número (id_zona)
