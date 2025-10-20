@@ -9,7 +9,7 @@ include_once __DIR__ . '/../models/Zona.php';
 $zona = new Zona($conn);
 $response = ["status" => "error", "message" => "Acción no válida"];
 
-// 🔹 Leer cuerpo JSON si existe
+// Leer cuerpo JSON si existe
 $inputJSON = file_get_contents("php://input");
 if ($inputJSON) {
     $data = json_decode($inputJSON, true);
@@ -18,14 +18,14 @@ if ($inputJSON) {
     }
 }
 
-// 🔹 Obtener acción (fusionada)
+// Obtener acción (fusionada)
 $accion = $_POST["accion"] ?? $_GET["accion"] ?? null;
 
 try {
     if ($accion) {
         switch ($accion) {
 
-            // 🔹 Crear zona
+            // Crear zona
             case "crear":
                 $id_zona = $_POST["id_zona"] ?? null;
                 $id_area = $_POST["id_area"] ?? null;
@@ -35,7 +35,7 @@ try {
                     break;
                 }
 
-                // ✅ Verificar que el área exista
+                // Verificar que el área exista
                 $stmt = $conn->prepare("SELECT COUNT(*) FROM areas WHERE id_area = ?");
                 $stmt->execute([$id_area]);
                 if ($stmt->fetchColumn() == 0) {
@@ -43,21 +43,14 @@ try {
                     break;
                 }
 
-                // ✅ Verificar si la zona ya existe
-                $existe = $zona->obtenerPorId($id_zona);
-                if ($existe) {
-                    $response = ["status" => "error", "message" => "Ya existe una zona con ese número"];
-                    break;
-                }
-
-                // ✅ Crear zona
+                // Crear zona (sin verificar duplicados)
                 $ok = $zona->crear($id_zona, $id_area);
                 $response = $ok
                     ? ["status" => "success", "message" => "Zona creada correctamente"]
                     : ["status" => "error", "message" => "Error al crear la zona"];
                 break;
 
-            // 🔹 Actualizar zona
+            // Actualizar zona
             case "actualizar":
                 $id_zona_actual = $_POST["id_zona_actual"] ?? null;
                 $id_zona_nueva = $_POST["id_zona_nueva"] ?? null;
@@ -68,13 +61,14 @@ try {
                     break;
                 }
 
+                // Actualizar directamente sin verificar duplicado
                 $ok = $zona->actualizar($id_zona_actual, $id_zona_nueva, $id_area);
                 $response = $ok
                     ? ["status" => "success", "message" => "Zona actualizada correctamente"]
                     : ["status" => "error", "message" => "Error al actualizar la zona"];
                 break;
 
-            // 🔹 Cambiar estado (activo/inactivo)
+            // Cambiar estado
             case "cambiarEstado":
                 $id_zona = $_POST["id_zona"] ?? null;
                 $estado = $_POST["estado"] ?? null;
@@ -90,7 +84,7 @@ try {
                     : ["status" => "error", "message" => "Error al cambiar el estado"];
                 break;
 
-            // 🔹 Listar todas las zonas
+            // Listar todas las zonas
             case "listar":
                 $data = $zona->listar();
                 $response = [
@@ -100,7 +94,7 @@ try {
                 ];
                 break;
 
-            // 🔹 Listar zonas por área (⚡ compatibilidad con tu JS: listarPorArea)
+            // Listar zonas por área
             case "listarPorArea":
                 $id_area = $_GET["id_area"] ?? $_POST["id_area"] ?? null;
                 if (!$id_area) {
