@@ -1,7 +1,6 @@
 (() => {
   console.log("✅ gestionZonas.js cargado correctamente");
 
-  // 🔹 Ruta base de tu controlador principal
   const API_URL = "src/controllers/zonaController.php";
 
   // Elementos del DOM
@@ -13,8 +12,26 @@
   const panel = document.getElementById("modalPanel");
   const backdrop = document.getElementById("modalBackdrop");
   const tablaBody = document.querySelector("#tablaInstructores tbody");
+  const inputZona = document.getElementById("id_zona");
 
-  // -------------------- Funciones Modal --------------------
+  // =======================
+  // 🔹 CONFIGURACIÓN TOAST
+  // =======================
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 2500,
+    timerProgressBar: true,
+    background: "#fff",
+    color: "#333",
+    didOpen: (toast) => {
+      toast.addEventListener("mouseenter", Swal.stopTimer);
+      toast.addEventListener("mouseleave", Swal.resumeTimer);
+    },
+  });
+
+  // -------------------- Modal --------------------
   const openModal = () => {
     modal.classList.remove("hidden");
     requestAnimationFrame(() => {
@@ -37,7 +54,23 @@
     if (e.target === backdrop) closeModal();
   });
 
-  // -------------------- Cargar Áreas dinámicamente --------------------
+  // -------------------- Validación de número --------------------
+  inputZona?.addEventListener("input", (e) => {
+    let val = e.target.value;
+
+    // 🔸 Eliminar puntos, comas, signos y letras
+    val = val.replace(/[^0-9]/g, "");
+
+    // 🔸 Evitar ceros al inicio (ej: "00" -> "0")
+    if (val.length > 1 && val.startsWith("0")) val = val.replace(/^0+/, "");
+
+    // 🔸 Limitar a máximo 4 cifras (ajusta si quieres)
+    if (val.length > 4) val = val.slice(0, 4);
+
+    e.target.value = val;
+  });
+
+  // -------------------- Cargar Áreas --------------------
   async function cargarAreas() {
     const selectArea = document.getElementById("id_area");
     selectArea.innerHTML = `<option disabled selected value="">Cargando áreas...</option>`;
@@ -46,9 +79,9 @@
       const res = await fetch("src/controllers/areaController.php?accion=listar");
       const json = await res.json();
 
-      if (Array.isArray(json) && json.length > 0) {
+      if (json.status === "success" && Array.isArray(json.data) && json.data.length > 0) {
         selectArea.innerHTML = `<option disabled selected value="">Seleccione un Área</option>`;
-        json.forEach((area) => {
+        json.data.forEach((area) => {
           const option = document.createElement("option");
           option.value = area.id_area;
           option.textContent = area.nombre_area;
@@ -56,15 +89,14 @@
         });
       } else {
         selectArea.innerHTML = `<option disabled selected value="">No hay áreas disponibles</option>`;
+        Toast.fire({ icon: "warning", title: "No hay áreas registradas." });
       }
     } catch (err) {
       console.error("Error al cargar áreas:", err);
       selectArea.innerHTML = `<option disabled selected value="">Error al cargar áreas</option>`;
+      Toast.fire({ icon: "error", title: "Error al cargar las áreas." });
     }
   }
-
-  // Llamar al cargar la página
-  cargarAreas();
 
   // -------------------- Cargar Zonas --------------------
   async function cargarZonas() {
@@ -76,6 +108,7 @@
       if (json.status === "success") {
         if (json.data.length === 0) {
           tablaBody.innerHTML = `<tr><td colspan="3" class="text-center p-4 text-gray-500">No hay zonas registradas</td></tr>`;
+          Toast.fire({ icon: "info", title: "No hay zonas registradas aún." });
           return;
         }
 
@@ -85,9 +118,7 @@
           <tr data-id="${z.id_zona}" class="border-b">
             <td class="px-6 py-4">${z.id_zona}</td>
             <td class="px-6 py-4 text-center">
-              <span class="bg-${
-                z.nombre_area === "Confecciones" ? "blue" : "green"
-              }-600 text-white text-xs px-3 py-1 rounded-full">
+              <span class="bg-${z.nombre_area === "Confecciones" ? "blue" : "green"}-600 text-white text-xs px-3 py-1 rounded-full">
                 ${z.nombre_area || "—"}
               </span>
             </td>
@@ -97,28 +128,25 @@
                   <img class="w-5 h-5" src="src/assets/img/pencil-line.svg" alt="Editar" />
                 </button>
                 <label class="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" class="sr-only peer" ${
-                    z.estado == 1 ? "checked" : ""
-                  }>
+                  <input type="checkbox" class="sr-only peer" ${z.estado == 1 ? "checked" : ""}>
                   <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-green-500 transition"></div>
                   <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition peer-checked:translate-x-5"></div>
                 </label>
               </div>
             </td>
-          </tr>
-        `
+          </tr>`
           )
           .join("");
       } else {
         tablaBody.innerHTML = `<tr><td colspan="3" class="text-center p-4 text-red-500">${json.message}</td></tr>`;
+        Toast.fire({ icon: "error", title: json.message });
       }
     } catch (err) {
       console.error("Error al cargar zonas:", err);
       tablaBody.innerHTML = `<tr><td colspan="3" class="text-center p-4 text-red-500">Error al cargar zonas</td></tr>`;
+      Toast.fire({ icon: "error", title: "Error al cargar zonas." });
     }
   }
-
-  cargarZonas();
 
   // -------------------- Crear Zona --------------------
   formZona?.addEventListener("submit", async (e) => {
@@ -126,12 +154,16 @@
     const id_zona = formZona.id_zona?.value?.trim();
     const id_area = formZona.id_area?.value?.trim();
 
+    // Validaciones
     if (!id_zona || !id_area) {
-      alert("⚠️ Debes ingresar número de zona y seleccionar un área");
+      Toast.fire({ icon: "warning", title: "Debes ingresar número de zona y seleccionar un área." });
       return;
     }
 
-    console.log("🟢 Enviando creación:", { accion: "crear", id_zona, id_area });
+    if (isNaN(id_zona) || parseInt(id_zona) <= 0) {
+      Toast.fire({ icon: "warning", title: "El número de zona debe ser un entero positivo." });
+      return;
+    }
 
     try {
       const res = await fetch(API_URL, {
@@ -146,22 +178,20 @@
         json = JSON.parse(text);
       } catch {
         console.error("⚠️ Respuesta no JSON:", text);
-        alert("Error interno en el servidor al crear zona");
+        Toast.fire({ icon: "error", title: "Error interno del servidor al crear zona." });
         return;
       }
 
-      console.log("🟣 Respuesta crear:", json);
-
       if (json.status === "success") {
-        alert("✅ Zona creada correctamente");
+        Toast.fire({ icon: "success", title: "Zona creada correctamente ✅" });
         closeModal();
         cargarZonas();
       } else {
-        alert("❌ " + json.message);
+        Toast.fire({ icon: "error", title: json.message });
       }
     } catch (err) {
       console.error("Error al crear zona:", err);
-      alert("Error al crear zona");
+      Toast.fire({ icon: "error", title: "Error al crear zona." });
     }
   });
 
@@ -180,99 +210,19 @@
         body: JSON.stringify({ accion: "cambiarEstado", id_zona, estado: nuevoEstado }),
       });
       const json = await res.json();
-      console.log("🟢 Estado actualizado:", json);
+      Toast.fire({
+        icon: json.status === "success" ? "success" : "error",
+        title: json.message,
+      });
     } catch (err) {
       console.error("Error al cambiar estado:", err);
+      Toast.fire({ icon: "error", title: "Error al cambiar el estado." });
     }
   });
 
-  // -------------------- Editar Zona Inline --------------------
-  tablaBody.addEventListener("click", (e) => {
-    const btnEditar = e.target.closest(".btn-editar");
-    if (!btnEditar) return;
-
-    const tr = btnEditar.closest("tr");
-    const id_zona_actual = tr.dataset.id;
-    const tdZona = tr.children[0];
-    const tdArea = tr.children[1];
-    const tdAcc = tr.children[2];
-
-    const zonaOriginal = tdZona.textContent.trim();
-    const areaOriginal = tdArea.textContent.trim();
-
-    // Editar inline
-    tdZona.innerHTML = `<input type="number" value="${zonaOriginal}" class="w-20 border rounded-lg text-center">`;
-    tdArea.innerHTML = `
-      <select class="border rounded-lg px-2 py-1">
-        <option value="1" ${areaOriginal === "Polivalente" ? "selected" : ""}>Polivalente</option>
-        <option value="2" ${areaOriginal === "Confecciones" ? "selected" : ""}>Confecciones</option>
-      </select>
-    `;
-    tdAcc.innerHTML = `
-      <button class="btn-guardar bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 transition">Guardar</button>
-      <button class="btn-cancelar bg-gray-400 text-white px-3 py-1 rounded-lg hover:bg-gray-500 transition">Cancelar</button>
-    `;
-
-    // Cancelar edición
-    tdAcc.querySelector(".btn-cancelar").addEventListener("click", () => {
-      tdZona.textContent = zonaOriginal;
-      tdArea.innerHTML = `<span class="bg-${
-        areaOriginal === "Confecciones" ? "blue" : "green"
-      }-600 text-white text-xs px-3 py-1 rounded-full">${areaOriginal}</span>`;
-      tdAcc.innerHTML = `
-        <div class="flex justify-end items-center gap-3">
-          <button class="btn-editar p-2 border rounded-xl hover:bg-gray-50 transition" title="Editar">
-            <img class="w-5 h-5" src="src/assets/img/pencil-line.svg" alt="Editar" />
-          </button>
-        </div>
-      `;
-    });
-
-    // Guardar cambios
-    tdAcc.querySelector(".btn-guardar").addEventListener("click", async () => {
-      const id_zona_nueva = tdZona.querySelector("input").value.trim();
-      const id_area = tdArea.querySelector("select").value.trim();
-
-      if (!id_zona_nueva || !id_area) {
-        alert("⚠️ Debes completar todos los campos antes de guardar");
-        return;
-      }
-
-      console.log("🟢 Enviando actualización:", { id_zona_actual, id_zona_nueva, id_area });
-
-      try {
-        const res = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            accion: "actualizar",
-            id_zona_actual,
-            id_zona_nueva,
-            id_area,
-          }),
-        });
-
-        const text = await res.text();
-        let json;
-        try {
-          json = JSON.parse(text);
-        } catch {
-          console.error("⚠️ Respuesta no JSON:", text);
-          alert("Error interno en el servidor al actualizar");
-          return;
-        }
-
-        console.log("🟣 Respuesta actualizar:", json);
-
-        if (json.status === "success") {
-          alert("✅ Zona actualizada correctamente");
-          cargarZonas();
-        } else {
-          alert("❌ " + json.message);
-        }
-      } catch (err) {
-        console.error("Error al actualizar zona:", err);
-      }
-    });
+  // -------------------- Inicializar --------------------
+  document.addEventListener("DOMContentLoaded", () => {
+    cargarAreas();
+    cargarZonas();
   });
 })();
