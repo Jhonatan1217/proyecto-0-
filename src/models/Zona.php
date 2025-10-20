@@ -14,18 +14,20 @@ class Zona {
      * - Se activa por defecto (estado = 1)
      */
     public function crear($id_zona, $id_area) {
-        try {
-            $sql = "INSERT INTO " . $this->table . " (id_zona, id_area, estado)
-                    VALUES (:id_zona, :id_area, 1)";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':id_zona', $id_zona, PDO::PARAM_INT);
-            $stmt->bindParam(':id_area', $id_area, PDO::PARAM_INT);
-            return $stmt->execute();
-        } catch (PDOException $e) {
-            echo "Error al crear zona: " . $e->getMessage();
-            return false;
-        }
+    try {
+        // Evita error SQL si ya existe un registro con el mismo id_zona
+        $sql = "INSERT IGNORE INTO " . $this->table . " (id_zona, id_area, estado)
+                VALUES (:id_zona, :id_area, 1)";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':id_zona', $id_zona, PDO::PARAM_INT);
+        $stmt->bindParam(':id_area', $id_area, PDO::PARAM_INT);
+        return $stmt->execute();
+    } catch (PDOException $e) {
+        error_log("Error al crear zona: " . $e->getMessage());
+        return false;
     }
+}
+
 
     /**
      * Actualizar una zona existente
