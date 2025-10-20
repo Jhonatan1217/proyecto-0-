@@ -10,15 +10,48 @@
 
 <body class="text-center font-sans min-h-screen flex flex-col bg-gray-50">
 
-  <header class="mt-10 text-center" id="cabecera-trimestralizacion">
-    <h1 class="text-3xl font-bold text-gray-900">
-      VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA 
-      <?php echo isset($_GET['id_zona']) ? htmlspecialchars($_GET['id_zona']) : '—'; ?>
-    </h1>
-    <h2 class="text-xl text-gray-700 mb-6">
-      Sistema de gestión de trimestralización <br> SENA
-    </h2>
-  </header>
+<header class="mt-10 text-center" id="cabecera-trimestralizacion">
+  <h1 class="text-3xl font-bold text-gray-900">
+    VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA 
+    <?php echo isset($_GET['id_zona']) ? htmlspecialchars($_GET['id_zona']) : '—'; ?>
+  </h1>
+  <h2 class="text-xl text-gray-700 mb-6">
+    Sistema de gestión de trimestralización <br> SENA
+  </h2>
+
+  <!-- Selector de Zona -->
+<!-- 🔹 Selectores de Área y Zona -->
+<div class="flex justify-center mt-4 gap-6">
+  
+  <!-- Selector de Área -->
+  <div class="relative inline-block">
+    <select id="selectArea" name="id_area"
+      class="appearance-none w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-gray-100 transition-colors duration-200 outline-none cursor-pointer pr-10">
+      <option value="" class="text-[#00324D]" selected hidden>SELECCIONE EL ÁREA</option>
+    </select>
+    <svg xmlns="http://www.w3.org/2000/svg"
+      class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 lg:h-5 lg:w-5 text-[#00324D]"
+      fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+    </svg>
+  </div>
+
+  <!-- Selector de Zona -->
+  <div class="relative inline-block">
+    <select id="selectZona" name="id_zona"
+      class="appearance-none w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-gray-100 transition-colors duration-200 outline-none cursor-pointer pr-10">
+      <option value="" class="text-[#00324D]" selected hidden>SELECCIONE LA ZONA</option>
+    </select>
+    <svg xmlns="http://www.w3.org/2000/svg"
+      class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 lg:h-5 lg:w-5 text-[#00324D]"
+      fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+    </svg>
+  </div>
+
+</div>
+  
+</header>
 
   <!-- Contenido principal -->
   <main class="flex flex-col items-center flex-grow">

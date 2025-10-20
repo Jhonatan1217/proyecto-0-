@@ -87,6 +87,28 @@ class Zona {
     }
 }
 
+public function listarPorArea($id_area) {
+    try {
+        $sql = "SELECT 
+                    z.id_zona,
+                    z.id_area,
+                    a.nombre_area,
+                    z.estado
+                FROM {$this->table} z
+                INNER JOIN areas a ON z.id_area = a.id_area
+                WHERE z.id_area = :id_area
+                ORDER BY z.id_zona ASC";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':id_area', $id_area, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log('Error en listarPorArea: ' . $e->getMessage());
+        return [];
+    }
+}
 
 
     /**
