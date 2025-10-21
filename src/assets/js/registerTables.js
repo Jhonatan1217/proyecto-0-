@@ -107,16 +107,20 @@ async function cargarAreasYZonas() {
 // =======================
 async function cargarTrimestralizacion() {
   const tbody = document.getElementById("tbody-horarios");
+  const selectArea = document.getElementById("selectArea");
+  const id_area = selectArea ? selectArea.value : "";
+
   if (!tbody) return;
   tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500">Cargando datos...</td></tr>`;
 
-  if (!id_zona) {
+  if (!id_zona || !id_area) {
     toggleTabla(false);
     return;
   }
 
   try {
-    const res = await fetch(`${BASE_URL}src/controllers/trimestralizacionController.php?accion=listar&id_zona=${id_zona}`);
+    // ✅ Ahora enviamos también el área
+    const res = await fetch(`${BASE_URL}src/controllers/TrimestralizacionController.php?accion=listar&id_zona=${id_zona}&id_area=${id_area}`);
     const data = await res.json();
     tbody.innerHTML = "";
 
@@ -125,7 +129,7 @@ async function cargarTrimestralizacion() {
       : [];
 
     if (!activos.length) {
-      tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500">No hay registros activos para esta zona.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500">No hay registros activos para esta zona y área.</td></tr>`;
       Toast.fire({ icon: "info", title: "Sin registros activos" });
       return;
     }
@@ -181,7 +185,6 @@ async function cargarTrimestralizacion() {
     Toast.fire({ icon: "error", title: "Error al cargar trimestralización" });
   }
 }
-
 // =======================
 // MODO EDICIÓN
 // =======================

@@ -19,15 +19,60 @@ if (!$accion) {
     exit;
 }
 
+/**
+ * Helper: intentar resolver id_area a partir de:
+ *  - el POST/GET 'area' si viene
+ *  - o la tabla zonas buscando por id_zona. Si hay varias filas para id_zona y no viene 'area', devolvemos null y el
+ *    flujo llamante deberá exigir el envío del 'area'.
+ */
+function resolveAreaForZona(PDO $conn, $id_zona, $provided_area = null) {
+    $id_zona = intval($id_zona);
+    if ($id_zona <= 0) return null;
+
+    if ($provided_area !== null && $provided_area !== '') {
+        return intval($provided_area);
+    }
+
+    // Buscar cuántas filas hay con ese id_zona
+    $s = $conn->prepare("SELECT id_area FROM zonas WHERE id_zona = :id_zona");
+    $s->execute([':id_zona' => $id_zona]);
+    $rows = $s->fetchAll(PDO::FETCH_ASSOC);
+
+    if (count($rows) === 0) {
+        return null; // zona inexistente
+    } elseif (count($rows) === 1) {
+        return intval($rows[0]['id_area']); // zona única -> devolvemos su área
+    } else {
+        // Ambigüedad: hay varias zonas con el mismo id_zona (distintas áreas)
+        return null;
+    }
+}
+
 switch ($accion) {
 
     // ============================================================
-    // LISTAR POR ZONA
+    // LISTAR POR ZONA (AHORA EXIGE id_area RESOLUBLE)
     // ============================================================
     case 'listar':
         $id_zona = $_GET['id_zona'] ?? null;
+        $id_area_supplied = $_GET['id_area'] ?? null;
+
         if (!$id_zona) {
             echo json_encode([]);
+            exit;
+        }
+
+        // Intentamos resolver id_area: si hay ambigüedad, devolvemos error para que el frontend envíe id_area.
+        $resolved_area = resolveAreaForZona($conn, $id_zona, $id_area_supplied);
+
+        if ($resolved_area === null) {
+            // Si el frontend suministró id_area y no existe la pareja, devolvemos vacío/ error
+            if (!empty($id_area_supplied)) {
+                echo json_encode([]);
+                exit;
+            }
+            // Si no se proporcionó, aclaramos que es necesario
+            echo json_encode(['status' => 'error', 'mensaje' => 'Ambigüedad en zona: debe proporcionar id_area junto con id_zona']);
             exit;
         }
 
@@ -52,16 +97,16 @@ switch ($accion) {
                 LEFT JOIN instructores i ON h.id_instructor = i.id_instructor
                 LEFT JOIN competencias c ON h.id_competencia = c.id_competencia
                 WHERE h.id_zona = :id_zona
+                  AND h.id_area = :id_area
                   AND h.estado = 1
                 ORDER BY FIELD(UPPER(h.dia), 'LUNES','MARTES','MIERCOLES','JUEVES','VIERNES','SABADO'), h.hora_inicio
             ");
-
-            $stmt->bindParam(':id_zona', $id_zona, PDO::PARAM_INT);
-            $stmt->execute();
+            $stmt->execute([
+                ':id_zona' => intval($id_zona),
+                ':id_area' => intval($resolved_area)
+            ]);
             $registros = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
             echo json_encode($registros);
-
         } catch (PDOException $e) {
             echo json_encode(['status' => 'error', 'mensaje' => 'Error al obtener registros: ' . $e->getMessage()]);
         }
@@ -88,19 +133,22 @@ switch ($accion) {
         $dia               = strtoupper(trim($_POST['dia_semana'] ?? ''));
         $hora_inicio_raw   = trim($_POST['hora_inicio'] ?? '');
         $hora_fin_raw      = trim($_POST['hora_fin'] ?? '');
-        $id_zona           = intval(preg_replace('/\D/', '', $_POST['zona'] ?? ''));
+        $id_zona_raw       = $_POST['zona'] ?? null;
+        $id_area_post      = $_POST['area'] ?? null; // <- ahora puede venir desde el frontend
         $numero_ficha      = trim($_POST['numero_ficha'] ?? '');
         $nivel_ficha       = trim($_POST['nivel_ficha'] ?? '');
         $nombre_instructor = trim($_POST['nombre_instructor'] ?? '');
         $tipo_instructor   = trim($_POST['tipo_instructor'] ?? '');
         $descripcion       = trim($_POST['descripcion'] ?? '');
 
+        $id_zona = intval($id_zona_raw);
+
         // Validaciones básicas
         if (empty($dia) || empty($hora_inicio_raw) || empty($hora_fin_raw)) {
             echo json_encode(['status' => 'error', 'mensaje' => 'Día, hora inicio y hora fin son obligatorios.']);
             exit;
         }
-        if (empty($id_zona)) {
+        if ($id_zona <= 0) {
             echo json_encode(['status' => 'error', 'mensaje' => 'Debe seleccionar una zona válida.']);
             exit;
         }
@@ -120,19 +168,16 @@ switch ($accion) {
         try {
             $conn->beginTransaction();
 
-            // Obtener id_area desde POST si fue enviado, si no buscar por zona (comportamiento previo)
-            if (!empty($_POST['area'])) {
-                $id_area = intval($_POST['area']);
-            } else {
-                $stmtZona = $conn->prepare("SELECT id_area FROM zonas WHERE id_zona = :id_zona LIMIT 1");
-                $stmtZona->execute([':id_zona' => $id_zona]);
-                $rowArea = $stmtZona->fetch(PDO::FETCH_ASSOC);
-                if ($rowArea === false || !array_key_exists('id_area', $rowArea) || $rowArea['id_area'] === null) {
-                    $id_area = null;
-                } else {
-                    $id_area = (int)$rowArea['id_area'];
-                }
+            // Resolver/validar id_area usando helper
+            $resolved_area = resolveAreaForZona($conn, $id_zona, $id_area_post);
+
+            if ($resolved_area === null) {
+                // Si hubo ambigüedad (varias zonas con mismo id_zona) o zona inexistente -> requerir id_area explícita
+                $conn->rollBack();
+                echo json_encode(['status' => 'error', 'mensaje' => 'Ambigüedad en zona: envía también id_area (ejemplo: area=2).']);
+                exit;
             }
+            $id_area = intval($resolved_area);
 
             // Usar numero_trimestre enviado por POST si existe, si no obtener el activo
             if (!empty($_POST['numero_trimestre'])) {
@@ -144,30 +189,33 @@ switch ($accion) {
                 $numero_trimestre = $numero_trimestre !== false ? intval($numero_trimestre) : null;
             }
 
-            // 1) Verificar cruce con horarios ACTIVOS en la misma zona y día
+            // 1) Verificar cruce con horarios ACTIVOS en la misma zona/área/día
             $stmtCruce = $conn->prepare("
                 SELECT COUNT(*) AS cnt FROM horarios
                 WHERE id_zona = :id_zona
+                  AND id_area = :id_area
                   AND dia = :dia
                   AND estado = 1
                   AND NOT (hora_fin <= :hora_inicio OR hora_inicio >= :hora_fin)
             ");
             $stmtCruce->execute([
                 ':id_zona' => $id_zona,
+                ':id_area' => $id_area,
                 ':dia' => $dia,
                 ':hora_inicio' => $horaInicio,
                 ':hora_fin' => $horaFin
             ]);
             if ($stmtCruce->fetchColumn() > 0) {
                 $conn->rollBack();
-                echo json_encode(['status' => 'error', 'mensaje' => 'Ya existe un horario activo que se cruza con el rango seleccionado.']);
+                echo json_encode(['status' => 'error', 'mensaje' => 'Ya existe un horario activo que se cruza con el rango seleccionado en esta zona y área.']);
                 exit;
             }
 
-            // 2) Buscar horario exacto (mismo zona, día, hora_inicio, hora_fin) aunque esté inactivo
+            // 2) Buscar horario exacto (mismo zona+area, día, hora_inicio, hora_fin)
             $stmtExist = $conn->prepare("
                 SELECT * FROM horarios
                 WHERE id_zona = :id_zona
+                  AND id_area = :id_area
                   AND dia = :dia
                   AND hora_inicio = :hora_inicio
                   AND hora_fin = :hora_fin
@@ -175,6 +223,7 @@ switch ($accion) {
             ");
             $stmtExist->execute([
                 ':id_zona' => $id_zona,
+                ':id_area' => $id_area,
                 ':dia' => $dia,
                 ':hora_inicio' => $horaInicio,
                 ':hora_fin' => $horaFin
@@ -193,14 +242,12 @@ switch ($accion) {
             };
             $getOrCreateInstructor = function($nombre) use ($conn) {
                 if (empty($nombre)) return null;
-                // Buscar por nombre y devolver id (y tipo si se necesita más adelante)
                 $s = $conn->prepare("SELECT id_instructor, tipo_instructor FROM instructores WHERE nombre_instructor = :nom LIMIT 1");
                 $s->execute([':nom' => $nombre]);
                 $r = $s->fetch(PDO::FETCH_ASSOC);
                 if ($r) return $r['id_instructor'];
-                // Si no existe, insertar con tipo por defecto 'TECNICO'
-                $ins = $conn->prepare("INSERT INTO instructores (nombre_instructor, tipo_instructor) VALUES (:nom, :tipo)");
-                $ins->execute([':nom' => $nombre, ':tipo' => 'TECNICO']);
+                $ins = $conn->prepare("INSERT INTO instructores (nombre_instructor, tipo_instructor) VALUES (:nom, 'TECNICO')");
+                $ins->execute([':nom' => $nombre]);
                 return $conn->lastInsertId();
             };
             $getOrCreateCompetencia = function($desc) use ($conn) {
@@ -223,11 +270,11 @@ switch ($accion) {
                 // Si existe y está activo -> rechazo
                 if (intval($horarioExist['estado']) === 1) {
                     $conn->rollBack();
-                    echo json_encode(['status' => 'error', 'mensaje' => 'Ya existe un horario idéntico activo.']);
+                    echo json_encode(['status' => 'error', 'mensaje' => 'Ya existe un horario idéntico activo en esta zona y área.']);
                     exit;
                 }
 
-                // Reactivar horario inactivo y actualizar relaciones (incluyendo id_area y numero_trimestre)
+                // Reactivar horario inactivo y actualizar relaciones
                 $upd = $conn->prepare("
                     UPDATE horarios
                     SET estado = 1,
@@ -262,7 +309,7 @@ switch ($accion) {
                 exit;
             }
 
-            // No existe: crear horario nuevo (incluyendo id_area y numero_trimestre si disponibles)
+            // No existe: crear horario nuevo
             $insHorario = $conn->prepare("
                 INSERT INTO horarios (id_zona, id_area, dia, hora_inicio, hora_fin, id_ficha, id_instructor, id_competencia, numero_trimestre, estado)
                 VALUES (:id_zona, :id_area, :dia, :hora_inicio, :hora_fin, :id_ficha, :id_instructor, :id_competencia, :numero_trimestre, 1)
@@ -319,6 +366,9 @@ switch ($accion) {
             foreach ($registros as $r) {
                 if (empty($r['id_horario'])) continue;
 
+                // Es recomendable no actualizar id_area/id_zona desde aquí sin control —
+                // mantenemos la lógica original de actualizar ficha/instructor/competencia.
+
                 // Actualizar ficha (número y nivel)
                 if (!empty($r['numero_ficha']) || !empty($r['nivel_ficha'])) {
                     $stmtFicha = $conn->prepare("
@@ -336,9 +386,7 @@ switch ($accion) {
                     ]);
                 }
 
-
-                // Actualizar instructor
-                // ✅ Actualizar solo el nombre del instructor (NO el tipo)
+                // Actualizar instructor (solo nombre)
                 if (!empty($r['nombre_instructor'])) {
                     $stmtInst = $conn->prepare("
                         UPDATE instructores i
@@ -352,7 +400,6 @@ switch ($accion) {
                     ]);
                 }
 
-
                 // Actualizar competencia
                 if (!empty($r['descripcion'])) {
                     $stmtComp = $conn->prepare("
@@ -364,7 +411,7 @@ switch ($accion) {
                     $stmtComp->execute([
                         ':descripcion' => $r['descripcion'],
                         ':id_horario' => $r['id_horario']
-                    ]); 
+                    ]);
                 }
 
                 $actualizados++;
@@ -372,24 +419,40 @@ switch ($accion) {
 
             $conn->commit();
             echo json_encode(['success' => true, 'message' => "$actualizados registros actualizados correctamente."]);
-        } catch (PDOException $e) { 
+        } catch (PDOException $e) {
             $conn->rollBack();
             echo json_encode(['success' => false, 'error' => 'Error SQL: ' . $e->getMessage()]);
         }
         break;
 
     // ============================================================
-    // ELIMINAR TRIMESTRALIZACIÓN POR ZONA
+    // ELIMINAR TRIMESTRALIZACIÓN POR ZONA+AREA
     // ============================================================
     case 'eliminar':
         $id_zona = $_GET['id_zona'] ?? null;
+        $id_area_supplied = $_GET['id_area'] ?? null;
+
         if (!$id_zona) {
             echo json_encode(['status' => 'error', 'mensaje' => 'Debe indicar la zona a eliminar']);
             exit;
         }
 
-        $res = $trimestral->eliminarPorZona($id_zona);
-        echo json_encode($res);
+        // Resolver area
+        $resolved_area = resolveAreaForZona($conn, $id_zona, $id_area_supplied);
+        if ($resolved_area === null) {
+            echo json_encode(['status' => 'error', 'mensaje' => 'Ambigüedad en zona: envíe id_area para eliminar.']);
+            exit;
+        }
+        $id_area = intval($resolved_area);
+
+        try {
+            $stmtDel = $conn->prepare("UPDATE horarios SET estado = 0 WHERE id_zona = :id_zona AND id_area = :id_area");
+            $stmtDel->execute([':id_zona' => $id_zona, ':id_area' => $id_area]);
+
+            echo json_encode(['status' => 'success', 'mensaje' => 'Trimestralización eliminada correctamente.']);
+        } catch (PDOException $e) {
+            echo json_encode(['status' => 'error', 'mensaje' => 'Error al eliminar: ' . $e->getMessage()]);
+        }
         break;
 
     default:
