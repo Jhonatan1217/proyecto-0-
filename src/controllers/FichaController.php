@@ -49,11 +49,11 @@ switch ($accion) {
         echo json_encode($res);
         break;
 
-    case 'crear':
-        // Llama al método crear() para insertar una nueva ficha
-        $res = $ficha->crear();
-        echo json_encode($res);
-        break;
+    // case 'crear':
+    //     // Llama al método crear() para insertar una nueva ficha
+    //     $res = $ficha->crear();
+    //     echo json_encode($res);
+    //     break;
 
     case 'eliminar':
         // Decodifica los datos recibidos en formato JSON

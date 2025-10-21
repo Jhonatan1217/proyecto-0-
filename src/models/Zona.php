@@ -85,8 +85,9 @@ class Zona {
         }
     }
 
+
     /**
-     * Listar todas las zonas
+     * Listar todas las zonas con su área correspondiente
      */
     public function listar() {
         try {
@@ -99,6 +100,30 @@ class Zona {
                     LEFT JOIN areas a ON z.id_area = a.id_area
                     ORDER BY z.id_zona ASC, a.nombre_area ASC";
             $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            return [];
+        }
+    }
+
+    /**
+
+     * Listar zonas por área
+     */
+    public function listarPorArea($id_area) {
+        try {
+            $sql = "SELECT 
+                        z.id_zona, 
+                        z.id_area, 
+                        a.nombre_area, 
+                        z.estado
+                    FROM {$this->table} z
+                    INNER JOIN areas a ON z.id_area = a.id_area
+                    WHERE z.id_area = :id_area
+                    ORDER BY z.id_zona ASC";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':id_area', $id_area, PDO::PARAM_INT);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {

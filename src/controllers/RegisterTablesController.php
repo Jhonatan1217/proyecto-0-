@@ -31,9 +31,9 @@ switch ($accion) {
         echo json_encode($trimestralizacion->crear($id_horario));
         break;
 
-    case 'vaciar_db':
-        echo json_encode($trimestralizacion->eliminar());
-        break;
+    // case 'vaciar_db':
+    //     echo json_encode($trimestralizacion->eliminar());
+    //     break;
 
     default:
         echo json_encode(["status" => "error", "mensaje" => "Acción no válida: $accion"]);

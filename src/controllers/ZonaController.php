@@ -99,7 +99,17 @@ switch ($accion) {
 
         $response = $zona->cambiarEstado($id_zona, $id_area, $estado);
         break;
+    
 
+    case "listarPorArea":
+        $id_area = $_GET["id_area"] ?? $_POST["id_area"] ?? null;
+        if (!$id_area) {
+            $response = ["status" => "error", "message" => "Debe enviar id_area"];
+            break;
+        }
+        $data = $zona->listarPorArea($id_area);
+        $response = ["status" => "success", "data" => $data];
+    break;
 
     default:
         $response = ["status" => "error", "message" => "Acción no válida"];
