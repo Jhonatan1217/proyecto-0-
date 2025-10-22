@@ -1,8 +1,8 @@
 <?php
-$host = 'localhost';
-$dbname = 'proyecto_0';
-$user = 'root';
-$pass = ''; //contraseña de la base de datos (Es la de tu base de datos)
+$host = 'sql100.infinityfree.com';
+$dbname = 'if0_40230883_proyecto_0  ';
+$user = 'if0_40230883';
+$pass = 'HvtVN6624mehI5Z'; //contraseña de la base de datos (Es la de tu base de datos)
 
 try {
     $conn = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $pass);
