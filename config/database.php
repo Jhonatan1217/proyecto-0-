@@ -1,6 +1,6 @@
 <?php
 $host = 'sql100.infinityfree.com';
-$dbname = 'if0_40230883_proyecto_0  ';
+$dbname = 'if0_40230883_proyecto_0';
 $user = 'if0_40230883';
 $pass = 'HvtVN6624mehI5Z'; //contraseña de la base de datos (Es la de tu base de datos)
 

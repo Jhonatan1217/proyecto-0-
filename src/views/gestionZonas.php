@@ -144,8 +144,14 @@
       </div>
     </div>
   </div>
-  <script>const BASE_URL = "<?= BASE_URL ?>";</script>
-  <script src="<?= BASE_URL ?>src/assets/js/gestionZonas.js"></script>
+  <script>
+    window.API_URL = "<?= BASE_URL ?>src/controllers/ZonaController.php";
+  </script>
+
+
+   <script src="<?= BASE_URL ?>src/assets/js/gestionZonas.js?v=2" defer></script>
+
+
 
 
 </body>
