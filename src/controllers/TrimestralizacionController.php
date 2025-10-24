@@ -366,8 +366,6 @@ switch ($accion) {
             foreach ($registros as $r) {
                 if (empty($r['id_horario'])) continue;
 
-                // Es recomendable no actualizar id_area/id_zona desde aquí sin control —
-                // mantenemos la lógica original de actualizar ficha/instructor/competencia.
 
                 // Actualizar ficha (número y nivel)
                 if (!empty($r['numero_ficha']) || !empty($r['nivel_ficha'])) {

@@ -22,7 +22,7 @@ if (!window.TRIMESTRALIZACION_INIT) {
         // ========== OBTENER VALORES ==========
         const zona = form.querySelector("[name='zona']").value.trim();
 
-        // ✅ Intentamos obtener el id_area
+        // Intentamos obtener el id_area
         let areaField = form.querySelector("[name='area']");
         let id_area = areaField ? areaField.value.trim() : "";
 
@@ -71,7 +71,7 @@ if (!window.TRIMESTRALIZACION_INIT) {
         // ========== ENVÍO ==========
         const fd = new FormData(form);
 
-        // ✅ Enviamos también el id_area
+        // Enviamos también el id_area
         fd.set("area", id_area);
 
         try {
@@ -100,7 +100,7 @@ if (!window.TRIMESTRALIZACION_INIT) {
           const modal = document.getElementById("modalCrearLanding");
           if (modal) modal.classList.add("hidden");
 
-          // ✅ Redirigir con zona + área
+          // Redirigir con zona + área
           const redirect = `index.php?page=src/views/register_tables&id_zona=${zona}&id_area=${id_area}`;
           setTimeout(() => window.location.replace(redirect), 1600);
 

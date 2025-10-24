@@ -41,13 +41,13 @@ if (!$accion) {
 // Estructura principal para manejar las diferentes acciones solicitadas
 switch ($accion) {
 
-    // 🔹 Listar todos los instructores
+    // Listar todos los instructores
     case 'listar':
         $res = $instructor->listar();
         echo json_encode($res);
         break;
 
-    // 🔹 Obtener un instructor por ID
+    // Obtener un instructor por ID
     case 'obtener':
         if (!isset($_GET['id_instructor'])) {
             echo json_encode(['error' => 'Debe enviar el parámetro id_instructor']);
@@ -57,7 +57,7 @@ switch ($accion) {
         echo json_encode($res);
         break;
 
-    // 🔹 Crear un nuevo instructor
+    // Crear un nuevo instructor
     case 'crear':
         $data = json_decode(file_get_contents("php://input"), true);
 
@@ -86,7 +86,7 @@ switch ($accion) {
         echo json_encode(['mensaje' => 'Instructor creado correctamente']);
         break;
 
-    // 🔹 Actualizar un instructor existente
+    // Actualizar un instructor existente
     case 'actualizar':
         $data = json_decode(file_get_contents("php://input"), true);
 
@@ -116,7 +116,7 @@ switch ($accion) {
         echo json_encode(['mensaje' => 'Instructor actualizado correctamente']);
         break;
 
-    // 🔹 Eliminar un instructor
+    // Eliminar un instructor
     case 'eliminar':
         $data = json_decode(file_get_contents("php://input"), true);
         $id_instructor = $data['id_instructor'] ?? $_POST['id_instructor'] ?? null;
@@ -130,7 +130,7 @@ switch ($accion) {
         echo json_encode(['mensaje' => 'Instructor eliminado correctamente']);
         break;
 
-    // 🔹 Cambiar el estado (activo/inactivo)
+    // Cambiar el estado (activo/inactivo)
     case 'cambiar_estado':
         $data = json_decode(file_get_contents("php://input"), true);
         $id_instructor = $data['id_instructor'] ?? $_POST['id_instructor'] ?? $_GET['id_instructor'] ?? null;
@@ -150,7 +150,7 @@ switch ($accion) {
         echo json_encode(['mensaje' => 'Estado del instructor actualizado correctamente']);
         break;
 
-    // 🔹 Acción no válida
+    // Acción no válida
     default:
         echo json_encode(['error' => 'Acción no válida']);
         break;

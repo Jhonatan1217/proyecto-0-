@@ -1,4 +1,3 @@
-<?php /* (Opcional) includes/seguridad aquí */ ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>

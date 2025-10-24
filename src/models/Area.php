@@ -8,7 +8,7 @@ class Area {
         $this->conn = $db;
     }
 
-    // 🔹 Listar todas las áreas
+    // Listar todas las áreas
     public function listar() {
         $sql = "SELECT * FROM " . $this->table;
         $stmt = $this->conn->prepare($sql);
@@ -16,7 +16,7 @@ class Area {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // 🔹 Obtener un área por su ID
+    // Obtener un área por su ID
     public function obtenerPorId($id_area) {
         $sql = "SELECT * FROM " . $this->table . " WHERE id_area = :id_area";
         $stmt = $this->conn->prepare($sql);
@@ -25,7 +25,7 @@ class Area {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // 🔹 Crear una nueva área
+    // Crear una nueva área
     public function crear($nombre_area) {
         $sql = "INSERT INTO " . $this->table . " (nombre_area) VALUES (:nombre_area)";
         $stmt = $this->conn->prepare($sql);
@@ -33,7 +33,7 @@ class Area {
         $stmt->execute();
     }
 
-    // 🔹 Actualizar un área existente
+    // Actualizar un área existente
     public function actualizar($id_area, $nombre_area) {
         $sql = "UPDATE " . $this->table . " 
                 SET nombre_area = :nombre_area
@@ -44,7 +44,7 @@ class Area {
         $stmt->execute();
     }
 
-    // 🔹 Eliminar un área por su ID
+    // Eliminar un área por su ID
     public function eliminar($id_area) {
         $sql = "DELETE FROM " . $this->table . " WHERE id_area = :id_area";
         $stmt = $this->conn->prepare($sql);
@@ -52,7 +52,7 @@ class Area {
         $stmt->execute();
     }
 
-    // 🔹 Cambiar el estado (activo/inactivo)
+    // Cambiar el estado (activo/inactivo)
     public function cambiarEstado($id_area, $nuevoEstado) {
         if ($nuevoEstado != 1 && $nuevoEstado != 0) {
             throw new Exception("El estado debe ser 1 (activo) o 0 (inactivo).");

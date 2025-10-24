@@ -1,6 +1,6 @@
 <?php
 // ============================================
-// ✅ areaController.php
+// areaController.php
 // ============================================
 
 // --- Configuración de encabezados y CORS ---
@@ -47,7 +47,7 @@ if (!$accion) {
 try {
     switch ($accion) {
 
-        // 🔹 Listar áreas
+        // Listar áreas
         case 'listar':
             $res = $area->listar();
             echo json_encode([
@@ -57,7 +57,7 @@ try {
             ]);
             break;
 
-        // 🔹 Obtener área por ID
+        // Obtener área por ID
         case 'obtener':
             $id_area = $_GET['id_area'] ?? null;
             if (!$id_area) {
@@ -83,7 +83,7 @@ try {
             }
             break;
 
-        // 🔹 Crear nueva área
+        // Crear nueva área
         case 'crear':
             $data = json_decode(file_get_contents("php://input"), true);
             $nombre_area = $data['nombre_area'] ?? $_POST['nombre_area'] ?? null;
@@ -103,7 +103,7 @@ try {
             ]);
             break;
 
-        // 🔹 Actualizar área
+        // Actualizar área
         case 'actualizar':
             $data = json_decode(file_get_contents("php://input"), true);
             $id_area = $data['id_area'] ?? $_POST['id_area'] ?? null;
@@ -124,7 +124,7 @@ try {
             ]);
             break;
 
-        // 🔹 Eliminar área
+        // Eliminar área
         case 'eliminar':
             $data = json_decode(file_get_contents("php://input"), true);
             $id_area = $data['id_area'] ?? $_POST['id_area'] ?? null;
@@ -144,7 +144,7 @@ try {
             ]);
             break;
 
-        // 🔹 Cambiar estado (activo/inactivo)
+        // Cambiar estado (activo/inactivo)
         case 'cambiar_estado':
             $data = json_decode(file_get_contents("php://input"), true);
             $id_area = $data['id_area'] ?? $_POST['id_area'] ?? $_GET['id_area'] ?? null;
@@ -173,7 +173,7 @@ try {
             ]);
             break;
 
-        // 🔹 Acción no válida
+        // Acción no válida
         default:
             echo json_encode([
                 'status' => 'error',

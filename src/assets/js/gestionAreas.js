@@ -13,7 +13,7 @@
   const form = $("#formNuevaArea");
   const tbody = $("#tablaAreas tbody");
 
-  let listaAreas = []; // 🔹 Guardar en memoria la lista de áreas actuales
+  let listaAreas = []; // Guardar en memoria la lista de áreas actuales
 
   // ---------- Toast ----------
   function toast(msg, type = "success") {
@@ -131,7 +131,7 @@
   async function cargarAreas() {
     try {
       const res = await apiGet({ accion: "listar" });
-      listaAreas = Array.isArray(res) ? res : res?.data || []; // 🔹 Guardamos lista en memoria
+      listaAreas = Array.isArray(res) ? res : res?.data || []; // Guardamos lista en memoria
       renderRows(listaAreas);
     } catch (e) {
       console.error(e);
@@ -154,7 +154,7 @@
       return;
     }
 
-    // 🔹 Validar duplicado antes de crear
+    // Validar duplicado antes de crear
     const duplicado = listaAreas.some(
       (a) => a.nombre_area.trim().toLowerCase() === nombre.toLowerCase()
     );
@@ -212,7 +212,7 @@
           return;
         }
 
-        // 🔹 Validar duplicado al editar
+        // Validar duplicado al editar
         const duplicadoEditar = listaAreas.some(
           (a) => a.id_area != id && a.nombre_area.trim().toLowerCase() === nombreNuevo.toLowerCase()
         );

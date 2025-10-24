@@ -8,7 +8,7 @@ class Ficha {
         $this->conn = $db;
     }
 
-    // 🔹 Listar todas las fichas
+    // Listar todas las fichas
     public function listar() {
         try {
             $sql = "SELECT * FROM " . $this->table;
@@ -20,7 +20,7 @@ class Ficha {
         }
     }
 
-    // 🔹 Obtener ficha por ID
+    // Obtener ficha por ID
     public function obtenerPorId($id_ficha) {
         try {
             $sql = "SELECT * FROM " . $this->table . " WHERE id_ficha = :id_ficha";
@@ -33,7 +33,7 @@ class Ficha {
         }
     }
 
-    // ✅ Crear una nueva ficha correctamente
+    // Crear una nueva ficha correctamente
     public function crear($numero_ficha, $nivel_ficha = "tecnico") {
         try {
             // Evita duplicar fichas con el mismo número
@@ -63,7 +63,7 @@ class Ficha {
         }
     }
 
-    // 🔹 Eliminar ficha
+    // Eliminar ficha
     public function eliminar($id_ficha) {
         try {
             $sql = "DELETE FROM " . $this->table . " WHERE id_ficha = :id_ficha";

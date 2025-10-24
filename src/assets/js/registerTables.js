@@ -119,7 +119,7 @@ async function cargarTrimestralizacion() {
   }
 
   try {
-    // ✅ Ahora enviamos también el área
+    // Ahora enviamos también el área
     const res = await fetch(`${BASE_URL}src/controllers/TrimestralizacionController.php?accion=listar&id_zona=${id_zona}&id_area=${id_area}`);
     const data = await res.json();
     tbody.innerHTML = "";

@@ -56,7 +56,7 @@ class Trimestre {
     return $row['total'] > 0;
 }
 
-    // 🔹 Suspender (estado = 0)
+    // Suspender (estado = 0)
     public function eliminar($numero_trimestre) {
         $sql = "UPDATE {$this->table} SET estado = 0 WHERE numero_trimestre = :numero_trimestre";
         $stmt = $this->conn->prepare($sql);
@@ -64,7 +64,7 @@ class Trimestre {
         return $stmt->execute();
     }
 
-    // 🔹 Reactivar (estado = 1)
+    // Reactivar (estado = 1)
     public function reactivar($numero_trimestre) {
         $sql = "UPDATE {$this->table} SET estado = 1 WHERE numero_trimestre = :numero_trimestre";
         $stmt = $this->conn->prepare($sql);
