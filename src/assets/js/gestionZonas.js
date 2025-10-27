@@ -115,7 +115,7 @@
 
       if (json.status === "success") {
         if (!Array.isArray(json.data) || json.data.length === 0) {
-          tablaBody.innerHTML = `<tr><td colspan="3" class="text-center p-4 text-gray-500">No hay zonas registradas</td></tr>`;
+          tablaBody.innerHTML = `<tr><td colspan="3" class="text-center p-4 text-gray-500">No hay zonas registradas</td></tr>`; 
           return;
         }
 
