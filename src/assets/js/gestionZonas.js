@@ -119,7 +119,6 @@
           return;
         }
 
-
         tablaBody.innerHTML = json.data
           .map((z) => {
             const color = z.nombre_area === "Confecciones" ? "bg-blue-600" : "bg-green-600";

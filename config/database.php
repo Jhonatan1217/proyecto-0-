@@ -2,7 +2,7 @@
 $host = 'localhost';
 $dbname = 'proyecto_0';
 $user = 'root';
-$pass = '12345678'; //contraseña de la base de datos
+$pass = '123456'; //contraseña de la base de datos
 
 try {
     $conn = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $pass);
@@ -18,3 +18,4 @@ try {
     exit;
 }
 ?>
+    
