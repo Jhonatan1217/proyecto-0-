@@ -157,6 +157,7 @@ async function cargarTrimestralizacion() {
           if (hora === rStart) {
             contenido += `
               <div class="registro border-gray-300 pb-1 mb-1" data-id="${r.id_horario || ""}">
+              <div><strong>Instructor:</strong> <strong>Instructor:</strong> ${r.nombre_instructor ?? ""} (${r.tipo_instructor ?? ""})</div>
                 <div><strong>Ficha:</strong> <span class="ficha">${r.numero_ficha ?? ""}</span>
                   (<span class="nivel_ficha">${(r.nivel_ficha ?? "").toUpperCase()}</span>)
                 </div>
