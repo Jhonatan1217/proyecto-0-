@@ -94,7 +94,7 @@
         });
       } else {
         selectArea.innerHTML = `<option disabled selected value="">No hay áreas disponibles</option>`;
-        Toast.fire({ icon: "warning", title: "No hay áreas registradas." });
+        
       }
     } catch (err) {
       console.error("Error al cargar áreas:", err);
