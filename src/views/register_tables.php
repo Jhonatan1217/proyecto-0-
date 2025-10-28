@@ -246,16 +246,16 @@ try {
                 class="form-field basis-1/2 w-full h-12 px-4 pr-12 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm"/>
                 
               <!-- INSTRUCTOR (desde DB) -->
-              <select name="nombre_instructor" id="nombre_instructor"
-                class="select-chev form-field basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
-                <option value="">Seleccione el instructor</option>
-                <?php foreach ($instructores as $ins): ?>
-                  <option value="<?= htmlspecialchars($ins['nombre_instructor']) ?>" data-tipo="<?= htmlspecialchars($ins['tipo_instructor']) ?>">
-                    <?= htmlspecialchars($ins['nombre_instructor']) ?> <?= isset($ins['tipo_instructor']) ? "— " . htmlspecialchars($ins['tipo_instructor']) : "" ?>
-                  </option>
-                <?php endforeach; ?>
+              <select name="id_instructor" id="id_instructor"
+                  class="select-chev form-field basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400">
+                  <option value="">Seleccione el instructor</option>
+                  <?php foreach ($instructores as $ins): ?>
+                      <option value="<?= htmlspecialchars($ins['id_instructor']) ?>">
+                          <?= htmlspecialchars($ins['nombre_instructor'] . " — " . $ins['tipo_instructor']) ?>
+                      </option>
+                  <?php endforeach; ?>
               </select>
-            </div>
+          </div>
 
             <select name="dia_semana" id="dia" 
               class="select-chev select-cal form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">

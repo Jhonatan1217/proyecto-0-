@@ -101,7 +101,7 @@ if (!window.TRIMESTRALIZACION_INIT) {
           if (modal) modal.classList.add("hidden");
 
           // Redirigir con zona + área
-          const redirect = `index.php?page=src/views/register_tables&id_zona=${zona}&id_area=${id_area}`;
+          const redirect = `index.php?page=src/views/register_tables`;
           setTimeout(() => window.location.replace(redirect), 1600);
 
         } catch (err) {

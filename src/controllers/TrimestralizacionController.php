@@ -384,16 +384,15 @@ switch ($accion) {
                     ]);
                 }
 
-                // Actualizar instructor (solo nombre)
-                if (!empty($r['nombre_instructor'])) {
+                // Actualizar instructor (ID)
+                if (!empty($r['id_instructor'])) {
                     $stmtInst = $conn->prepare("
-                        UPDATE instructores i
-                        INNER JOIN horarios h ON i.id_instructor = h.id_instructor
-                        SET i.nombre_instructor = :nombre_instructor
-                        WHERE h.id_horario = :id_horario
+                        UPDATE horarios
+                        SET id_instructor = :id_instructor
+                        WHERE id_horario = :id_horario
                     ");
                     $stmtInst->execute([
-                        ':nombre_instructor' => $r['nombre_instructor'],
+                        ':id_instructor' => $r['id_instructor'],
                         ':id_horario' => $r['id_horario']
                     ]);
                 }

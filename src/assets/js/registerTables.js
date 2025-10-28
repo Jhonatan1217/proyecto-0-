@@ -79,7 +79,8 @@ async function cargarAreasYZonas() {
           });
           Toast.fire({ icon: "success", title: "Zonas cargadas correctamente" });
         }
-      } catch {
+      } catch (err) {
+        console.error("Error al cargar zonas:", err);
         Toast.fire({ icon: "error", title: "Error al cargar zonas" });
       }
     });
@@ -97,7 +98,8 @@ async function cargarAreasYZonas() {
       cargarTrimestralizacion();
       Toast.fire({ icon: "info", title: `Zona ${id_zona} seleccionada` });
     });
-  } catch {
+  } catch (err) {
+    console.error("Error en cargarAreasYZonas:", err);
     Toast.fire({ icon: "error", title: "Error al conectar con el servidor" });
   }
 }
@@ -124,9 +126,10 @@ async function cargarTrimestralizacion() {
     const data = await res.json();
     tbody.innerHTML = "";
 
-    const activos = Array.isArray(data)
-      ? data.filter((d) => d && (d.estado === 1 || d.estado === "1"))
-      : [];
+    // data debe ser un array; si tu controller devuelve estructura {status:..., data: [...]}
+    const registrosServer = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
+
+    const activos = registrosServer.filter((d) => d && (d.estado === 1 || d.estado === "1"));
 
     if (!activos.length) {
       tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500">No hay registros activos para esta zona y área.</td></tr>`;
@@ -155,11 +158,14 @@ async function cargarTrimestralizacion() {
           const rStart = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
           const rEnd = r.hora_fin ? parseInt(r.hora_fin.split(":")[0], 10) : rStart + 1;
           if (hora === rStart) {
+            // agregamos data-id-instructor para que luego activarEdicion lo lea
             contenido += `
-              <div class="registro border-gray-300 pb-1 mb-1" data-id="${r.id_horario || ""}">
+              <div class="registro border-gray-300 pb-1 mb-1"
+                   data-id="${r.id_horario || ""}"
+                   data-id-instructor="${r.id_instructor ?? ""}">
                 <div><strong>Instructor:</strong> ${r.nombre_instructor ?? ""} (${r.tipo_instructor ?? ""})</div>
                 <div><strong>Ficha:</strong> <span class="ficha">${r.numero_ficha ?? ""}</span>
-                  (<span class="nivel_ficha">${(r.nivel_ficha ?? "").toUpperCase()}</span>)
+                  (<span class="nivel_ficha">${(r.nivel_ficha ?? "" ).toString().toUpperCase()}</span>)
                 </div>
                 <div><strong>Competencia:</strong> <span class="competencia">${r.descripcion ?? "Sin especificar"}</span></div>
               </div>`;
@@ -186,35 +192,134 @@ async function cargarTrimestralizacion() {
     Toast.fire({ icon: "error", title: "Error al cargar trimestralización" });
   }
 }
+
+// =======================
+// LISTAR INSTRUCTORES
+// =======================
+let listaInstructores = [];
+
+async function cargarInstructores() {
+  try {
+    const res = await fetch(`${BASE_URL}src/controllers/InstructorController.php?accion=listar`);
+    const data = await res.json();
+
+    // console diagnóstico
+    console.log("Respuesta del servidor (Instructores):", data);
+
+    // aceptar tanto {status,data:[]} como directamente array
+    const instructoresArray = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
+
+    if (instructoresArray.length) {
+      listaInstructores = instructoresArray;
+      // intentar rellenar un select global solo si existe (no es obligatorio)
+      llenarSelectInstructores(listaInstructores);
+    } else {
+      Toast.fire({ icon: "warning", title: "No hay instructores disponibles" });
+      listaInstructores = [];
+    }
+
+  } catch (error) {
+    console.error("Error al cargar instructores:", error);
+    Toast.fire({ icon: "error", title: "No se pudo cargar instructores" });
+    listaInstructores = [];
+  }
+}
+
+// opcional: si en alguna otra vista tienes un select con id="selectInstructor", esta función lo llenará.
+// ahora protege si no existe.
+function llenarSelectInstructores(instructores) {
+  const selectInstructor = document.getElementById("selectInstructor");
+  if (!selectInstructor) return; // protección: no hay select global, es normal
+  selectInstructor.innerHTML = '<option value="">Seleccione un instructor</option>';
+
+  instructores.forEach(i => {
+    const option = document.createElement("option");
+    option.value = i.id_instructor;
+    option.textContent = `${i.nombre_instructor} - ${i.tipo_instructor}`;
+    selectInstructor.appendChild(option);
+  });
+}
+
 // =======================
 // MODO EDICIÓN
 // =======================
-function activarEdicion() {
+async function activarEdicion() {
+  try {
+    // 1) cargar instructores (si falla, lista queda vacía pero no rompe)
+    await cargarInstructores();
+  } catch (err) {
+    console.error("Error al cargar instructores en activarEdicion:", err);
+  }
+
+  // 2) obtener registros
   const registros = document.querySelectorAll("#tbody-horarios .registro");
   if (!registros.length) {
     Toast.fire({ icon: "warning", title: "No hay datos para editar" });
     return;
   }
 
+  // 3) para cada registro, crear inputs/select por DOM (más robusto)
   registros.forEach((reg) => {
     const ficha = reg.querySelector(".ficha")?.textContent.trim() || "";
     const competencia = reg.querySelector(".competencia")?.textContent.trim() || "";
     const nivel_ficha = reg.querySelector(".nivel_ficha")?.textContent.trim() || "";
+    const idInstructor = reg.getAttribute("data-id-instructor") || "";
 
-    reg.innerHTML = `
-      <input type="text" value="${ficha}" placeholder="Número de ficha"
-        class="block w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm">
-      <textarea placeholder="Competencia / Observaciones"
-        class="w-full px-2 py-1 border border-gray-400 rounded text-sm resize-none">${competencia}</textarea>
-      <div class="text-xs text-gray-500 mt-1">Nivel: ${nivel_ficha}</div>
-    `;
+    // limpiar contenido previo
+    reg.innerHTML = "";
+
+    // input ficha
+    const inputFicha = document.createElement("input");
+    inputFicha.type = "text";
+    inputFicha.value = ficha;
+    inputFicha.placeholder = "Número de ficha";
+    inputFicha.className = "ficha-input block w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm";
+
+    // textarea competencia
+    const txt = document.createElement("textarea");
+    txt.rows = 2;
+    txt.className = "competencia-input w-full px-2 py-1 border border-gray-400 rounded text-sm resize-none";
+    txt.textContent = competencia;
+
+    // select instructores
+    const sel = document.createElement("select");
+    sel.className = "instructor-select w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm";
+    const placeholderOpt = document.createElement("option");
+    placeholderOpt.value = "";
+    placeholderOpt.textContent = "Seleccione instructor";
+    sel.appendChild(placeholderOpt);
+
+    // poblar opciones desde listaInstructores (ya cargada)
+    listaInstructores.forEach((inst) => {
+      const opt = document.createElement("option");
+      opt.value = inst.id_instructor;
+      opt.textContent = `${inst.nombre_instructor} (${inst.tipo_instructor})`;
+      if (String(inst.id_instructor) === String(idInstructor)) opt.selected = true;
+      sel.appendChild(opt);
+    });
+
+    // nivel (solo lectura visible)
+    const nivelDiv = document.createElement("div");
+    nivelDiv.className = "text-xs text-gray-500 mt-1";
+    nivelDiv.textContent = `Nivel: ${nivel_ficha}`;
+
+    // append a la fila (.registro)
+    reg.appendChild(inputFicha);
+    reg.appendChild(txt);
+    reg.appendChild(sel);
+    reg.appendChild(nivelDiv);
   });
 
-  document.getElementById("botones-principales").style.display = "none";
+  // ocultar botones principales y mostrar botones edición
+  const botonesPrincipales = document.getElementById("botones-principales");
+  if (botonesPrincipales) botonesPrincipales.style.display = "none";
   mostrarBotonesEdicion();
 }
 
 function mostrarBotonesEdicion() {
+  // si ya existe, no crear otro
+  if (document.getElementById("botones-edicion")) return;
+
   const div = document.createElement("div");
   div.id = "botones-edicion";
   div.className = "mt-4 flex justify-center gap-4";
@@ -243,6 +348,7 @@ async function guardarCambios() {
     id_horario: r.getAttribute("data-id"),
     numero_ficha: r.querySelector("input")?.value || "",
     descripcion: r.querySelector("textarea")?.value || "",
+    id_instructor: r.querySelector("select.instructor-select")?.value || ""
   }));
 
   try {
@@ -253,15 +359,19 @@ async function guardarCambios() {
     });
 
     const data = await res.json();
-    if (data.success) {
+    if (data && (data.success || data.status === "success")) {
       Toast.fire({ icon: "success", title: "Cambios guardados correctamente" });
-      document.getElementById("botones-edicion").remove();
-      document.getElementById("botones-principales").style.display = "flex";
+      const be = document.getElementById("botones-edicion");
+      if (be) be.remove();
+      const bp = document.getElementById("botones-principales");
+      if (bp) bp.style.display = "flex";
       cargarTrimestralizacion();
     } else {
+      console.error("guardarCambios respuesta inesperada:", data);
       Toast.fire({ icon: "error", title: "Error al guardar cambios" });
     }
-  } catch {
+  } catch (err) {
+    console.error("guardarCambios error:", err);
     Toast.fire({ icon: "error", title: "Error de conexión al guardar" });
   }
 }
@@ -276,8 +386,10 @@ function cancelarEdicion() {
     reverseButtons: true,
   }).then((res) => {
     if (res.isConfirmed) {
-      document.getElementById("botones-edicion").remove();
-      document.getElementById("botones-principales").style.display = "flex";
+      const be = document.getElementById("botones-edicion");
+      if (be) be.remove();
+      const bp = document.getElementById("botones-principales");
+      if (bp) bp.style.display = "flex";
       cargarTrimestralizacion();
       Toast.fire({ icon: "info", title: "Edición cancelada" });
     }
@@ -293,7 +405,8 @@ async function confirmarEliminar() {
     const data = await res.json();
     Toast.fire({ icon: "success", title: data.message || "Trimestralización eliminada correctamente" });
     cargarTrimestralizacion();
-  } catch {
+  } catch (err) {
+    console.error("confirmarEliminar error:", err);
     Toast.fire({ icon: "error", title: "Error al eliminar" });
   } finally {
     cerrarModal();
@@ -301,10 +414,12 @@ async function confirmarEliminar() {
 }
 
 function mostrarModalEliminar() {
-  document.getElementById("modalEliminar").classList.remove("hidden");
+  const modal = document.getElementById("modalEliminar");
+  if (modal) modal.classList.remove("hidden");
 }
 function cerrarModal() {
-  document.getElementById("modalEliminar").classList.add("hidden");
+  const modal = document.getElementById("modalEliminar");
+  if (modal) modal.classList.add("hidden");
 }
 
 // =======================
