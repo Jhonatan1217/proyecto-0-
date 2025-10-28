@@ -230,10 +230,10 @@
     }
   });
 
-  // =======================
+    // =======================
   // EDITAR ZONA INLINE
   // =======================
-  tablaBody?.addEventListener("click", (e) => {
+  tablaBody?.addEventListener("click", async (e) => {
     const btnEditar = e.target.closest(".btn-editar");
     if (!btnEditar) return;
 
@@ -248,13 +248,32 @@
     const zonaOriginal = tdZona.textContent.trim();
     const areaOriginal = tdArea.textContent.trim();
 
+    // 🔹 Cargar áreas dinámicamente desde la DB
+    let opcionesHTML = `<option disabled selected value="">Cargando áreas...</option>`;
+    try {
+      const res = await fetch("src/controllers/areaController.php?accion=listar");
+      const json = await res.json();
+
+      if (json.status === "success" && Array.isArray(json.data)) {
+        opcionesHTML = json.data
+          .map(
+            (a) =>
+              `<option value="${a.id_area}" ${
+                a.nombre_area === areaOriginal ? "selected" : ""
+              }>${a.nombre_area}</option>`
+          )
+          .join("");
+      } else {
+        opcionesHTML = `<option disabled selected value="">No hay áreas</option>`;
+      }
+    } catch (err) {
+      console.error("Error al cargar áreas:", err);
+      opcionesHTML = `<option disabled selected value="">Error al cargar</option>`;
+    }
+
+    // 🔹 Reemplazar contenido de la fila
     tdZona.innerHTML = `<input type="number" value="${zonaOriginal}" class="w-20 border rounded-lg text-center">`;
-    tdArea.innerHTML = `
-      <select class="border rounded-lg px-2 py-1">
-        <option value="1" ${areaOriginal === "Polivalente" ? "selected" : ""}>Polivalente</option>
-        <option value="2" ${areaOriginal === "Confecciones" ? "selected" : ""}>Confecciones</option>
-      </select>
-    `;
+    tdArea.innerHTML = `<select class="border rounded-lg px-2 py-1">${opcionesHTML}</select>`;
     tdAcc.innerHTML = `
       <button class="btn-guardar bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 transition">Guardar</button>
       <button class="btn-cancelar bg-gray-400 text-white px-3 py-1 rounded-lg hover:bg-gray-500 transition">Cancelar</button>
@@ -262,6 +281,7 @@
 
     tdAcc.querySelector(".btn-cancelar").addEventListener("click", cargarZonas);
 
+    // 🔹 Guardar cambios
     tdAcc.querySelector(".btn-guardar").addEventListener("click", async () => {
       const id_zona_nueva = tdZona.querySelector("input").value.trim();
       const id_area_nueva = tdArea.querySelector("select").value.trim();
@@ -302,6 +322,7 @@
       }
     });
   });
+
 
   // =======================
   // INICIALIZAR
