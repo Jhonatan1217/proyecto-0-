@@ -427,32 +427,72 @@ function cerrarModal() {
 // =======================
 async function descargarPDF() {
   const { jsPDF } = window.jspdf;
-  const contenedor = document.createElement("div");
-  contenedor.style.backgroundColor = "white";
-  contenedor.style.padding = "20px";
-  contenedor.style.position = "fixed";
-  contenedor.style.top = "-9999px";
-  document.body.appendChild(contenedor);
+  const elementoOriginal = document.querySelector("#tabla-horarios");
 
-  contenedor.innerHTML = `
-    <h1 style="text-align:center;font-weight:bold;font-size:22px;margin-bottom:10px;">
-      VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA ${id_zona}
-    </h1>
-    <h2 style="text-align:center;color:#333;font-size:16px;margin-bottom:20px;">
-      Sistema de gestión de trimestralización - SENA
-    </h2>
-    ${document.querySelector("#tabla-horarios").outerHTML}
-  `;
+  if (!elementoOriginal) {
+    Toast.fire({ icon: "error", title: "No se encontró la tabla para exportar" });
+    return;
+  }
 
-  await new Promise((r) => setTimeout(r, 300));
-  const canvas = await html2canvas(contenedor, { scale: 2, useCORS: true });
-  const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const elementoClonado = elementoOriginal.cloneNode(true);
+  elementoClonado.style.maxHeight = "none";
+  elementoClonado.style.overflow = "visible";
+  elementoClonado.style.height = "auto";
+  elementoClonado.style.width = "100%";
+  elementoClonado.style.position = "absolute";
+  elementoClonado.style.top = "0";
+  elementoClonado.style.left = "-9999px";
 
-  const imgWidth = pdf.internal.pageSize.getWidth();
+  document.body.appendChild(elementoClonado);
+
+  await new Promise(r => setTimeout(r, 300));
+
+  const canvas = await html2canvas(elementoClonado, {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: "#ffffff",
+    scrollX: 0,
+    scrollY: 0,
+    windowWidth: elementoClonado.scrollWidth,
+    windowHeight: elementoClonado.scrollHeight
+  });
+
+  document.body.removeChild(elementoClonado);
+
+  const imgData = canvas.toDataURL("image/png");
+  const pdf = new jsPDF({
+    orientation: "landscape",
+    unit: "mm",
+    format: "a4"
+  });
+
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = pdf.internal.pageSize.getHeight();
+
+  // Márgenes configurables (en milímetros)
+  const marginX = 10; // izquierda y derecha
+  const marginY = 15; // arriba
+
+  const imgWidth = pdfWidth - marginX * 2;
   const imgHeight = (canvas.height * imgWidth) / canvas.width;
-  pdf.addImage(canvas, "PNG", 0, 0, imgWidth, imgHeight);
+
+  let position = marginY;
+  let heightLeft = imgHeight;
+
+  pdf.setFontSize(16);
+  pdf.text(`Trimestralización - Zona ${id_zona}`, pdfWidth / 2, 10, { align: "center" });
+
+  pdf.addImage(imgData, "image/png", marginX, position, imgWidth, imgHeight);
+  heightLeft -= pdfHeight - position;
+
+  while (heightLeft > 0) {
+    pdf.addPage();
+    position = 0;
+    pdf.addImage(imgData, "image/png", marginX, position - heightLeft, imgWidth, imgHeight);
+    heightLeft -= pdfHeight;
+  }
+
   pdf.save(`trimestralizacion_zona_${id_zona}.pdf`);
-  contenedor.remove();
 }
 
 // =======================
