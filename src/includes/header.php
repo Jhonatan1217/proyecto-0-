@@ -62,6 +62,11 @@
         <img src="<?= BASE_URL ?>src/assets/img/calendar-range.svg" alt="Icono de Trimestres">
         <a href="<?= BASE_URL ?>index.php?page=src/views/gestionTrimestres">Trimestres</a>
       </li>
+
+      <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
+        <img src="<?= BASE_URL ?>src/assets/img/calendar-range.svg" alt="Icono de Trimestres">
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionCompetencias">Competencias</a>
+      </li>
     </ul>
   </nav>
 
