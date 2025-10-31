@@ -90,7 +90,6 @@ function php_to_js($arr){ return json_encode($arr, JSON_UNESCAPED_UNICODE|JSON_U
   <meta charset="utf-8">
   <title>Sistema de Gestión Académica</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     .switch{--h:22px;--w:42px;position:relative;width:var(--w);height:var(--h);border-radius:999px;background:#e5e7eb;transition:.2s}
