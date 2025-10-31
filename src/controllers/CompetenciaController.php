@@ -52,52 +52,61 @@ switch ($accion) {
     case 'crear':
         // Decodifica los datos recibidos en formato JSON
         $data = json_decode(file_get_contents("php://input"), true);
-        // Obtiene la descripción desde los datos recibidos o desde POST
+        // Obtiene los datos desde JSON o POST
+        $nombre = $data['nombre_competencia'] ?? $_POST['nombre_competencia'] ?? null;
         $descripcion = $data['descripcion'] ?? $_POST['descripcion'] ?? null;
 
-        // Valida que la descripción no esté vacía
-        if (!$descripcion || trim($descripcion) === '') {
-            echo json_encode(['error' => 'Debe enviar una descripción válida']);
+        // Valida que los datos no estén vacíos
+        if (!$nombre || trim($nombre) === '' || !$descripcion || trim($descripcion) === '') {
+            echo json_encode(['error' => 'Debe enviar nombre_competencia y descripcion válidos']);
             exit;
         }
 
         // Llama al método crear() para insertar una nueva competencia
-        $res = $competencia->crear(trim($descripcion));
+        $res = $competencia->crear(trim($nombre), trim($descripcion));
         echo json_encode($res);
         break;
 
     case 'actualizar':
         // Decodifica los datos recibidos en formato JSON
         $data = json_decode(file_get_contents("php://input"), true);
-        // Obtiene el id_competencia y la descripción desde los datos recibidos o desde POST
+        // Obtiene el id_competencia, nombre y descripción desde los datos recibidos o POST
         $id_competencia = $data['id_competencia'] ?? $_POST['id_competencia'] ?? null;
+        $nombre = $data['nombre_competencia'] ?? $_POST['nombre_competencia'] ?? null;
         $descripcion = $data['descripcion'] ?? $_POST['descripcion'] ?? null;
 
         // Valida que ambos parámetros sean válidos
-        if (!$id_competencia || !$descripcion || trim($descripcion) === '') {
-            echo json_encode(['error' => 'Debe enviar id_competencia y una descripción válida']);
+        if (!$id_competencia || !$nombre || trim($nombre) === '' || !$descripcion || trim($descripcion) === '') {
+            echo json_encode(['error' => 'Debe enviar id_competencia, nombre_competencia y descripcion válidos']);
             exit;
         }
 
         // Llama al método actualizar() para modificar la competencia
-        $res = $competencia->actualizar($id_competencia, trim($descripcion));
+        $res = $competencia->actualizar($id_competencia, trim($nombre), trim($descripcion));
         echo json_encode($res);
         break;
 
     case 'eliminar':
-        // Decodifica los datos recibidos en formato JSON
-        $data = json_decode(file_get_contents("php://input"), true);
-        // Obtiene el id_competencia desde los datos recibidos o desde POST
-        $id_competencia = $data['id_competencia'] ?? $_POST['id_competencia'] ?? null;
+        // En este sistema no se elimina, se inhabilita
+        echo json_encode(['error' => 'La eliminación está deshabilitada. Use la acción inhabilitar.']);
+        break;
 
-        // Valida que se haya enviado el id_competencia
-        if (!$id_competencia) {
-            echo json_encode(['error' => 'Debe enviar el parámetro id_competencia']);
+    // ======================================================
+    // NUEVO CASO: INHABILITAR O ACTIVAR COMPETENCIA
+    // ======================================================
+    case 'inhabilitar':
+        // Decodifica los datos recibidos en formato JSON o POST
+        $data = json_decode(file_get_contents("php://input"), true);
+        $id_competencia = $data['id_competencia'] ?? $_POST['id_competencia'] ?? null;
+        $estado = $data['estado'] ?? $_POST['estado'] ?? null; // 0 = inhabilitar, 1 = activar
+
+        if (!$id_competencia || !isset($estado)) {
+            echo json_encode(['error' => 'Debe enviar id_competencia y estado (0 o 1)']);
             exit;
         }
 
-        // Llama al método eliminar() para borrar la competencia
-        $res = $competencia->eliminar($id_competencia);
+        // Llama al método cambiarEstado() del modelo
+        $res = $competencia->cambiarEstado($id_competencia, intval($estado));
         echo json_encode($res);
         break;
 
@@ -107,3 +116,4 @@ switch ($accion) {
         break;
 }
 ?>
+    
