@@ -19,7 +19,7 @@ class Competencia {
         }
     }
 
-    // Obtener una competencia por ID
+    // Obtener una competencia por su ID
     public function obtenerPorId($id_competencia) {
         try {
             $sql = "SELECT * FROM " . $this->table . " WHERE id_competencia = :id_competencia";
@@ -32,36 +32,31 @@ class Competencia {
         }
     }
 
-    // Crear una nueva competencia en la base de datos
-    // Recibe la descripción de la competencia como parámetro
-    public function crear($descripcion) {
+    // Crear una nueva competencia
+    public function crear($nombre_competencia, $descripcion) {
         try {
-            // Prepara la consulta SQL para insertar una nueva competencia
-            $sql = "INSERT INTO " . $this->table . " (descripcion) VALUES (:descripcion)";
+            $sql = "INSERT INTO " . $this->table . " (nombre_competencia, descripcion)
+                    VALUES (:nombre_competencia, :descripcion)";
             $stmt = $this->conn->prepare($sql);
-
-            // Asocia el parámetro :descripcion con el valor recibido
+            $stmt->bindParam(':nombre_competencia', $nombre_competencia);
             $stmt->bindParam(':descripcion', $descripcion);
-
-            // Ejecuta la consulta
             $stmt->execute();
-
-            // Retorna un mensaje de éxito si la inserción fue correcta
             return ["mensaje" => "Competencia creada exitosamente."];
         } catch (PDOException $e) {
-            // Si ocurre un error, retorna el mensaje de error
             return ["error" => $e->getMessage()];
         }
     }
 
     // Actualizar una competencia existente
-    public function actualizar($id_competencia, $descripcion) {
+    public function actualizar($id_competencia, $nombre_competencia, $descripcion) {
         try {
             $sql = "UPDATE " . $this->table . " 
-                    SET descripcion = :descripcion 
+                    SET nombre_competencia = :nombre_competencia, 
+                        descripcion = :descripcion
                     WHERE id_competencia = :id_competencia";
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':id_competencia', $id_competencia);
+            $stmt->bindParam(':nombre_competencia', $nombre_competencia);
             $stmt->bindParam(':descripcion', $descripcion);
             $stmt->execute();
             return ["mensaje" => "Competencia actualizada correctamente."];
@@ -78,6 +73,38 @@ class Competencia {
             $stmt->bindParam(':id_competencia', $id_competencia);
             $stmt->execute();
             return ["mensaje" => "Competencia eliminada exitosamente."];
+        } catch (PDOException $e) {
+            return ["error" => $e->getMessage()];
+        }
+    }
+
+    // Cambiar el estado (activo / inactivo)
+    public function cambiarEstado($id_competencia, $nuevoEstado) {
+        try {
+            if ($nuevoEstado != 0 && $nuevoEstado != 1) {
+                throw new Exception("El estado debe ser 1 (activo) o 0 (inactivo).");
+            }
+
+            $sql = "UPDATE " . $this->table . " 
+                    SET estado = :estado 
+                    WHERE id_competencia = :id_competencia";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':estado', $nuevoEstado);
+            $stmt->bindParam(':id_competencia', $id_competencia);
+            $stmt->execute();
+            return ["mensaje" => "Estado de competencia actualizado correctamente."];
+        } catch (PDOException $e) {
+            return ["error" => $e->getMessage()];
+        }
+    }
+
+    // Listar solo competencias activas
+    public function listarActivas() {
+        try {
+            $sql = "SELECT * FROM " . $this->table . " WHERE estado = 1";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             return ["error" => $e->getMessage()];
         }
