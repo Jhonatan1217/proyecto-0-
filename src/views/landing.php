@@ -39,7 +39,6 @@ try {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Proyecto 0</title>
-    <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Fuente Work Sans (el modal la usa) -->
     <link href="https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet"/>

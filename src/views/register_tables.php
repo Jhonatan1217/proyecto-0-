@@ -41,7 +41,6 @@ try {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proyecto 0 - Visualización de registro de tablas</title>
   <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/register_tables.css">
-  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body class="text-center font-sans min-h-screen flex flex-col bg-gray-50">

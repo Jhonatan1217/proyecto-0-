@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>Gestión de Trimestres</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="bg-white text-gray-900 font-sans">

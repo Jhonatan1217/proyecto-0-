@@ -19,6 +19,7 @@ define('BASE_URL', $protocol . $host . $script_dir);
     <meta charset="UTF-8">
     <title>Proyecto 0</title>
     <link rel="icon" type="image/png" href="./src/assets/img/logoSena.png">
+    <link rel="stylesheet" href="./public/css/output.css">
 </head>
 <body class="flex flex-col min-h-screen font-sans bg-white text-gray-900">
     <header>
