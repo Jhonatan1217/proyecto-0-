@@ -7,7 +7,49 @@ class Competencia {
         $this->conn = $db;
     }
 
-    // Listar todas las competencias
+    // ===============================
+    // ETL: Buscar o crear competencia
+    // ===============================
+    public function buscarOcrear($id_programa, $codigo, $nombre) {
+
+        // 1. Buscar si ya existe
+        $sql = "SELECT id_competencia FROM " . $this->table . " 
+                WHERE codigo_competencia = :codigo AND id_programa = :id_programa";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':codigo', $codigo);
+        $stmt->bindParam(':id_programa', $id_programa);
+        $stmt->execute();
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($data) return $data["id_competencia"];
+
+        // 2. Insertar si no existe
+        $sql = "INSERT INTO " . $this->table . " (id_programa, codigo_competencia, nombre_competencia, estado)
+                VALUES (:id_programa, :codigo, :nombre, 1)";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':id_programa', $id_programa);
+        $stmt->bindParam(':codigo', $codigo);
+        $stmt->bindParam(':nombre', $nombre);
+        $stmt->execute();
+
+        return $this->conn->lastInsertId();
+    }
+
+    // ===============================
+    // ETL: Obtener por código
+    // ===============================
+    public function obtenerPorCodigo($codigo) {
+        $sql = "SELECT * FROM " . $this->table . " WHERE codigo_competencia = :codigo";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':codigo', $codigo);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    // ===============================
+    // CRUD
+    // ===============================
+
     public function listar() {
         try {
             $sql = "SELECT * FROM " . $this->table;
@@ -19,7 +61,6 @@ class Competencia {
         }
     }
 
-    // Obtener una competencia por su ID
     public function obtenerPorId($id_competencia) {
         try {
             $sql = "SELECT * FROM " . $this->table . " WHERE id_competencia = :id_competencia";
@@ -32,7 +73,6 @@ class Competencia {
         }
     }
 
-    // Crear una nueva competencia
     public function crear($nombre_competencia, $descripcion) {
         try {
             $sql = "INSERT INTO " . $this->table . " (nombre_competencia, descripcion)
@@ -47,7 +87,6 @@ class Competencia {
         }
     }
 
-    // Actualizar una competencia existente
     public function actualizar($id_competencia, $nombre_competencia, $descripcion) {
         try {
             $sql = "UPDATE " . $this->table . " 
@@ -65,7 +104,6 @@ class Competencia {
         }
     }
 
-    // Eliminar una competencia
     public function eliminar($id_competencia) {
         try {
             $sql = "DELETE FROM " . $this->table . " WHERE id_competencia = :id_competencia";
@@ -78,13 +116,8 @@ class Competencia {
         }
     }
 
-    // Cambiar el estado (activo / inactivo)
     public function cambiarEstado($id_competencia, $nuevoEstado) {
         try {
-            if ($nuevoEstado != 0 && $nuevoEstado != 1) {
-                throw new Exception("El estado debe ser 1 (activo) o 0 (inactivo).");
-            }
-
             $sql = "UPDATE " . $this->table . " 
                     SET estado = :estado 
                     WHERE id_competencia = :id_competencia";
@@ -92,22 +125,9 @@ class Competencia {
             $stmt->bindParam(':estado', $nuevoEstado);
             $stmt->bindParam(':id_competencia', $id_competencia);
             $stmt->execute();
-            return ["mensaje" => "Estado de competencia actualizado correctamente."];
-        } catch (PDOException $e) {
-            return ["error" => $e->getMessage()];
-        }
-    }
-
-    // Listar solo competencias activas
-    public function listarActivas() {
-        try {
-            $sql = "SELECT * FROM " . $this->table . " WHERE estado = 1";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return ["mensaje" => "Estado actualizado correctamente."];
         } catch (PDOException $e) {
             return ["error" => $e->getMessage()];
         }
     }
 }
-?>

@@ -9,15 +9,20 @@ class Programa {
 
     // Listar todos los programas
     public function listar() {
-        try {
-            $sql = "SELECT * FROM " . $this->table;
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            return ["error" => $e->getMessage()];
-        }
+    try {
+        $sql = "SELECT id_programa, nombre_programa 
+                FROM " . $this->table . "
+                WHERE estado = 1
+                ORDER BY nombre_programa ASC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        return ["error" => $e->getMessage()];
     }
+}
+
+
 
     // Obtener un programa por su ID
     public function obtenerPorId($id_programa) {

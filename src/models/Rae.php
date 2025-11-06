@@ -7,6 +7,43 @@ class Rae {
         $this->conn = $db;
     }
 
+    // ===============================
+    // ETL: Buscar o crear RAE
+    // ===============================
+    public function buscarOcrear($id_competencia, $codigo, $descripcion) {
+
+        // 1. Buscar si ya existe
+        $sql = "SELECT id_rae FROM " . $this->table . "
+                WHERE codigo_rae = :codigo AND id_competencia = :id_competencia";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':codigo', $codigo);
+        $stmt->bindParam(':id_competencia', $id_competencia);
+        $stmt->execute();
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($data) return $data["id_rae"];
+
+        // 2. Crear si no existe
+        $sql = "INSERT INTO " . $this->table . " (id_competencia, codigo_rae, descripcion, estado)
+                VALUES (:id_competencia, :codigo, :descripcion, 1)";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':id_competencia', $id_competencia);
+        $stmt->bindParam(':codigo', $codigo);
+        $stmt->bindParam(':descripcion', $descripcion);
+        $stmt->execute();
+
+        return $this->conn->lastInsertId();
+    }
+
+    // Obtener RAE por código
+    public function obtenerPorCodigo($codigo) {
+        $sql = "SELECT * FROM " . $this->table . " WHERE codigo_rae = :codigo";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':codigo', $codigo);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
     // Listar todos los RAEs
     public function listar() {
         $sql = "SELECT * FROM " . $this->table;
@@ -24,7 +61,7 @@ class Rae {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // Crear un nuevo RAE
+    // Crear RAE
     public function crear($descripcion, $id_competencia) {
         $sql = "INSERT INTO " . $this->table . " (descripcion, id_competencia)
                 VALUES (:descripcion, :id_competencia)";
@@ -34,7 +71,7 @@ class Rae {
         $stmt->execute();
     }
 
-    // Actualizar un RAE existente
+    // Actualizar RAE
     public function actualizar($id, $descripcion, $id_competencia) {
         $sql = "UPDATE " . $this->table . " 
                 SET descripcion = :descripcion, id_competencia = :id_competencia
@@ -46,7 +83,7 @@ class Rae {
         $stmt->execute();
     }
 
-    // Eliminar un RAE
+    // Eliminar RAE
     public function eliminar($id) {
         $sql = "DELETE FROM " . $this->table . " WHERE id_rae = :id";
         $stmt = $this->conn->prepare($sql);
@@ -54,12 +91,8 @@ class Rae {
         $stmt->execute();
     }
 
-    // Cambiar el estado (activo/inactivo)
+    // Cambiar estado
     public function cambiarEstado($id, $nuevoEstado) {
-        if ($nuevoEstado != 1 && $nuevoEstado != 0) {
-            throw new Exception("El estado debe ser 1 (activo) o 0 (inactivo).");
-        }
-
         $sql = "UPDATE " . $this->table . " SET estado = :estado WHERE id_rae = :id";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':estado', $nuevoEstado);
@@ -67,9 +100,10 @@ class Rae {
         $stmt->execute();
     }
 
-    // Listar RAEs con el nombre de la competencia
+    // Listar RAES con competencia asociada
     public function listarConCompetencia() {
-        $sql = "SELECT r.id_rae, r.descripcion, r.estado, c.nombre_competencia
+        $sql = "SELECT r.id_rae, r.codigo_rae, r.descripcion, r.estado, 
+                       c.nombre_competencia, c.codigo_competencia
                 FROM raes r
                 LEFT JOIN competencias c ON r.id_competencia = c.id_competencia";
         $stmt = $this->conn->prepare($sql);

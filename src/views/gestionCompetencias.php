@@ -60,8 +60,16 @@
             <div class="px-6 mt-4">
               <label class="block text-sm font-medium mb-1">Programa de formación <span class="text-red-500">*</span></label>
               <select id="upload_program" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none bg-white">
-                <option value="">Seleccione un programa</option>
+                  <option value="">Seleccione un programa</option>
+
+                  <?php foreach($programas as $p): ?>
+                      <option value="<?= $p['id_programa'] ?>">
+                          <?= $p['nombre_programa'] ?>
+                      </option>
+                  <?php endforeach; ?>
+
               </select>
+
               <p id="err_upload_program" class="hidden mt-1 text-xs" style="color:#dc2626">Seleccione un programa para asociar la carga.</p>
             </div>
 
@@ -71,9 +79,12 @@
                   <i data-lucide="upload" class="mx-auto h-8 w-8" style="color:#a1a1aa"></i>
                   <p class="mt-2 text-sm text-zinc-500">Click para seleccionar archivo</p>
                 </div>
-                <input type="file" class="hidden" />
+                <input type="file" id="inputExcel" name="archivo" class="hidden" accept=".xlsx,.xls" required />
               </label>
-              <button class="w-full rounded-xl" style="background:#00324d;color:#fff;padding:.65rem 1rem;font-size:.875rem;font-weight:500">Subir y Procesar</button>
+              <button id="btnProcesarExcel" class="w-full rounded-xl" style="background:#00324d;color:#fff;padding:.65rem 1rem;font-size:.875rem;font-weight:500">
+                Subir y Procesar
+              </button>
+
             </div>
           </div>
         </div>
@@ -291,6 +302,73 @@
   <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionProgramas.js?v=3"></script>
   <!-- (Opcional) otros módulos: -->
   <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionCompetencias.js" defer></script> 
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  const btnProcesar = document.getElementById("btnProcesarExcel");
+  const inputFile = document.getElementById("inputExcel");
+  const selectProgram = document.getElementById("upload_program");
+
+  btnProcesar.addEventListener("click", function () {
+
+    if (selectProgram.value === "") {
+      document.getElementById("err_upload_program").classList.remove("hidden");
+      return;
+    }
+
+    if (inputFile.files.length === 0) {
+      alert("Seleccione un archivo Excel primero.");
+      return;
+    }
+
+    let formData = new FormData();
+    formData.append("archivo", inputFile.files[0]);
+    formData.append("programa", selectProgram.value);
+
+    fetch("<?= BASE_URL ?>src/controllers/EtlController.php?accion=subir", {
+      method: "POST",
+      body: formData
+    })
+    .then(r => r.text())
+    .then(r => {
+      console.log("RESPUESTA DEL SERVIDOR:", r);
+      alert(r);
+    })
+    .catch(e => console.error("ERROR:", e));
+
+  });
+
+});
+</script>
+
+
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  const selectProgram = document.getElementById("upload_program");
+
+  fetch("<?= BASE_URL ?>src/controllers/ProgramasController.php?accion=listar")
+    .then(res => res.json())
+    .then(programas => {
+
+      if (!Array.isArray(programas)) return;
+
+      programas.forEach(p => {
+        selectProgram.innerHTML += `
+          <option value="${p.id_programa}">
+            ${p.nombre_programa}
+          </option>`;
+      });
+    })
+    .catch(err => console.error("Error cargando programas:", err));
+});
+</script>
+
+
+
+
 
 </body>
 </html>
