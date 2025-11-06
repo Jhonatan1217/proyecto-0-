@@ -10,6 +10,8 @@
   <title>Sistema de Gestión Académica</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+
   <style>
     .switch{--h:22px;--w:42px;position:relative;width:var(--w);height:var(--h);border-radius:999px;background:#e5e7eb;transition:.2s}
     .switch input{display:none}
@@ -30,16 +32,16 @@
       <!-- Tabs -->
       <div class="bg-zinc-100 rounded-2xl p-1 flex items-center gap-1 justify-around">
         <button data-tab-btn="upload" class="tab-btn flex items-center justify-center gap-2 px-4 py-2 rounded-xl w-full sm:w-auto text-zinc-700">
-          <i data-lucide="upload" class="w-4 h-4"></i><span class="hidden sm:inline">Carga Excel</span>
+          <i data-lucide="upload" class="w-4 h-4"></i><span class="sm:inline">Carga Excel</span>
         </button>
         <button data-tab-btn="programs" class="tab-btn flex items-center justify-center gap-2 px-4 py-2 rounded-xl w-full sm:w-auto text-zinc-700">
-          <i data-lucide="graduation-cap" class="w-4 h-4"></i><span class="hidden sm:inline">Programas</span>
+          <i data-lucide="graduation-cap" class="w-4 h-4"></i><span class=" sm:inline">Programas</span>
         </button>
         <button data-tab-btn="competencies" class="tab-btn flex items-center justify-center gap-2 px-4 py-2 rounded-xl w-full sm:w-auto text-zinc-700">
-          <i data-lucide="book-open" class="w-4 h-4"></i><span class="hidden sm:inline">Competencias</span>
+          <i data-lucide="book-open" class="w-4 h-4"></i><span class="sm:inline">Competencias</span>
         </button>
         <button data-tab-btn="raes" class="tab-btn flex items-center justify-center gap-2 px-4 py-2 rounded-xl w-full sm:w-auto text-zinc-700">
-          <i data-lucide="target" class="w-4 h-4"></i><span class="hidden sm:inline">RAE</span>
+          <i data-lucide="target" class="w-4 h-4"></i><span class="sm:inline">RAE</span>
         </button>
       </div>
 
@@ -107,10 +109,10 @@
             <select id="competencyProgramFilter" class="w-[260px] border border-zinc-300 rounded-xl px-3 py-2 text-sm">
               <option value="all">Todos los programas</option>
             </select>
-            <button class="rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2"
-                    style="background:#00324d;color:#fff">
+            <button id="btnNewCompetency" class="rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2" style="background:#00324d;color:#fff">
               <img src="src/assets/img/plus.svg" class="w-4 h-4" alt="icono añadir"> Nueva Competencia
             </button>
+
           </div>
         </div>
         <div id="competenciesList" class="space-y-5"></div>
@@ -283,14 +285,25 @@
 
   <!-- 2) Exponer endpoint para gestionProgramas.js -->
   <script>
-    window.API_PROGRAMAS = encodeURI('<?= BASE_URL ?? '' ?>src/controllers/ProgramasController.php');
+    window.API_PROGRAMAS     = encodeURI('<?= BASE_URL ?? '' ?>src/controllers/ProgramasController.php');
     window.PROGRAMS_MANAGED_BY_API = true;
+
+    /* NUEVO: endpoint de competencias */
+    window.API_COMPETENCIAS  = encodeURI('<?= BASE_URL ?? '' ?>src/controllers/CompetenciaController.php');
+
+    window.API_RAES = encodeURI('<?= BASE_URL ?? '' ?>src/controllers/RaeController.php');
   </script>
 
-  <!-- 3) Tu JS de funcionalidad (listar/agregar/editar/eliminar) -->
-  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionProgramas.js?v=3"></script>
-  <!-- (Opcional) otros módulos: -->
-  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionCompetencias.js" defer></script> 
+
+  <!-- 3) Tu JS de funcionalidad (Programas) -->
+<script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionProgramas.js?v=3"></script>
+
+<!-- NUEVO: JS de Competencias -->
+<script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionCompetencias.js?v=1" defer></script>
+
+<script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionRaes.js?v=1" defer></script>
+
+
 
 </body>
 </html>

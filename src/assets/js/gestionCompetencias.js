@@ -1,286 +1,367 @@
-// src/assets/js/gestionProgramas.js
-document.addEventListener('DOMContentLoaded', () => {
-  (function () {
-    // ===============================
-    // CONFIG
-    // ===============================
-    const API = (window.API_PROGRAMAS || (window.BASE_URL || '') + 'src/controllers/ProgramasController.php').replace(/\/+$/, '');
+// src/assets/js/gestionCompetencias.js
+(function () {
+  // ===============================
+  // CONFIG & GUARD CLAUSE
+  // ===============================
+  const BASE = (window.BASE_URL || '').replace(/\/+$/, '');
+  const API_COMP = (window.API_COMPETENCIAS || BASE + 'src/controllers/CompetenciasController.php').replace(/\/+$/, '');
+  const API_PROG = (window.API_PROGRAMAS     || BASE + 'src/controllers/ProgramasController.php').replace(/\/+$/, '');
+  // Opcional: si tienes endpoint de RAEs, déjalo configurado. Si no, no pasa nada.
+  const API_RAE  = (window.API_RAES || BASE + 'src/controllers/RaesController.php').replace(/\/+$/, '');
 
-    // ===============================
-    // SELECTORES
-    // ===============================
-    const tabPrograms = document.querySelector('[data-tab="programs"]');
-    if (!tabPrograms) return;
+  const tabCompetencies = document.querySelector('[data-tab="competencies"]');
+  if (!tabCompetencies) return;
 
-    const grid      = document.getElementById('programsGrid');
-    const emptyBox  = document.getElementById('programsEmpty');
-    const modal     = document.getElementById('modalProgram');
-    const backdrop  = document.getElementById('modalProgramBackdrop');
+  // ===============================
+  // SELECTORES
+  // ===============================
+  const list          = document.getElementById('competenciesList');
+  const emptyBox      = document.getElementById('competenciesEmpty');
+  const btnNew        = document.getElementById('btnNewCompetency');
+  const filterProgram = document.getElementById('competencyProgramFilter');
 
-    const form      = modal ? modal.querySelector('#formProgramNew') : null;
-    const inpCode   = modal ? modal.querySelector('#pg_code')       : null; // id_programa
-    const inpName   = modal ? modal.querySelector('#pg_name')       : null; // nombre_programa
-    const inpDesc   = modal ? modal.querySelector('#pg_desc')       : null; // descripcion
-    const inpHours  = modal ? modal.querySelector('#pg_hours')      : null; // duracion
-    const btnClose  = modal ? modal.querySelector('#btnCloseProgram')  : null;
-    const btnCancel = modal ? modal.querySelector('#btnCancelProgram') : null;
+  const modal     = document.getElementById('modalCompetency');
+  const backdrop  = document.getElementById('modalCompetencyBackdrop');
+  const form      = document.getElementById('formCompetencyNew');
 
-    const btnNew = document.getElementById('btnNewProgram');
+  const selProg   = document.getElementById('cp_program');
+  const inpCode   = document.getElementById('cp_code'); // Código (lo usamos como id_competencia)
+  const inpName   = document.getElementById('cp_name');
+  const inpDesc   = document.getElementById('cp_desc');
 
-    let editingId = null;
+  // Estado interno
+  let PROGRAMS = [];          // [{id, nombre_programa, ...}]
+  let COMPETENCIAS = [];      // competencias normalizadas
+  let RAE_MAP = {};           // { id_competencia: [ {codigo_rae, nombre_rae} ] }
+  let editingId = null;
 
-    // ===============================
-    // API HELPERS
-    // ===============================
-    async function apiListar() {
-      const r = await fetch(`${API}?accion=listar`, { credentials: 'same-origin' });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      return r.json();
+  // ===============================
+  // UTILS
+  // ===============================
+  const e = (s) => String(s ?? '')
+    .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
+    .replaceAll('"','&quot;').replaceAll("'","&#039;");
+
+  const show = (el) => el?.classList.remove('hidden');
+  const hide = (el) => el?.classList.add('hidden');
+
+  const programNameById = (id) => {
+    const p = PROGRAMS.find(p => String(p.id) === String(id) || String(p.id_programa) === String(id));
+    return p?.name || p?.nombre_programa || '—';
+  };
+
+  const mapCompetencia = (raw) => ({
+    id:        raw.id_competencia ?? raw.id ?? null,
+    program_id:raw.program_id ?? raw.id_programa ?? raw.programa_id ?? null,
+    code:      raw.codigo_competencia ?? raw.code ?? raw.codigo ?? '',
+    name:      raw.nombre_competencia ?? raw.name ?? raw.nombre ?? '',
+    desc:      raw.descripcion ?? raw.description ?? '',
+    estado:    typeof raw.estado !== 'undefined' ? Number(raw.estado) : 1,
+  });
+
+  // ===============================
+  // FETCH HELPERS
+  // ===============================
+  async function apiGet(url) {
+    const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  }
+  async function apiJson(url, data) {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept':'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  }
+
+  // ===============================
+  // CARGAS
+  // ===============================
+  async function loadPrograms() {
+    try {
+      const res = await apiGet(`${API_PROG}?accion=listar`);
+      PROGRAMS = Array.isArray(res) ? res : (res?.data || []);
+
+      // Filtro
+      if (filterProgram) {
+        filterProgram.querySelectorAll('option:not([value="all"])').forEach(o => o.remove());
+        PROGRAMS.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = String(p.id ?? p.id_programa ?? '');
+          opt.textContent = p.name ?? p.nombre_programa ?? `Programa ${opt.value}`;
+          filterProgram.appendChild(opt);
+        });
+      }
+      // Select modal
+      if (selProg) {
+        selProg.querySelectorAll('option:not([value=""])').forEach(o => o.remove());
+        PROGRAMS.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = String(p.id ?? p.id_programa ?? '');
+          opt.textContent = p.name ?? p.nombre_programa ?? `Programa ${opt.value}`;
+          selProg.appendChild(opt);
+        });
+      }
+    } catch (err) {
+      console.error('[Competencias] No se pudieron cargar programas:', err);
     }
-    async function apiAgregar(payload) {
-      const r = await fetch(`${API}?accion=agregar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify(payload),
+  }
+
+  async function loadCompetencias() {
+    try {
+      const res = await apiGet(`${API_COMP}?accion=listar`);
+      const data = Array.isArray(res) ? res : (res?.data || []);
+      COMPETENCIAS = data.map(mapCompetencia);
+      renderList();
+    } catch (err) {
+      console.error('[Competencias] Error al listar:', err);
+      COMPETENCIAS = [];
+      renderList();
+    }
+  }
+
+  // Opcional: precarga de RAEs agrupados por competencia, si existe el endpoint
+  async function tryLoadRaeMap() {
+    try {
+      const res = await apiGet(`${API_RAE}?accion=listar`);
+      const arr = Array.isArray(res) ? res : (res?.data || []);
+      // normalizar por id_competencia
+      RAE_MAP = {};
+      arr.forEach(r => {
+        const idc = String(r.id_competencia ?? r.competencia_id ?? '');
+        if (!idc) return;
+        (RAE_MAP[idc] ||= []).push({
+          codigo: r.codigo_rae ?? r.codigo ?? '',
+          nombre: r.nombre_rae ?? r.nombre ?? r.titulo ?? '',
+        });
       });
-      return r.json();
+      // refrescar conteos
+      renderList();
+    } catch (_e) {
+      // Silencioso: si no hay API de RAEs no rompemos la UI
+      RAE_MAP = {};
     }
-    async function apiActualizar(payload) {
-      const r = await fetch(`${API}?accion=actualizar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify(payload),
-      });
-      return r.json();
-    }
-    async function apiEliminar(id_programa) {
-      const fd = new FormData(); fd.append('id_programa', id_programa);
-      const r = await fetch(`${API}?accion=eliminar`, { method: 'POST', body: fd, credentials: 'same-origin' });
-      return r.json();
-    }
-    async function apiActivar(id_programa) {
-      const fd = new FormData(); fd.append('id_programa', id_programa);
-      const r = await fetch(`${API}?accion=activar`, { method: 'POST', body: fd, credentials: 'same-origin' });
-      return r.json();
-    }
-    async function apiInhabilitar(id_programa) {
-      const fd = new FormData(); fd.append('id_programa', id_programa);
-      const r = await fetch(`${API}?accion=inhabilitar`, { method: 'POST', body: fd, credentials: 'same-origin' });
-      return r.json();
-    }
+  }
 
-    // ===============================
-    // UI HELPERS
-    // ===============================
-    function openModal(isCreate = true, data = null) {
-      editingId = isCreate ? null : (data?.id_programa ?? null);
+  // ===============================
+  // RENDER
+  // ===============================
+  function statusChip(estado) {
+    const cls = estado ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' : 'bg-rose-50 text-rose-700 ring-1 ring-rose-200';
+    const txt = estado ? 'Activo' : 'Inhabilitado';
+    return `<span class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full ${cls}">${txt}</span>`;
+  }
 
-      if (inpCode)  { inpCode.value  = isCreate ? '' : (data?.id_programa     ?? ''); }
-      if (inpName)  { inpName.value  = isCreate ? '' : (data?.nombre_programa ?? ''); }
-      if (inpDesc)  { inpDesc.value  = isCreate ? '' : (data?.descripcion     ?? ''); }
-      if (inpHours) { inpHours.value = isCreate ? '' : (data?.duracion        ?? ''); }
+  function raePill(count) {
+    return `
+      <span class="inline-flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-zinc-100 text-zinc-700 ring-1 ring-zinc-200">
+        <i data-lucide="list-checks" class="w-3.5 h-3.5"></i>
+        ${count} RAEs
+      </span>`;
+  }
 
-      if (inpCode) inpCode.disabled = !isCreate;
+  function renderRaeItemsHtml(items) {
+    if (!items || !items.length) return '';
+    return items.map(it => `
+      <div class="rounded-xl ring-1 ring-zinc-200 bg-white px-4 py-3">
+        <div class="text-xs text-zinc-500 font-medium mb-1">${e(it.codigo)}</div>
+        <div class="text-sm text-zinc-700">${e(it.nombre)}</div>
+      </div>
+    `).join('');
+  }
 
-      modal?.classList.remove('hidden');
-      backdrop?.classList.remove('hidden');
-      window.lucide?.createIcons();
-    }
+  function renderList() {
+    if (!list) return;
 
-    function closeModal() {
-      modal?.classList.add('hidden');
-      backdrop?.classList.add('hidden');
-      form?.reset();
-      editingId = null;
-      if (inpCode) inpCode.disabled = false;
-    }
+    const progFilter = filterProgram?.value || 'all';
+    const filtered = COMPETENCIAS.filter(c => {
+      if (!progFilter || progFilter === 'all') return true;
+      if (!c.program_id) return true;
+      return String(c.program_id) === String(progFilter);
+    });
 
-    function escapeHtml(s) {
-      const t = document.createElement('textarea');
-      t.textContent = String(s ?? '');
-      return t.innerHTML;
-    }
+    list.innerHTML = '';
+    if (filtered.length === 0) { show(emptyBox); return; }
+    hide(emptyBox);
 
-    function formatHours(h) {
-      const n = Number(h);
-      return Number.isFinite(n) ? `${n} horas` : `${h}`;
-    }
+    filtered.forEach(c => {
+      const raes = RAE_MAP[String(c.id)] || [];
+      const li = document.createElement('div');
+      li.className = 'rounded-2xl ring-1 ring-zinc-200 shadow-sm bg-white overflow-hidden';
+      li.innerHTML = `
+        <div class="p-5">
+          <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+              <div class="text-sm text-zinc-500 flex items-center gap-2 mb-1">
+                ${c.program_id ? `<span class="inline-flex items-center gap-2">
+                  <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+                  ${e(programNameById(c.program_id))}
+                </span>` : '<span>—</span>'}
+                <span class="text-zinc-300">•</span>
+                ${statusChip(c.estado)}
+              </div>
+              <h3 class="text-xl font-semibold text-zinc-900">${e(c.name || '(Sin nombre)')}</h3>
+              <p class="text-sm text-zinc-500 mt-1">Código: <span class="font-medium">${e(c.code || '—')}</span></p>
+              ${c.desc ? `<p class="text-sm text-zinc-600 mt-3">${e(c.desc)}</p>` : ''}
+              <div class="mt-3">${raePill(raes.length)}</div>
+            </div>
 
-    function renderSwitch(active) {
-      // Track negro cuando activo (como en la imagen), gris cuando no
-      return `
-        <label class="switch relative inline-flex items-center" title="Cambiar estado">
-          <input type="checkbox" ${active ? 'checked' : ''}/>
-          <span class="track absolute inset-0 rounded-full"></span>
-          <span class="dot"></span>
-        </label>
-      `;
-    }
-
-    // ===============================
-    // CARD (MATCH UI DE LA CAPTURA)
-    // ===============================
-    function createCard(p) {
-      const activo = String(p.estado) === '1' || String(p.estado).toLowerCase() === 'true';
-
-      const card = document.createElement('div');
-      card.className = [
-        'rounded-2xl', 'ring-1', 'ring-zinc-200',
-        'shadow-sm', 'bg-white', 'overflow-hidden',
-        'hover:shadow-md', 'transition'
-      ].join(' ');
-
-      // Header
-      const header = document.createElement('div');
-      header.className = 'px-6 pt-6 pb-2';
-      header.innerHTML = `
-        <div class="flex items-start justify-between gap-4">
-          <div class="flex-1">
-            <h3 class="text-lg font-semibold leading-snug">${escapeHtml(p.nombre_programa || '')}</h3>
-            <p class="mt-1 text-sm text-zinc-500">Código: <span class="font-medium">${escapeHtml(p.id_programa || '')}</span></p>
-          </div>
-          <div class="flex items-center gap-2">
-            <button class="p-2 rounded-lg hover:bg-zinc-100" title="Editar" data-edit="${escapeHtml(p.id_programa)}">
-              <img src="src/assets/img/pencil-line.svg" alt="Editar" class="w-4 h-4">
-            </button>
-            ${renderSwitch(activo)}
-          </div>
-        </div>
-      `;
-      card.appendChild(header);
-
-      // Body
-      const body = document.createElement('div');
-      body.className = 'px-6 pb-6';
-      body.innerHTML = `
-        <p class="text-sm text-zinc-600">${escapeHtml(p.descripcion || 'Sin descripción')}</p>
-        <p class="mt-2 text-sm"><span class="font-medium">Duración:</span> ${escapeHtml(formatHours(p.duracion || 0))}</p>
-        <div class="mt-2">
-          ${activo
-            ? '<span class="inline-flex items-center rounded-full bg-green-100 text-green-700 px-2 py-0.5 text-xs font-medium">Activo</span>'
-            : '<span class="inline-flex items-center rounded-full bg-zinc-100 text-zinc-500 px-2 py-0.5 text-xs font-medium">Inactivo</span>'
-          }
-        </div>
-      `;
-      card.appendChild(body);
-
-      // Handlers: switch
-      const sw     = header.querySelector('label.switch input[type="checkbox"]');
-      const track  = header.querySelector('label.switch .track');
-      if (track) track.style.background = activo ? '#0a0a0a' : '#e5e7eb'; // negro como en mock
-
-      sw?.addEventListener('change', async () => {
-        // feedback visual inmediato
-        track.style.background = sw.checked ? '#0a0a0a' : '#e5e7eb';
-        try {
-          const res = sw.checked ? await apiActivar(p.id_programa) : await apiInhabilitar(p.id_programa);
-          if (res?.error) {
-            alert(res.error);
-            // revertir
-            sw.checked = !sw.checked;
-            track.style.background = sw.checked ? '#0a0a0a' : '#e5e7eb';
-          } else {
-            // refrescar lista para que badge cambie
-            await loadPrograms();
-          }
-        } catch {
-          alert('No se pudo cambiar el estado.');
-          sw.checked = !sw.checked;
-          track.style.background = sw.checked ? '#0a0a0a' : '#e5e7eb';
-        }
-      });
-
-      // Handler: editar
-      const btnEdit = header.querySelector('[data-edit]');
-      btnEdit?.addEventListener('click', () => openModal(false, p));
-
-      return card;
-    }
-
-    // ===============================
-    // RENDER LISTA
-    // ===============================
-    function renderList(list) {
-      grid.innerHTML = '';
-      if (!Array.isArray(list) || list.length === 0) {
-        emptyBox.classList.remove('hidden');
-        emptyBox.innerHTML = `
-          <div class="py-12 text-center">
-            <div class="text-zinc-500">No hay programas registrados</div>
-            <div class="mt-4">
-              <button class="rounded-xl px-4 py-2 text-sm font-medium" style="background:#0a0a0a;color:#fff" data-empty-new>
-                Crear programa
+            <div class="shrink-0 flex items-center gap-2">
+              <button class="btn-edit inline-flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm hover:bg-zinc-50" data-id="${e(c.id)}" title="Editar">
+                <i data-lucide="pencil" class="w-4 h-4"></i> Editar
+              </button>
+              <button
+                class="btn-toggle inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white ${c.estado ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-600 hover:bg-emerald-700'}"
+                data-id="${e(c.id)}"
+                data-next="${c.estado ? 0 : 1}">
+                <i data-lucide="${c.estado ? 'ban' : 'check'}" class="w-4 h-4"></i>
+                ${c.estado ? 'Inhabilitar' : 'Activar'}
+              </button>
+              <button class="btn-collapse inline-flex items-center justify-center rounded-lg border border-zinc-200 w-10 h-10 hover:bg-zinc-50" data-target="rae-${e(c.id)}" aria-expanded="false" title="Mostrar RAEs">
+                <i data-lucide="chevron-down" class="w-5 h-5"></i>
               </button>
             </div>
           </div>
-        `;
-        emptyBox.querySelector('[data-empty-new]')?.addEventListener('click', () => openModal(true));
-        return;
-      }
-      emptyBox.classList.add('hidden');
+        </div>
 
-      const frag = document.createDocumentFragment();
-      list.forEach(p => frag.appendChild(createCard(p)));
-      grid.appendChild(frag);
-    }
-
-    // ===============================
-    // CARGA INICIAL
-    // ===============================
-    async function loadPrograms() {
-      try {
-        const data = await apiListar();
-        if (Array.isArray(data)) {
-          renderList(data);
-        } else if (data?.error) {
-          emptyBox.classList.remove('hidden');
-          emptyBox.innerHTML = `<div class="py-12 text-center text-red-600">${escapeHtml(data.error)}</div>`;
-        } else {
-          renderList([]);
-        }
-        window.lucide?.createIcons();
-      } catch {
-        emptyBox.classList.remove('hidden');
-        emptyBox.innerHTML = `<div class="py-12 text-center text-red-600">No se pudo cargar la lista de programas.</div>`;
-      }
-    }
-
-    // ===============================
-    // EVENTOS MODAL + FORM
-    // ===============================
-    btnNew?.addEventListener('click', () => openModal(true));
-    btnClose?.addEventListener('click', closeModal);
-    btnCancel?.addEventListener('click', (e) => { e.preventDefault(); closeModal(); });
-
-    form?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const id_programa     = (inpCode?.value  || '').trim();
-      const nombre_programa = (inpName?.value  || '').trim();
-      const descripcion     = (inpDesc?.value  || '').trim();
-      const duracion        = (inpHours?.value || '').trim();
-
-      if (!id_programa)     return alert('El código (id_programa) es obligatorio.');
-      if (!nombre_programa) return alert('El nombre del programa es obligatorio.');
-      if (duracion !== '' && Number.isNaN(Number(duracion))) return alert('Duración debe ser numérica.');
-
-      const payload = { id_programa, nombre_programa, descripcion, duracion };
-
-      try {
-        const res = editingId ? await apiActualizar(payload) : await apiAgregar(payload);
-        if (res?.error) return alert(res.error);
-        closeModal();
-        await loadPrograms();
-      } catch {
-        alert('No se pudo guardar el programa.');
-      }
+        <div class="border-t border-zinc-200 px-5 py-4 hidden" id="rae-${e(c.id)}" role="region" aria-label="RAEs">
+          <div class="text-sm font-semibold text-zinc-900 mb-3">Resultados de Aprendizaje Esperados (RAE)</div>
+          <div class="grid gap-3">
+            ${renderRaeItemsHtml(raes)}
+          </div>
+        </div>
+      `;
+      list.appendChild(li);
     });
 
-    // ===============================
-    // INIT
-    // ===============================
-    loadPrograms();
+    // Bind actions
+    window.lucide?.createIcons();
+    list.querySelectorAll('.btn-edit').forEach(b => b.addEventListener('click', onEditClick));
+    list.querySelectorAll('.btn-toggle').forEach(b => b.addEventListener('click', onToggleClick));
+    list.querySelectorAll('.btn-collapse').forEach(b => b.addEventListener('click', onCollapseClick));
+  }
+
+  // ===============================
+  // EVENTS
+  // ===============================
+  btnNew?.addEventListener('click', () => {
+    editingId = null;
+    form?.reset();
+    openModal();
+  });
+
+  document.getElementById('btnCloseCompetency')?.addEventListener('click', closeModal);
+  document.getElementById('btnCancelCompetency')?.addEventListener('click', closeModal);
+  backdrop?.addEventListener('click', (e) => { if (e.target === backdrop) closeModal(); });
+
+  filterProgram?.addEventListener('change', renderList);
+
+  function openModal() {
+    show(backdrop); show(modal);
+    form?.reset();
+    editingId = null;
+    window.lucide?.createIcons();
+  }
+  function closeModal() {
+    hide(backdrop); hide(modal);
+    form?.reset();
+    editingId = null;
+  }
+
+  function onEditClick(e) {
+    const id = e.currentTarget.getAttribute('data-id');
+    const item = COMPETENCIAS.find(x => String(x.id) === String(id));
+    if (!item) return;
+
+    editingId = item.id;
+    if (selProg && item.program_id) selProg.value = String(item.program_id);
+    if (inpCode) inpCode.value = item.code || '';
+    if (inpName) inpName.value = item.name || '';
+    if (inpDesc) inpDesc.value = item.desc || '';
+
+    openModal();
+  }
+
+  async function onToggleClick(e) {
+    const id    = e.currentTarget.getAttribute('data-id');
+    const next  = Number(e.currentTarget.getAttribute('data-next') || 0);
+    try {
+      const res = await apiJson(`${API_COMP}?accion=inhabilitar`, { id_competencia: id, estado: next });
+      if (res?.error) throw new Error(res.error);
+      await loadCompetencias();
+    } catch (err) {
+      console.error('[Competencias] inhabilitar/activar:', err);
+      alert('No fue posible cambiar el estado. Revisa la consola.');
+    }
+  }
+
+  function onCollapseClick(e) {
+    const btn = e.currentTarget;
+    const targetId = btn.getAttribute('data-target');
+    const panel = document.getElementById(targetId);
+    if (!panel) return;
+    const expanded = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', String(!expanded));
+    panel.classList.toggle('hidden', expanded);
+    const icon = btn.querySelector('[data-lucide]');
+    if (icon) icon.setAttribute('data-lucide', expanded ? 'chevron-down' : 'chevron-up');
+    window.lucide?.createIcons();
+  }
+
+  // ===============================
+  // SUBMIT (crear / actualizar)
+  // ===============================
+  form?.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+
+    const idFromCode = (inpCode?.value || '').trim();
+    const payload = {
+      id_competencia: idFromCode,                         // importante si tu tabla exige PK explícita
+      nombre_competencia: (inpName?.value || '').trim(),
+      descripcion: (inpDesc?.value || '').trim(),
+      id_programa: (selProg?.value || '').trim() || null,
+      codigo_competencia: idFromCode
+    };
+
+    if (!payload.nombre_competencia || !payload.descripcion) {
+      alert('Debe diligenciar Nombre y Descripción.');
+      return;
+    }
+    if (!editingId && !payload.id_competencia) {
+      alert('El Código es obligatorio (se usa como id_competencia).');
+      return;
+    }
+
+    try {
+      if (editingId) {
+        const res = await apiJson(`${API_COMP}?accion=actualizar`, {
+          id_competencia: editingId,
+          nombre_competencia: payload.nombre_competencia,
+          descripcion: payload.descripcion
+        });
+        if (res?.error) throw new Error(res.error);
+      } else {
+        const res = await apiJson(`${API_COMP}?accion=crear`, payload);
+        if (res?.error) throw new Error(res.error);
+      }
+      closeModal();
+      await loadCompetencias();
+      await tryLoadRaeMap();
+    } catch (err) {
+      console.error('[Competencias] crear/actualizar:', err);
+      alert('No fue posible guardar la competencia. Revisa la consola.');
+    }
+  });
+
+  // ===============================
+  // INIT
+  // ===============================
+  (async function init(){
+    await loadPrograms();
+    await loadCompetencias();
+    await tryLoadRaeMap(); // si no existe el endpoint, no rompe la UI
   })();
-});
+})();

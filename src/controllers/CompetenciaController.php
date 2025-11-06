@@ -1,119 +1,127 @@
 <?php
-// Establece el tipo de contenido de la respuesta como JSON y configura la codificación de caracteres
+// ===== Encabezados JSON =====
 header('Content-Type: application/json; charset=utf-8');
-
-// Habilita la visualización de todos los errores para facilitar la depuración
-error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
+ini_set('html_errors', 0);
+error_reporting(E_ALL);
 
-// Incluye el archivo de configuración de la base de datos y el modelo de Competencia
-include_once __DIR__ . '/../../config/database.php';
-include_once __DIR__ . '/../models/Competencia.php';
+// Errores -> JSON
+set_error_handler(function($severity, $message, $file, $line) {
+  if (!(error_reporting() & $severity)) return;
+  http_response_code(500);
+  echo json_encode(['error'=>'PHPError','message'=>$message,'file'=>$file,'line'=>$line], JSON_UNESCAPED_UNICODE);
+  exit;
+});
+set_exception_handler(function($ex){
+  http_response_code(500);
+  echo json_encode([
+    'error'=>'Exception',
+    'message'=>$ex->getMessage(),
+    'file'=>$ex->getFile(),
+    'line'=>$ex->getLine()
+  ], JSON_UNESCAPED_UNICODE);
+  exit;
+});
 
-// Verifica que la conexión a la base de datos se haya establecido correctamente
-if (!isset($conn)) {
-    echo json_encode(['error' => 'No se pudo establecer conexión con la base de datos']);
-    exit;
-}
+// ===== Dependencias =====
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../models/Competencia.php';
 
-// Instancia el modelo Competencia pasando la conexión a la base de datos
+// ===== Conexión =====
+if (!isset($conn)) { echo json_encode(['error'=>'No se pudo establecer conexión con la base de datos']); exit; }
 $competencia = new Competencia($conn);
 
-// Obtiene la acción a realizar desde la URL (?accion=)
-$accion = isset($_GET['accion']) ? $_GET['accion'] : null;
-
-// Si no se especifica una acción, retorna un error
-if (!$accion) {
-    echo json_encode(['error' => 'Debe especificar la acción en la URL, por ejemplo: ?accion=listar']);
-    exit;
+// ===== Util =====
+function read_json_body(): array {
+  $raw = file_get_contents('php://input');
+  if (!$raw) return [];
+  $data = json_decode($raw, true);
+  return is_array($data) ? $data : [];
 }
+function ok($payload){ echo json_encode($payload, JSON_UNESCAPED_UNICODE); exit; }
+function fail($msg, $code=400, $extra=[]){ http_response_code($code); echo json_encode(array_merge(['error'=>$msg], $extra), JSON_UNESCAPED_UNICODE); exit; }
 
-// Estructura principal para manejar las diferentes acciones solicitadas
+// ===== Acción =====
+$accion = $_GET['accion'] ?? null;
+if (!$accion) fail('Debe especificar la acción en la URL, por ejemplo: ?accion=listar');
+
+// ===== Router =====
 switch ($accion) {
+  case 'listar': {
+    ok($competencia->listar());
+  }
 
-    case 'listar':
-        // Llama al método listar() para obtener todas las competencias
-        $res = $competencia->listar();
-        echo json_encode($res);
-        break;
+  case 'obtener': {
+    $id = $_GET['id_competencia'] ?? null;
+    if (!$id) fail('Debe enviar el parámetro id_competencia');
+    ok($competencia->obtenerPorId($id));
+  }
 
-    case 'obtener':
-        // Verifica que se haya enviado el parámetro id_competencia
-        if (!isset($_GET['id_competencia'])) {
-            echo json_encode(['error' => 'Debe enviar el parámetro id_competencia']);
-            exit;
-        }
-        // Obtiene la competencia por su ID
-        $res = $competencia->obtenerPorId($_GET['id_competencia']);
-        echo json_encode($res);
-        break;
+  case 'crear': {
+    $data = read_json_body() + $_POST;
 
-    case 'crear':
-        // Decodifica los datos recibidos en formato JSON
-        $data = json_decode(file_get_contents("php://input"), true);
-        // Obtiene los datos desde JSON o POST
-        $nombre = $data['nombre_competencia'] ?? $_POST['nombre_competencia'] ?? null;
-        $descripcion = $data['descripcion'] ?? $_POST['descripcion'] ?? null;
+    $id_competencia     = $data['id_competencia']     ?? null; // código manual
+    $id_programa        = $data['id_programa']        ?? null; // FK obligatoria
+    $nombre_competencia = $data['nombre_competencia'] ?? null;
+    $descripcion        = $data['descripcion']        ?? null;
 
-        // Valida que los datos no estén vacíos
-        if (!$nombre || trim($nombre) === '' || !$descripcion || trim($descripcion) === '') {
-            echo json_encode(['error' => 'Debe enviar nombre_competencia y descripcion válidos']);
-            exit;
-        }
+    if (!$id_competencia || trim($id_competencia) === '') {
+      fail('Debe enviar id_competencia (código manual).');
+    }
+    if (!$id_programa || trim($id_programa) === '') {
+      fail('Debe enviar id_programa (FK obligatoria).');
+    }
+    if (!$nombre_competencia || trim($nombre_competencia) === '' || !$descripcion || trim($descripcion) === '') {
+      fail('Debe enviar nombre_competencia y descripcion válidos.');
+    }
 
-        // Llama al método crear() para insertar una nueva competencia
-        $res = $competencia->crear(trim($nombre), trim($descripcion));
-        echo json_encode($res);
-        break;
+    ok($competencia->crear(
+      $id_competencia,
+      $id_programa,
+      trim($nombre_competencia),
+      trim($descripcion)
+    ));
+  }
 
-    case 'actualizar':
-        // Decodifica los datos recibidos en formato JSON
-        $data = json_decode(file_get_contents("php://input"), true);
-        // Obtiene el id_competencia, nombre y descripción desde los datos recibidos o POST
-        $id_competencia = $data['id_competencia'] ?? $_POST['id_competencia'] ?? null;
-        $nombre = $data['nombre_competencia'] ?? $_POST['nombre_competencia'] ?? null;
-        $descripcion = $data['descripcion'] ?? $_POST['descripcion'] ?? null;
+  case 'actualizar': {
+    $data = read_json_body() + $_POST;
 
-        // Valida que ambos parámetros sean válidos
-        if (!$id_competencia || !$nombre || trim($nombre) === '' || !$descripcion || trim($descripcion) === '') {
-            echo json_encode(['error' => 'Debe enviar id_competencia, nombre_competencia y descripcion válidos']);
-            exit;
-        }
+    $id_competencia     = $data['id_competencia']     ?? null;
+    $nombre_competencia = $data['nombre_competencia'] ?? null;
+    $descripcion        = $data['descripcion']        ?? null;
+    $id_programa        = $data['id_programa']        ?? null; // opcional para update
 
-        // Llama al método actualizar() para modificar la competencia
-        $res = $competencia->actualizar($id_competencia, trim($nombre), trim($descripcion));
-        echo json_encode($res);
-        break;
+    if (!$id_competencia || !$nombre_competencia || trim($nombre_competencia) === '' || !$descripcion || trim($descripcion) === '') {
+      fail('Debe enviar id_competencia, nombre_competencia y descripcion válidos.');
+    }
 
-    case 'eliminar':
-        // En este sistema no se elimina, se inhabilita
-        echo json_encode(['error' => 'La eliminación está deshabilitada. Use la acción inhabilitar.']);
-        break;
+    ok($competencia->actualizar(
+      $id_competencia,
+      trim($nombre_competencia),
+      trim($descripcion),
+      $id_programa !== null && $id_programa !== '' ? $id_programa : null
+    ));
+  }
 
-    // ======================================================
-    // NUEVO CASO: INHABILITAR O ACTIVAR COMPETENCIA
-    // ======================================================
-    case 'inhabilitar':
-        // Decodifica los datos recibidos en formato JSON o POST
-        $data = json_decode(file_get_contents("php://input"), true);
-        $id_competencia = $data['id_competencia'] ?? $_POST['id_competencia'] ?? null;
-        $estado = $data['estado'] ?? $_POST['estado'] ?? null; // 0 = inhabilitar, 1 = activar
+  case 'inhabilitar': {
+    $data = read_json_body() + $_POST;
 
-        if (!$id_competencia || !isset($estado)) {
-            echo json_encode(['error' => 'Debe enviar id_competencia y estado (0 o 1)']);
-            exit;
-        }
+    $id_competencia = $data['id_competencia'] ?? null;
+    $estado = isset($data['estado']) ? (int)$data['estado'] : null;
 
-        // Llama al método cambiarEstado() del modelo
-        $res = $competencia->cambiarEstado($id_competencia, intval($estado));
-        echo json_encode($res);
-        break;
+    if (!$id_competencia || !isset($estado)) {
+      fail('Debe enviar id_competencia y estado (0 o 1).');
+    }
 
-    default:
-        // Si la acción no es válida, retorna un error
-        echo json_encode(['error' => 'Acción no válida']);
-        break;
+    ok($competencia->cambiarEstado($id_competencia, $estado));
+  }
+
+  case 'eliminar': {
+    fail('La eliminación está deshabilitada. Use la acción inhabilitar.');
+  }
+
+  default: {
+    fail('Acción no válida', 404);
+  }
 }
-?>
-    

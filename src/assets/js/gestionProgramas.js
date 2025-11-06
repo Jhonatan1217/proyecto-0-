@@ -1,9 +1,10 @@
-document.addEventListener('DOMContentLoaded', function () {
+// src/assets/js/gestionProgramas.js
+document.addEventListener('DOMContentLoaded', () => {
   (function () {
     // ===============================
-    // CONFIG / ENDPOINT
+    // CONFIG
     // ===============================
-    const API = (window.API_PROGRAMAS || (window.BASE_URL || '') + 'src/controllers/programasController.php').replace(/\/+$/, '');
+    const API = (window.API_PROGRAMAS || (window.BASE_URL || '') + 'src/controllers/ProgramasController.php').replace(/\/+$/, '');
 
     // ===============================
     // SELECTORES
@@ -11,32 +12,22 @@ document.addEventListener('DOMContentLoaded', function () {
     const tabPrograms = document.querySelector('[data-tab="programs"]');
     if (!tabPrograms) return;
 
-    const grid = document.getElementById('programsGrid');
-    const emptyBox = document.getElementById('programsEmpty');
-    const modal = document.getElementById('modalProgram');
-    const modalBackdrop = document.getElementById('modalProgramBackdrop');
+    const grid      = document.getElementById('programsGrid');
+    const emptyBox  = document.getElementById('programsEmpty');
+    const modal     = document.getElementById('modalProgram');
+    const backdrop  = document.getElementById('modalProgramBackdrop');
 
-    const form     = modal ? modal.querySelector('#formProgramNew') : null;
-    const inpCode  = modal ? modal.querySelector('#pg_code')       : null;
-    const inpName  = modal ? modal.querySelector('#pg_name')       : null;
-    const inpDesc  = modal ? modal.querySelector('#pg_desc')       : null;
-    const inpHours = modal ? modal.querySelector('#pg_hours')      : null;
+    const form      = modal ? modal.querySelector('#formProgramNew') : null;
+    const inpCode   = modal ? modal.querySelector('#pg_code')       : null; // id_programa
+    const inpName   = modal ? modal.querySelector('#pg_name')       : null; // nombre_programa
+    const inpDesc   = modal ? modal.querySelector('#pg_desc')       : null; // descripcion
+    const inpHours  = modal ? modal.querySelector('#pg_hours')      : null; // duracion
     const btnClose  = modal ? modal.querySelector('#btnCloseProgram')  : null;
     const btnCancel = modal ? modal.querySelector('#btnCancelProgram') : null;
 
-    const btnNew = (() => {
-      const candidates = tabPrograms.querySelectorAll('button');
-      for (const b of candidates) {
-        if ((b.textContent || '').trim().toLowerCase().includes('nuevo programa')) return b;
-      }
-      return null;
-    })();
+    const btnNew = document.getElementById('btnNewProgram');
 
-    // ===============================
-    // ESTADO
-    // ===============================
     let editingId = null;
-    let isSubmitting = false; // evita doble envío
 
     // ===============================
     // API HELPERS
@@ -46,68 +37,63 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       return r.json();
     }
-
     async function apiAgregar(payload) {
-      const res = await fetch(`${API}?accion=agregar`, {
+      const r = await fetch(`${API}?accion=agregar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
         body: JSON.stringify(payload),
       });
-      return res.json();
+      return r.json();
     }
-
     async function apiActualizar(payload) {
-      const res = await fetch(`${API}?accion=actualizar`, {
+      const r = await fetch(`${API}?accion=actualizar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
         body: JSON.stringify(payload),
       });
-      return res.json();
+      return r.json();
     }
-
     async function apiEliminar(id_programa) {
-      const fd = new FormData();
-      fd.append('id_programa', id_programa);
-      const res = await fetch(`${API}?accion=eliminar`, { method: 'POST', body: fd, credentials: 'same-origin' });
-      return res.json();
+      const fd = new FormData(); fd.append('id_programa', id_programa);
+      const r = await fetch(`${API}?accion=eliminar`, { method: 'POST', body: fd, credentials: 'same-origin' });
+      return r.json();
     }
-
     async function apiActivar(id_programa) {
-      const fd = new FormData();
-      fd.append('id_programa', id_programa);
-      const res = await fetch(`${API}?accion=activar`, { method: 'POST', body: fd, credentials: 'same-origin' });
-      return res.json();
+      const fd = new FormData(); fd.append('id_programa', id_programa);
+      const r = await fetch(`${API}?accion=activar`, { method: 'POST', body: fd, credentials: 'same-origin' });
+      return r.json();
     }
-
     async function apiInhabilitar(id_programa) {
-      const fd = new FormData();
-      fd.append('id_programa', id_programa);
-      const res = await fetch(`${API}?accion=inhabilitar`, { method: 'POST', body: fd, credentials: 'same-origin' });
-      return res.json();
+      const fd = new FormData(); fd.append('id_programa', id_programa);
+      const r = await fetch(`${API}?accion=inhabilitar`, { method: 'POST', body: fd, credentials: 'same-origin' });
+      return r.json();
     }
 
     // ===============================
     // UI HELPERS
     // ===============================
-    function openModal(createMode = true, data = null) {
-      editingId = createMode ? null : (data?.id_programa ?? null);
-      if (inpCode)  inpCode.value  = createMode ? '' : (data?.id_programa ?? '');
-      if (inpName)  inpName.value  = createMode ? '' : (data?.nombre_programa ?? '');
-      if (inpDesc)  inpDesc.value  = createMode ? '' : (data?.descripcion ?? '');
-      if (inpHours) inpHours.value = createMode ? '' : (data?.duracion ?? '');
-      if (inpCode) inpCode.disabled = !createMode;
+    function openModal(isCreate = true, data = null) {
+      editingId = isCreate ? null : (data?.id_programa ?? null);
+
+      if (inpCode)  { inpCode.value  = isCreate ? '' : (data?.id_programa     ?? ''); }
+      if (inpName)  { inpName.value  = isCreate ? '' : (data?.nombre_programa ?? ''); }
+      if (inpDesc)  { inpDesc.value  = isCreate ? '' : (data?.descripcion     ?? ''); }
+      if (inpHours) { inpHours.value = isCreate ? '' : (data?.duracion        ?? ''); }
+
+      if (inpCode) inpCode.disabled = !isCreate;
+
       modal?.classList.remove('hidden');
-      modalBackdrop?.classList.remove('hidden');
+      backdrop?.classList.remove('hidden');
+      window.lucide?.createIcons();
     }
 
     function closeModal() {
       modal?.classList.add('hidden');
-      modalBackdrop?.classList.add('hidden');
+      backdrop?.classList.add('hidden');
       form?.reset();
       editingId = null;
-      isSubmitting = false;
       if (inpCode) inpCode.disabled = false;
     }
 
@@ -117,83 +103,105 @@ document.addEventListener('DOMContentLoaded', function () {
       return t.innerHTML;
     }
 
+    function formatHours(h) {
+      const n = Number(h);
+      return Number.isFinite(n) ? `${n} horas` : `${h}`;
+    }
+
     function renderSwitch(active) {
+      // Track negro cuando activo (como en la imagen), gris cuando no
       return `
-        <label class="switch flex items-center">
-          <input type="checkbox" ${active ? 'checked' : ''} />
+        <label class="switch relative inline-flex items-center" title="Cambiar estado">
+          <input type="checkbox" ${active ? 'checked' : ''}/>
           <span class="track absolute inset-0 rounded-full"></span>
           <span class="dot"></span>
         </label>
       `;
     }
 
+    // ===============================
+    // CARD (MATCH UI DE LA CAPTURA)
+    // ===============================
     function createCard(p) {
       const activo = String(p.estado) === '1' || String(p.estado).toLowerCase() === 'true';
-      const card = document.createElement('div');
-      card.className = 'rounded-2xl ring-1 ring-zinc-200 shadow-sm p-5 flex flex-col gap-4 bg-white';
 
+      const card = document.createElement('div');
+      card.className = [
+        'rounded-2xl', 'ring-1', 'ring-zinc-200',
+        'shadow-sm', 'bg-white', 'overflow-hidden',
+        'hover:shadow-md', 'transition'
+      ].join(' ');
+
+      // Header
       const header = document.createElement('div');
-      header.className = 'flex items-start justify-between gap-3';
+      header.className = 'px-6 pt-6 pb-2';
       header.innerHTML = `
-        <div>
-          <h3 class="text-lg font-semibold">${escapeHtml(p.nombre_programa || '')}</h3>
-          <p class="text-sm text-zinc-500">Código: <span class="font-medium">${escapeHtml(p.id_programa || '')}</span></p>
-        </div>
-        <div class="flex items-center gap-3">
-          ${renderSwitch(activo)}
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex-1">
+            <h3 class="text-lg font-semibold leading-snug">${escapeHtml(p.nombre_programa || '')}</h3>
+            <p class="mt-1 text-sm text-zinc-500">Código: <span class="font-medium">${escapeHtml(p.id_programa || '')}</span></p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="p-2 rounded-lg hover:bg-zinc-100" title="Editar" data-edit="${escapeHtml(p.id_programa)}">
+              <img src="src/assets/img/pencil-line.svg" alt="Editar" class="w-4 h-4">
+            </button>
+            ${renderSwitch(activo)}
+          </div>
         </div>
       `;
       card.appendChild(header);
 
-      const desc = document.createElement('p');
-      desc.className = 'text-sm text-zinc-600';
-      desc.textContent = p.descripcion || 'Sin descripción';
-      card.appendChild(desc);
+      // Body
+      const body = document.createElement('div');
+      body.className = 'px-6 pb-6';
+      body.innerHTML = `
+        <p class="text-sm text-zinc-600">${escapeHtml(p.descripcion || 'Sin descripción')}</p>
+        <p class="mt-2 text-sm"><span class="font-medium">Duración:</span> ${escapeHtml(formatHours(p.duracion || 0))}</p>
+        <div class="mt-2">
+          ${activo
+            ? '<span class="inline-flex items-center rounded-full bg-green-100 text-green-700 px-2 py-0.5 text-xs font-medium">Activo</span>'
+            : '<span class="inline-flex items-center rounded-full bg-zinc-100 text-zinc-500 px-2 py-0.5 text-xs font-medium">Inactivo</span>'
+          }
+        </div>
+      `;
+      card.appendChild(body);
 
-      const dur = document.createElement('div');
-      dur.className = 'text-sm text-zinc-500';
-      dur.innerHTML = `<span class="text-zinc-700 font-medium">Duración:</span> ${p.duracion || 0} h`;
-      card.appendChild(dur);
+      // Handlers: switch
+      const sw     = header.querySelector('label.switch input[type="checkbox"]');
+      const track  = header.querySelector('label.switch .track');
+      if (track) track.style.background = activo ? '#0a0a0a' : '#e5e7eb'; // negro como en mock
 
-      const actions = document.createElement('div');
-      actions.className = 'flex items-center gap-2 pt-1';
-      const btnEdit = document.createElement('button');
-      btnEdit.className = 'px-3 py-2 rounded-xl border border-zinc-300 bg-white text-sm hover:bg-zinc-50';
-      btnEdit.textContent = 'Editar';
-      const btnDelete = document.createElement('button');
-      btnDelete.className = 'px-3 py-2 rounded-xl bg-[#00324d] text-white text-sm hover:bg-[#00263a]';
-      btnDelete.textContent = 'Eliminar';
-      actions.append(btnEdit, btnDelete);
-      card.appendChild(actions);
-
-      const sw = header.querySelector('label.switch input[type="checkbox"]');
-      const track = header.querySelector('label.switch .track');
-      if (sw && track) {
-        track.style.background = activo ? '#39a900' : '#e5e7eb';
-        sw.checked = !!activo;
-        sw.addEventListener('change', async () => {
-          track.style.background = sw.checked ? '#39a900' : '#e5e7eb';
+      sw?.addEventListener('change', async () => {
+        // feedback visual inmediato
+        track.style.background = sw.checked ? '#0a0a0a' : '#e5e7eb';
+        try {
           const res = sw.checked ? await apiActivar(p.id_programa) : await apiInhabilitar(p.id_programa);
           if (res?.error) {
             alert(res.error);
+            // revertir
             sw.checked = !sw.checked;
-            track.style.background = sw.checked ? '#39a900' : '#e5e7eb';
+            track.style.background = sw.checked ? '#0a0a0a' : '#e5e7eb';
+          } else {
+            // refrescar lista para que badge cambie
+            await loadPrograms();
           }
-        });
-      }
-
-      btnEdit.addEventListener('click', () => openModal(false, p));
-      btnDelete.addEventListener('click', async () => {
-        const ok = confirm(`¿Eliminar el programa "${p.nombre_programa}" (${p.id_programa})?`);
-        if (!ok) return;
-        const res = await apiEliminar(p.id_programa);
-        if (res?.error) return alert(res.error);
-        await loadPrograms();
+        } catch {
+          alert('No se pudo cambiar el estado.');
+          sw.checked = !sw.checked;
+          track.style.background = sw.checked ? '#0a0a0a' : '#e5e7eb';
+        }
       });
+
+      // Handler: editar
+      const btnEdit = header.querySelector('[data-edit]');
+      btnEdit?.addEventListener('click', () => openModal(false, p));
 
       return card;
     }
 
+    // ===============================
+    // RENDER LISTA
+    // ===============================
     function renderList(list) {
       grid.innerHTML = '';
       if (!Array.isArray(list) || list.length === 0) {
@@ -202,7 +210,9 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="py-12 text-center">
             <div class="text-zinc-500">No hay programas registrados</div>
             <div class="mt-4">
-              <button class="rounded-xl bg-zinc-900 text-white px-4 py-2 text-sm font-medium hover:bg-black" data-empty-new>Crear programa</button>
+              <button class="rounded-xl px-4 py-2 text-sm font-medium" style="background:#0a0a0a;color:#fff" data-empty-new>
+                Crear programa
+              </button>
             </div>
           </div>
         `;
@@ -210,6 +220,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
       }
       emptyBox.classList.add('hidden');
+
       const frag = document.createDocumentFragment();
       list.forEach(p => frag.appendChild(createCard(p)));
       grid.appendChild(frag);
@@ -221,11 +232,18 @@ document.addEventListener('DOMContentLoaded', function () {
     async function loadPrograms() {
       try {
         const data = await apiListar();
-        if (Array.isArray(data)) renderList(data);
-        else renderList([]);
+        if (Array.isArray(data)) {
+          renderList(data);
+        } else if (data?.error) {
+          emptyBox.classList.remove('hidden');
+          emptyBox.innerHTML = `<div class="py-12 text-center text-red-600">${escapeHtml(data.error)}</div>`;
+        } else {
+          renderList([]);
+        }
+        window.lucide?.createIcons();
       } catch {
         emptyBox.classList.remove('hidden');
-        emptyBox.innerHTML = `<div class="py-12 text-center text-red-600">Error al cargar programas.</div>`;
+        emptyBox.innerHTML = `<div class="py-12 text-center text-red-600">No se pudo cargar la lista de programas.</div>`;
       }
     }
 
@@ -234,50 +252,31 @@ document.addEventListener('DOMContentLoaded', function () {
     // ===============================
     btnNew?.addEventListener('click', () => openModal(true));
     btnClose?.addEventListener('click', closeModal);
-    btnCancel?.addEventListener('click', e => { e.preventDefault(); closeModal(); });
+    btnCancel?.addEventListener('click', (e) => { e.preventDefault(); closeModal(); });
 
-    form?.addEventListener('submit', async e => {
+    form?.addEventListener('submit', async (e) => {
       e.preventDefault();
-      e.stopImmediatePropagation(); // 🔥 evita doble envío de submit por eventos duplicados
-    
-      if (isSubmitting) return;
-      isSubmitting = true;
-    
+
       const id_programa     = (inpCode?.value  || '').trim();
       const nombre_programa = (inpName?.value  || '').trim();
       const descripcion     = (inpDesc?.value  || '').trim();
       const duracion        = (inpHours?.value || '').trim();
-    
-      if (!id_programa) {
-        alert('El código es obligatorio.');
-        isSubmitting = false;
-        return;
-      }
-      if (!nombre_programa) {
-        alert('El nombre es obligatorio.');
-        isSubmitting = false;
-        return;
-      }
-      if (duracion !== '' && Number.isNaN(Number(duracion))) {
-        alert('Duración debe ser numérica.');
-        isSubmitting = false;
-        return;
-      }
-    
+
+      if (!id_programa)     return alert('El código (id_programa) es obligatorio.');
+      if (!nombre_programa) return alert('El nombre del programa es obligatorio.');
+      if (duracion !== '' && Number.isNaN(Number(duracion))) return alert('Duración debe ser numérica.');
+
       const payload = { id_programa, nombre_programa, descripcion, duracion };
-    
+
       try {
         const res = editingId ? await apiActualizar(payload) : await apiAgregar(payload);
-        if (res?.error) alert(res.error);
-        else alert(res.success || 'Programa guardado correctamente.');
+        if (res?.error) return alert(res.error);
         closeModal();
         await loadPrograms();
       } catch {
-        alert('Error al guardar el programa.');
-      } finally {
-        isSubmitting = false;
+        alert('No se pudo guardar el programa.');
       }
-    });    
+    });
 
     // ===============================
     // INIT
