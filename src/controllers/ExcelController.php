@@ -6,9 +6,6 @@ ini_set('display_startup_errors', 1);
 
 require_once __DIR__ . '/../../config/database.php';
 
-// ===============================================================
-// SUBIR Y PROCESAR ARCHIVO EXCEL (.XLSX) SIN LIBRERÍAS
-// ===============================================================
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['error' => 'Debe usar el método POST para subir el archivo']);
@@ -28,9 +25,7 @@ if (strtolower($extension) !== 'xlsx') {
     exit;
 }
 
-// ===============================================================
-// ABRIR EL ARCHIVO .XLSX COMO ZIP
-// ===============================================================
+
 
 $zip = new ZipArchive();
 if ($zip->open($archivo_tmp) !== true) {
@@ -47,9 +42,7 @@ if (!$sheetXML) {
     exit;
 }
 
-// ===============================================================
-// LEER STRINGS COMPARTIDOS
-// ===============================================================
+
 
 $sharedStrings = [];
 if ($sharedStringsXML) {
@@ -59,9 +52,6 @@ if ($sharedStringsXML) {
     }
 }
 
-// ===============================================================
-// LEER FILAS DE EXCEL
-// ===============================================================
 
 $sheet = simplexml_load_string($sheetXML);
 $rows = $sheet->sheetData->row;
@@ -71,7 +61,7 @@ $insertadasRaes = 0;
 $filaIndex = 0;
 
 foreach ($rows as $row) {
-    if ($filaIndex == 0) { // Saltar encabezado
+    if ($filaIndex == 0) {
         $filaIndex++;
         continue;
     }
@@ -79,7 +69,7 @@ foreach ($rows as $row) {
     $cells = $row->c;
     $colIndex = 0;
 
-    // Ajusta el orden de columnas según tu Excel
+   
     $codigoCompetencia = '';
     $nombreCompetencia = '';
     $descripcionCompetencia = '';
@@ -93,7 +83,7 @@ foreach ($rows as $row) {
             $val = $sharedStrings[(int)$val];
         }
 
-        // Ajusta los índices a tus columnas reales
+        
         if ($colIndex == 0) $codigoCompetencia = trim($val);
         if ($colIndex == 1) $nombreCompetencia = trim($val);
         if ($colIndex == 2) $descripcionCompetencia = trim($val);
@@ -105,11 +95,9 @@ foreach ($rows as $row) {
 
     if (empty($codigoCompetencia) || empty($codigoRae)) continue;
 
-    // ===============================================================
-    // GUARDAR EN BASE DE DATOS (verificando duplicados)
-    // ===============================================================
+    
 
-    // 1️⃣ Verificar si la competencia ya existe
+    
     $stmt = $conn->prepare("SELECT id_competencia FROM competencias WHERE id_competencia = ?");
     $stmt->execute([$codigoCompetencia]);
     $competencia = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -120,7 +108,7 @@ foreach ($rows as $row) {
         $insertadasCompetencias++;
     }
 
-    // 2️⃣ Verificar si el RAE ya existe
+    
     $stmt = $conn->prepare("SELECT id_rae FROM raes WHERE id_rae = ?");
     $stmt->execute([$codigoRae]);
     $rae = $stmt->fetch(PDO::FETCH_ASSOC);
