@@ -103,7 +103,7 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
 
   <!-- 1) Primero defino la URL del controlador -->
   <script>

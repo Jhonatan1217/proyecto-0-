@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Horarios Inactivos</title>
     <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
 </head>
 
 <body class="flex flex-col min-h-screen font-sans bg-gray-100 text-gray-900">

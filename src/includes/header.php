@@ -5,10 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Proyecto 0</title>
 
-  <!-- SweetAlert2 -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-
+<!-- SweetAlert2 local -->
+<script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
 
   <!-- Fuente -->
   <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
@@ -63,7 +61,7 @@
       </li>
 
       <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/calendar-range.svg" alt="Icono de Trimestres">
+        <img src="<?= BASE_URL ?>src/assets/img/book-open.svg" alt="Icono de Competencias">
         <a href="<?= BASE_URL ?>index.php?page=src/views/gestionCompetencias">Competencias</a>
       </li>
 
