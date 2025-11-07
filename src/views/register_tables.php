@@ -285,18 +285,17 @@ try {
               </select>
             </div>
             <!-- Autocomplete para vincular competencia existente (id_competencia) -->
-<div class="relative">
-  <select
-    id="descripcion"
-    name="descripcion"
-    class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm"
-  >
-    <option value="">Buscar competencia por código o nombre (opcional para vincular existente)</option>
-  </select>
+        <div class="relative">
+          <select
+            id="descripcion"
+            name="descripcion"
+            class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
+            <option value="">Buscar competencia por código o nombre (opcional para vincular existente)</option>
+          </select>
 
-  <!-- Hidden que enviará el id_competencia -->
-  <input type="hidden" name="id_competencia" id="id_competencia_input" value="">
-</div>
+          <!-- Hidden que enviará el id_competencia -->
+          <input type="hidden" name="id_competencia" id="id_competencia_input" value="">
+        </div>
 
             <button type="submit"
               class="w-full h-12 bg-[#0b2d5b] text-white rounded-lg text-sm lg:text-base font-semibold hover:bg-[#082244] transition-colors">
