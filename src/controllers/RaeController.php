@@ -113,31 +113,62 @@ try {
       echo json_encode(['success' => $ok, 'message' => $ok ? 'RAE creada correctamente' : 'Error al crear la RAE']);
       break;
 
-    // ============================================================
-    // ACTUALIZAR UNA RAE EXISTENTE
-    // ============================================================
-    case 'actualizar':
-      $id_rae         = trim((string) inreq('id_rae'));
-      $descripcion    = trim((string) inreq('descripcion'));
-      $id_competencia = intval(inreq('id_competencia'));
+   // ============================================================
+// ACTUALIZAR UNA RAE EXISTENTE
+// ============================================================
+case 'actualizar':
+  $id_rae_actual   = trim((string) inreq('id_rae'));
+  $nuevo_id_rae    = trim((string) inreq('nuevo_id_rae') ?: $id_rae_actual);
+  $descripcion     = trim((string) inreq('descripcion'));
+  $id_competencia  = intval(inreq('id_competencia'));
 
-      if ($id_rae === '' || $descripcion === '' || !$id_competencia) {
-        echo json_encode(['error' => 'Faltan datos']);
+  if ($id_rae_actual === '' || $descripcion === '' || !$id_competencia) {
+    echo json_encode(['error' => 'Faltan datos']);
+    exit;
+  }
+
+  try {
+    $conn->beginTransaction();
+
+    // Si el código cambió, validamos que no exista
+    if ($nuevo_id_rae !== $id_rae_actual) {
+      $chk = $conn->prepare("SELECT 1 FROM raes WHERE id_rae = ?");
+      $chk->execute([$nuevo_id_rae]);
+      if ($chk->fetchColumn()) {
+        $conn->rollBack();
+        echo json_encode(['error' => 'Ya existe una RAE con el nuevo código']);
         exit;
       }
+    }
 
-      $check = $conn->prepare("SELECT COUNT(*) FROM raes WHERE descripcion = ? AND id_competencia = ? AND id_rae != ?");
-      $check->execute([$descripcion, $id_competencia, $id_rae]);
-      if ($check->fetchColumn() > 0) {
-        echo json_encode(['error' => 'Ya existe una RAE igual en esa competencia']);
-        exit;
-      }
+    // Validar duplicado por descripción+competencia
+    $check = $conn->prepare("SELECT COUNT(*) FROM raes WHERE descripcion = ? AND id_competencia = ? AND id_rae != ?");
+    $check->execute([$descripcion, $id_competencia, $id_rae_actual]);
+    if ($check->fetchColumn() > 0) {
+      $conn->rollBack();
+      echo json_encode(['error' => 'Ya existe una RAE igual en esa competencia']);
+      exit;
+    }
 
-      $stmt = $conn->prepare("UPDATE raes SET descripcion = ?, id_competencia = ? WHERE id_rae = ?");
-      $ok = $stmt->execute([$descripcion, $id_competencia, $id_rae]);
+    // Actualizar, incluyendo el id_rae si cambió
+    $stmt = $conn->prepare("
+      UPDATE raes
+         SET id_rae = ?, descripcion = ?, id_competencia = ?
+       WHERE id_rae = ?
+    ");
+    $ok = $stmt->execute([$nuevo_id_rae, $descripcion, $id_competencia, $id_rae_actual]);
 
-      echo json_encode(['success' => $ok, 'message' => $ok ? 'RAE actualizada correctamente' : 'Error al actualizar la RAE']);
-      break;
+    $conn->commit();
+    echo json_encode([
+      'success' => $ok,
+      'message' => $ok ? 'RAE actualizada correctamente' : 'Error al actualizar la RAE'
+    ]);
+  } catch (Throwable $e) {
+    if ($conn->inTransaction()) $conn->rollBack();
+    echo json_encode(['error' => 'Error al actualizar: ' . $e->getMessage()]);
+  }
+  break;
+
 
     // ============================================================
     // INHABILITAR / ACTIVAR RAE

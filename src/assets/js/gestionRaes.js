@@ -149,12 +149,13 @@
     if (exists) targetSelect.value = current;
   }
 
-  function statusChipRAE(estado) {
-    const on = Number(estado) === 1;
-    const cls = on ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100 text-zinc-600';
-    const txt = on ? 'Activo' : 'Inactivo';
-    return `<span class="text-xs px-2 py-1 rounded-full ${cls}">${txt}</span>`;
-  }
+function statusChipRAE(estado) {
+  const on = Number(estado) === 1;
+  return on
+    ? '<span class="text-xs px-2 py-1 rounded-full" style="background:#eaf7e6;border:1px solid rgba(57,169,0,.22);color:#39a900">Activo</span>'
+    : '<span class="text-xs px-2 py-1 rounded-full" style="background:#f3f4f6;border:1px solid #e5e7eb;color:#6b7280">Inactivo</span>';
+}
+
 
   function renderSwitchRae(id, estado) {
     const on = Number(estado) === 1;
