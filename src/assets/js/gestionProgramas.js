@@ -204,9 +204,10 @@ document.addEventListener('DOMContentLoaded', () => {
           <p><span class="font-medium">Duración:</span> ${escapeHtml(formatHours(p.duracion || 0))}</p>
           <div>
             ${activo
-              ? '<span class="inline-flex items-center rounded-full bg-green-100 text-green-700 px-2 py-0.5 text-xs font-medium">Activo</span>'
-              : '<span class="inline-flex items-center rounded-full bg-zinc-100 text-zinc-500 px-2 py-0.5 text-xs font-medium">Inactivo</span>'
-            }
+  ? '<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:#eaf7e6;border:1px solid rgba(57,169,0,.22);color:#39a900">Activo</span>'
+  : '<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:#f3f4f6;border:1px solid #e5e7eb;color:#6b7280">Inactivo</span>'
+}
+
           </div>
         </div>
       `;
@@ -317,7 +318,9 @@ document.addEventListener('DOMContentLoaded', () => {
           duracion:        form.dataset.originalHours || ''
         };
 
+        // 👇 ahora también se compara el código (id_programa)
         const sinCambios = 
+          original.id_programa === id_programa &&
           original.nombre_programa === nombre_programa &&
           original.descripcion === descripcion &&
           String(original.duracion) === String(duracion);
@@ -325,7 +328,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sinCambios) return t.warn('No has editado nada aún');
       }
 
-      const payload = { id_programa, nombre_programa, descripcion, duracion };
+      // Construcción de payload
+      let payload;
+      if (editingId) {
+        // En edición: enviar id original + posible nuevo id (PK)
+        const originalId = form.dataset.originalId || '';
+        payload = {
+          id_programa: originalId,          // id actual en BD
+          nuevo_id_programa: id_programa,   // posible código nuevo desde el input
+          nombre_programa,
+          descripcion,
+          duracion
+        };
+      } else {
+        // En creación: id del input es el id a crear
+        payload = { id_programa, nombre_programa, descripcion, duracion };
+      }
 
       try {
         const res = editingId ? await apiActualizar(payload) : await apiAgregar(payload);
@@ -337,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 🔔 Notificar creación/actualización (para Competencias)
         notifyProgramsChanged({
           type: editingId ? 'update' : 'create',
-          program: { id_programa, nombre_programa, descripcion, duracion }
+          program: { id_programa: payload.nuevo_id_programa || id_programa, nombre_programa, descripcion, duracion }
         });
 
         await loadPrograms();

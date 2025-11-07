@@ -118,7 +118,7 @@
   // ===============================
   // CARGAS
   // ===============================
-  // ===============================
+// ===============================
 // CARGAS
 // ===============================
 async function loadPrograms({ preserveSelection = true } = {}) {
@@ -218,12 +218,30 @@ async function loadPrograms({ preserveSelection = true } = {}) {
   // ===============================
   // RENDER
   // ===============================
-  function statusChip(estado) {
-    const cls = estado ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
-                       : 'bg-rose-50 text-rose-700 ring-1 ring-rose-200';
-    const txt = estado ? 'Activo' : 'Inhabilitado';
-    return `<span class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full ${cls}">${txt}</span>`;
+  // === Badge de estado con colores exactos (#39a900 activo, gris claro inhabilitado)
+function statusChip(estado) {
+  if (Number(estado) === 1) {
+    // Activo -> verde exacto
+    return `
+      <span
+        class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full"
+        style="background:#eaf7e6;border:1px solid rgba(57,169,0,.22);color:#39a900"
+      >
+        Activo
+      </span>
+    `;
   }
+  // Inhabilitado -> gris claro
+  return `
+    <span
+      class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full"
+      style="background:#f3f4f6;border:1px solid #e5e7eb;color:#6b7280"
+    >
+      Inhabilitado
+    </span>
+  `;
+}
+
 
   function raeCountPill(count) {
     return `
@@ -605,13 +623,39 @@ window.addEventListener('raes:changed', async (_ev) => {
 });
 
 
+// ===============================
+// ✅ NUEVO: ESCUCHAR CAMBIOS DE PROGRAMAS (sin recargar la página)
+// ===============================
+function isModalOpen() {
+  return modal && !modal.classList.contains('hidden') && !backdrop?.classList.contains('hidden');
+}
+
+window.addEventListener('programs:changed', async (ev) => {
+  const type = ev?.detail?.type || '';
+  const prog = ev?.detail?.program || {};
+  const pid  = String(prog.id_programa ?? prog.id ?? '');
+
+  // 1) Recarga ambos selects (filtro y modal) preservando selección actual
+  await loadPrograms({ preserveSelection: true });
+
+  // 2) Si el modal está abierto y estamos creando, preselecciona el nuevo programa
+  if (type === 'create' && isModalOpen() && !editingId && pid && selProg) {
+    const has = Array.from(selProg.options).some(o => String(o.value) === pid);
+    if (has) selProg.value = pid;
+  }
+
+  // 3) Re-pinta lista por si cambió el nombre del programa (afecta chips)
+  renderList();
+});
+
+
   // ===============================
   // INIT
   // ===============================
   (async function init(){
-  await loadPrograms({ preserveSelection: true });
-  await loadCompetencias();
-  await tryLoadRaeMap();
-})();
+    await loadPrograms({ preserveSelection: true });
+    await loadCompetencias();
+    await tryLoadRaeMap();
+  })();
 
 })();

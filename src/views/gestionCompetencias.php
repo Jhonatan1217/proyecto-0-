@@ -23,6 +23,8 @@
     .rotate-90{transform:rotate(90deg)}
     .hidden{display:none}
 
+    
+
     /* --- Animaciones modal --- */
     @keyframes modalIn {
       from { opacity:.0; transform: translateY(8px) scale(.98); }
@@ -148,8 +150,7 @@
             <h2 class="text-3xl font-bold">Resultados de Aprendizaje Esperados (RAE)</h2>
             <p class="text-sm text-zinc-500">Visualice y edite los RAE cargados desde Excel</p>
           </div>
-          <button class="rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2"
-                  style="background:#0a0a0a;color:#fff">
+          <button class="rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2  bg-[#00324d] text-[#fff]">
             <i data-lucide="plus" class="w-4 h-4"></i> Nuevo RAE
           </button>
         </div>
@@ -293,37 +294,56 @@
 
   <!-- ===== MODAL: Nuevo RAE ===== -->
   <div id="modalRaeBackdrop" class="hidden fixed inset-0 z-40" style="background:rgba(0,0,0,.4)"></div>
-  <section id="modalRae" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl" style="border:1px solid #e5e7eb">
-      <div class="flex items-start justify-between p-6 pb-2">
-        <div>
-          <h3 class="text-2xl font-bold">Nuevo RAE</h3>
-          <p class="text-sm text-zinc-500">Complete la información del Resultado de Aprendizaje Esperado</p>
-        </div>
-        <button id="btnCloseRae" class="p-2 rounded-lg hover:bg-zinc-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+<section id="modalRae" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl" style="border:1px solid #e5e7eb">
+    <div class="flex items-start justify-between p-6 pb-2">
+      <div>
+        <h3 class="text-2xl font-bold">Nuevo RAE</h3>
+        <p class="text-sm text-zinc-500">Complete la información del Resultado de Aprendizaje Esperado</p>
       </div>
-      <form id="formRaeNew" class="p-6 pt-4 space-y-4">
-        <div>
-          <label class="block text-sm font-medium mb-1">Competencia *</label>
-          <select id="rae_competency" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm bg-white select-nice">
-            <option value="">Seleccione una competencia</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Código *</label>
-          <input id="rae_code" type="text" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none">
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Descripción *</label>
-          <textarea id="rae_desc" rows="3" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none"></textarea>
-        </div>
-        <div class="flex justify-end gap-3 pt-2">
-          <button type="button" id="btnCancelRae" class="rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium">Cancelar</button>
-          <button type="submit" id="btnSubmitRae" class="rounded-xl px-4 py-2.5 text-sm font-medium" style="background:#0a0a0a;color:#fff">Guardar</button>
-        </div>
-      </form>
+      <button id="btnCloseRae" class="p-2 rounded-lg hover:bg-zinc-100" aria-label="Cerrar modal">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
     </div>
-  </section>
+
+    <form id="formRaeNew" class="p-6 pt-4 space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">Competencia *</label>
+        <select
+          id="rae_competency"
+          class="select-nice w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#00324d]/20"
+        >
+          <option value="">Seleccione una competencia</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Código *</label>
+        <input
+          id="rae_code"
+          type="text"
+          placeholder="Ej: 220501032-01"
+          class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none placeholder-zinc-400 focus:ring-2 focus:ring-[#00324d]/20"
+        >
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Descripción *</label>
+        <textarea
+          id="rae_desc"
+          rows="3"
+          placeholder="Describe el resultado de aprendizaje…"
+          class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none placeholder-zinc-400 focus:ring-2 focus:ring-[#00324d]/20"
+        ></textarea>
+      </div>
+
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" id="btnCancelRae" class="rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium">Cancelar</button>
+        <button type="submit" id="btnSubmitRae" class="rounded-xl px-4 py-2.5 text-sm font-medium bg-[#00324d] text-[#fff]">Guardar</button>
+      </div>
+    </form>
+  </div>
+</section>
 
   <!-- ========= SCRIPTS ========= -->
   <script>
