@@ -327,18 +327,41 @@
     });
   }
 
+  // El panel "card" del modal (ajusta el selector si tu HTML es distinto)
+  const modalPanel = modal?.querySelector('[data-panel], [role="dialog"], .panel, .card, .box')
+                  || modal?.firstElementChild || modal;
+
+  // Reinicia y aplica una clase de animación
+  function play(el, cls, remove = []) {
+    if (!el) return;
+    // quita clases anteriores para reiniciar la animación
+    ['animate-modal','animate-backdrop','animate-modal-out','animate-backdrop-out', ...remove].forEach(c => el.classList.remove(c));
+    // "reflow" para reiniciar animación
+    void el.offsetWidth;
+    el.classList.add(cls);
+  }
+
+
   // ==== Abrir / Cerrar modal ====
   function openModal() {
-    if (form) form.reset();
-    editingRaeId = null; editingSnap = null;
-    if (titleRae) titleRae.textContent = 'Nuevo RAE';
-    if (inCode) inCode.value = '';
-    if (selComp) selComp.innerHTML = `<option value=\"\">Seleccione una competencia</option>`;
-    backdrop.classList.remove('hidden');
-    modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-    window.lucide?.createIcons();
-  }
+  if (form) form.reset();
+  editingRaeId = null; editingSnap = null;
+  if (titleRae) titleRae.textContent = 'Nuevo RAE';
+  if (inCode) inCode.value = '';
+  if (selComp) selComp.innerHTML = `<option value="">Seleccione una competencia</option>`;
+
+  // Mostrar
+  backdrop.classList.remove('hidden');
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+
+  // Animaciones de ENTRADA
+  play(backdrop,  'animate-backdrop');
+  play(modalPanel,'animate-modal');
+
+  window.lucide?.createIcons?.();
+}
+
   function closeModal() {
     backdrop.classList.add('hidden');
     modal.classList.add('hidden');
