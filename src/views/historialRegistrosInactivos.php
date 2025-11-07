@@ -18,349 +18,60 @@
 
         <!-- Card-based layout using Tailwind flexbox -->
         <div class="flex flex-col gap-4">
-            <!-- Schedule Card 1 -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md hover:translate-y-[-2px] transition-all duration-200">
-                <div class="flex flex-col md:flex-row md:justify-between md:items-start pb-3 md:pb-4 border-b border-gray-100 mb-4">
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs font-medium text-gray-600">1001</span>
-                        <span class="text-lg font-bold text-gray-900">Lunes</span>
+            <?php
+            require_once(__DIR__ . '/../../config/database.php');
+            // Consulta para obtener horarios inactivos usando PDO
+            $sql = "SELECT * FROM horarios WHERE estado = 0";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            ?>
+            <?php if ($result && count($result) > 0): ?>
+                <?php foreach ($result as $row): ?>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md hover:translate-y-[-2px] transition-all duration-200">
+                        <div class="flex flex-col md:flex-row md:justify-between md:items-start pb-3 md:pb-4 border-b border-gray-100 mb-4">
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs font-medium text-gray-600"><?php echo $row['id_horario']; ?></span>
+                                <span class="text-lg font-bold text-gray-900"><?php echo ucfirst(strtolower($row['dia'])); ?></span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                            <div class="flex flex-col gap-1">
+                                <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Hora Inicio y Fin</span>
+                                <span class="text-sm font-medium text-gray-900"><?php echo $row['hora_inicio'] . ' - ' . $row['hora_fin']; ?></span>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">ID Zona</span>
+                                <span class="text-sm font-medium text-gray-900">Z-<?php echo $row['id_zona']; ?></span>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Area</span>
+                                <span class="text-sm font-medium text-gray-900">Area <?php echo $row['id_area']; ?></span>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Ficha</span>
+                                <span class="text-sm font-medium text-gray-900">Ficha <?php echo $row['id_ficha']; ?></span>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Instructor</span>
+                                <span class="text-sm font-medium text-gray-900">Instructor <?php echo $row['id_instructor']; ?></span>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Competencia</span>
+                                <span class="text-sm font-medium text-gray-900">Competencia <?php echo $row['id_competencia']; ?></span>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-2 pt-3 border-t border-gray-100">
+                            <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">Trimestre <?php echo $row['numero_trimestre']; ?></span>
+                            <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">Programa <?php echo $row['id_programa']; ?></span>
+                        </div>
                     </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+                    <span class="text-gray-600">No hay horarios inactivos.</span>
                 </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Hora Inicio y Fin</span>
-                        <span class="text-sm font-medium text-gray-900">08:00 - 10:00</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">ID Zona</span>
-                        <span class="text-sm font-medium text-gray-900">Z-01</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Area</span>
-                        <span class="text-sm font-medium text-gray-900">Area de ejemplo</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Ficha</span>
-                        <span class="text-sm font-medium text-gray-900">Ficha 308485</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Instructor</span>
-                        <span class="text-sm font-medium text-gray-900">Juan Manuel Gonzales Torres</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Competencia</span>
-                        <span class="text-sm font-medium text-gray-900">Desarrollo de ejemplo</span>
-                    </div>
-                </div>
-
-                <div class="flex flex-wrap gap-2 pt-3 border-t border-gray-100">
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">Trimestre 1</span>
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">RAE-001</span>
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">Programa de ejemplo</span>
-                </div>
-            </div>
-
-            <!-- Schedule Card 2 -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md hover:translate-y-[-2px] transition-all duration-200">
-                <div class="flex flex-col md:flex-row md:justify-between md:items-start pb-3 md:pb-4 border-b border-gray-100 mb-4">
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs font-medium text-gray-600">1002</span>
-                        <span class="text-lg font-bold text-gray-900">Martes</span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Horario</span>
-                        <span class="text-sm font-medium text-gray-900">10:00 - 12:00</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">ID Zona</span>
-                        <span class="text-sm font-medium text-gray-900">Z-02</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Area</span>
-                        <span class="text-sm font-medium text-gray-900">Area de ejemplo</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Ficha</span>
-                        <span class="text-sm font-medium text-gray-900">Ficha 308485</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Instructor</span>
-                        <span class="text-sm font-medium text-gray-900">Juan Manuel Gonzales Torres</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Competencia</span>
-                        <span class="text-sm font-medium text-gray-900">Desarrollo de ejemplo</span>
-                    </div>
-                </div>
-
-                <div class="flex flex-wrap gap-2 pt-3 border-t border-gray-100">
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">Trimestre 2</span>
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">RAE-002</span>
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">Programa de ejemplo</span>
-                </div>
-            </div>
-
-            <!-- Schedule Card 3 -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md hover:translate-y-[-2px] transition-all duration-200">
-                <div class="flex flex-col md:flex-row md:justify-between md:items-start pb-3 md:pb-4 border-b border-gray-100 mb-4">
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs font-medium text-gray-600">1003</span>
-                        <span class="text-lg font-bold text-gray-900">Miércoles</span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Horario</span>
-                        <span class="text-sm font-medium text-gray-900">14:00 - 16:00</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">ID Zona</span>
-                        <span class="text-sm font-medium text-gray-900">Z-01</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Area</span>
-                        <span class="text-sm font-medium text-gray-900">Area de ejemplo</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Ficha</span>
-                        <span class="text-sm font-medium text-gray-900">Ficha 308485</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Instructor</span>
-                        <span class="text-sm font-medium text-gray-900">Juan Manuel Gonzales Torres</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Competencia</span>
-                        <span class="text-sm font-medium text-gray-900">Desarrollo de ejemplo</span>
-                    </div>
-                </div>
-
-                <div class="flex flex-wrap gap-2 pt-3 border-t border-gray-100">
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">Trimestre 1</span>
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">RAE-003</span>
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">Programa de ejemplo</span>
-                </div>
-            </div>
-
-            <!-- Schedule Card 4 -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md hover:translate-y-[-2px] transition-all duration-200">
-                <div class="flex flex-col md:flex-row md:justify-between md:items-start pb-3 md:pb-4 border-b border-gray-100 mb-4">
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs font-medium text-gray-600">1004</span>
-                        <span class="text-lg font-bold text-gray-900">Jueves</span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Horario</span>
-                        <span class="text-sm font-medium text-gray-900">08:00 - 10:00</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">ID Zona</span>
-                        <span class="text-sm font-medium text-gray-900">Z-03</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Area</span>
-                        <span class="text-sm font-medium text-gray-900">Area de ejemplo</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Ficha</span>
-                        <span class="text-sm font-medium text-gray-900">Ficha 308485</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Instructor</span>
-                        <span class="text-sm font-medium text-gray-900">Juan Manuel Gonzales Torres</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Competencia</span>
-                        <span class="text-sm font-medium text-gray-900">Desarrollo de ejemplo</span>
-                    </div>
-                </div>
-
-                <div class="flex flex-wrap gap-2 pt-3 border-t border-gray-100">
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">Trimestre 3</span>
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">RAE-004</span>
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">Programa de ejemplo</span>
-                </div>
-            </div>
-
-            <!-- Schedule Card 5 -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md hover:translate-y-[-2px] transition-all duration-200">
-                <div class="flex flex-col md:flex-row md:justify-between md:items-start pb-3 md:pb-4 border-b border-gray-100 mb-4">
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs font-medium text-gray-600">1005</span>
-                        <span class="text-lg font-bold text-gray-900">Viernes</span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Horario</span>
-                        <span class="text-sm font-medium text-gray-900">16:00 - 18:00</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">ID Zona</span>
-                        <span class="text-sm font-medium text-gray-900">Z-02</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Area</span>
-                        <span class="text-sm font-medium text-gray-900">Area de ejemplo</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Ficha</span>
-                        <span class="text-sm font-medium text-gray-900">Ficha 308485</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Instructor</span>
-                        <span class="text-sm font-medium text-gray-900">Juan Manuel Gonzales Torres</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Competencia</span>
-                        <span class="text-sm font-medium text-gray-900">Desarrollo de ejemplo</span>
-                    </div>
-                </div>
-
-                <div class="flex flex-wrap gap-2 pt-3 border-t border-gray-100">
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">Trimestre 2</span>
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">RAE-005</span>
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">Programa de ejemplo</span>
-                </div>
-            </div>
-
-            <!-- Schedule Card 6 -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md hover:translate-y-[-2px] transition-all duration-200">
-                <div class="flex flex-col md:flex-row md:justify-between md:items-start pb-3 md:pb-4 border-b border-gray-100 mb-4">
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs font-medium text-gray-600">1006</span>
-                        <span class="text-lg font-bold text-gray-900">Lunes</span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Horario</span>
-                        <span class="text-sm font-medium text-gray-900">12:00 - 14:00</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">ID Zona</span>
-                        <span class="text-sm font-medium text-gray-900">Z-01</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Area</span>
-                        <span class="text-sm font-medium text-gray-900">Area de ejemplo</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Ficha</span>
-                        <span class="text-sm font-medium text-gray-900">Ficha 308485</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Instructor</span>
-                        <span class="text-sm font-medium text-gray-900">Juan Manuel Gonzales Torres</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Competencia</span>
-                        <span class="text-sm font-medium text-gray-900">Desarrollo de ejemplo</span>
-                    </div>
-                </div>
-
-                <div class="flex flex-wrap gap-2 pt-3 border-t border-gray-100">
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">Trimestre 1</span>
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">RAE-006</span>
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">Programa de ejemplo</span>
-                </div>
-            </div>
-
-            <!-- Schedule Card 7 -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md hover:translate-y-[-2px] transition-all duration-200">
-                <div class="flex flex-col md:flex-row md:justify-between md:items-start pb-3 md:pb-4 border-b border-gray-100 mb-4">
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs font-medium text-gray-600">1007</span>
-                        <span class="text-lg font-bold text-gray-900">Martes</span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Horario</span>
-                        <span class="text-sm font-medium text-gray-900">14:00 - 16:00</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">ID Zona</span>
-                        <span class="text-sm font-medium text-gray-900">Z-03</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Area</span>
-                        <span class="text-sm font-medium text-gray-900">Area de ejemplo</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Ficha</span>
-                        <span class="text-sm font-medium text-gray-900">Ficha 308485</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Instructor</span>
-                        <span class="text-sm font-medium text-gray-900">Juan Manuel Gonzales Torres</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Competencia</span>
-                        <span class="text-sm font-medium text-gray-900">Desarrollo de ejemplo</span>
-                    </div>
-                </div>
-
-                <div class="flex flex-wrap gap-2 pt-3 border-t border-gray-100">
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">Trimestre 3</span>
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">RAE-007</span>
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">Programa de ejemplo</span>
-                </div>
-            </div>
-
-            <!-- Schedule Card 8 -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md hover:translate-y-[-2px] transition-all duration-200">
-                <div class="flex flex-col md:flex-row md:justify-between md:items-start pb-3 md:pb-4 border-b border-gray-100 mb-4">
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs font-medium text-gray-600">1008</span>
-                        <span class="text-lg font-bold text-gray-900">Miércoles</span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Horario</span>
-                        <span class="text-sm font-medium text-gray-900">08:00 - 10:00</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">ID Zona</span>
-                        <span class="text-sm font-medium text-gray-900">Z-02</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Area</span>
-                        <span class="text-sm font-medium text-gray-900">Area de ejemplo</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Ficha</span>
-                        <span class="text-sm font-medium text-gray-900">Ficha 308485</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Instructor</span>
-                        <span class="text-sm font-medium text-gray-900">Juan Manuel Gonzales Torres</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Competencia</span>
-                        <span class="text-sm font-medium text-gray-900">Desarrollo de ejemplo</span>
-                    </div>
-                </div>
-
-                <div class="flex flex-wrap gap-2 pt-3 border-t border-gray-100">
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">Trimestre 2</span>
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">RAE-008</span>
-                    <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">Programa de ejemplo</span>
-                </div>
-            </div>
+            <?php endif; ?>
         </div>
     </div>
 </body>
