@@ -288,6 +288,16 @@ try {
             <textarea name="descripcion" id="descripcion" rows="4" placeholder="Diligencie la competencia aquí" 
               class="form-field form-field--textarea w-full min-h-[90px] px-4 pr-12 text-[13px] py-3 rounded-xl border-0 outline-none bg-white resize-none shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm"></textarea>
 
+            <!-- Autocomplete para vincular competencia existente (id_competencia) -->
+            <div class="relative">
+              <input id="competencia_autocomplete" name="competencia_autocomplete" list="listaCompetencias"
+                placeholder="Buscar competencia por código o nombre (opcional para vincular existente)"
+                class="w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm" />
+              <datalist id="listaCompetencias"></datalist>
+              <!-- Hidden que enviará el id_competencia (si se selecciona una existente) -->
+              <input type="hidden" name="id_competencia" id="id_competencia_input" value="">
+            </div>
++
             <button type="submit"
               class="w-full h-12 bg-[#0b2d5b] text-white rounded-lg text-sm lg:text-base font-semibold hover:bg-[#082244] transition-colors">
               GUARDAR TRIMESTRALIZACIÓN

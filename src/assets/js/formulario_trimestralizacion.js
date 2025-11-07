@@ -13,6 +13,69 @@ if (!window.TRIMESTRALIZACION_INIT) {
       timerProgressBar: true
     });
 
+    // ------- Autocomplete competencias (poblado desde servidor) -------
+    const COMPETENCIAS_API = `${(window.BASE_URL || '')}src/controllers/CompetenciaController.php?accion=listar`;
+    let COMP_CACHE = [];
+
+    async function cargarCompetenciasDatalist() {
+      const datalist = document.getElementById('listaCompetencias');
+      if (!datalist) return;
+      try {
+        const res = await fetch(COMPETENCIAS_API, { cache: 'no-store' });
+        const json = await res.json();
+        const arr = Array.isArray(json) ? json : (Array.isArray(json.data) ? json.data : []);
+        COMP_CACHE = arr;
+        datalist.innerHTML = '';
+        arr.forEach(c => {
+          // opción legible: "id | código | nombre"
+          const label = `${c.id_competencia ?? c.id ?? ''} | ${c.codigo_competencia ?? c.codigo ?? ''} | ${c.nombre_competencia ?? c.nombre ?? c.descripcion ?? ''}`;
+          const opt = document.createElement('option');
+          opt.value = label;
+          opt.dataset.id = c.id_competencia ?? c.id ?? '';
+          datalist.appendChild(opt);
+        });
+      } catch (err) {
+        // silencioso, no rompemos el formulario si falla
+        console.warn("No se pudieron cargar competencias para autocomplete:", err);
+      }
+    }
+
+    // sincronizar input de autocomplete con hidden id_competencia y textarea descripcion
+    (function bindCompetenciaInput(){
+      const inp = document.getElementById('competencia_autocomplete');
+      const hid = document.getElementById('id_competencia_input');
+      const desc = document.getElementById('descripcion');
+      if (!inp || !hid) return;
+      // al escribir/buscar intentamos encontrar coincidencia exacta en datalist
+      inp.addEventListener('input', (e) => {
+        const val = inp.value.trim();
+        hid.value = '';
+        if (!val) return;
+        // buscar en cache por coincidencia exacta en la cadena mostrada o por id al inicio
+        const found = COMP_CACHE.find(c => {
+          const label = `${c.id_competencia ?? c.id ?? ''} | ${c.codigo_competencia ?? c.codigo ?? ''} | ${c.nombre_competencia ?? c.nombre ?? c.descripcion ?? ''}`;
+          return label === val || String(c.id_competencia) === val || (label.toLowerCase() === val.toLowerCase());
+        });
+        if (found) {
+          hid.value = String(found.id_competencia ?? found.id ?? '');
+          // opcional: rellenar la descripción con la descripción existente de la competencia
+          if (desc && (found.descripcion || found.nombre_competencia || found.codigo_competencia)) {
+            desc.value = found.descripcion ?? found.nombre_competencia ?? '';
+          }
+        }
+      });
+      // también al perder foco confirmamos si lo escrito corresponde a alguna opción
+      inp.addEventListener('blur', () => {
+        const val = inp.value.trim();
+        if (!val) { hid.value = ''; return; }
+        const found = COMP_CACHE.find(c => {
+          const label = `${c.id_competencia ?? c.id ?? ''} | ${c.codigo_competencia ?? c.codigo ?? ''} | ${c.nombre_competencia ?? c.nombre ?? c.descripcion ?? ''}`;
+          return label === val || String(c.id_competencia) === val;
+        });
+        if (!found) hid.value = ''; // evitar enviar id inválido
+      });
+    })();
+
     // Selecciona todos los formularios con la clase "trimestralizacion-form"
     document.querySelectorAll(".trimestralizacion-form").forEach((form) => {
 
@@ -41,6 +104,7 @@ if (!window.TRIMESTRALIZACION_INIT) {
         const horaInicio = form.querySelector("[name='hora_inicio']").value.trim();
         const horaFin = form.querySelector("[name='hora_fin']").value.trim();
         const descripcion = form.querySelector("[name='descripcion']").value.trim();
+        const id_competencia = form.querySelector("[name='id_competencia']") ? form.querySelector("[name='id_competencia']").value.trim() : "";
 
         const campos = [zona, nivel, numeroFicha, instructor, dia, horaInicio, horaFin, descripcion];
         const vacios = campos.filter(v => v === "").length;
@@ -65,54 +129,41 @@ if (!window.TRIMESTRALIZACION_INIT) {
         if (parseInt(horaFin) <= parseInt(horaInicio))
           return Toast.fire({ icon: "error", title: "La hora de fin debe ser mayor a la de inicio" });
 
-        if (!descripcion)
-          return Toast.fire({ icon: "warning", title: "Ingrese la competencia o descripción" });
-
         // ========== ENVÍO ==========
         const fd = new FormData(form);
 
         // Enviamos también el id_area
         fd.set("area", id_area);
 
+        // Enviamos id_competencia si se seleccionó una existente
+        if (id_competencia) fd.set("id_competencia", id_competencia);
+
         try {
-          const res = await fetch(form.action, {
+          const resp = await fetch(form.action, {
             method: "POST",
             body: fd,
-            headers: {
-              "X-Requested-With": "XMLHttpRequest",
-              "Accept": "application/json"
-            },
             credentials: "same-origin"
           });
+          const json = await resp.json();
 
-          const data = await res.json().catch(() => ({}));
-
-          // ---------- ERRORES DEL SERVIDOR ----------
-          if (!res.ok || data.status === "error" || data.error) {
-            const mensaje = data.mensaje || data.error || "Ocurrió un error en el servidor.";
-            return Toast.fire({ icon: "error", title: mensaje });
+          if (json && (json.status === "success" || json.success === true)) {
+            Toast.fire({ icon: "success", title: json.mensaje || "Trimestralización creada" });
+            // limpiar form
+            form.reset();
+            // cerrar modal si existe botón de cierre
+            document.getElementById('modalCrearLanding')?.classList.add('hidden');
+          } else {
+            console.error("Respuesta servidor:", json);
+            Toast.fire({ icon: "error", title: json.mensaje || json.error || "Error al crear trimestralización" });
           }
-
-          // ---------- ÉXITO ----------
-          Toast.fire({ icon: "success", title: "¡Trimestralización creada correctamente!" });
-
-          // Cerrar modal si existe (por ejemplo, en landing)
-          const modal = document.getElementById("modalCrearLanding");
-          if (modal) modal.classList.add("hidden");
-
-          // Redirigir con zona + área
-          const redirect = `index.php?page=src/views/register_tables`;
-          setTimeout(() => window.location.replace(redirect), 1600);
-
         } catch (err) {
-          console.error("Error de red:", err);
-          Toast.fire({
-            icon: "error",
-            title: "Error de red o respuesta inválida",
-            text: "Verifica tu conexión e intenta de nuevo"
-          });
+          console.error("Error al enviar formulario:", err);
+          Toast.fire({ icon: "error", title: "Error de conexión al enviar" });
         }
       });
     });
+
+    // iniciar carga de competencias para autocomplete
+    cargarCompetenciasDatalist();
   });
 }
