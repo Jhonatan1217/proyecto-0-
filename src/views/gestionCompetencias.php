@@ -11,6 +11,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <style>
     .switch{--h:22px;--w:42px;position:relative;width:var(--w);height:var(--h);border-radius:999px;background:#e5e7eb;transition:.2s}
@@ -20,8 +21,28 @@
     .switch .track{transition:background-color .2s ease}
     .tabs-pill-active{background:#fff;border:1px solid #e5e7eb;box-shadow:0 1px 0 rgba(0,0,0,.04)}
     .rotate-90{transform:rotate(90deg)}
-    /* utilidades mínimas */
     .hidden{display:none}
+
+    /* --- Animaciones modal --- */
+    @keyframes modalIn {
+      from { opacity:.0; transform: translateY(8px) scale(.98); }
+      to   { opacity:1;  transform: translateY(0)   scale(1); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; } to { opacity: 1; }
+    }
+    .animate-modal    { animation: modalIn .28s ease-out; }
+    .animate-backdrop { animation: fadeIn  .18s ease-out; }
+
+    /* --- Select con flecha separada del borde --- */
+    .select-nice{
+      -webkit-appearance:none; appearance:none;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%238a8a8a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat:no-repeat;
+      background-position: right .75rem center;
+      background-size: 1rem 1rem;
+      padding-right: 2.25rem; /* espacio para la flecha */
+    }
   </style>
 </head>
 <body class="bg-white text-zinc-900 min-h-screen">
@@ -31,9 +52,9 @@
 
       <!-- Tabs -->
       <div class="bg-zinc-100 rounded-2xl p-1 flex items-center gap-1 justify-around">
-        <button data-tab-btn="upload" class="tab-btn flex items-center justify-center gap-2 px-4 py-2 rounded-xl w-full sm:w-auto text-zinc-700">
+        <!-- <button data-tab-btn="upload" class="tab-btn flex items-center justify-center gap-2 px-4 py-2 rounded-xl w-full sm:w-auto text-zinc-700">
           <i data-lucide="upload" class="w-4 h-4"></i><span class="sm:inline">Carga Excel</span>
-        </button>
+        </button> -->
         <button data-tab-btn="programs" class="tab-btn flex items-center justify-center gap-2 px-4 py-2 rounded-xl w-full sm:w-auto text-zinc-700">
           <i data-lucide="graduation-cap" class="w-4 h-4"></i><span class=" sm:inline">Programas</span>
         </button>
@@ -46,7 +67,7 @@
       </div>
 
       <!-- ========== CARGA EXCEL ========== -->
-      <section data-tab="upload" class="tab-pane mt-8">
+      <!-- <section data-tab="upload" class="tab-pane mt-8">
         <h2 class="text-3xl font-bold mb-1" style="color:#39a900">Carga Masiva desde Excel</h2>
         <p class="text-sm text-zinc-500 mb-6">Importe programas, competencias y RAE desde un archivo Excel</p>
 
@@ -61,7 +82,7 @@
 
             <div class="px-6 mt-4">
               <label class="block text-sm font-medium mb-1">Programa de formación <span class="text-red-500">*</span></label>
-              <select id="upload_program" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none bg-white">
+              <select id="upload_program" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none bg-white select-nice">
                 <option value="">Seleccione un programa</option>
               </select>
               <p id="err_upload_program" class="hidden mt-1 text-xs" style="color:#dc2626">Seleccione un programa para asociar la carga.</p>
@@ -79,18 +100,17 @@
             </div>
           </div>
         </div>
-      </section>
+      </section> -->
 
       <!-- ========== PROGRAMAS ========== -->
       <section data-tab="programs" class="tab-pane mt-8 hidden">
         <div class="flex items-center justify-between mb-6">
           <div>
-            <h2 class="text-3xl font-bold">Programas de Formación</h2>
+            <h2 class="text-3xl text-[#39a900] font-bold">Programas de Formación</h2>
             <p class="text-sm text-zinc-500">Gestione los programas de formación disponibles</p>
           </div>
-          <button id="btnNewProgram" class="rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2"
-                  style="background:#0a0a0a;color:#fff">
-            <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Programa
+          <button id="btnNewProgram" class="rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 bg-[#00324d] text-[#fff]">
+            <img src="src/assets/img/plus.svg" class="w-4 h-4" alt="signo de mas"> Nuevo Programa
           </button>
         </div>
 
@@ -106,10 +126,10 @@
             <p class="text-sm text-zinc-500">Visualice y edite las competencias cargadas desde Excel</p>
           </div>
           <div class="flex items-center gap-3">
-            <select id="competencyProgramFilter" class="w-[260px] border border-zinc-300 rounded-xl px-3 py-2 text-sm">
+            <select id="competencyProgramFilter" class="w-[260px] border border-zinc-300 rounded-xl px-3 py-2 text-sm select-nice">
               <option value="all">Todos los programas</option>
             </select>
-            <button id="btnNewCompetency" class="rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2" style="background:#00324d;color:#fff">
+            <button id="btnNewCompetency" class="rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 bg-[#00324d] text-[#fff]">
               <img src="src/assets/img/plus.svg" class="w-4 h-4" alt="icono añadir"> Nueva Competencia
             </button>
 
@@ -135,10 +155,10 @@
         </div>
 
         <div class="flex gap-3 flex-wrap mb-5">
-          <select id="raeProgramFilter" class="w-[260px] border border-zinc-300 rounded-xl px-3 py-2 text-sm">
+          <select id="raeProgramFilter" class="w-[260px] border border-zinc-300 rounded-xl px-3 py-2 text-sm select-nice">
             <option value="all">Todos los programas</option>
           </select>
-          <select id="raeCompetencyFilter" class="w-[260px] border border-zinc-300 rounded-xl px-3 py-2 text-sm">
+          <select id="raeCompetencyFilter" class="w-[260px] border border-zinc-300 rounded-xl px-3 py-2 text-sm select-nice">
             <option value="all">Todas las competencias</option>
           </select>
         </div>
@@ -155,76 +175,121 @@
   <!-- ===== MODAL: Nuevo/Editar Programa ===== -->
   <div id="modalProgramBackdrop" class="hidden fixed inset-0 z-40" style="background:rgba(0,0,0,.4)"></div>
   <section id="modalProgram" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl" style="border:1px solid #e5e7eb">
-      <div class="flex items-start justify-between p-6 pb-2">
-        <div>
-          <h3 class="text-2xl font-bold">Nuevo Programa</h3>
-          <p class="text-sm text-zinc-500">Complete la información del programa de formación</p>
-        </div>
-        <button id="btnCloseProgram" class="p-2 rounded-lg hover:bg-zinc-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+  <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl" style="border:1px solid #e5e7eb">
+    <div class="flex items-start justify-between p-6 pb-2">
+      <div>
+        <h2 id="modalProgramTitle" class="text-2xl font-bold text-zinc-900">
+          Nuevo Programa
+        </h2>
+        <p class="text-sm text-zinc-500">Complete la información del programa de formación</p>
       </div>
-      <form id="formProgramNew" class="p-6 pt-4 space-y-4">
-        <div>
-          <label class="block text-sm font-medium mb-1">Código *</label>
-          <input id="pg_code" name="id_programa" type="text" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none">
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Nombre *</label>
-          <input id="pg_name" type="text" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none">
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Descripción</label>
-          <textarea id="pg_desc" rows="3" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none"></textarea>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Duración (horas)</label>
-          <input id="pg_hours" type="number" min="0" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none">
-        </div>
-        <div class="flex justify-end gap-3 pt-2">
-          <button type="button" id="btnCancelProgram" class="rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium">Cancelar</button>
-          <button type="submit" id="btnSubmitProgram" class="rounded-xl px-4 py-2.5 text-sm font-medium" style="background:#0a0a0a;color:#fff">Guardar</button>
-        </div>
-      </form>
+      <button id="btnCloseProgram" class="p-2 rounded-lg hover:bg-zinc-100">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
     </div>
-  </section>
 
-  <!-- ===== MODAL: Nueva Competencia ===== -->
+    <form id="formProgramNew" class="p-6 pt-4 space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">Código *</label>
+        <input id="pg_code" name="id_programa" type="text"
+               placeholder="Ej: 228106"
+               class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Nombre *</label>
+        <input id="pg_name" type="text"
+               placeholder="Ej: Análisis y Desarrollo de Software (ADSI)"
+               class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Descripción</label>
+        <textarea id="pg_desc" rows="3"
+                  placeholder="Ej: Programa orientado al diseño y desarrollo de aplicaciones empresariales."
+                  class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none"></textarea>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Duración (horas)</label>
+        <input id="pg_hours" type="number" min="0"
+               placeholder="Ej: 2640"
+               class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none">
+      </div>
+
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" id="btnCancelProgram"
+                class="rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium">
+          Cancelar
+        </button>
+        <button type="submit" id="btnSubmitProgram"
+                class="rounded-xl px-4 py-2.5 text-sm font-medium bg-[#00324d] text-[#fff]">
+          Guardar
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+
+
+  <!-- ===== MODAL: Nueva/Editar Competencia ===== -->
   <div id="modalCompetencyBackdrop" class="hidden fixed inset-0 z-40" style="background:rgba(0,0,0,.4)"></div>
   <section id="modalCompetency" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl" style="border:1px solid #e5e7eb">
-      <div class="flex items-start justify-between p-6 pb-2">
-        <div>
-          <h3 class="text-2xl font-bold">Nueva Competencia</h3>
-          <p class="text-sm text-zinc-500">Complete la información de la competencia</p>
-        </div>
-        <button id="btnCloseCompetency" class="p-2 rounded-lg hover:bg-zinc-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+  <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl modal-card" style="border:1px solid #e5e7eb">
+    <div class="flex items-start justify-between p-6 pb-2">
+      <div>
+        <h3 id="titleCompetency" class="text-2xl font-bold">Nueva Competencia</h3>
+        <p class="text-sm text-zinc-500">Complete la información de la competencia</p>
       </div>
-      <form id="formCompetencyNew" class="p-6 pt-4 space-y-4">
-        <div>
-          <label class="block text-sm font-medium mb-1">Programa *</label>
-          <select id="cp_program" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm bg-white">
-            <option value="">Seleccione un programa</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Código *</label>
-          <input id="cp_code" type="text" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none">
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Nombre *</label>
-          <input id="cp_name" type="text" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none">
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Descripción</label>
-          <textarea id="cp_desc" rows="3" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none"></textarea>
-        </div>
-        <div class="flex justify-end gap-3 pt-2">
-          <button type="button" id="btnCancelCompetency" class="rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium">Cancelar</button>
-          <button type="submit" id="btnSubmitCompetency" class="rounded-xl px-4 py-2.5 text-sm font-medium" style="background:#0a0a0a;color:#fff">Guardar</button>
-        </div>
-      </form>
+      <button id="btnCloseCompetency" class="p-2 rounded-lg hover:bg-zinc-100">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
     </div>
-  </section>
+
+    <form id="formCompetencyNew" class="p-6 pt-4 space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">Programa *</label>
+        <select id="cp_program"
+                class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm bg-white select-nice">
+          <option value="">Seleccione el programa de formación asociado</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Código *</label>
+        <input id="cp_code" type="text"
+               placeholder="Ej: 220501046 (identificador único de la competencia)"
+               class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Nombre *</label>
+        <input id="cp_name" type="text"
+               placeholder="Ej: Desarrollar software aplicando metodologías ágiles"
+               class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Descripción</label>
+        <textarea id="cp_desc" rows="3"
+                  placeholder="Ej: Competencia enfocada en el diseño, implementación y documentación de soluciones de software según las necesidades del cliente."
+                  class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none"></textarea>
+      </div>
+
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" id="btnCancelCompetency"
+                class="rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium">
+          Cancelar
+        </button>
+        <button type="submit" id="btnSubmitCompetency"
+                class="rounded-xl px-4 py-2.5 text-sm font-medium bg-[#00324d] text-[#fff]">
+          Guardar
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+
 
   <!-- ===== MODAL: Nuevo RAE ===== -->
   <div id="modalRaeBackdrop" class="hidden fixed inset-0 z-40" style="background:rgba(0,0,0,.4)"></div>
@@ -240,7 +305,7 @@
       <form id="formRaeNew" class="p-6 pt-4 space-y-4">
         <div>
           <label class="block text-sm font-medium mb-1">Competencia *</label>
-          <select id="rae_competency" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm bg-white">
+          <select id="rae_competency" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm bg-white select-nice">
             <option value="">Seleccione una competencia</option>
           </select>
         </div>
@@ -261,7 +326,6 @@
   </section>
 
   <!-- ========= SCRIPTS ========= -->
-  <!-- 1) Script chiquito: pestañas + íconos (no toca Programas) -->
   <script>
     (function(){
       const btns = document.querySelectorAll('[data-tab-btn]');
@@ -278,32 +342,20 @@
         window.lucide?.createIcons();
       }
       btns.forEach(b => b.addEventListener('click', () => activate(b.getAttribute('data-tab-btn'))));
-      // tab inicial: programs (tu JS de funcionalidad cargará la lista)
       activate('programs');
     })();
   </script>
 
-  <!-- 2) Exponer endpoint para gestionProgramas.js -->
   <script>
     window.API_PROGRAMAS     = encodeURI('<?= BASE_URL ?? '' ?>src/controllers/ProgramasController.php');
     window.PROGRAMS_MANAGED_BY_API = true;
-
-    /* NUEVO: endpoint de competencias */
     window.API_COMPETENCIAS  = encodeURI('<?= BASE_URL ?? '' ?>src/controllers/CompetenciaController.php');
-
     window.API_RAES = encodeURI('<?= BASE_URL ?? '' ?>src/controllers/RaeController.php');
   </script>
 
-
-  <!-- 3) Tu JS de funcionalidad (Programas) -->
-<script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionProgramas.js?v=3"></script>
-
-<!-- NUEVO: JS de Competencias -->
-<script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionCompetencias.js?v=1" defer></script>
-
-<script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionRaes.js?v=1" defer></script>
-
-
+  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionProgramas.js?v=3"></script>
+  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionCompetencias.js?v=2" defer></script>
+  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionRaes.js?v=1" defer></script>
 
 </body>
 </html>

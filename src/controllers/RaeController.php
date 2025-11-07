@@ -7,9 +7,18 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../../config/database.php';
 
 // ============================================================
+// COMPATIBILIDAD GET / POST / JSON (mejor opción sin tocar base)
+// ============================================================
+$__RAW = file_get_contents('php://input');
+$__JSON = json_decode($__RAW, true);
+function inreq($k) {
+  global $__JSON;
+  return $_POST[$k] ?? $_GET[$k] ?? ($__JSON[$k] ?? null);
+}
+
+// ============================================================
 // CONTROLADOR RAE - MODO POR ACCIÓN (?accion=...)
 // ============================================================
-
 $accion = $_GET['accion'] ?? '';
 
 try {
@@ -38,8 +47,8 @@ try {
       }
 
       // Filtros opcionales
-      $id_programa    = ($_GET['id_programa'] ?? '') !== 'all' ? trim($_GET['id_programa'] ?? '') : '';
-      $id_competencia = ($_GET['id_competencia'] ?? '') !== 'all' ? trim($_GET['id_competencia'] ?? '') : '';
+      $id_programa    = (inreq('id_programa') ?? '') !== 'all' ? trim((string) inreq('id_programa')) : '';
+      $id_competencia = (inreq('id_competencia') ?? '') !== 'all' ? trim((string) inreq('id_competencia')) : '';
 
       $sql = "
         SELECT r.id_rae, r.descripcion, r.estado,
@@ -71,17 +80,16 @@ try {
 
     // ============================================================
     // CREAR UNA NUEVA RAE
-    // (ahora requiere id_rae, que es tu "código")
     // ============================================================
     case 'crear':
-      if (empty($_GET['id_rae']) || empty($_GET['descripcion']) || empty($_GET['id_competencia'])) {
+      $id_rae         = trim((string) inreq('id_rae'));
+      $descripcion    = trim((string) inreq('descripcion'));
+      $id_competencia = intval(inreq('id_competencia'));
+
+      if ($id_rae === '' || $descripcion === '' || !$id_competencia) {
         echo json_encode(['error' => 'Faltan campos requeridos (id_rae, descripcion, id_competencia)']);
         exit;
       }
-
-      $id_rae        = trim($_GET['id_rae']);
-      $descripcion   = trim($_GET['descripcion']);
-      $id_competencia= intval($_GET['id_competencia']);
 
       // Validar duplicado por id_rae
       $check = $conn->prepare("SELECT COUNT(*) FROM raes WHERE id_rae = ?");
@@ -91,7 +99,7 @@ try {
         exit;
       }
 
-      // También puedes mantener tu validación por descripción+competencia
+      // Validación por descripción+competencia
       $check2 = $conn->prepare("SELECT COUNT(*) FROM raes WHERE descripcion = ? AND id_competencia = ?");
       $check2->execute([$descripcion, $id_competencia]);
       if ($check2->fetchColumn() > 0) {
@@ -109,24 +117,24 @@ try {
     // ACTUALIZAR UNA RAE EXISTENTE
     // ============================================================
     case 'actualizar':
-      if (empty($_GET['id_rae']) || empty($_GET['descripcion']) || empty($_GET['id_competencia'])) {
+      $id_rae         = trim((string) inreq('id_rae'));
+      $descripcion    = trim((string) inreq('descripcion'));
+      $id_competencia = intval(inreq('id_competencia'));
+
+      if ($id_rae === '' || $descripcion === '' || !$id_competencia) {
         echo json_encode(['error' => 'Faltan datos']);
         exit;
       }
 
-      $id            = trim($_GET['id_rae']); // puede ser string si id_rae no es numérico
-      $descripcion   = trim($_GET['descripcion']);
-      $id_competencia= intval($_GET['id_competencia']);
-
       $check = $conn->prepare("SELECT COUNT(*) FROM raes WHERE descripcion = ? AND id_competencia = ? AND id_rae != ?");
-      $check->execute([$descripcion, $id_competencia, $id]);
+      $check->execute([$descripcion, $id_competencia, $id_rae]);
       if ($check->fetchColumn() > 0) {
         echo json_encode(['error' => 'Ya existe una RAE igual en esa competencia']);
         exit;
       }
 
       $stmt = $conn->prepare("UPDATE raes SET descripcion = ?, id_competencia = ? WHERE id_rae = ?");
-      $ok = $stmt->execute([$descripcion, $id_competencia, $id]);
+      $ok = $stmt->execute([$descripcion, $id_competencia, $id_rae]);
 
       echo json_encode(['success' => $ok, 'message' => $ok ? 'RAE actualizada correctamente' : 'Error al actualizar la RAE']);
       break;
@@ -135,16 +143,16 @@ try {
     // INHABILITAR / ACTIVAR RAE
     // ============================================================
     case 'inhabilitar':
-      if (empty($_GET['id_rae']) || !isset($_GET['estado'])) {
+      $id_rae = trim((string) inreq('id_rae'));
+      $estado = intval(inreq('estado'));
+
+      if ($id_rae === '' || ($estado !== 0 && $estado !== 1)) {
         echo json_encode(['error' => 'Faltan parámetros']);
         exit;
       }
 
-      $id = trim($_GET['id_rae']);
-      $estado = intval($_GET['estado']);
-
       $stmt = $conn->prepare("UPDATE raes SET estado = ? WHERE id_rae = ?");
-      $ok = $stmt->execute([$estado, $id]);
+      $ok = $stmt->execute([$estado, $id_rae]);
 
       echo json_encode([
         'success' => $ok,
@@ -163,11 +171,11 @@ try {
       break;
 
     case 'competenciasPorPrograma':
-      if (empty($_GET['id_programa'])) {
+      $idp = trim((string) inreq('id_programa'));
+      if ($idp === '') {
         echo json_encode(['error' => 'id_programa es obligatorio']);
         exit;
       }
-      $idp = trim($_GET['id_programa']);
       $stmt = $conn->prepare("SELECT id_competencia, nombre_competencia FROM competencias WHERE id_programa = ? ORDER BY id_competencia");
       $stmt->execute([$idp]);
       echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
