@@ -13,32 +13,43 @@ if (!window.TRIMESTRALIZACION_INIT) {
       timerProgressBar: true
     });
 
-    // ------- Autocomplete competencias (poblado desde servidor) -------
-    const COMPETENCIAS_API = `${(window.BASE_URL || '')}src/controllers/CompetenciaController.php?accion=listar`;
-    let COMP_CACHE = [];
+// ------- Autocomplete competencias (versión para SELECT) -------
+const COMPETENCIAS_API = `${(window.BASE_URL || '')}src/controllers/CompetenciaController.php?accion=listar`;
+let COMP_CACHE = [];
 
-    async function cargarCompetenciasDatalist() {
-      const datalist = document.getElementById('listaCompetencias');
-      if (!datalist) return;
-      try {
-        const res = await fetch(COMPETENCIAS_API, { cache: 'no-store' });
-        const json = await res.json();
-        const arr = Array.isArray(json) ? json : (Array.isArray(json.data) ? json.data : []);
-        COMP_CACHE = arr;
-        datalist.innerHTML = '';
-        arr.forEach(c => {
-          // opción legible: "id | código | nombre"
-          const label = `${c.id_competencia ?? c.id ?? ''} | ${c.codigo_competencia ?? c.codigo ?? ''} | ${c.nombre_competencia ?? c.nombre ?? c.descripcion ?? ''}`;
-          const opt = document.createElement('option');
-          opt.value = label;
-          opt.dataset.id = c.id_competencia ?? c.id ?? '';
-          datalist.appendChild(opt);
-        });
-      } catch (err) {
-        // silencioso, no rompemos el formulario si falla
-        console.warn("No se pudieron cargar competencias para autocomplete:", err);
-      }
-    }
+async function cargarCompetenciasDatalist() {
+  const select = document.getElementById('descripcion'); // <-- antes era datalist
+  if (!select) return;
+
+  try {
+    const res = await fetch(COMPETENCIAS_API, { cache: 'no-store' });
+    const json = await res.json();
+    const arr = Array.isArray(json) ? json : (Array.isArray(json.data) ? json.data : []);
+    COMP_CACHE = arr;
+
+    // limpiamos pero dejamos el placeholder inicial
+    select.innerHTML = `
+      <option value="">
+        Buscar competencia por código o nombre (opcional para vincular existente)
+      </option>
+    `;
+
+    arr.forEach(c => {
+      const id = c.id_competencia ?? c.id ?? '';
+      const codigo = c.codigo_competencia ?? c.codigo ?? '';
+      const nombre = c.nombre_competencia ?? c.nombre ?? c.descripcion ?? '';
+      const label = `${id} | ${codigo} | ${nombre}`;
+
+      const opt = document.createElement('option');
+      opt.value = id;         // <-- ahora value es el ID REAL
+      opt.textContent = label;
+      select.appendChild(opt);
+    });
+
+  } catch (err) {
+    console.warn("No se pudieron cargar competencias:", err);
+  }
+}
 
     // sincronizar input de autocomplete con hidden id_competencia y textarea descripcion
     (function bindCompetenciaInput(){
