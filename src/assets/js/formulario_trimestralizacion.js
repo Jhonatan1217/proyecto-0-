@@ -13,80 +13,6 @@ if (!window.TRIMESTRALIZACION_INIT) {
       timerProgressBar: true
     });
 
-// ------- Autocomplete competencias (versión para SELECT) -------
-const COMPETENCIAS_API = `${(window.BASE_URL || '')}src/controllers/CompetenciaController.php?accion=listar`;
-let COMP_CACHE = [];
-
-async function cargarCompetenciasDatalist() {
-  const select = document.getElementById('descripcion'); // <-- antes era datalist
-  if (!select) return;
-
-  try {
-    const res = await fetch(COMPETENCIAS_API, { cache: 'no-store' });
-    const json = await res.json();
-    const arr = Array.isArray(json) ? json : (Array.isArray(json.data) ? json.data : []);
-    COMP_CACHE = arr;
-
-    // limpiamos pero dejamos el placeholder inicial
-    select.innerHTML = `
-      <option value="">
-        Buscar competencia por código o nombre (opcional para vincular existente)
-      </option>
-    `;
-
-    arr.forEach(c => {
-      const id = c.id_competencia ?? c.id ?? '';
-      const codigo = c.codigo_competencia ?? c.codigo ?? '';
-      const nombre = c.nombre_competencia ?? c.nombre ?? c.descripcion ?? '';
-      const label = `${id} | ${codigo} | ${nombre}`;
-
-      const opt = document.createElement('option');
-      opt.value = id;         // <-- ahora value es el ID REAL
-      opt.textContent = label;
-      select.appendChild(opt);
-    });
-
-  } catch (err) {
-    console.warn("No se pudieron cargar competencias:", err);
-  }
-}
-
-    // sincronizar input de autocomplete con hidden id_competencia y textarea descripcion
-    (function bindCompetenciaInput(){
-      const inp = document.getElementById('competencia_autocomplete');
-      const hid = document.getElementById('id_competencia_input');
-      const desc = document.getElementById('descripcion');
-      if (!inp || !hid) return;
-      // al escribir/buscar intentamos encontrar coincidencia exacta en datalist
-      inp.addEventListener('input', (e) => {
-        const val = inp.value.trim();
-        hid.value = '';
-        if (!val) return;
-        // buscar en cache por coincidencia exacta en la cadena mostrada o por id al inicio
-        const found = COMP_CACHE.find(c => {
-          const label = `${c.id_competencia ?? c.id ?? ''} | ${c.codigo_competencia ?? c.codigo ?? ''} | ${c.nombre_competencia ?? c.nombre ?? c.descripcion ?? ''}`;
-          return label === val || String(c.id_competencia) === val || (label.toLowerCase() === val.toLowerCase());
-        });
-        if (found) {
-          hid.value = String(found.id_competencia ?? found.id ?? '');
-          // opcional: rellenar la descripción con la descripción existente de la competencia
-          if (desc && (found.descripcion || found.nombre_competencia || found.codigo_competencia)) {
-            desc.value = found.descripcion ?? found.nombre_competencia ?? '';
-          }
-        }
-      });
-      // también al perder foco confirmamos si lo escrito corresponde a alguna opción
-      inp.addEventListener('blur', () => {
-        const val = inp.value.trim();
-        if (!val) { hid.value = ''; return; }
-        const found = COMP_CACHE.find(c => {
-          const label = `${c.id_competencia ?? c.id ?? ''} | ${c.codigo_competencia ?? c.codigo ?? ''} | ${c.nombre_competencia ?? c.nombre ?? c.descripcion ?? ''}`;
-          return label === val || String(c.id_competencia) === val;
-        });
-        if (!found) hid.value = ''; // evitar enviar id inválido
-      });
-    })();
-
     // Selecciona todos los formularios con la clase "trimestralizacion-form"
     document.querySelectorAll(".trimestralizacion-form").forEach((form) => {
 
@@ -114,10 +40,11 @@ async function cargarCompetenciasDatalist() {
         const dia = form.querySelector("[name='dia_semana']").value.trim();
         const horaInicio = form.querySelector("[name='hora_inicio']").value.trim();
         const horaFin = form.querySelector("[name='hora_fin']").value.trim();
-        const descripcion = form.querySelector("[name='descripcion']").value.trim();
+
+        // ahora tomamos el id de la competencia seleccionada
         const id_competencia = form.querySelector("[name='id_competencia']") ? form.querySelector("[name='id_competencia']").value.trim() : "";
 
-        const campos = [zona, nivel, numeroFicha, instructor, dia, horaInicio, horaFin, descripcion];
+        const campos = [zona, nivel, numeroFicha, instructor, dia, horaInicio, horaFin, id_competencia];
         const vacios = campos.filter(v => v === "").length;
 
         // ========== VALIDACIONES ==========
@@ -140,41 +67,70 @@ async function cargarCompetenciasDatalist() {
         if (parseInt(horaFin) <= parseInt(horaInicio))
           return Toast.fire({ icon: "error", title: "La hora de fin debe ser mayor a la de inicio" });
 
+        if (!id_competencia)
+          return Toast.fire({ icon: "warning", title: "Seleccione la competencia" });
+
         // ========== ENVÍO ==========
         const fd = new FormData(form);
 
         // Enviamos también el id_area
         fd.set("area", id_area);
 
-        // Enviamos id_competencia si se seleccionó una existente
-        if (id_competencia) fd.set("id_competencia", id_competencia);
-
+        // Asegurar que id_competencia, id_programa e id_rae se envían explícitamente.
+        // Tomamos la opción seleccionada y copiamos sus data-attributes al FormData.
         try {
-          const resp = await fetch(form.action, {
+          const selOpt = form.querySelector("[name='id_competencia'] option:checked");
+          if (id_competencia) fd.set('id_competencia', id_competencia);
+          const programa = selOpt && selOpt.dataset ? (selOpt.dataset.programa || '') : '';
+          const rae = selOpt && selOpt.dataset ? (selOpt.dataset.rae || '') : '';
+          fd.set('id_programa', programa);
+          fd.set('id_rae', rae);
+        } catch (err) {
+          // No bloquear si algo falla aquí; el servidor hará validaciones.
+          console.warn('No se pudo anexar id_programa/id_rae al FormData', err);
+        }
+
+        // (no hace falta setear descripcion; el servidor ahora recibirá id_competencia)
+        try {
+          const res = await fetch(form.action, {
             method: "POST",
             body: fd,
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+              "Accept": "application/json"
+            },
             credentials: "same-origin"
           });
-          const json = await resp.json();
 
-          if (json && (json.status === "success" || json.success === true)) {
-            Toast.fire({ icon: "success", title: json.mensaje || "Trimestralización creada" });
-            // limpiar form
-            form.reset();
-            // cerrar modal si existe botón de cierre
-            document.getElementById('modalCrearLanding')?.classList.add('hidden');
-          } else {
-            console.error("Respuesta servidor:", json);
-            Toast.fire({ icon: "error", title: json.mensaje || json.error || "Error al crear trimestralización" });
+          const data = await res.json().catch(() => ({}));
+          
+
+          // ---------- ERRORES DEL SERVIDOR ----------
+          if (!res.ok || data.status === "error" || data.error) {
+            const mensaje = data.mensaje || data.error || "Ocurrió un error en el servidor.";
+            return Toast.fire({ icon: "error", title: mensaje });
           }
+
+          // ---------- ÉXITO ----------
+          Toast.fire({ icon: "success", title: "¡Trimestralización creada correctamente!" });
+
+          // Cerrar modal si existe (por ejemplo, en landing)
+          const modal = document.getElementById("modalCrearLanding");
+          if (modal) modal.classList.add("hidden");
+
+          // Redirigir con zona + área
+          const redirect = `index.php?page=src/views/register_tables`;
+          setTimeout(() => window.location.replace(redirect), 1600);
+
         } catch (err) {
-          console.error("Error al enviar formulario:", err);
-          Toast.fire({ icon: "error", title: "Error de conexión al enviar" });
+          console.error("Error de red:", err);
+          Toast.fire({
+            icon: "error",
+            title: "Error de red o respuesta inválida",
+            text: "Verifica tu conexión e intenta de nuevo"
+          });
         }
       });
     });
-
-    // iniciar carga de competencias para autocomplete
-    cargarCompetenciasDatalist();
   });
 }

@@ -6,6 +6,7 @@ $areas = [];
 $zonas = [];
 $instructores = [];
 $trimestres = [];
+$competencias = []; // <-- agregado
 
 try {
     if (isset($conn)) {
@@ -28,6 +29,11 @@ try {
         $s = $conn->prepare("SELECT numero_trimestre, estado FROM trimestre ORDER BY numero_trimestre ASC");
         $s->execute();
         $trimestres = $s->fetchAll(PDO::FETCH_ASSOC);
+
+  // Competencias (columnas reales: id_competencia, nombre_competencia, descripcion, id_programa)
+  $s = $conn->prepare("SELECT id_competencia, nombre_competencia, descripcion, id_programa FROM competencias WHERE estado = 1 ORDER BY nombre_competencia ASC");
+        $s->execute();
+        $competencias = $s->fetchAll(PDO::FETCH_ASSOC);
     }
 } catch (PDOException $e) {
     // No interrumpo la vista si falla la carga, se muestran los selects vacíos
@@ -160,7 +166,7 @@ try {
     </div>
   </div>
 
-  <script>const BASE_URL = "<?= BASE_URL ?>";</script>
+  <script>window.BASE_URL = window.BASE_URL || "<?= BASE_URL ?>";</script>
   <script src="<?= BASE_URL ?>src/assets/js/registerTables.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -284,19 +290,26 @@ try {
                 <?php endfor; ?>
               </select>
             </div>
-            <!-- Autocomplete para vincular competencia existente (id_competencia) -->
-        <div class="relative">
-          <select
-            id="descripcion"
-            name="descripcion"
-            class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
-            <option value="">Buscar competencia por código o nombre (opcional para vincular existente)</option>
-          </select>
 
-          <!-- Hidden que enviará el id_competencia -->
-          <input type="hidden" name="id_competencia" id="id_competencia_input" value="">
-        </div>
+            <!-- CAMBIO: select de COMPETENCIA en lugar de textarea -->
+            <select name="id_competencia" id="id_competencia"
+              class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
+              <option value="">Seleccione la competencia</option>
+                <?php if (empty($competencias)): ?>
+                  <option disabled>No se encontraron competencias activas</option>
+                  <!-- competencias: <?= htmlspecialchars(json_encode($competencias)) ?> -->
+                <?php else: ?>
+                  <?php foreach ($competencias as $comp): ?>
+                    <?php $valueComp = htmlspecialchars($comp['id_competencia']); ?>
+                    <option value="<?= $valueComp ?>" data-desc="<?= htmlspecialchars($comp['descripcion'] ?? '') ?>" data-programa="<?= htmlspecialchars($comp['id_programa'] ?? '') ?>">
+                      <?= htmlspecialchars($comp['nombre_competencia'] ?? $comp['descripcion'] ?? ('Competencia ' . ($comp['id_competencia'] ?? ''))) ?>
+                    </option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
+            </select>
 
+            <input type="hidden" name="id_rae" id="id_rae_field" value="">
+            <input type="hidden" name="id_programa" id="id_programa_field" value="">
             <button type="submit"
               class="w-full h-12 bg-[#0b2d5b] text-white rounded-lg text-sm lg:text-base font-semibold hover:bg-[#082244] transition-colors">
               GUARDAR TRIMESTRALIZACIÓN
@@ -347,6 +360,29 @@ try {
         // Ejecutar una vez al cargar para sincronizar (útil si el formulario se reutiliza)
         document.addEventListener('DOMContentLoaded', filterZonas);
       })();
+    </script>
+    <script>
+      // Copiar atributos data-rae/data-programa desde la opción seleccionada al formulario
+      document.addEventListener('DOMContentLoaded', function () {
+        const form = document.querySelector('#formTrimestralizacion');
+        if (!form) return;
+        const sel = form.querySelector('[name="id_competencia"]');
+        const raeField = form.querySelector('#id_rae_field');
+        const progField = form.querySelector('#id_programa_field');
+
+        function syncCompData() {
+          const opt = sel && sel.selectedOptions && sel.selectedOptions[0];
+          if (!opt) return;
+          if (raeField) raeField.value = opt.dataset.rae || '';
+          if (progField) progField.value = opt.dataset.programa || '';
+        }
+
+        if (sel) {
+          sel.addEventListener('change', syncCompData);
+          // sincronizar al cargar
+          syncCompData();
+        }
+      });
     </script>
 </body>
 </html>
