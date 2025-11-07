@@ -101,7 +101,7 @@
         <div class="flex items-center justify-between flex-wrap gap-4 mb-6">
           <div>
             <h2 class="text-3xl font-bold" style="color:#39a900">Competencias</h2>
-            <p class="text-sm text-zinc-500">Visualice y edite las competencias cargadas desde Excel</p>
+            <p class="text-sm text-zinc-500">Visualice y edite las competencias cargadas</p>
           </div>
           <div class="flex items-center gap-3">
             <select id="competencyProgramFilter" class="w-[260px] border border-zinc-300 rounded-xl px-3 py-2 text-sm select-nice">
@@ -125,7 +125,7 @@
         <div class="flex items-center justify-between flex-wrap gap-4 mb-6">
           <div>
             <h2 class="text-3xl font-bold">Resultados de Aprendizaje Esperados (RAE)</h2>
-            <p class="text-sm text-zinc-500">Visualice y edite los RAE cargados desde Excel</p>
+            <p class="text-sm text-zinc-500">Visualice y edite los RAE cargados</p>
           </div>
           <button class="rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2  bg-[#00324d] text-[#fff]">
             <img src="src/assets/img/plus.svg" class="w-4 h-4"></i> Nuevo RAE
