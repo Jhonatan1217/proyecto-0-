@@ -1,9 +1,11 @@
 /* src/assets/js/gestionarInstructor.js */
 (() => {
+  // URL base del controlador. Si existe window.API_URL la usa; si no, cae al PHP por defecto.
   const API_URL = (typeof window !== "undefined" && window.API_URL)
     ? window.API_URL
     : "../controllers/InstructorController.php";
 
+  // Atajo para querySelector y referencias a elementos del DOM usados en la vista
   const $ = (s, c = document) => c.querySelector(s);
   const modal = $("#modalInstructor");
   const backdrop = $("#modalBackdrop");
@@ -15,6 +17,7 @@
   const tbody = $("#tbodyInstructores");
   const wrapTabla = document.getElementById("wrapTabla");
 
+  // Toast simple: prioriza SweetAlert si está disponible; si no, usa alert como respaldo
   function toast(msg, type = "success") {
     if (window.Swal) {
       Swal.fire({ toast:true, position:"top-end", icon:type, title:msg, showConfirmButton:false, timer:2200, timerProgressBar:true });
@@ -24,6 +27,7 @@
   }
 
   // ===== Modal =====
+  // Abre el modal con una pequeña animación basada en clases utilitarias
   function openModal() {
     modal.classList.remove("hidden");
     requestAnimationFrame(() => {
@@ -31,18 +35,21 @@
       panel.classList.remove("opacity-0","scale-95","translate-y-2");
     });
   }
+  // Cierra el modal y limpia el formulario para el próximo uso
   function closeModal() {
     form?.reset();
     backdrop.classList.add("opacity-0");
     panel.classList.add("opacity-0","scale-95","translate-y-2");
     setTimeout(() => modal.classList.add("hidden"), 180);
   }
+  // Bind de botones y cierre por clic fuera del panel
   btnOpen?.addEventListener("click", openModal);
   btnClose?.addEventListener("click", closeModal);
   btnCancel?.addEventListener("click", closeModal);
   backdrop?.addEventListener("click", (e) => { if (e.target === backdrop) closeModal(); });
 
   // ===== API =====
+  // Intenta parsear JSON; si la API devolvió HTML/errores, lanza una excepción legible
   async function parseJsonOrThrow(res) {
     const txt = await res.text();
     try { return JSON.parse(txt); }
@@ -53,11 +60,13 @@
       throw new Error(msg);
     }
   }
+  // GET con querystring para acciones de lectura
   async function apiGet(params) {
     const url = `${API_URL}?${new URLSearchParams(params).toString()}`;
     const res = await fetch(url, { headers:{Accept:"application/json"}, credentials:"same-origin" });
     return parseJsonOrThrow(res);
   }
+  // POST JSON para crear/actualizar/cambiar estado
   async function apiPost(accion, payload) {
     const url = `${API_URL}?accion=${encodeURIComponent(accion)}`;
     const res = await fetch(url, {
@@ -70,6 +79,7 @@
   }
 
   // ===== Helpers UI =====
+  // Normaliza y muestra el tipo con la capitalización esperada en la UI
   function prettyTipo(t) {
     const u = (t || "").toString().toUpperCase();
     if (u === "TECNICO") return "Tecnico";
@@ -77,12 +87,14 @@
     if (u === "MIXTO") return "Mixto";
     return t;
   }
+  // Chip visual para el tipo; usa clases neutras y resalta MIXTO
   function tipoPill(tipo) {
     const u = (tipo || "").toString().toUpperCase();
     const klass = (u === "MIXTO") ? "bg-black text-white" : "bg-gray-100 text-gray-700";
     return `<span class="${klass} text-xs px-3 py-1 rounded-full">${prettyTipo(u)}</span>`;
   }
 
+  // Dibuja filas de la tabla; contempla respuestas vacías o inesperadas
   function renderRows(lista) {
     if (!Array.isArray(lista)) {
       tbody.innerHTML = `<tr><td class="px-6 py-6 text-red-600" colspan="3">Respuesta inesperada del servidor.</td></tr>`;
@@ -121,12 +133,14 @@
     ajustarAltoTabla(); // fija altura para 5 filas
   }
 
+  // La API puede devolver data con distintas llaves; aquí unificamos
   function extraerLista(res) {
     if (Array.isArray(res)) return res;
     if (res?.error) throw new Error(res.error);
     return res?.data || res?.lista || res?.rows || res?.instructores || [];
   }
 
+  // Carga el listado y maneja errores visibles para el usuario
   async function cargarInstructores() {
     try {
       const res = await apiGet({ accion: "listar" });
@@ -140,6 +154,7 @@
   }
 
   // ===== Crear (con bloqueo de navegación) =====
+  // Envío del formulario en AJAX con validación mínima
   form?.addEventListener("submit", async (e) => {
     e.preventDefault();           // bloquea envío nativo
     e.stopPropagation();
@@ -167,6 +182,7 @@
   });
 
   // ===== Editar en línea / Guardar / Cancelar =====
+  // Maneja edición inline con reemplazo temporal de celdas por inputs/select
   tbody?.addEventListener("click", async (e) => {
     const row = e.target.closest("tr[data-id]");
     if (!row) return;
@@ -206,11 +222,13 @@
         <button class="btn-cancelar inline-flex items-center gap-2 px-5 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition" type="button">Cancelar</button>
       `;
 
+      // Restituye la fila si el usuario cancela la edición
       acciones.querySelector(".btn-cancelar").addEventListener("click", async () => {
         row.classList.remove("editando");
         await cargarInstructores();
       });
 
+      // Valida cambios y envía actualización si hay diferencias
       acciones.querySelector(".btn-guardar").addEventListener("click", async () => {
         const nombreNuevo = row.querySelector('input[data-edit="nombre"]').value.trim();
         const tipoNuevo = row.querySelector('select[data-edit="tipo"]').value.trim();
@@ -235,6 +253,7 @@
   });
 
   // ===== Cambiar estado =====
+  // Toggle del switch; si la API falla, se revierte el cambio visual
   tbody?.addEventListener("change", async (e) => {
     const sw = e.target.closest(".switch-estado");
     if (!sw) return;
@@ -253,6 +272,7 @@
   });
 
   // ===== Scroll interno: 5 filas visibles =====
+  // Calcula una altura máxima para mostrar ~5 filas con cabecera
   function ajustarAltoTabla() {
     if (!wrapTabla) return;
     const thead = document.querySelector("#tablaInstructores thead");
@@ -264,7 +284,7 @@
   }
   window.addEventListener("resize", ajustarAltoTabla);
 
-  // Init
+  // Init: carga inicial y ajuste de altura
   document.addEventListener("DOMContentLoaded", async () => {
     await cargarInstructores();
     ajustarAltoTabla();

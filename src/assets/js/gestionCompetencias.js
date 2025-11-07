@@ -1,30 +1,24 @@
 // src/assets/js/gestionCompetencias.js
 (function () {
-  // ===============================
-  // CONFIG (usa LOS ENDPOINTS que expones en tu PHP)
-  // ===============================
+  // CONFIG: puntos finales y rutas usadas por el módulo
   const BASE = (window.BASE_URL || '').replace(/\/+$/, '');
   const API_COMP = (window.API_COMPETENCIAS || (BASE + 'src/controllers/CompetenciaController.php')).replace(/\/+$/, '');
   const API_PROG = (window.API_PROGRAMAS     || (BASE + 'src/controllers/ProgramasController.php')).replace(/\/+$/, '');
   const API_RAE  = (window.API_RAES          || (BASE + 'src/controllers/RaeController.php')).replace(/\/+$/, '');
 
-  // Rutas de íconos (usaremos <img>, no lucide)
+  // Iconos
   const ICON_DOWN   = `${BASE}src/assets/img/chevron-down.svg`;
   const ICON_RIGHT  = `${BASE}src/assets/img/chevron-right.svg`;
   const ICON_PENCIL = `${BASE}src/assets/img/pencil-line.svg`;
   const ICON_PLUS   = `${BASE}src/assets/img/plus.svg`;
   const ICON_LIST   = `${BASE}src/assets/img/list-checks.svg`;
 
-  // RAEs cerrados por defecto
   const INITIAL_RAES_OPEN = false;
 
-  // Carga solo en la pestaña de Competencias
   const tab = document.querySelector('[data-tab="competencies"]');
   if (!tab) return;
 
-  // ===============================
   // SELECTORES
-  // ===============================
   const list          = document.getElementById('competenciesList');
   const emptyBox      = document.getElementById('competenciesEmpty');
   const btnNew        = document.getElementById('btnNewCompetency');
@@ -34,18 +28,19 @@
   const backdrop  = document.getElementById('modalCompetencyBackdrop');
   const form      = document.getElementById('formCompetencyNew');
 
+  // Inputs modal
   const selProg   = document.getElementById('cp_program');
-  const inpCode   = document.getElementById('cp_code'); // lo usas como id_competencia
+  const inpCode   = document.getElementById('cp_code'); // id_competencia
   const inpName   = document.getElementById('cp_name');
   const inpDesc   = document.getElementById('cp_desc');
 
-  // Para animación / título
+  // Botón submit del formulario (para deshabilitarlo si hay duplicado)
+  const btnSubmit = form ? (form.querySelector('[type="submit"]') || form.querySelector('button[type="submit"]')) : null;
+
   const modalCard = modal?.querySelector('.modal-card');
   const titleComp = document.getElementById('titleCompetency');
 
-  // ===============================
-  // TOASTS (SweetAlert2)
-  // ===============================
+  // Toasts
   const Toast = (window.Swal ? Swal.mixin({
     toast: true,
     position: 'top-end',
@@ -53,7 +48,6 @@
     timer: 2200,
     timerProgressBar: true
   }) : null);
-
   const t = {
     ok:   (m) => Toast && Toast.fire({ icon: 'success', title: m || 'Operación exitosa' }),
     info: (m) => Toast && Toast.fire({ icon: 'info',    title: m || 'Información' }),
@@ -61,22 +55,61 @@
     err:  (m) => Toast && Toast.fire({ icon: 'error',   title: m || 'Ocurrió un error' })
   };
 
-  // ===============================
   // ESTADO
-  // ===============================
-  let PROGRAMS = [];     // [{id_programa, nombre_programa, ...}] o variantes
-  let ITEMS = [];        // competencias normalizadas
-  let RAE_MAP = {};      // { id_competencia: [ {codigo, nombre} ] }
+  let PROGRAMS = [];
+  let ITEMS = [];
+  let RAE_MAP = {};
   let editingId = null;
-  let editingSnap = null; // snapshot original para comparar cambios
+  let editingSnap = null;
 
-  // ===============================
+  // ====== NUEVO: soporte UI/validación de duplicados ======
+  let codeDupHelperEl = null; // pequeño texto de ayuda bajo el input
+  function ensureCodeHelper() {
+    if (!inpCode || codeDupHelperEl) return;
+    codeDupHelperEl = document.createElement('p');
+    codeDupHelperEl.className = 'mt-1 text-xs text-red-600 hidden';
+    codeDupHelperEl.textContent = 'Este código ya existe. Elige uno diferente.';
+    inpCode.parentElement?.appendChild(codeDupHelperEl);
+  }
+  function setSubmitDisabled(disabled) {
+    if (!btnSubmit) return;
+    btnSubmit.disabled = !!disabled;
+    if (disabled) {
+      btnSubmit.classList.add('opacity-60', 'pointer-events-none', 'cursor-not-allowed');
+    } else {
+      btnSubmit.classList.remove('opacity-60', 'pointer-events-none', 'cursor-not-allowed');
+    }
+  }
+  function setCodeDuplicateUI(isDup) {
+    ensureCodeHelper();
+    if (!inpCode) return;
+    if (isDup) {
+      inpCode.classList.add('ring-2', 'ring-red-500', 'focus:ring-red-500', 'bg-red-50');
+      codeDupHelperEl?.classList.remove('hidden');
+      setSubmitDisabled(true);
+    } else {
+      inpCode.classList.remove('ring-2', 'ring-red-500', 'focus:ring-red-500', 'bg-red-50');
+      codeDupHelperEl?.classList.add('hidden');
+      setSubmitDisabled(false);
+    }
+  }
+  function norm(v) { return String(v ?? '').trim().toLowerCase(); }
+  function codeExists(code, excludeId = null) {
+    const codeN = norm(code);
+    return ITEMS.some(c => {
+      const sameCode = norm(c.code) === codeN;
+      if (!sameCode) return false;
+      // Excluir el propio registro cuando estamos editando
+      if (excludeId != null && String(c.id) === String(excludeId)) return false;
+      return true;
+    });
+  }
+  // ========================================================
+
   // UTILS
-  // ===============================
   const e = (s) => String(s ?? '')
     .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
     .replaceAll('"','&quot;').replaceAll("'","&#039;");
-
   const show = (el) => el?.classList.remove('hidden');
   const hide = (el) => el?.classList.add('hidden');
 
@@ -95,7 +128,6 @@
     return r.json();
   };
 
-  // tolerancia de nombres (no rompemos tu backend)
   const mapCompetencia = (raw) => ({
     id:          raw.id_competencia ?? raw.id ?? raw.codigo ?? null,
     program_id:  raw.id_programa ?? raw.program_id ?? raw.programa_id ?? raw.programa ?? null,
@@ -115,56 +147,46 @@
     return p?.nombre_programa || p?.name || p?.nombre || '—';
   };
 
-  // ===============================
   // CARGAS
-  // ===============================
-// ===============================
-// CARGAS
-// ===============================
-async function loadPrograms({ preserveSelection = true } = {}) {
-  try {
-    // Guarda selección actual (si aplica)
-    const prevFilterValue = preserveSelection && filterProgram ? filterProgram.value : null;
-    const prevSelProg     = preserveSelection && selProg       ? selProg.value       : null;
+  async function loadPrograms({ preserveSelection = true } = {}) {
+    try {
+      const prevFilterValue = preserveSelection && filterProgram ? filterProgram.value : null;
+      const prevSelProg     = preserveSelection && selProg       ? selProg.value       : null;
 
-    const res = await apiGet(`${API_PROG}?accion=listar`);
-    PROGRAMS = Array.isArray(res) ? res : (res?.data || []);
+      const res = await apiGet(`${API_PROG}?accion=listar`);
+      PROGRAMS = Array.isArray(res) ? res : (res?.data || []);
 
-    // Limpia opciones manteniendo los placeholders
-    if (filterProgram) filterProgram.querySelectorAll('option:not([value="all"])').forEach(o => o.remove());
-    if (selProg)       selProg.querySelectorAll('option:not([value=""])').forEach(o => o.remove());
+      if (filterProgram) filterProgram.querySelectorAll('option:not([value="all"])').forEach(o => o.remove());
+      if (selProg)       selProg.querySelectorAll('option:not([value=""])').forEach(o => o.remove());
 
-    // Repuebla
-    PROGRAMS.forEach(p => {
-      const id   = String(p.id ?? p.id_programa ?? p.programa_id ?? '');
-      const name = p.nombre_programa ?? p.name ?? p.nombre ?? `Programa ${id}`;
-      if (filterProgram) {
-        const opt = document.createElement('option');
-        opt.value = id; opt.textContent = name;
-        filterProgram.appendChild(opt);
+      PROGRAMS.forEach(p => {
+        const id   = String(p.id ?? p.id_programa ?? p.programa_id ?? '');
+        const name = p.nombre_programa ?? p.name ?? p.nombre ?? `Programa ${id}`;
+        if (filterProgram) {
+          const opt = document.createElement('option');
+          opt.value = id; opt.textContent = name;
+          filterProgram.appendChild(opt);
+        }
+        if (selProg) {
+          const opt = document.createElement('option');
+          opt.value = id; opt.textContent = name;
+          selProg.appendChild(opt);
+        }
+      });
+
+      if (preserveSelection && filterProgram) {
+        const exists = Array.from(filterProgram.options).some(o => o.value === prevFilterValue);
+        filterProgram.value = exists ? prevFilterValue : 'all';
       }
-      if (selProg) {
-        const opt = document.createElement('option');
-        opt.value = id; opt.textContent = name;
-        selProg.appendChild(opt);
+      if (preserveSelection && selProg) {
+        const exists = Array.from(selProg.options).some(o => o.value === prevSelProg);
+        selProg.value = exists ? prevSelProg : '';
       }
-    });
-
-    // Restaura selección si sigue existiendo (NO auto-rellena con el recién creado)
-    if (preserveSelection && filterProgram) {
-      const exists = Array.from(filterProgram.options).some(o => o.value === prevFilterValue);
-      filterProgram.value = exists ? prevFilterValue : 'all';
+    } catch (err) {
+      console.error('[Competencias] loadPrograms:', err);
+      t.err('No se pudieron cargar los programas');
     }
-    if (preserveSelection && selProg) {
-      const exists = Array.from(selProg.options).some(o => o.value === prevSelProg);
-      selProg.value = exists ? prevSelProg : '';
-    }
-  } catch (err) {
-    console.error('[Competencias] loadPrograms:', err);
-    t.err('No se pudieron cargar los programas');
   }
-}
-
 
   async function loadCompetencias() {
     try {
@@ -185,63 +207,44 @@ async function loadPrograms({ preserveSelection = true } = {}) {
       const res = await apiGet(`${API_RAE}?accion=listar`);
       const arr = Array.isArray(res) ? res : (res?.data || []);
       RAE_MAP = {};
-
       arr.forEach(r => {
         const idc = String(r.id_competencia ?? r.competencia_id ?? r.idCompetencia ?? '');
         if (!idc) return;
-
         const codigo = [
           r.codigo_rae, r.codigoRAE, r.codigo, r.id_rae, r.idRAE, r.clave, r.ref
         ].find(v => (v ?? '') !== '') ?? '';
-
         const nombre = [
           r.nombre_rae, r.nombreRAE, r.nombre, r.titulo, r.texto,
           r.descripcion_rae, r.descripcionRAE, r.descripcion, r.detalle
         ].find(v => (v ?? '') !== '') ?? '';
-
         const cod = String(codigo ?? '').trim();
         const nom = String(nombre ?? '').trim();
-
         (RAE_MAP[idc] ||= []).push({
           codigo: cod || '—',
           nombre: nom || '—'
         });
       });
-
       renderList();
     } catch (_e) {
       RAE_MAP = {};
-      // sin toast aquí para no molestar si no hay RAEs
     }
   }
 
-  // ===============================
   // RENDER
-  // ===============================
-  // === Badge de estado con colores exactos (#39a900 activo, gris claro inhabilitado)
-function statusChip(estado) {
-  if (Number(estado) === 1) {
-    // Activo -> verde exacto
+  function statusChip(estado) {
+    if (Number(estado) === 1) {
+      return `
+        <span
+          class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full"
+          style="background:#eaf7e6;border:1px solid rgba(57,169,0,.22);color:#39a900"
+        >Activo</span>`;
+    }
     return `
       <span
         class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full"
-        style="background:#eaf7e6;border:1px solid rgba(57,169,0,.22);color:#39a900"
-      >
-        Activo
-      </span>
-    `;
+        style="background:#f3f4f6;border:1px solid #e5e7eb;color:#6b7280"
+      >Inhabilitado</span>`;
   }
-  // Inhabilitado -> gris claro
-  return `
-    <span
-      class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full"
-      style="background:#f3f4f6;border:1px solid #e5e7eb;color:#6b7280"
-    >
-      Inhabilitado
-    </span>
-  `;
-}
-
 
   function raeCountPill(count) {
     return `
@@ -294,12 +297,9 @@ function statusChip(estado) {
       return String(c.program_id) === String(pf);
     });
 
-    // Limpia el grid de tarjetas SIEMPRE
     list.innerHTML = '';
 
-    // --- Caso A: NO hay NINGUNA competencia en DB ---
     if (!ITEMS.length) {
-      // emptyBox actúa como el panel con borde
       if (emptyBox) {
         show(emptyBox);
         emptyBox.innerHTML = `
@@ -322,7 +322,6 @@ function statusChip(estado) {
       return;
     }
 
-    // --- Caso B: SÍ hay competencias, pero el FILTRO no devuelve ninguna ---
     if (!data.length) {
       if (emptyBox) {
         show(emptyBox);
@@ -339,9 +338,7 @@ function statusChip(estado) {
       return;
     }
 
-    // --- Caso C: hay resultados para renderizar ---
     if (emptyBox) {
-      // oculta el panel vacío y limpia su contenido por si venía de A/B
       emptyBox.innerHTML = '';
       hide(emptyBox);
     }
@@ -402,7 +399,6 @@ function statusChip(estado) {
       list.appendChild(card);
     });
 
-    // Listeners de acciones luego del render
     list.querySelectorAll('.btn-edit').forEach(b => b.addEventListener('click', onEditClick));
     list.querySelectorAll('.switch').forEach(sw => {
       paintSwitch(sw);
@@ -427,9 +423,7 @@ function statusChip(estado) {
     list.querySelectorAll('.btn-collapse').forEach(b => b.addEventListener('click', onCollapseClick));
   }
 
-  // ===============================
   // EVENTS
-  // ===============================
   btnNew?.addEventListener('click', () => {
     editingId = null;
     editingSnap = null;
@@ -441,6 +435,7 @@ function statusChip(estado) {
       inpCode.removeAttribute('readonly');
       inpCode.classList.remove('bg-zinc-50');
       inpCode.value = '';
+      setCodeDuplicateUI(false); // limpiar estado duplicado
     }
     if (selProg) selProg.value = '';
     if (inpName) inpName.value = '';
@@ -465,12 +460,8 @@ function statusChip(estado) {
     btn.setAttribute('aria-expanded', String(!expanded));
     panel.classList.toggle('hidden', expanded);
 
-    // Cambiar imagen (no lucide)
     const img = btn.querySelector('img');
-    if (img) {
-      img.src = expanded ? ICON_RIGHT : ICON_DOWN;
-    }
-
+    if (img) img.src = expanded ? ICON_RIGHT : ICON_DOWN;
     btn.title = expanded ? 'Mostrar RAEs' : 'Ocultar RAEs';
   }
 
@@ -498,16 +489,13 @@ function statusChip(estado) {
     if (inpCode) {
       inpCode.removeAttribute('readonly');
       inpCode.classList.remove('bg-zinc-50');
+      setCodeDuplicateUI(false);
     }
   }
 
   async function onEditClick(e) {
     const id = e.currentTarget.getAttribute('data-id');
-
-    // Busca en memoria
     let item = ITEMS.find(x => String(x.id) === String(id));
-
-    // Si faltan datos, pide al backend (acepta varias formas)
     if (!item || !item.name || !item.program_id) {
       try {
         const raw =
@@ -518,11 +506,7 @@ function statusChip(estado) {
         }
       } catch (_) {}
     }
-
-    if (!item) {
-      t.err('No fue posible cargar la competencia');
-      return;
-    }
+    if (!item) { t.err('No fue posible cargar la competencia'); return; }
 
     editingId = item.id;
     editingSnap = {
@@ -532,7 +516,6 @@ function statusChip(estado) {
       desc: String(item.desc ?? '')
     };
 
-    // Programa seleccionado (valida que exista en options)
     if (selProg) {
       const target = String(item.program_id ?? '');
       const exists = Array.from(selProg.options).some(o => String(o.value) === target);
@@ -541,8 +524,10 @@ function statusChip(estado) {
 
     if (inpCode) {
       inpCode.value = item.code || '';
-      inpCode.removeAttribute('readonly'); // editable
+      inpCode.removeAttribute('readonly');
       inpCode.classList.remove('bg-zinc-50');
+      // Al abrir en edición, marcar duplicado si cambia el código respecto al original:
+      setCodeDuplicateUI(false);
     }
     if (inpName) inpName.value = item.name || '';
     if (inpDesc) inpDesc.value = item.desc || '';
@@ -552,35 +537,56 @@ function statusChip(estado) {
     openModal(true);
   }
 
-  // ===============================
-  // GUARDAR (Crear / Actualizar)
-  // ===============================
+  // ====== NUEVO: validación en vivo de código duplicado ======
+  let codeCheckTimer = null;
+  inpCode?.addEventListener('input', () => {
+    clearTimeout(codeCheckTimer);
+    const val = (inpCode.value || '').trim();
+    // pequeño debounce para no recalcular en cada tecla
+    codeCheckTimer = setTimeout(() => {
+      const isDup = val ? codeExists(val, editingId) : false;
+      setCodeDuplicateUI(isDup);
+    }, 120);
+  });
+  inpCode?.addEventListener('blur', () => {
+    const val = (inpCode.value || '').trim();
+    const isDup = val ? codeExists(val, editingId) : false;
+    setCodeDuplicateUI(isDup);
+  });
+  // ===========================================================
+
+  // GUARDAR
   form?.addEventListener('submit', async (ev) => {
     ev.preventDefault();
 
     const isEditing  = !!editingId;
     const newCode    = (inpCode?.value || '').trim();
     const payload = {
-      id_competencia: isEditing ? String(editingId) : newCode,   // id actual (clave)
-      codigo_competencia: newCode,                                // posible nuevo código
+      id_competencia: isEditing ? String(editingId) : newCode,
+      codigo_competencia: newCode,
       nombre_competencia: (inpName?.value || '').trim(),
       descripcion: (inpDesc?.value || '').trim(),
       id_programa: (selProg?.value || '').trim() || null
     };
 
-    // === Validación: todos los campos vacíos ===
+    // Validación mínima
     if (!payload.codigo_competencia && !payload.nombre_competencia && !payload.descripcion && !payload.id_programa) {
-      t.warn('Todos los campos son obligatorios');
-      return;
+      t.warn('Todos los campos son obligatorios'); return;
     }
-
-    // === Validaciones ===
     if (!payload.nombre_competencia) { t.warn('El nombre es obligatorio'); return; }
     if (!isEditing && !payload.codigo_competencia) { t.warn('El código es obligatorio'); return; }
     if (!isEditing && !payload.id_programa) { t.warn('Seleccione un programa'); return; }
     if (!isEditing && !payload.descripcion) { t.warn('La descripción es obligatoria'); return; }
 
-    // Validación "no cambiaste nada" al EDITAR
+    // ====== NUEVO: validación de duplicado al enviar ======
+    const dupNow = newCode ? codeExists(newCode, isEditing ? editingId : null) : false;
+    if (dupNow) {
+      setCodeDuplicateUI(true);
+      t.err('El código ya existe. Por favor, ingresa uno diferente.');
+      return;
+    }
+    // =====================================================
+
     if (isEditing && editingSnap) {
       const changed =
         String(payload.codigo_competencia) !== editingSnap.code ||
@@ -593,7 +599,6 @@ function statusChip(estado) {
 
     try {
       if (isEditing) {
-        // por si el controller usa nuevo_id_competencia
         payload.nuevo_id_competencia = newCode;
         const res = await apiJson(`${API_COMP}?accion=actualizar`, payload);
         if (res?.error) throw new Error(res.error);
@@ -612,50 +617,35 @@ function statusChip(estado) {
     }
   });
 
+  // ESCUCHAR cambios externos
+  window.addEventListener('raes:changed', async (_ev) => {
+    await tryLoadRaeMap();
+    renderList();
+  });
 
-// ===============================
-// 🔔 ESCUCHAR CAMBIOS DE RAEs (CREADOS/EDITADOS)
-// ===============================
-window.addEventListener('raes:changed', async (_ev) => {
-  // Recarga el mapa de RAEs y repinta la lista respetando los filtros actuales
-  await tryLoadRaeMap();
-  renderList();
-});
-
-
-// ===============================
-// ✅ NUEVO: ESCUCHAR CAMBIOS DE PROGRAMAS (sin recargar la página)
-// ===============================
-function isModalOpen() {
-  return modal && !modal.classList.contains('hidden') && !backdrop?.classList.contains('hidden');
-}
-
-window.addEventListener('programs:changed', async (ev) => {
-  const type = ev?.detail?.type || '';
-  const prog = ev?.detail?.program || {};
-  const pid  = String(prog.id_programa ?? prog.id ?? '');
-
-  // 1) Recarga ambos selects (filtro y modal) preservando selección actual
-  await loadPrograms({ preserveSelection: true });
-
-  // 2) Si el modal está abierto y estamos creando, preselecciona el nuevo programa
-  if (type === 'create' && isModalOpen() && !editingId && pid && selProg) {
-    const has = Array.from(selProg.options).some(o => String(o.value) === pid);
-    if (has) selProg.value = pid;
+  function isModalOpen() {
+    return modal && !modal.classList.contains('hidden') && !backdrop?.classList.contains('hidden');
   }
 
-  // 3) Re-pinta lista por si cambió el nombre del programa (afecta chips)
-  renderList();
-});
+  window.addEventListener('programs:changed', async (ev) => {
+    const type = ev?.detail?.type || '';
+    const prog = ev?.detail?.program || {};
+    const pid  = String(prog.id_programa ?? prog.id ?? '');
 
+    await loadPrograms({ preserveSelection: true });
 
-  // ===============================
+    if (type === 'create' && isModalOpen() && !editingId && pid && selProg) {
+      const has = Array.from(selProg.options).some(o => String(o.value) === pid);
+      if (has) selProg.value = pid;
+    }
+
+    renderList();
+  });
+
   // INIT
-  // ===============================
   (async function init(){
     await loadPrograms({ preserveSelection: true });
     await loadCompetencias();
     await tryLoadRaeMap();
   })();
-
 })();

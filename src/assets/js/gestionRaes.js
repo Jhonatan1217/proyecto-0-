@@ -1,7 +1,7 @@
-// src/assets/js/gestionRaes.js
+
 (function () {
   const section = document.querySelector('section[data-tab="raes"]');
-  if (!section) return;
+  if (!section) return; // Si no existe la pestaña RAEs, no ejecuta nada
 
   // ==== Endpoints ====
   const API_RAES = (window.API_RAES || (window.BASE_URL || '') + 'src/controllers/RaeController.php').replace(/\/+$/, '');
@@ -19,7 +19,7 @@
   const modal     = document.getElementById('modalRae');
   const backdrop  = document.getElementById('modalRaeBackdrop');
   const btnNew    = Array.from(section.querySelectorAll('button'))
-                     .find(b => (b.textContent || '').toLowerCase().includes('nuevo rae'));
+                           .find(b => (b.textContent || '').toLowerCase().includes('nuevo rae'));
   const btnClose  = document.getElementById('btnCloseRae');
   const btnCancel = document.getElementById('btnCancelRae');
   const form      = document.getElementById('formRaeNew');
@@ -69,24 +69,30 @@
       .replaceAll("'","&#039;");
   }
 
-  // ==== SweetAlert2 ====
+  // ==== SweetAlert2 (SOLO TOASTS) ====
   const Toast = (window.Swal ? Swal.mixin({
     toast: true,
     position: 'top-end',
     showConfirmButton: false,
-    timer: 2200,
-    timerProgressBar: true
+    timer: 2300,
+    timerProgressBar: true,
+    background: '#fff',
+    color: '#111',
+    didOpen: (t) => {
+      t.addEventListener('mouseenter', Swal.stopTimer);
+      t.addEventListener('mouseleave', Swal.resumeTimer);
+    }
   }) : null);
-
-  const alertInfo  = (t,m) => window.Swal?.fire({icon:'info', title:t||'Información', text:m||''});
-  const alertWarn  = (t,m) => window.Swal?.fire({icon:'warning', title:t||'Revisa los datos', text:m||''});
-  const alertErr   = (t,m) => window.Swal?.fire({icon:'error', title:t||'Ocurrió un error', text:m||''});
-  const alertOk    = (t,m) => window.Swal?.fire({icon:'success', title:t||'Listo', text:m||''});
-  const toastOk    = (m)   => Toast && Toast.fire({icon:'success', title:m||'Operación exitosa'});
+  const toast = {
+    ok:   (m) => Toast && Toast.fire({ icon: 'success', title: m || 'Operación exitosa' }),
+    warn: (m) => Toast && Toast.fire({ icon: 'warning', title: m || 'Revisa los datos' }),
+    err:  (m) => Toast && Toast.fire({ icon: 'error',   title: m || 'Ocurrió un error' }),
+    info: (m) => Toast && Toast.fire({ icon: 'info',    title: m || 'Información' })
+  };
 
   // ==== Cargar Programas para filtros y modal ====
   async function loadPrograms() {
-    const data = await fetchJSON(`${API_RAES}?accion=programas`);
+    const data  = await fetchJSON(`${API_RAES}?accion=programas`);
     const progs = Array.isArray(data) ? data : (data.data || []);
 
     // Filtro de programas
@@ -129,18 +135,18 @@
       return;
     }
 
-    const data = await fetchJSON(`${API_RAES}?accion=competenciasPorPrograma&${q({id_programa: programId})}`);
+    const data  = await fetchJSON(`${API_RAES}?accion=competenciasPorPrograma&${q({id_programa: programId})}`);
     const comps = Array.isArray(data) ? data : (data.data || []);
 
     const current = targetSelect.value || '';
     targetSelect.innerHTML = targetSelect === selCompFilter
-      ? `<option value="all">Todas las competencias</option>`
-      : `<option value="">Seleccione una competencia</option>`;
+      ? `<option value=\"all\">Todas las competencias</option>`
+      : `<option value=\"\">Seleccione una competencia</option>`;
 
     for (const c of comps) {
       const opt = document.createElement('option');
       opt.value = String(c.id_competencia);
-      opt.textContent = targetSelect === selCompFilter || !withNames
+      opt.textContent = (targetSelect === selCompFilter || !withNames)
         ? String(c.id_competencia)
         : `${c.id_competencia} – ${c.nombre_competencia}`;
       targetSelect.appendChild(opt);
@@ -149,14 +155,15 @@
     if (exists) targetSelect.value = current;
   }
 
-function statusChipRAE(estado) {
-  const on = Number(estado) === 1;
-  return on
-    ? '<span class="text-xs px-2 py-1 rounded-full" style="background:#eaf7e6;border:1px solid rgba(57,169,0,.22);color:#39a900">Activo</span>'
-    : '<span class="text-xs px-2 py-1 rounded-full" style="background:#f3f4f6;border:1px solid #e5e7eb;color:#6b7280">Inactivo</span>';
-}
+  // Badge de estado para cada RAE
+  function statusChipRAE(estado) {
+    const on = Number(estado) === 1;
+    return on
+      ? '<span class="text-xs px-2 py-1 rounded-full" style="background:#eaf7e6;border:1px solid rgba(57,169,0,.22);color:#39a900">Activo</span>'
+      : '<span class="text-xs px-2 py-1 rounded-full" style="background:#f3f4f6;border:1px solid #e5e7eb;color:#6b7280">Inactivo</span>';
+  }
 
-
+  // Switch accesible para activar/inhabilitar RAEs
   function renderSwitchRae(id, estado) {
     const on = Number(estado) === 1;
     return `
@@ -167,6 +174,7 @@ function statusChipRAE(estado) {
     `;
   }
 
+  // Pinta el aspecto del switch según su estado (color de fondo)
   function paintSwitchRae(el){
     try {
       const input = el.querySelector('input');
@@ -176,6 +184,7 @@ function statusChipRAE(estado) {
     } catch {}
   }
 
+  // Obtiene el primer valor disponible entre varias claves posibles
   function pick(obj, arr, fallback=''){
     for (const k of arr){ if (obj && obj[k] != null && obj[k] !== '') return obj[k]; }
     return fallback;
@@ -186,7 +195,7 @@ function statusChipRAE(estado) {
     const id_programa    = selProgFilter?.value || 'all';
     const id_competencia = selCompFilter?.value || 'all';
 
-    const url = `${API_RAES}?accion=listar&${q({ id_programa, id_competencia })}`;
+    const url  = `${API_RAES}?accion=listar&${q({ id_programa, id_competencia })}`;
     const rows = await fetchJSON(url);
 
     // Render
@@ -266,11 +275,11 @@ function statusChipRAE(estado) {
           if (res?.error) throw new Error(res.error);
           await loadRaes();
           window.dispatchEvent(new CustomEvent('raes:changed', { detail: { rae: { id_rae: id }}}));
-          toastOk('Estado actualizado');
+          toast.ok('Estado actualizado');
         } catch (err) {
           input.checked = !input.checked;
           paintSwitchRae(sw);
-          alertErr('No se pudo cambiar el estado');
+          toast.err('No se pudo cambiar el estado');
           console.error('[RAEs] cambiar estado:', err);
         }
       });
@@ -324,7 +333,7 @@ function statusChipRAE(estado) {
     editingRaeId = null; editingSnap = null;
     if (titleRae) titleRae.textContent = 'Nuevo RAE';
     if (inCode) inCode.value = '';
-    if (selComp) selComp.innerHTML = `<option value="">Seleccione una competencia</option>`;
+    if (selComp) selComp.innerHTML = `<option value=\"\">Seleccione una competencia</option>`;
     backdrop.classList.remove('hidden');
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
@@ -338,8 +347,8 @@ function statusChipRAE(estado) {
   }
 
   // ==== Eventos UI ====
-  btnNew && btnNew.addEventListener('click', openModal);
-  btnClose && btnClose.addEventListener('click', closeModal);
+  btnNew    && btnNew.addEventListener('click', openModal);
+  btnClose  && btnClose.addEventListener('click', closeModal);
   btnCancel && btnCancel.addEventListener('click', closeModal);
   backdrop?.addEventListener('click', closeModal);
   modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
@@ -359,7 +368,7 @@ function statusChipRAE(estado) {
     if (pid) {
       await loadCompetenciasFor(pid, selComp, true);
     } else {
-      selComp.innerHTML = `<option value="">Seleccione una competencia</option>`;
+      selComp.innerHTML = `<option value=\"\">Seleccione una competencia</option>`;
     }
   });
 
@@ -370,7 +379,7 @@ function statusChipRAE(estado) {
     }
   });
 
-  // Submit: crear o actualizar RAE (validaciones distintas)
+  // Submit: crear o actualizar RAE (validaciones y toasts)
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -381,20 +390,28 @@ function statusChipRAE(estado) {
 
     try {
       if (editingRaeId) {
-        // ====== VALIDACIONES EDITAR (más flexibles) ======
-        if (!descripcion) { alertWarn('Descripción requerida', 'Agrega una breve descripción.'); return; }
-        // Si el usuario deja vacío el id o la competencia, usamos los valores originales
+        // ====== VALIDACIONES EDITAR (sólo toast) ======
         const final_id   = nuevo_id_rae || (editingSnap?.id || '');
         const final_comp = id_competencia || (editingSnap?.comp || '');
+        const final_desc = descripcion || (editingSnap?.desc || '');
 
-        if (!final_id) { alertWarn('Código requerido', 'El código del RAE no puede quedar vacío.'); return; }
-        if (!final_comp) { alertWarn('Competencia requerida', 'Selecciona o conserva la competencia.'); return; }
+        // 1) Aviso si no hay cambios
+        const sinCambios =
+          final_id === (editingSnap?.id || '') &&
+          final_comp === (editingSnap?.comp || '') &&
+          final_desc === (editingSnap?.desc || '');
+        if (sinCambios) { toast.warn('No has hecho cambios aún'); return; }
+
+        // 2) Reglas mínimas
+        if (!final_desc)  { toast.warn('La descripción es obligatoria'); return; }
+        if (!final_id)    { toast.warn('El código no puede quedar vacío'); return; }
+        if (!final_comp)  { toast.warn('Selecciona una competencia'); return; }
 
         // Intento 1: querystring
         let res = await fetchJSON(`${API_RAES}?accion=actualizar&${q({
           id_rae: editingRaeId,
           nuevo_id_rae: final_id,
-          descripcion,
+          descripcion: final_desc,
           id_competencia: final_comp
         })}`).catch(() => null);
 
@@ -406,7 +423,7 @@ function statusChipRAE(estado) {
             body: JSON.stringify({
               id_rae: editingRaeId,
               nuevo_id_rae: final_id,
-              descripcion,
+              descripcion: final_desc,
               id_competencia: final_comp
             })
           });
@@ -417,15 +434,21 @@ function statusChipRAE(estado) {
         closeModal();
         await loadRaes();
         window.dispatchEvent(new CustomEvent('raes:changed', {
-          detail: { rae: { id_rae: final_id, id_competencia: final_comp, descripcion } }
+          detail: { rae: { id_rae: final_id, id_competencia: final_comp, descripcion: final_desc } }
         }));
-        toastOk('RAE actualizado');
+        toast.ok('RAE actualizado');
       } else {
-        // ====== VALIDACIONES CREAR (más estrictas) ======
-        if (!id_programa)   { alertWarn('Programa requerido', 'Selecciona un programa.'); return; }
-        if (!id_competencia){ alertWarn('Competencia requerida', 'Selecciona una competencia.'); return; }
-        if (!nuevo_id_rae)  { alertWarn('Código requerido', 'Ingresa el código del RAE.'); return; }
-        if (!descripcion)   { alertWarn('Descripción requerida', 'Agrega una breve descripción.'); return; }
+        // ====== VALIDACIONES CREAR (sólo toast) ======
+        // 1) Si todo está vacío -> toast global
+        if (!id_programa && !id_competencia && !nuevo_id_rae && !descripcion) {
+          toast.warn('Todos los campos son obligatorios');
+          return;
+        }
+        // 2) Restantes
+        if (!id_programa)    { toast.warn('Programa requerido'); return; }
+        if (!id_competencia) { toast.warn('Competencia requerida'); return; }
+        if (!nuevo_id_rae)   { toast.warn('Código requerido'); return; }
+        if (!descripcion)    { toast.warn('Descripción requerida'); return; }
 
         const url = `${API_RAES}?accion=crear&${q({ id_rae: nuevo_id_rae, descripcion, id_competencia })}`;
         const res = await fetchJSON(url);
@@ -436,11 +459,11 @@ function statusChipRAE(estado) {
         window.dispatchEvent(new CustomEvent('raes:changed', {
           detail: { rae: { id_rae: nuevo_id_rae, id_competencia, descripcion } }
         }));
-        toastOk('RAE creado');
+        toast.ok('RAE creado');
       }
     } catch (err) {
       console.error('[RAEs] guardar/actualizar:', err);
-      alertErr('No fue posible guardar los cambios del RAE.');
+      toast.err('No fue posible guardar los cambios del RAE');
     }
   });
 
@@ -461,7 +484,7 @@ function statusChipRAE(estado) {
 
   window.addEventListener('competencies:changed', async (ev) => {
     const cid = ev?.detail?.competency?.id_competencia ? String(ev.detail.competency.id_competencia) : null;
-    const pid = ev?.detail?.competency?.id_programa ? String(ev.detail.competency.id_programa) : null;
+    const pid = ev?.detail?.competency?.id_programa   ? String(ev.detail.competency.id_programa)   : null;
 
     const mustRefreshFilter =
       !!selProgFilter &&

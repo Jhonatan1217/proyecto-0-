@@ -1,6 +1,7 @@
 <?php
 /* ==========================================
    VISTA LIMPIA – SOLO FRONTEND (SIN ARRAYS)
+   - Aquí solo armamos la UI. Los datos los maneja JS.
    ========================================== */
 ?>
 <!doctype html>
@@ -9,66 +10,39 @@
   <meta charset="utf-8">
   <title>Sistema de Gestión Académica</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Iconos -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Tailwind utilitario -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Alertas -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-  <style>
-    .switch{--h:22px;--w:42px;position:relative;width:var(--w);height:var(--h);border-radius:999px;background:#e5e7eb;transition:.2s}
-    .switch input{display:none}
-    .switch .dot{position:absolute;inset:3px auto auto 3px;width:16px;height:16px;border-radius:999px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.15);transition:.2s}
-    .switch input:checked + .dot{transform:translateX(20px)}
-    .switch .track{transition:background-color .2s ease}
-    .tabs-pill-active{background:#fff;border:1px solid #e5e7eb;box-shadow:0 1px 0 rgba(0,0,0,.04)}
-    .rotate-90{transform:rotate(90deg)}
-    .hidden{display:none}
-
-    
-
-    /* --- Animaciones modal --- */
-    @keyframes modalIn {
-      from { opacity:.0; transform: translateY(8px) scale(.98); }
-      to   { opacity:1;  transform: translateY(0)   scale(1); }
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; } to { opacity: 1; }
-    }
-    .animate-modal    { animation: modalIn .28s ease-out; }
-    .animate-backdrop { animation: fadeIn  .18s ease-out; }
-
-    /* --- Select con flecha separada del borde --- */
-    .select-nice{
-      -webkit-appearance:none; appearance:none;
-      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%238a8a8a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-      background-repeat:no-repeat;
-      background-position: right .75rem center;
-      background-size: 1rem 1rem;
-      padding-right: 2.25rem; /* espacio para la flecha */
-    }
-  </style>
+  <!-- Estilos propios (competencias) -->
+  <link rel="stylesheet" href="src/assets/css/gestionCompetencias.css" />
 </head>
 <body class="bg-white text-zinc-900 min-h-screen">
 
   <main class="max-w-7xl mx-auto px-4 py-8">
     <div class="w-full">
 
-      <!-- Tabs -->
+      <!-- Tabs: cambiamos de sección sin recargar -->
       <div class="bg-zinc-100 rounded-2xl p-1 flex items-center gap-1 justify-around">
+        <!-- Carga Excel (dejado comentado por ahora) -->
         <!-- <button data-tab-btn="upload" class="tab-btn flex items-center justify-center gap-2 px-4 py-2 rounded-xl w-full sm:w-auto text-zinc-700">
           <i data-lucide="upload" class="w-4 h-4"></i><span class="sm:inline">Carga Excel</span>
         </button> -->
         <button data-tab-btn="programs" class="tab-btn flex items-center justify-center gap-2 px-4 py-2 rounded-xl w-full sm:w-auto text-zinc-700">
-          <i data-lucide="graduation-cap" class="w-4 h-4"></i><span class=" sm:inline">Programas</span>
+          <img src="src/assets/img/graduation-cap.svg" class="w-4 h-4"></i><span class=" sm:inline">Programas</span>
         </button>
         <button data-tab-btn="competencies" class="tab-btn flex items-center justify-center gap-2 px-4 py-2 rounded-xl w-full sm:w-auto text-zinc-700">
-          <i data-lucide="book-open" class="w-4 h-4"></i><span class="sm:inline">Competencias</span>
+          <img src="src/assets/img/book-open.svg" class="w-4 h-4"><span class="sm:inline">Competencias</span>
         </button>
         <button data-tab-btn="raes" class="tab-btn flex items-center justify-center gap-2 px-4 py-2 rounded-xl w-full sm:w-auto text-zinc-700">
-          <i data-lucide="target" class="w-4 h-4"></i><span class="sm:inline">RAE</span>
+          <img src="src/assets/img/target.svg" class="w-4 h-4"><span class="sm:inline">RAE</span>
         </button>
       </div>
 
       <!-- ========== CARGA EXCEL ========== -->
+      <!-- Se deja lista para usar más adelante -->
       <!-- <section data-tab="upload" class="tab-pane mt-8">
         <h2 class="text-3xl font-bold mb-1" style="color:#39a900">Carga Masiva desde Excel</h2>
         <p class="text-sm text-zinc-500 mb-6">Importe programas, competencias y RAE desde un archivo Excel</p>
@@ -105,6 +79,7 @@
       </section> -->
 
       <!-- ========== PROGRAMAS ========== -->
+      <!-- Grid de tarjetas y estado vacío (JS se encarga) -->
       <section data-tab="programs" class="tab-pane mt-8 hidden">
         <div class="flex items-center justify-between mb-6">
           <div>
@@ -121,6 +96,7 @@
       </section>
 
       <!-- ========== COMPETENCIAS ========== -->
+      <!-- Lista + filtro por programa -->
       <section data-tab="competencies" class="tab-pane mt-8 hidden">
         <div class="flex items-center justify-between flex-wrap gap-4 mb-6">
           <div>
@@ -144,6 +120,7 @@
       </section>
 
       <!-- ========== RAES ========== -->
+      <!-- Filtros encadenados + lista (JS lo maneja) -->
       <section data-tab="raes" class="tab-pane mt-8 hidden">
         <div class="flex items-center justify-between flex-wrap gap-4 mb-6">
           <div>
@@ -151,7 +128,7 @@
             <p class="text-sm text-zinc-500">Visualice y edite los RAE cargados desde Excel</p>
           </div>
           <button class="rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2  bg-[#00324d] text-[#fff]">
-            <i data-lucide="plus" class="w-4 h-4"></i> Nuevo RAE
+            <img src="src/assets/img/plus.svg" class="w-4 h-4"></i> Nuevo RAE
           </button>
         </div>
 
@@ -174,6 +151,7 @@
   </main>
 
   <!-- ===== MODAL: Nuevo/Editar Programa ===== -->
+  <!-- Modal simple: el JS abre/cierra y envía el form -->
   <div id="modalProgramBackdrop" class="hidden fixed inset-0 z-40" style="background:rgba(0,0,0,.4)"></div>
   <section id="modalProgram" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
   <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl" style="border:1px solid #e5e7eb">
@@ -189,6 +167,7 @@
       </button>
     </div>
 
+    <!-- Campos esenciales: código y nombre; los otros son opcionales -->
     <form id="formProgramNew" class="p-6 pt-4 space-y-4">
       <div>
         <label class="block text-sm font-medium mb-1">Código *</label>
@@ -234,6 +213,7 @@
 
 
   <!-- ===== MODAL: Nueva/Editar Competencia ===== -->
+  <!-- Incluye select de programa para relacionar la competencia -->
   <div id="modalCompetencyBackdrop" class="hidden fixed inset-0 z-40" style="background:rgba(0,0,0,.4)"></div>
   <section id="modalCompetency" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
   <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl modal-card" style="border:1px solid #e5e7eb">
@@ -247,6 +227,7 @@
       </button>
     </div>
 
+    <!-- cp_program es obligatorio; code y name también -->
     <form id="formCompetencyNew" class="p-6 pt-4 space-y-4">
       <div>
         <label class="block text-sm font-medium mb-1">Programa *</label>
@@ -293,6 +274,7 @@
 
 
   <!-- ===== MODAL: Nuevo RAE ===== -->
+  <!-- Seleccione competencia, ponga código y descripción -->
   <div id="modalRaeBackdrop" class="hidden fixed inset-0 z-40" style="background:rgba(0,0,0,.4)"></div>
 <section id="modalRae" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
   <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl" style="border:1px solid #e5e7eb">
@@ -306,6 +288,7 @@
       </button>
     </div>
 
+    <!-- rae_competency es clave para enlazar -->
     <form id="formRaeNew" class="p-6 pt-4 space-y-4">
       <div>
         <label class="block text-sm font-medium mb-1">Competencia *</label>
@@ -346,6 +329,7 @@
 </section>
 
   <!-- ========= SCRIPTS ========= -->
+  <!-- Tabs: muestra una sección y oculta el resto -->
   <script>
     (function(){
       const btns = document.querySelectorAll('[data-tab-btn]');
@@ -359,13 +343,16 @@
           b.classList.toggle('text-zinc-900', on);
           b.classList.toggle('text-zinc-700', !on);
         });
+        // Redibuja iconos al cambiar
         window.lucide?.createIcons();
       }
+      // Click de pestañas + pestaña inicial
       btns.forEach(b => b.addEventListener('click', () => activate(b.getAttribute('data-tab-btn'))));
       activate('programs');
     })();
   </script>
 
+  <!-- Endpoints y flags globales que usan los JS -->
   <script>
     window.API_PROGRAMAS     = encodeURI('<?= BASE_URL ?? '' ?>src/controllers/ProgramasController.php');
     window.PROGRAMS_MANAGED_BY_API = true;
@@ -373,6 +360,7 @@
     window.API_RAES = encodeURI('<?= BASE_URL ?? '' ?>src/controllers/RaeController.php');
   </script>
 
+  <!-- Módulos: cada uno maneja su CRUD/UX. El ?v= ayuda a romper caché -->
   <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionProgramas.js?v=3"></script>
   <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionCompetencias.js?v=2" defer></script>
   <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionRaes.js?v=1" defer></script>
