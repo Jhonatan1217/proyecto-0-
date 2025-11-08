@@ -12,8 +12,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <!-- Iconos -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Tailwind utilitario -->
-  <script src="https://cdn.tailwindcss.com"></script>
   <!-- Alertas -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <!-- Estilos propios (competencias) -->
