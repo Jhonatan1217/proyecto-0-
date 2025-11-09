@@ -136,7 +136,8 @@ html {
 
 body {
     margin: 0;
-    line-height: inherit
+    line-height: inherit;
+    font-family: 'Work Sans', sans-serif
 }
 
 hr {

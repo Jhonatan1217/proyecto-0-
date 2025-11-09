@@ -10,10 +10,8 @@
   <meta charset="utf-8">
   <title>Sistema de Gestión Académica</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Iconos -->
-  <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Alertas -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
   <!-- Estilos propios (competencias) -->
   <link rel="stylesheet" href="src/assets/css/gestionCompetencias.css" />
 </head>
@@ -160,8 +158,7 @@
         </h2>
         <p class="text-sm text-zinc-500">Complete la información del programa de formación</p>
       </div>
-      <button id="btnCloseProgram" class="p-2 rounded-lg hover:bg-zinc-100">
-        <i data-lucide="x" class="w-5 h-5"></i>
+      <button id="btnCloseProgram" class="p-2 rounded-lg hover:bg-zinc-100">X
       </button>
     </div>
 
@@ -220,8 +217,7 @@
         <h3 id="titleCompetency" class="text-2xl font-bold">Nueva Competencia</h3>
         <p class="text-sm text-zinc-500">Complete la información de la competencia</p>
       </div>
-      <button id="btnCloseCompetency" class="p-2 rounded-lg hover:bg-zinc-100">
-        <i data-lucide="x" class="w-5 h-5"></i>
+      <button id="btnCloseCompetency" class="p-2 rounded-lg hover:bg-zinc-100">X
       </button>
     </div>
 
@@ -281,8 +277,7 @@
         <h3 class="text-2xl font-bold">Nuevo RAE</h3>
         <p class="text-sm text-zinc-500">Complete la información del Resultado de Aprendizaje Esperado</p>
       </div>
-      <button id="btnCloseRae" class="p-2 rounded-lg hover:bg-zinc-100" aria-label="Cerrar modal">
-        <i data-lucide="x" class="w-5 h-5"></i>
+      <button id="btnCloseRae" class="p-2 rounded-lg hover:bg-zinc-100" aria-label="Cerrar modal">X
       </button>
     </div>
 

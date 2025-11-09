@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Proyecto 0</title>
 
-<!-- SweetAlert2 local -->
-<script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
+  <!-- SweetAlert2 local -->
+  <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
 
   <!-- Fuente -->
-  <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="<?= BASE_URL ?>public/css/fonts.css">
 </head>
 
 <body class="flex flex-col min-h-screen font-sans bg-white text-gray-900">
