@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>Gestión de Trimestres</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
 </head>
 <body class="bg-white text-gray-900 font-sans">
 
@@ -20,9 +20,7 @@
           class="bg-[#00324D] text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-[#00273A] transition"
           type="button"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path d="M12 5v14M5 12h14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+          <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/plus.svg" />
           <span>Nuevo Trimestre</span>
         </button>
       </div>

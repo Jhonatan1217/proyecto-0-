@@ -167,7 +167,8 @@ async function cargarTrimestralizacion() {
                 <div><strong>Ficha:</strong> <span class="ficha">${r.numero_ficha ?? ""}</span>
                   (<span class="nivel_ficha">${(r.nivel_ficha ?? "" ).toString().toUpperCase()}</span>)
                 </div>
-                <div><strong>Competencia:</strong> <span class="competencia">${r.descripcion ?? "Sin especificar"}</span></div>
+                <div><strong>Competencia:</strong> <span class="competencia">${r.id_competencia} -  ${r.nombre_competencia}  </span></div>
+                <div><strong>Descripcion:</strong>  ${r.descripcion ?? "Sin especificar"}</div>
               </div>`;
           } else if (hora > rStart && hora < rEnd) {
             contenido += `<div class="mb-1 border-gray-200 pb-1">

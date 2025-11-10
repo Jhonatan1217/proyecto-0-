@@ -23,9 +23,7 @@
         <button id="btnAbrirModalInstructor"
           class="bg-[#00324D] text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-[#00273A] active:scale-[0.99] transition"
           type="button">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M12 5v14M5 12h14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+          <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/plus.svg" />
           <span>Nuevo Instructor</span>
         </button>
       </div>
@@ -81,9 +79,11 @@
                   <option value="TRANSVERSAL">Transversal</option>
                   <option value="MIXTO">Mixto</option>
                 </select>
-                <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.18l3.71-3.95a.75.75 0 111.08 1.04l-4.24 4.52a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
-                </svg>
+                <img 
+                  src="<?= BASE_URL ?>src/assets/img/chevron-down.svg" 
+                  alt="arrow" 
+                  class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70"
+                />
               </div>
             </div>
 
@@ -103,7 +103,7 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
 
   <!-- 1) Primero defino la URL del controlador -->
   <script>

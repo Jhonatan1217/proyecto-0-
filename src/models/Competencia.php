@@ -1,4 +1,5 @@
 <?php
+// Clase Competencia para manejar operaciones CRUD sobre la tabla 'Competencias'
 class Competencia {
     private $conn;
     private $table = "competencias";
@@ -7,7 +8,7 @@ class Competencia {
         $this->conn = $db;
     }
 
-    // Listar todas
+    // Funcion para listar todas las competencias
     public function listar() {
         try {
             $sql = "SELECT * FROM {$this->table}";
@@ -19,7 +20,7 @@ class Competencia {
         }
     }
 
-    // Obtener por ID
+    // Funcion para obtener una competencia por su ID
     public function obtenerPorId($id_competencia) {
         try {
             $sql = "SELECT * FROM {$this->table} WHERE id_competencia = :id_competencia";
@@ -32,7 +33,7 @@ class Competencia {
         }
     }
 
-    // Crear (id_competencia manual + id_programa obligatorio)
+    // Funcion para crear una nueva competencia
     public function crear($id_competencia, $id_programa, $nombre_competencia, $descripcion) {
         try {
             $sql = "INSERT INTO {$this->table}
@@ -72,7 +73,7 @@ class Competencia {
         }
     }
 
-    // Eliminar
+    // Funcion para eliminar una competencia
     public function eliminar($id_competencia) {
         try {
             $sql = "DELETE FROM {$this->table} WHERE id_competencia = :id_competencia";
@@ -85,7 +86,7 @@ class Competencia {
         }
     }
 
-    // Cambiar estado
+    // Funcion para cambiar el estado de una competencia
     public function cambiarEstado($id_competencia, $nuevoEstado) {
         try {
             if ($nuevoEstado != 0 && $nuevoEstado != 1) {
@@ -102,7 +103,7 @@ class Competencia {
         }
     }
 
-    // Listar activas
+    // Funcion para listar las competencias activas
     public function listarActivas() {
         try {
             $sql = "SELECT * FROM {$this->table} WHERE estado = 1";

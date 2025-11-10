@@ -6,6 +6,7 @@ $areas = [];
 $zonas = [];
 $instructores = [];
 $trimestres = [];
+$competencias = [];
 
 try {
     if (isset($conn)) {
@@ -14,20 +15,25 @@ try {
         $s->execute();
         $areas = $s->fetchAll(PDO::FETCH_ASSOC);
 
-        // Zonas (si no hay nombre, muestro "Zona X")
+        // Zonas
         $s = $conn->prepare("SELECT id_zona, id_area FROM zonas WHERE estado = 1 ORDER BY id_zona ASC");
         $s->execute();
         $zonas = $s->fetchAll(PDO::FETCH_ASSOC);
 
-        // Instructores (nombre + tipo)
+        // Instructores
         $s = $conn->prepare("SELECT nombre_instructor, tipo_instructor FROM instructores WHERE estado = 1 ORDER BY nombre_instructor ASC");
         $s->execute();
         $instructores = $s->fetchAll(PDO::FETCH_ASSOC);
 
-        // Trimestres (listado)
+        // Trimestres
         $s = $conn->prepare("SELECT numero_trimestre, estado FROM trimestre ORDER BY numero_trimestre ASC");
         $s->execute();
         $trimestres = $s->fetchAll(PDO::FETCH_ASSOC);
+
+  // Competencias
+  $s = $conn->prepare("SELECT id_competencia, nombre_competencia, descripcion, id_programa FROM competencias WHERE estado = 1 ORDER BY nombre_competencia ASC");
+        $s->execute();
+        $competencias = $s->fetchAll(PDO::FETCH_ASSOC);
     }
 } catch (PDOException $e) {
 
@@ -66,11 +72,11 @@ try {
         class="appearance-none w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-gray-100 transition-colors duration-200 outline-none cursor-pointer pr-10">
         <option value="" class="text-[#00324D]" selected hidden>SELECCIONE EL ÁREA</option>
       </select>
-      <svg xmlns="http://www.w3.org/2000/svg"
-        class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 lg:h-5 lg:w-5 text-[#00324D]"
-        fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-      </svg>
+      <img 
+        src="<?= BASE_URL ?>src/assets/img/chevron-down.svg" 
+        alt="arrow" 
+        class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70"
+      />
     </div>
 
     <!-- Selector de Zona -->
@@ -79,21 +85,18 @@ try {
         class="appearance-none w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-gray-100 transition-colors duration-200 outline-none cursor-pointer pr-10">
         <option value="" class="text-[#00324D]" selected hidden>SELECCIONE LA ZONA</option>
       </select>
-      <svg xmlns="http://www.w3.org/2000/svg"
-        class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 lg:h-5 lg:w-5 text-[#00324D]"
-        fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-      </svg>
+      <img 
+        src="<?= BASE_URL ?>src/assets/img/chevron-down.svg" 
+        alt="arrow" 
+        class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70"
+      />
     </div>
   </div>
 
   <!-- Botón de crear nueva trimestralización -->
   <button id="btnAbrirModal" 
     class="flex items-center justify-center gap-2 w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 text-white font-semibold text-sm lg:text-base rounded-md bg-[#00324D] hover:bg-[#004a70] transition-colors duration-200 shadow-md">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 5v14M5 12h14" />
-    </svg>
+      <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/plus.svg" />
     Nueva trimestralización
   </button>
 </div>
@@ -142,11 +145,7 @@ try {
   <div id="modalEliminar" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-11/12 border-4 border-red-600">
       <div class="flex justify-center mb-4">
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" class="w-16 h-16">
-          <path d="M50 10 L90 80 L10 80 Z" fill="none" stroke="#dc2626" stroke-width="6" stroke-linejoin="round"/>
-          <circle cx="50" cy="65" r="3" fill="#dc2626"/>
-          <line x1="50" y1="35" x2="50" y2="55" stroke="#dc2626" stroke-width="6" stroke-linecap="round"/>
-        </svg>
+        <img class="w-16 h-16" src="<?= BASE_URL ?>src/assets/img/triangle-alert.svg" />
       </div>
       <h2 class="text-2xl font-bold text-center mb-8 text-gray-900">
         ¿Estás seguro de querer eliminar la trimestralización?
@@ -162,7 +161,7 @@ try {
     </div>
   </div>
 
-  <script>const BASE_URL = "<?= BASE_URL ?>";</script>
+  <script>window.BASE_URL = window.BASE_URL || "<?= BASE_URL ?>";</script>
   <script src="<?= BASE_URL ?>src/assets/js/registerTables.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -203,7 +202,7 @@ try {
 
           <!-- Formulario -->
           <form id="formTrimestralizacion" action="<?= BASE_URL ?>src/controllers/TrimestralizacionController.php?accion=crear" method="POST" class="trimestralizacion-form space-y-3 text-sm lg:text-base">
-            <!-- AREA (desde DB) -->
+            <!-- AREA -->
             <select name="area" id="id_area" 
               class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
               <option value="">Seleccione el area a la que pertenece la ficha</option>
@@ -212,7 +211,7 @@ try {
               <?php endforeach; ?>
             </select>
 
-            <!-- ZONA (desde DB) -->
+            <!-- ZONA -->
             <select name="zona" id="id_zona" 
               class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
               <option value="">Seleccione la zona a la que pertenece la ficha</option>
@@ -231,7 +230,7 @@ try {
               <option value="tecnologo">Tecnologo</option>
             </select>
 
-            <!-- TRIMESTRE (desde DB) -->
+            <!-- TRIMESTRE -->
             <select name="numero_trimestre" 
               class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
               <option value="">Seleccione el trimestre que cursa la ficha</option>
@@ -246,7 +245,7 @@ try {
               <input type="text" name="numero_ficha" id="numero_ficha" placeholder="Número de la ficha" 
                 class="form-field basis-1/2 w-full h-12 px-4 pr-12 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm"/>
                 
-              <!-- INSTRUCTOR (desde DB) -->
+              <!-- INSTRUCTOR -->
               <select name="nombre_instructor" id="nombre_instructor"
                 class="select-chev form-field basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
                 <option value="">Seleccione el instructor</option>
@@ -287,9 +286,25 @@ try {
               </select>
             </div>
 
-            <textarea name="descripcion" id="descripcion" rows="4" placeholder="Diligencie la competencia aquí" 
-              class="form-field form-field--textarea w-full min-h-[90px] px-4 pr-12 text-[13px] py-3 rounded-xl border-0 outline-none bg-white resize-none shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm"></textarea>
+            <!-- Select de Competencia -->
+            <select name="id_competencia" id="id_competencia"
+              class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
+              <option value="">Seleccione la competencia</option>
+                <?php if (empty($competencias)): ?>
+                  <option disabled>No se encontraron competencias activas</option>
+                  <?= htmlspecialchars(json_encode($competencias)) ?> -->
+                <?php else: ?>
+                  <?php foreach ($competencias as $comp): ?>
+                    <?php $valueComp = htmlspecialchars($comp['id_competencia']); ?>
+                    <option value="<?= $valueComp ?>" data-desc="<?= htmlspecialchars($comp['descripcion'] ?? '') ?>" data-programa="<?= htmlspecialchars($comp['id_programa'] ?? '') ?>">
+                      <?= htmlspecialchars($comp['nombre_competencia'] ?? $comp['descripcion'] ?? ('Competencia ' . ($comp['id_competencia'] ?? ''))) ?>
+                    </option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
+            </select>
 
+            <input type="hidden" name="id_rae" id="id_rae_field" value="">
+            <input type="hidden" name="id_programa" id="id_programa_field" value="">
             <button type="submit"
               class="w-full h-12 bg-[#0b2d5b] text-white rounded-lg text-sm lg:text-base font-semibold hover:bg-[#082244] transition-colors">
               GUARDAR TRIMESTRALIZACIÓN
@@ -323,23 +338,44 @@ try {
               continue;
             }
             const optArea = opt.dataset.area ?? "";
-            // Si hay un área seleccionada, mostrar sólo zonas con esa área.
-            // Si no hay área seleccionada, mostrar todas las zonas.
+            // Si no hay área seleccionada, mostrar todas las zonas
             const show = areaVal !== "" ? (String(optArea) === String(areaVal)) : true;
             opt.hidden = !show;
             opt.disabled = !show;
             if (show) hasVisible = true;
           }
 
-          // Si la zona actualmente seleccionada queda oculta, limpiarla
+          // Si la zona actualmente seleccionada queda oculta
           const selectedOpt = selZona.selectedOptions[0];
           if (selectedOpt && selectedOpt.hidden) selZona.value = "";
         }
 
         selArea.addEventListener('change', filterZonas);
-        // Ejecutar una vez al cargar para sincronizar (útil si el formulario se reutiliza)
+        // Ejecutar una vez al cargar para sincronizar
         document.addEventListener('DOMContentLoaded', filterZonas);
       })();
+    </script>
+    <script>
+      // Copiar atributos desde la opción seleccionada al formulario
+      document.addEventListener('DOMContentLoaded', function () {
+        const form = document.querySelector('#formTrimestralizacion');
+        if (!form) return;
+        const sel = form.querySelector('[name="id_competencia"]');
+        const raeField = form.querySelector('#id_rae_field');
+        const progField = form.querySelector('#id_programa_field');
+
+        function syncCompData() {
+          const opt = sel && sel.selectedOptions && sel.selectedOptions[0];
+          if (!opt) return;
+          if (raeField) raeField.value = opt.dataset.rae || '';
+          if (progField) progField.value = opt.dataset.programa || '';
+        }
+
+        if (sel) {
+          sel.addEventListener('change', syncCompData);
+          syncCompData();
+        }
+      });
     </script>
 </body>
 </html>

@@ -57,29 +57,29 @@ if (!$accion) fail('Debe especificar la acción en la URL, por ejemplo: ?accion=
 
 // ===== Router =====
 switch ($accion) {
-
+// Listar todas las competencias
   case 'listar': {
-    ok($competencia->listar());
+    ok($competencia->listar()); // Obtener todas las competencias
     break;
   }
-
+// Obtener competencia por ID
   case 'obtener': {
     // acepta ?id_competencia=... ó ?id=...
-    $id = $_GET['id_competencia'] ?? $_GET['id'] ?? null;
-    if (!$id) fail('Debe enviar el parámetro id_competencia');
-    ok($competencia->obtenerPorId($id));
+    $id = $_GET['id_competencia'] ?? $_GET['id'] ?? null; // ID vía GET
+    if (!$id) fail('Debe enviar el parámetro id_competencia'); // Verificar si se proporcionó ID
+    ok($competencia->obtenerPorId($id)); // Obtener competencia por ID
     break;
   }
-
+// Crear nueva competencia
   case 'crear': {
-    $data = read_json_body() + $_POST;
-
+    $data = read_json_body() + $_POST; // Decodificar JSON o usar POST
+// Validar campos obligatorios
     $id_competencia     = $data['id_competencia']     ?? null; // código manual
     $id_programa        = $data['id_programa']        ?? null; // FK obligatoria
     $nombre_competencia = $data['nombre_competencia'] ?? null;
     $descripcion        = $data['descripcion']        ?? null;
-
-    if (!$id_competencia || trim($id_competencia) === '') {
+// Validaciones
+    if (!$id_competencia || trim($id_competencia) === '') { // código obligatorio
       fail('Debe enviar id_competencia (código manual).');
     }
     if (!$id_programa || trim($id_programa) === '') {
@@ -88,16 +88,16 @@ switch ($accion) {
     if (!$nombre_competencia || trim($nombre_competencia) === '' || !$descripcion || trim($descripcion) === '') {
       fail('Debe enviar nombre_competencia y descripcion válidos.');
     }
-
+// Crear competencia
     ok($competencia->crear(
       $id_competencia,
       $id_programa,
-      trim($nombre_competencia),
+      trim($nombre_competencia), 
       trim($descripcion)
     ));
     break;
   }
-
+// Actualizar competencia
   case 'actualizar': {
     // Edición flexible + permite cambiar el código
     $data = read_json_body() + $_POST;
@@ -112,10 +112,10 @@ switch ($accion) {
     $nombre       = array_key_exists('nombre_competencia', $data) ? trim((string)$data['nombre_competencia']) : null;
     $descripcion  = array_key_exists('descripcion', $data)        ? trim((string)$data['descripcion'])        : null;
     $id_programa  = array_key_exists('id_programa', $data)        ? $data['id_programa']                       : null;
-
+     // Construir consulta dinámica
     $sets   = [];
     $params = [':id_original' => $id_original];
-
+    // Cambiar PK 
     if ($nuevo_id !== '' && $nuevo_id !== $id_original) {
       // Actualiza PK y, si existe, también codigo_competencia
       $sets[]              = 'id_competencia = :nuevo_id';
@@ -124,7 +124,7 @@ switch ($accion) {
       if (table_has_column($conn, 'competencias', 'codigo_competencia')) {
         $sets[] = 'codigo_competencia = :nuevo_id';
       }
-    }
+    } // Cambios opcionales
     if ($nombre !== null) {
       $sets[]            = 'nombre_competencia = :nombre';
       $params[':nombre'] = $nombre;
@@ -139,7 +139,7 @@ switch ($accion) {
     }
 
     if (!$sets) ok(['ok' => true, 'noop' => true]); // nada que actualizar
-
+    // Ejecutar actualización
     try {
       $sql  = 'UPDATE competencias SET '.implode(', ', $sets).' WHERE id_competencia = :id_original';
       $stmt = $conn->prepare($sql);
@@ -151,13 +151,13 @@ switch ($accion) {
     }
     break;
   }
-
+  // Inhabilitar competencia (cambiar estado)
   case 'inhabilitar': {
-    $data = read_json_body() + $_POST;
+    $data = read_json_body() + $_POST; // Decodificar JSON o usar POST
 
-    $id_competencia = $data['id_competencia'] ?? null;
-    $estado = isset($data['estado']) ? (int)$data['estado'] : null;
-
+    $id_competencia = $data['id_competencia'] ?? null; // ID vía JSON o POST
+    $estado = isset($data['estado']) ? (int)$data['estado'] : null; // Estado vía JSON o POST
+    // Validaciones
     if (!$id_competencia || !isset($estado)) {
       fail('Debe enviar id_competencia y estado (0 o 1).');
     }
@@ -165,13 +165,14 @@ switch ($accion) {
     ok($competencia->cambiarEstado($id_competencia, $estado));
     break;
   }
-
+  // Eliminar competencia (deshabilitado)
   case 'eliminar': {
     fail('La eliminación está deshabilitada. Use la acción inhabilitar.');
     break;
   }
 
-  default: {
+  
+  default: { // Fin switch
     fail('Acción no válida', 404);
   }
 }

@@ -1,4 +1,5 @@
 <?php
+// Clase Rae para manejar operaciones CRUD sobre la tabla 'raes'
 class Rae {
     private $conn;
     private $table = "raes";
@@ -7,7 +8,7 @@ class Rae {
         $this->conn = $db;
     }
 
-    // Listar todos los RAEs
+    // Funcion para listar todos los RAEs
     public function listar() {
         $sql = "SELECT * FROM " . $this->table;
         $stmt = $this->conn->prepare($sql);
@@ -15,7 +16,7 @@ class Rae {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Obtener un RAE por su ID
+    // Funcion para obtener un RAE por su ID
     public function obtenerPorId($id) {
         $sql = "SELECT * FROM " . $this->table . " WHERE id_rae = :id";
         $stmt = $this->conn->prepare($sql);
@@ -24,7 +25,7 @@ class Rae {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // Crear un nuevo RAE
+    // Funcion para crear un nuevo RAE
     public function crear($descripcion, $id_competencia) {
         $sql = "INSERT INTO " . $this->table . " (descripcion, id_competencia)
                 VALUES (:descripcion, :id_competencia)";
@@ -34,7 +35,7 @@ class Rae {
         $stmt->execute();
     }
 
-    // Actualizar un RAE existente
+    // Funcion para actualizar un RAE existente
     public function actualizar($id, $descripcion, $id_competencia) {
         $sql = "UPDATE " . $this->table . " 
                 SET descripcion = :descripcion, id_competencia = :id_competencia
@@ -46,7 +47,7 @@ class Rae {
         $stmt->execute();
     }
 
-    // Eliminar un RAE
+    // Funcion para eliminar un RAE
     public function eliminar($id) {
         $sql = "DELETE FROM " . $this->table . " WHERE id_rae = :id";
         $stmt = $this->conn->prepare($sql);
@@ -54,7 +55,7 @@ class Rae {
         $stmt->execute();
     }
 
-    // Cambiar el estado (activo/inactivo)
+    // Funcion para cambiar el estado de un RAE (activo/inactivo)
     public function cambiarEstado($id, $nuevoEstado) {
         if ($nuevoEstado != 1 && $nuevoEstado != 0) {
             throw new Exception("El estado debe ser 1 (activo) o 0 (inactivo).");
@@ -67,7 +68,7 @@ class Rae {
         $stmt->execute();
     }
 
-    // Listar RAEs con el nombre de la competencia
+    // Funcion para listar RAEs con el nombre de la competencia
     public function listarConCompetencia() {
         $sql = "SELECT r.id_rae, r.descripcion, r.estado, c.nombre_competencia
                 FROM raes r

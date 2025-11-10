@@ -40,9 +40,11 @@ if (!window.TRIMESTRALIZACION_INIT) {
         const dia = form.querySelector("[name='dia_semana']").value.trim();
         const horaInicio = form.querySelector("[name='hora_inicio']").value.trim();
         const horaFin = form.querySelector("[name='hora_fin']").value.trim();
-        const descripcion = form.querySelector("[name='descripcion']").value.trim();
 
-        const campos = [zona, nivel, numeroFicha, instructor, dia, horaInicio, horaFin, descripcion];
+        // ahora tomamos el id de la competencia seleccionada
+        const id_competencia = form.querySelector("[name='id_competencia']") ? form.querySelector("[name='id_competencia']").value.trim() : "";
+
+        const campos = [zona, nivel, numeroFicha, instructor, dia, horaInicio, horaFin, id_competencia];
         const vacios = campos.filter(v => v === "").length;
 
         // ========== VALIDACIONES ==========
@@ -65,8 +67,8 @@ if (!window.TRIMESTRALIZACION_INIT) {
         if (parseInt(horaFin) <= parseInt(horaInicio))
           return Toast.fire({ icon: "error", title: "La hora de fin debe ser mayor a la de inicio" });
 
-        if (!descripcion)
-          return Toast.fire({ icon: "warning", title: "Ingrese la competencia o descripción" });
+        if (!id_competencia)
+          return Toast.fire({ icon: "warning", title: "Seleccione la competencia" });
 
         // ========== ENVÍO ==========
         const fd = new FormData(form);
@@ -74,6 +76,21 @@ if (!window.TRIMESTRALIZACION_INIT) {
         // Enviamos también el id_area
         fd.set("area", id_area);
 
+        // Asegurar que id_competencia, id_programa e id_rae se envían explícitamente.
+        // Tomamos la opción seleccionada y copiamos sus data-attributes al FormData.
+        try {
+          const selOpt = form.querySelector("[name='id_competencia'] option:checked");
+          if (id_competencia) fd.set('id_competencia', id_competencia);
+          const programa = selOpt && selOpt.dataset ? (selOpt.dataset.programa || '') : '';
+          const rae = selOpt && selOpt.dataset ? (selOpt.dataset.rae || '') : '';
+          fd.set('id_programa', programa);
+          fd.set('id_rae', rae);
+        } catch (err) {
+          // No bloquear si algo falla aquí; el servidor hará validaciones.
+          console.warn('No se pudo anexar id_programa/id_rae al FormData', err);
+        }
+
+        // (no hace falta setear descripcion; el servidor ahora recibirá id_competencia)
         try {
           const res = await fetch(form.action, {
             method: "POST",
@@ -86,6 +103,7 @@ if (!window.TRIMESTRALIZACION_INIT) {
           });
 
           const data = await res.json().catch(() => ({}));
+          
 
           // ---------- ERRORES DEL SERVIDOR ----------
           if (!res.ok || data.status === "error" || data.error) {
