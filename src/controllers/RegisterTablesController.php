@@ -7,7 +7,7 @@ header('Content-Type: application/json');
 // Instanciar la clase
 $trimestralizacion = new Trimestralizacion($conn);
 
-// Detectar la acción (puede venir por GET o POST)
+// Detectar la acción
 $accion = $_GET['action'] ?? $_POST['action'] ?? null;
 
 if (!$accion) {

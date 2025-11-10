@@ -250,21 +250,36 @@ switch ($accion) {
                 $ins->execute([':nom' => $nombre]);
                 return $conn->lastInsertId();
             };
-            $getOrCreateCompetencia = function($desc) use ($conn) {
+            // Obtener o crear competencia; ahora acepta id_programa opcional para guardarlo cuando se crea.
+            $getOrCreateCompetencia = function($desc, $id_programa = null) use ($conn) {
                 if (empty($desc)) return null;
                 $s = $conn->prepare("SELECT id_competencia FROM competencias WHERE descripcion = :desc LIMIT 1");
                 $s->execute([':desc' => $desc]);
                 $r = $s->fetch(PDO::FETCH_ASSOC);
                 if ($r) return $r['id_competencia'];
-                $ins = $conn->prepare("INSERT INTO competencias (descripcion) VALUES (:desc)");
-                $ins->execute([':desc' => $desc]);
+
+                // Insertar incluyendo id_programa (puede ser NULL)
+                $ins = $conn->prepare("INSERT INTO competencias (descripcion, id_programa) VALUES (:desc, :id_programa)");
+                $ins->execute([':desc' => $desc, ':id_programa' => $id_programa]);
                 return $conn->lastInsertId();
             };
 
             // Obtener/crear ids relacionados
             $id_ficha = $getOrCreateFicha($numero_ficha, $nivel_ficha);
             $id_instructor = $nombre_instructor !== '' ? $getOrCreateInstructor($nombre_instructor) : null;
-            $id_competencia = $descripcion !== '' ? $getOrCreateCompetencia($descripcion) : null;
+
+            // Leer id_programa e id_rae enviados por el formulario (si vienen)
+            $id_programa_post = isset($_POST['id_programa']) && $_POST['id_programa'] !== '' ? intval($_POST['id_programa']) : null;
+            $id_rae_post = isset($_POST['id_rae']) && $_POST['id_rae'] !== '' ? intval($_POST['id_rae']) : null;
+
+            // Priorizar id_competencia enviado por el formulario. Si no viene, usar descripcion para buscar/crear
+            // pasando id_programa como información adicional al crear la competencia.
+            $id_comp_post = isset($_POST['id_competencia']) ? intval($_POST['id_competencia']) : 0;
+            if ($id_comp_post > 0) {
+                $id_competencia = $id_comp_post;
+            } else {
+                $id_competencia = $descripcion !== '' ? $getOrCreateCompetencia($descripcion, $id_programa_post) : null;
+            }
 
             if ($horarioExist) {
                 // Si existe y está activo -> rechazo
@@ -275,7 +290,7 @@ switch ($accion) {
                 }
 
                 // Reactivar horario inactivo y actualizar relaciones
-                $upd = $conn->prepare("
+                $upd = $conn->prepare("                    
                     UPDATE horarios
                     SET estado = 1,
                         id_zona = :id_zona,
@@ -283,7 +298,9 @@ switch ($accion) {
                         numero_trimestre = :numero_trimestre,
                         id_ficha = :id_ficha,
                         id_instructor = :id_instructor,
-                        id_competencia = :id_competencia
+                        id_competencia = :id_competencia,
+                        id_programa = :id_programa,
+                        id_rae = :id_rae
                     WHERE id_horario = :id_horario
                 ");
                 $upd->execute([
@@ -293,6 +310,8 @@ switch ($accion) {
                     ':id_ficha' => $id_ficha,
                     ':id_instructor' => $id_instructor,
                     ':id_competencia' => $id_competencia,
+                    ':id_programa' => $id_programa_post,
+                    ':id_rae' => $id_rae_post,
                     ':id_horario' => $horarioExist['id_horario']
                 ]);
 
@@ -310,9 +329,9 @@ switch ($accion) {
             }
 
             // No existe: crear horario nuevo
-            $insHorario = $conn->prepare("
-                INSERT INTO horarios (id_zona, id_area, dia, hora_inicio, hora_fin, id_ficha, id_instructor, id_competencia, numero_trimestre, estado)
-                VALUES (:id_zona, :id_area, :dia, :hora_inicio, :hora_fin, :id_ficha, :id_instructor, :id_competencia, :numero_trimestre, 1)
+            $insHorario = $conn->prepare("                
+                INSERT INTO horarios (id_zona, id_area, dia, hora_inicio, hora_fin, id_ficha, id_instructor, id_competencia, numero_trimestre, estado, id_programa, id_rae)
+                VALUES (:id_zona, :id_area, :dia, :hora_inicio, :hora_fin, :id_ficha, :id_instructor, :id_competencia, :numero_trimestre, 1, :id_programa, :id_rae)
             ");
             $insHorario->execute([
                 ':id_zona' => $id_zona,
@@ -323,7 +342,9 @@ switch ($accion) {
                 ':id_ficha' => $id_ficha,
                 ':id_instructor' => $id_instructor,
                 ':id_competencia' => $id_competencia,
-                ':numero_trimestre' => $numero_trimestre
+                ':numero_trimestre' => $numero_trimestre,
+                ':id_programa' => $id_programa_post,
+                ':id_rae' => $id_rae_post
             ]);
             $newHorarioId = $conn->lastInsertId();
 
