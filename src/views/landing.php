@@ -46,12 +46,12 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Proyecto 0</title>
 
-    <!-- Fuente Work Sans -->
-    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet"/>
+    <!-- Fuente Work Sans (el modal la usa) -->
+    <link rel="stylesheet" href="<?= BASE_URL ?>public/css/fonts.css">
     <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/formulario_crear_trimestralizacion.css">
 
     <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
   </head>
   <body class="flex flex-col min-h-screen font-sans text-center bg-white text-gray-900">
     <!-- Contenido principal -->

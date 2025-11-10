@@ -18,15 +18,15 @@ if (!$accion) {
 // Enrutador simple
 switch ($accion) {
     case 'listar':
-        echo json_encode($trimestralizacion->listar());
-        break;
+        echo json_encode($trimestralizacion->listar()); // Listar todas las entradas
+        break; 
 
-    case 'obtener':
+    case 'obtener': // Obtener por ID
         $id = $_GET['id'] ?? null;
         echo json_encode($trimestralizacion->obtenerPorId($id));
         break;
 
-    case 'crear':
+    case 'crear': // Crear nueva entrada
         $id_horario = $_POST['id_horario'] ?? null;
         echo json_encode($trimestralizacion->crear($id_horario));
         break;
@@ -35,7 +35,7 @@ switch ($accion) {
     //     echo json_encode($trimestralizacion->eliminar());
     //     break;
 
-    default:
+    default: // Acción no válida
         echo json_encode(["status" => "error", "mensaje" => "Acción no válida: $accion"]);
         break;
 }

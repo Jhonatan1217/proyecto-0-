@@ -1,22 +1,27 @@
 // src/assets/js/gestionProgramas.js
+// Notas: comentarios ligeros y prácticos, sin reescribir ni tocar el código base.
 document.addEventListener('DOMContentLoaded', () => {
   (function () {
     // ===============================
     // CONFIG
     // ===============================
+    // Endpoints: usa variables globales si existen; si no, cae al controlador por defecto
     const API = (window.API_PROGRAMAS || (window.BASE_URL || '') + 'src/controllers/ProgramasController.php').replace(/\/+$/, '');
 
     // ===============================
     // SELECTORES
     // ===============================
+    // Corta ejecución si esta pestaña no está presente (evita errores en otras vistas)
     const tabPrograms = document.querySelector('[data-tab="programs"]');
     if (!tabPrograms) return;
 
+    // Elementos principales de la vista
     const grid      = document.getElementById('programsGrid');
     const emptyBox  = document.getElementById('programsEmpty');
     const modal     = document.getElementById('modalProgram');
     const backdrop  = document.getElementById('modalProgramBackdrop');
 
+    // Campos del modal (con chequeo defensivo cuando el modal no existe)
     const form      = modal ? modal.querySelector('#formProgramNew') : null;
     const inpCode   = modal ? modal.querySelector('#pg_code')       : null;
     const inpName   = modal ? modal.querySelector('#pg_name')       : null;
@@ -25,16 +30,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnClose  = modal ? modal.querySelector('#btnCloseProgram')  : null;
     const btnCancel = modal ? modal.querySelector('#btnCancelProgram') : null;
 
+    // Botón flotante / CTA para abrir modal de creación
     const btnNew = document.getElementById('btnNewProgram');
+    // Título del modal: soporta varias variantes de selector
     const modalTitle = modal ? (modal.querySelector('#modalProgramTitle') ||
                                 modal.querySelector('[data-modal-title]') ||
                                 modal.querySelector('.modal-title')) : null;
 
-    let editingId = null;
+    let editingId = null; // id del programa que se está editando (null si es creación)
 
     // ===============================
     // SWEETALERT TOASTS
     // ===============================
+    // Configuración del toast: aparece arriba a la derecha y se pausa al pasar el mouse
     const Toast = Swal.mixin({
       toast: true,
       position: 'top-end',
@@ -48,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         toast.addEventListener('mouseleave', Swal.resumeTimer);
       }
     });
+    // Atajos para disparar mensajes con íconos consistentes
     const t = {
       ok:   m => Toast.fire({ icon: 'success', title: m || 'Operación exitosa' }),
       warn: m => Toast.fire({ icon: 'warning', title: m || 'Revisa los campos' }),
@@ -58,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================
     // 🔔 NOTIFICADOR (NUEVO)
     // ===============================
+    // Emite un CustomEvent para que otras pestañas (Competencias/RAE) se enteren de cambios
     function notifyProgramsChanged(detail){
       try {
         window.dispatchEvent(new CustomEvent('programs:changed', { detail }));
@@ -67,11 +77,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================
     // API HELPERS
     // ===============================
+    // Lectura simple: devuelve JSON o lanza por estado HTTP
     async function apiListar() {
       const r = await fetch(`${API}?accion=listar`, { credentials: 'same-origin' });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       return r.json();
     }
+    // Alta: envía payload en JSON (POST)
     async function apiAgregar(payload) {
       const r = await fetch(`${API}?accion=agregar`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -79,6 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       return r.json();
     }
+    // Actualización: también por JSON
     async function apiActualizar(payload) {
       const r = await fetch(`${API}?accion=actualizar`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -86,6 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       return r.json();
     }
+    // Activar/inhabilitar: aquí se usa FormData por compatibilidad con el backend
     async function apiActivar(id_programa) {
       const fd = new FormData(); fd.append('id_programa', id_programa);
       const r = await fetch(`${API}?accion=activar`, { method: 'POST', body: fd });
@@ -100,6 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================
     // UI HELPERS
     // ===============================
+    // Abre modal en modo crear/editar. También pre-carga datos y guarda "originales" para comparar cambios
     function openModal(isCreate = true, data = null) {
       // Guarda si estamos creando o editando
       editingId = isCreate ? null : (data?.id_programa ?? null);
@@ -110,13 +125,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (inpDesc)  inpDesc.value  = isCreate ? '' : (data?.descripcion ?? '');
       if (inpHours) inpHours.value = isCreate ? '' : (data?.duracion ?? '');
 
-      // ✅ Ahora el código también puede editarse
+      // el código también puede editarse
       if (inpCode) inpCode.disabled = false;
 
-      // 🔹 Cambia el título del modal según acción
+      // Cambia el título del modal según acción
       if (modalTitle) modalTitle.textContent = isCreate ? 'Nuevo Programa' : 'Editar Programa';
 
-      // 🔹 Si estamos editando, guardamos los valores originales en atributos data-* del formulario
+      // Si estamos editando, guardamos los valores originales en atributos data-* del formulario
       if (!isCreate && form) {
         form.dataset.originalId    = data?.id_programa ?? '';
         form.dataset.originalName  = data?.nombre_programa ?? '';
@@ -143,6 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 300);
     }
 
+    // Cierra y limpia el modal (incluye reset de estados visuales)
     function closeModal() {
       modal?.classList.add('hidden');
       backdrop?.classList.add('hidden');
@@ -152,12 +168,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (modalTitle) modalTitle.textContent = 'Nuevo Programa';
     }
 
+    // Escapa HTML para evitar que la descripción/nombre rompan el DOM si traen caracteres raros
     function escapeHtml(s) {
       const t = document.createElement('textarea');
       t.textContent = String(s ?? '');
       return t.innerHTML;
     }
 
+    // Presenta la duración con sufijo "horas" si es numérica
     function formatHours(h) {
       const n = Number(h);
       return Number.isFinite(n) ? `${n} horas` : `${h}`;
@@ -166,6 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================
     // SWITCH ESTILO VERDE #39A900
     // ===============================
+    // Render del toggle accesible; se actualiza con eventos más abajo
     function renderSwitch(active) {
       return `
         <label class="switch relative inline-flex items-center cursor-pointer select-none" title="Cambiar estado" aria-label="Cambiar estado">
@@ -179,6 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================
     // CARD
     // ===============================
+    // Crea la tarjeta de un programa con acciones de editar y activar/inhabilitar
     function createCard(p) {
       const activo = String(p.estado) === '1' || String(p.estado).toLowerCase() === 'true';
 
@@ -204,14 +224,15 @@ document.addEventListener('DOMContentLoaded', () => {
           <p><span class="font-medium">Duración:</span> ${escapeHtml(formatHours(p.duracion || 0))}</p>
           <div>
             ${activo
-  ? '<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:#eaf7e6;border:1px solid rgba(57,169,0,.22);color:#39a900">Activo</span>'
-  : '<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:#f3f4f6;border:1px solid #e5e7eb;color:#6b7280">Inactivo</span>'
-}
+              ? '<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:#eaf7e6;border:1px solid rgba(57,169,0,.22);color:#39a900">Activo</span>'
+              : '<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:#f3f4f6;border:1px solid #e5e7eb;color:#6b7280">Inactivo</span>'
+            }
 
           </div>
         </div>
       `;
 
+      // Toggle de estado con manejo de rollback si la API falla
       const sw = card.querySelector('input[type="checkbox"]');
       sw?.addEventListener('change', async () => {
         const checked = sw.checked;
@@ -237,6 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
 
+      // Click en editar: reusa openModal en modo edición
       card.querySelector('[data-edit]')?.addEventListener('click', () => openModal(false, p));
 
       return card;
@@ -245,19 +267,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================
     // RENDER LISTA
     // ===============================
+    // Pinta la grilla o muestra el estado vacío con CTA para crear
     function renderList(list) {
       grid.innerHTML = '';
       if (!Array.isArray(list) || list.length === 0) {
         emptyBox.classList.remove('hidden');
         emptyBox.innerHTML = `
-  <div class="py-12 text-center flex flex-col items-center justify-center">
-    <p class="text-zinc-500 mb-4">No hay programas registrados</p>
-    <button class="rounded-xl px-4 py-2 text-sm font-medium bg-[#00324d] text-white flex items-center gap-2" data-empty-new>
-      <img src="src/assets/img/plus.svg" class="w-4 h-4" alt="símbolo más" />
-      Crear nuevo programa
-    </button>
-  </div>
-`;
+        <div class="py-12 text-center flex flex-col items-center justify-center">
+          <p class="text-zinc-500 mb-4">No hay programas registrados</p>
+          <button class="rounded-xl px-4 py-2 text-sm font-medium bg-[#00324d] text-white flex items-center gap-2" data-empty-new>
+            <img src="src/assets/img/plus.svg" class="w-4 h-4" alt="símbolo más" />
+            Crear nuevo programa
+          </button>
+        </div>
+      `;
         emptyBox.querySelector('[data-empty-new]')?.addEventListener('click', () => openModal(true));
         return;
       }
@@ -271,6 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================
     // CARGA INICIAL
     // ===============================
+    // Trae los programas y maneja errores de red/servidor
     async function loadPrograms() {
       try {
         const data = await apiListar();
@@ -286,10 +310,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================
     // EVENTOS MODAL + FORM
     // ===============================
+    // Apertura/cierre del modal y cancelación sin recargar
     btnNew?.addEventListener('click', () => openModal(true));
     btnClose?.addEventListener('click', closeModal);
     btnCancel?.addEventListener('click', e => { e.preventDefault(); closeModal(); });
 
+    // Submit del formulario con validaciones separadas por modo (crear/editar)
     form?.addEventListener('submit', async e => {
       e.preventDefault();
 
@@ -318,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
           duracion:        form.dataset.originalHours || ''
         };
 
-        // 👇 ahora también se compara el código (id_programa)
+        //  ahora también se compara el código (id_programa)
         const sinCambios = 
           original.id_programa === id_programa &&
           original.nombre_programa === nombre_programa &&
@@ -352,7 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
         closeModal();
         t.ok(editingId ? 'Programa actualizado correctamente' : 'Programa creado correctamente');
 
-        // 🔔 Notificar creación/actualización (para Competencias)
+        //  Notificar creación/actualización (para Competencias)
         notifyProgramsChanged({
           type: editingId ? 'update' : 'create',
           program: { id_programa: payload.nuevo_id_programa || id_programa, nombre_programa, descripcion, duracion }
@@ -367,6 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================
     // INIT
     // ===============================
+    // Carga inicial de datos
     loadPrograms();
   })();
 });

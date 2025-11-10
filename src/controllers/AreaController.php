@@ -34,22 +34,22 @@ if (!isset($conn) || !$conn) {
 }
 
 $area = new Area($conn);
-$accion = $_GET['accion'] ?? $_POST['accion'] ?? null;
+$accion = $_GET['accion'] ?? $_POST['accion'] ?? null; // Permitir acción vía GET o POST
 
-if (!$accion) {
+if (!$accion) { 
     echo json_encode([
         'status' => 'error',
         'message' => 'Debe especificar la acción, por ejemplo: ?accion=listar'
     ]);
-    exit;
+    exit; // Terminar si no se especifica acción
 }
-
+// --- Manejo de acciones ---
 try {
     switch ($accion) {
 
         // Listar áreas
         case 'listar':
-            $res = $area->listar();
+            $res = $area->listar(); // Obtener todas las áreas
             echo json_encode([
                 'status' => 'success',
                 'data' => $res,
@@ -59,8 +59,8 @@ try {
 
         // Obtener área por ID
         case 'obtener':
-            $id_area = $_GET['id_area'] ?? null;
-            if (!$id_area) {
+            $id_area = $_GET['id_area'] ?? null; // ID vía GET
+            if (!$id_area) { // Verificar si se proporcionó ID
                 echo json_encode([
                     'status' => 'error',
                     'message' => 'Debe enviar el parámetro id_area'
@@ -68,15 +68,15 @@ try {
                 exit;
             }
 
-            $res = $area->obtenerPorId($id_area);
-            if ($res) {
+            $res = $area->obtenerPorId($id_area); // Obtener área por ID
+            if ($res) { // Verificar si se encontró el área
                 echo json_encode([
                     'status' => 'success',
                     'data' => $res,
                     'message' => 'Área encontrada'
                 ]);
             } else {
-                echo json_encode([
+                echo json_encode([ // Área no encontrada
                     'status' => 'warning',
                     'message' => 'Área no encontrada'
                 ]);
@@ -85,10 +85,10 @@ try {
 
         // Crear nueva área
         case 'crear':
-            $data = json_decode(file_get_contents("php://input"), true);
-            $nombre_area = $data['nombre_area'] ?? $_POST['nombre_area'] ?? null;
+            $data = json_decode(file_get_contents("php://input"), true); // Decodificar JSON
+            $nombre_area = $data['nombre_area'] ?? $_POST['nombre_area'] ??  null; // Nombre vía JSON o POST
 
-            if (!$nombre_area) {
+            if (!$nombre_area) { // Verificar si se proporcionó nombre
                 echo json_encode([
                     'status' => 'error',
                     'message' => 'Debe enviar nombre_area'
@@ -96,8 +96,8 @@ try {
                 exit;
             }
 
-            $area->crear($nombre_area);
-            echo json_encode([
+            $area->crear($nombre_area); // Crear nueva área
+            echo json_encode([ // Respuesta exitosa
                 'status' => 'success',
                 'message' => 'Área creada correctamente'
             ]);
@@ -105,20 +105,20 @@ try {
 
         // Actualizar área
         case 'actualizar':
-            $data = json_decode(file_get_contents("php://input"), true);
-            $id_area = $data['id_area'] ?? $_POST['id_area'] ?? null;
-            $nombre_area = $data['nombre_area'] ?? $_POST['nombre_area'] ?? null;
+            $data = json_decode(file_get_contents("php://input"), true); // Decodificar JSON
+            $id_area = $data['id_area'] ?? $_POST['id_area'] ?? null; // ID vía JSON o POST
+            $nombre_area = $data['nombre_area'] ?? $_POST['nombre_area'] ?? null; // Nombre vía JSON o POST
 
-            if (!$id_area || !$nombre_area) {
-                echo json_encode([
+            if (!$id_area || !$nombre_area) { // Verificar si se proporcionaron ambos
+                echo json_encode([ // Error si falta alguno
                     'status' => 'error',
                     'message' => 'Debe enviar id_area y nombre_area'
                 ]);
                 exit;
             }
 
-            $area->actualizar($id_area, $nombre_area);
-            echo json_encode([
+            $area->actualizar($id_area, $nombre_area); // Actualizar área
+            echo json_encode([ // Respuesta exitosa
                 'status' => 'success',
                 'message' => 'Área actualizada correctamente'
             ]);
@@ -126,19 +126,19 @@ try {
 
         // Eliminar área
         case 'eliminar':
-            $data = json_decode(file_get_contents("php://input"), true);
-            $id_area = $data['id_area'] ?? $_POST['id_area'] ?? null;
+            $data = json_decode(file_get_contents("php://input"), true); // Decodificar JSON
+            $id_area = $data['id_area'] ?? $_POST['id_area'] ?? null;  // ID vía JSON o POST
 
-            if (!$id_area) {
-                echo json_encode([
+            if (!$id_area) { // Verificar si se proporcionó ID
+                echo json_encode([ // Error si falta ID
                     'status' => 'error',
                     'message' => 'Debe enviar id_area'
                 ]);
                 exit;
             }
 
-            $area->eliminar($id_area);
-            echo json_encode([
+            $area->eliminar($id_area); // Eliminar área
+            echo json_encode([ // Respuesta exitosa
                 'status' => 'success',
                 'message' => 'Área eliminada correctamente'
             ]);
@@ -146,11 +146,11 @@ try {
 
         // Cambiar estado (activo/inactivo)
         case 'cambiar_estado':
-            $data = json_decode(file_get_contents("php://input"), true);
-            $id_area = $data['id_area'] ?? $_POST['id_area'] ?? $_GET['id_area'] ?? null;
-            $estado = $data['estado'] ?? $_POST['estado'] ?? $_GET['estado'] ?? null;
+            $data = json_decode(file_get_contents("php://input"), true); // Decodificar JSON
+            $id_area = $data['id_area'] ?? $_POST['id_area'] ?? $_GET['id_area'] ?? null; // ID vía JSON, POST o GET
+            $estado = $data['estado'] ?? $_POST['estado'] ?? $_GET['estado'] ?? null; // Estado vía JSON, POST o GET
 
-            if ($id_area === null || $estado === null) {
+            if ($id_area === null || $estado === null) { // Verificar si se proporcionaron ambos
                 echo json_encode([
                     'status' => 'error',
                     'message' => 'Debe enviar id_area y estado (1 o 0)'
@@ -158,16 +158,16 @@ try {
                 exit;
             }
 
-            if ($estado != 1 && $estado != 0) {
+            if ($estado != 1 && $estado != 0) { // Verificar valor de estado
                 echo json_encode([
                     'status' => 'error',
                     'message' => 'El estado debe ser 1 (activo) o 0 (inactivo)'
                 ]);
-                exit;
+                exit; // Terminar si estado no es válido
             }
 
-            $area->cambiarEstado($id_area, $estado);
-            echo json_encode([
+            $area->cambiarEstado($id_area, $estado); // Cambiar estado del área
+            echo json_encode([ // Respuesta exitosa
                 'status' => 'success',
                 'message' => 'Estado del área actualizado correctamente'
             ]);
@@ -180,8 +180,8 @@ try {
                 'message' => 'Acción no válida'
             ]);
             break;
-    }
-} catch (Exception $e) {
+    } // Fin switch
+} catch (Exception $e) {// Capturar errores generales
     echo json_encode([
         'status' => 'error',
         'message' => 'Error interno: ' . $e->getMessage()

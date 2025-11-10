@@ -1,4 +1,5 @@
 <?php
+// Clase Horario para manejar operaciones CRUD sobre la tabla 'horarios'
 class Horario {
     private $conn;
     private $table = "horarios";
@@ -12,6 +13,7 @@ class Horario {
      * Recibe todos los parámetros del formulario.
      * El campo estado se activa por defecto (1).
      */
+    // Funcion para crear un nuevo horario
     public function crearHorario($dia, $hora_inicio, $hora_fin, $id_zona, $id_area, $id_ficha, $id_instructor, $id_competencia, $numero_trimestre) {
         try {
             $sql = "INSERT INTO " . $this->table . " 
@@ -43,6 +45,7 @@ class Horario {
      * Actualizar un horario existente
      * Solo actualiza: número ficha, trimestre, instructor y competencia
      */
+    // Funcion para actualizar un horario existente
     public function actualizarHorario($id_horario, $id_ficha, $numero_trimestre, $id_instructor, $id_competencia) {
         try {
             $sql = "UPDATE " . $this->table . " 
@@ -73,6 +76,7 @@ class Horario {
      * Inhabilitar (limpiar) todos los horarios de una zona
      * Cambia el estado a 0 en todos los horarios con ese id_zona
      */
+    // Funcion para inhabilitar todos los horarios de una zona
     public function inhabilitarPorZona($id_zona) {
         try {
             $sql = "UPDATE " . $this->table . " 
@@ -96,6 +100,7 @@ class Horario {
      * Activar un horario específico
      * Restaura el estado a 1.
      */
+    // Funcion para activar un horario específico
     public function activarHorario($id_horario) {
         try {
             $sql = "UPDATE " . $this->table . " 
@@ -119,6 +124,7 @@ class Horario {
      * Obtener todos los horarios activos o inactivos
      * (Útil para listar en el frontend)
      */
+    // Funcion para listar todos los horarios activos o inactivos
     public function listarHorarios($estado = 1) {
         try {
             $sql = "SELECT h.*, 

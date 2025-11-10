@@ -8,7 +8,7 @@ class Ficha {
         $this->conn = $db;
     }
 
-    // Listar todas las fichas
+    // Funcion para listar todas las fichas
     public function listar() {
         try {
             $sql = "SELECT * FROM " . $this->table;
@@ -20,7 +20,7 @@ class Ficha {
         }
     }
 
-    // Obtener ficha por ID
+    // Funcion para obtener una ficha por su ID
     public function obtenerPorId($id_ficha) {
         try {
             $sql = "SELECT * FROM " . $this->table . " WHERE id_ficha = :id_ficha";
@@ -33,7 +33,7 @@ class Ficha {
         }
     }
 
-    // Crear una nueva ficha correctamente
+    // Funcion para crear una nueva ficha
     public function crear($numero_ficha, $nivel_ficha = "tecnico") {
         try {
             // Evita duplicar fichas con el mismo número
@@ -46,14 +46,14 @@ class Ficha {
                 return ["id_ficha" => $existe['id_ficha'], "mensaje" => "La ficha ya existe."];
             }
 
-            // Inserta la nueva ficha
+            // Funcion para insertar la nueva ficha
             $sql = "INSERT INTO " . $this->table . " (numero_ficha, nivel_ficha) VALUES (:num, :nivel)";
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':num', $numero_ficha, PDO::PARAM_INT);
             $stmt->bindParam(':nivel', $nivel_ficha, PDO::PARAM_STR);
             $stmt->execute();
 
-            // Retorna el ID autogenerado
+            // Funcion para retornar el ID autogenerado
             return [
                 "id_ficha" => (int)$this->conn->lastInsertId(),
                 "mensaje" => "Ficha creada exitosamente."
@@ -63,7 +63,7 @@ class Ficha {
         }
     }
 
-    // Eliminar ficha
+    // Funcion para eliminar una ficha
     public function eliminar($id_ficha) {
         try {
             $sql = "DELETE FROM " . $this->table . " WHERE id_ficha = :id_ficha";
