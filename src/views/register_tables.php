@@ -6,7 +6,7 @@ $areas = [];
 $zonas = [];
 $instructores = [];
 $trimestres = [];
-$competencias = []; // <-- agregado
+$competencias = [];
 
 try {
     if (isset($conn)) {
@@ -15,28 +15,27 @@ try {
         $s->execute();
         $areas = $s->fetchAll(PDO::FETCH_ASSOC);
 
-        // Zonas (si no hay nombre, muestro "Zona X")
+        // Zonas
         $s = $conn->prepare("SELECT id_zona, id_area FROM zonas WHERE estado = 1 ORDER BY id_zona ASC");
         $s->execute();
         $zonas = $s->fetchAll(PDO::FETCH_ASSOC);
 
-        // Instructores (nombre + tipo)
+        // Instructores
         $s = $conn->prepare("SELECT nombre_instructor, tipo_instructor FROM instructores WHERE estado = 1 ORDER BY nombre_instructor ASC");
         $s->execute();
         $instructores = $s->fetchAll(PDO::FETCH_ASSOC);
 
-        // Trimestres (listado)
+        // Trimestres
         $s = $conn->prepare("SELECT numero_trimestre, estado FROM trimestre ORDER BY numero_trimestre ASC");
         $s->execute();
         $trimestres = $s->fetchAll(PDO::FETCH_ASSOC);
 
-  // Competencias (columnas reales: id_competencia, nombre_competencia, descripcion, id_programa)
+  // Competencias
   $s = $conn->prepare("SELECT id_competencia, nombre_competencia, descripcion, id_programa FROM competencias WHERE estado = 1 ORDER BY nombre_competencia ASC");
         $s->execute();
         $competencias = $s->fetchAll(PDO::FETCH_ASSOC);
     }
 } catch (PDOException $e) {
-    // No interrumpo la vista si falla la carga, se muestran los selects vacíos
 }
 ?>
 
@@ -207,7 +206,7 @@ try {
 
           <!-- Formulario -->
           <form id="formTrimestralizacion" action="<?= BASE_URL ?>src/controllers/TrimestralizacionController.php?accion=crear" method="POST" class="trimestralizacion-form space-y-3 text-sm lg:text-base">
-            <!-- AREA (desde DB) -->
+            <!-- AREA -->
             <select name="area" id="id_area" 
               class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
               <option value="">Seleccione el area a la que pertenece la ficha</option>
@@ -216,7 +215,7 @@ try {
               <?php endforeach; ?>
             </select>
 
-            <!-- ZONA (desde DB) -->
+            <!-- ZONA -->
             <select name="zona" id="id_zona" 
               class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
               <option value="">Seleccione la zona a la que pertenece la ficha</option>
@@ -235,7 +234,7 @@ try {
               <option value="tecnologo">Tecnologo</option>
             </select>
 
-            <!-- TRIMESTRE (desde DB) -->
+            <!-- TRIMESTRE -->
             <select name="numero_trimestre" 
               class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
               <option value="">Seleccione el trimestre que cursa la ficha</option>
@@ -250,7 +249,7 @@ try {
               <input type="text" name="numero_ficha" id="numero_ficha" placeholder="Número de la ficha" 
                 class="form-field basis-1/2 w-full h-12 px-4 pr-12 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm"/>
                 
-              <!-- INSTRUCTOR (desde DB) -->
+              <!-- INSTRUCTOR -->
               <select name="nombre_instructor" id="nombre_instructor"
                 class="select-chev form-field basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
                 <option value="">Seleccione el instructor</option>
@@ -291,13 +290,13 @@ try {
               </select>
             </div>
 
-            <!-- CAMBIO: select de COMPETENCIA en lugar de textarea -->
+            <!-- Select de Competencia -->
             <select name="id_competencia" id="id_competencia"
               class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
               <option value="">Seleccione la competencia</option>
                 <?php if (empty($competencias)): ?>
                   <option disabled>No se encontraron competencias activas</option>
-                  <!-- competencias: <?= htmlspecialchars(json_encode($competencias)) ?> -->
+                  <?= htmlspecialchars(json_encode($competencias)) ?> -->
                 <?php else: ?>
                   <?php foreach ($competencias as $comp): ?>
                     <?php $valueComp = htmlspecialchars($comp['id_competencia']); ?>
@@ -337,32 +336,31 @@ try {
           let hasVisible = false;
 
           for (const opt of selZona.options) {
-            if (opt.value === "") { // always keep placeholder visible
+            if (opt.value === "") {
               opt.hidden = false;
               opt.disabled = false;
               continue;
             }
             const optArea = opt.dataset.area ?? "";
-            // Si hay un área seleccionada, mostrar sólo zonas con esa área.
-            // Si no hay área seleccionada, mostrar todas las zonas.
+            // Si no hay área seleccionada, mostrar todas las zonas
             const show = areaVal !== "" ? (String(optArea) === String(areaVal)) : true;
             opt.hidden = !show;
             opt.disabled = !show;
             if (show) hasVisible = true;
           }
 
-          // Si la zona actualmente seleccionada queda oculta, limpiarla
+          // Si la zona actualmente seleccionada queda oculta
           const selectedOpt = selZona.selectedOptions[0];
           if (selectedOpt && selectedOpt.hidden) selZona.value = "";
         }
 
         selArea.addEventListener('change', filterZonas);
-        // Ejecutar una vez al cargar para sincronizar (útil si el formulario se reutiliza)
+        // Ejecutar una vez al cargar para sincronizar
         document.addEventListener('DOMContentLoaded', filterZonas);
       })();
     </script>
     <script>
-      // Copiar atributos data-rae/data-programa desde la opción seleccionada al formulario
+      // Copiar atributos desde la opción seleccionada al formulario
       document.addEventListener('DOMContentLoaded', function () {
         const form = document.querySelector('#formTrimestralizacion');
         if (!form) return;
@@ -379,7 +377,6 @@ try {
 
         if (sel) {
           sel.addEventListener('change', syncCompData);
-          // sincronizar al cargar
           syncCompData();
         }
       });

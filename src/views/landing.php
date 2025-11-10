@@ -15,22 +15,22 @@ try {
         $s->execute();
         $areas = $s->fetchAll(PDO::FETCH_ASSOC);
 
-        // Zonas (si no hay nombre, muestro "Zona X")
+        // Zonas
         $s = $conn->prepare("SELECT id_zona, id_area FROM zonas WHERE estado = 1 ORDER BY id_zona ASC");
         $s->execute();
         $zonas = $s->fetchAll(PDO::FETCH_ASSOC);
 
-        // Instructores (nombre + tipo)
+        // Instructores
         $s = $conn->prepare("SELECT nombre_instructor, tipo_instructor FROM instructores WHERE estado = 1 ORDER BY nombre_instructor ASC");
         $s->execute();
         $instructores = $s->fetchAll(PDO::FETCH_ASSOC);
 
-        // Trimestres (listado)
+        // Trimestres
         $s = $conn->prepare("SELECT numero_trimestre, estado FROM trimestre ORDER BY numero_trimestre ASC");
         $s->execute();
         $trimestres = $s->fetchAll(PDO::FETCH_ASSOC);
 
-  // Competencias (columnas reales: id_competencia, nombre, descripcion, id_programa)
+  // Competencias
   $s = $conn->prepare("SELECT id_competencia, nombre_competencia, descripcion, id_programa FROM competencias WHERE estado = 1 ORDER BY nombre_competencia ASC");
   $s->execute();
   $competencias = $s->fetchAll(PDO::FETCH_ASSOC);
@@ -46,7 +46,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Proyecto 0</title>
 
-    <!-- Fuente Work Sans (el modal la usa) -->
+    <!-- Fuente Work Sans -->
     <link href="https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/formulario_crear_trimestralizacion.css">
 
@@ -60,7 +60,7 @@ try {
       <p class="text-sm sm:text-base lg:text-lg xl:text-xl 2xl:text-2xl mb-8">Crea y ajusta horarios en segundos</p>
 
   <div class="flex flex-col gap-3 lg:gap-4 items-center">
-        <!-- Botón de crear (abrirá el modal) -->
+        <!-- Botón de crear -->
         <button type="button" id="btnAbrirModal"
           class="w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-[#004A70] transition-colors duration-200 outline-none cursor-pointer hover:text-white">
           CREAR TRIMESTRALIZACIÓN
@@ -74,7 +74,7 @@ try {
       </div>
     </main>
 
-    <!-- ============== MODAL CREAR TRIMESTRALIZACIÓN (tu modal importado) ============== -->
+    <!-- ============== MODAL CREAR TRIMESTRALIZACIÓN  ============== -->
     <div
       id="modalCrearLanding"
       class="fixed inset-0 z-40 hidden"
@@ -111,7 +111,7 @@ try {
 
           <!-- Formulario -->
           <form id="formTrimestralizacion" action="<?= BASE_URL ?>src/controllers/TrimestralizacionController.php?accion=crear" method="POST" class="trimestralizacion-form space-y-3 text-sm lg:text-base">
-            <!-- AREA (desde DB) -->
+            <!-- AREA -->
             <select name="area" id="id_area" 
               class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
               <option value="">Seleccione el area a la que pertenece la ficha</option>
@@ -120,7 +120,7 @@ try {
               <?php endforeach; ?>
             </select>
 
-            <!-- ZONA (desde DB) -->
+            <!-- ZONA -->
             <select name="zona" id="id_zona" 
               class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
               <option value="">Seleccione la zona a la que pertenece la ficha</option>
@@ -139,7 +139,7 @@ try {
               <option value="tecnologo">Tecnologo</option>
             </select>
 
-            <!-- TRIMESTRE (desde DB) -->
+            <!-- TRIMESTRE -->
             <select name="numero_trimestre" 
               class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
               <option value="">Seleccione el trimestre que cursa la ficha</option>
@@ -154,7 +154,7 @@ try {
               <input type="text" name="numero_ficha" id="numero_ficha" placeholder="Número de la ficha" 
                 class="form-field basis-1/2 w-full h-12 px-4 pr-12 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm"/>
                 
-              <!-- INSTRUCTOR (desde DB) -->
+              <!-- INSTRUCTOR -->
               <select name="nombre_instructor" id="nombre_instructor"
                 class="select-chev form-field basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
                 <option value="">Seleccione el instructor</option>
@@ -194,7 +194,7 @@ try {
                 <?php endfor; ?>
               </select>
             </div>
-            <!-- Select para vincular competencia existente (id_competencia) -->
+            <!-- Select para vincular competencia existente -->
             <div class="relative">
               <select
                 id="id_competencia"
@@ -252,7 +252,7 @@ try {
 
         if (sel) {
           sel.addEventListener('change', syncCompData);
-          // sincronizar al cargar
+          // Sincronizar al cargar
           syncCompData();
         }
       });
@@ -268,27 +268,26 @@ try {
           let hasVisible = false;
 
           for (const opt of selZona.options) {
-            if (opt.value === "") { // always keep placeholder visible
+            if (opt.value === "") {
               opt.hidden = false;
               opt.disabled = false;
               continue;
             }
             const optArea = opt.dataset.area ?? "";
-            // Si hay un área seleccionada, mostrar sólo zonas con esa área.
-            // Si no hay área seleccionada, mostrar todas las zonas.
+            // Si no hay área seleccionada, mostrar todas las zonas
             const show = areaVal !== "" ? (String(optArea) === String(areaVal)) : true;
             opt.hidden = !show;
             opt.disabled = !show;
             if (show) hasVisible = true;
           }
 
-          // Si la zona actualmente seleccionada queda oculta, limpiarla
+          // Si la zona actualmente seleccionada queda oculta
           const selectedOpt = selZona.selectedOptions[0];
           if (selectedOpt && selectedOpt.hidden) selZona.value = "";
         }
 
         selArea.addEventListener('change', filterZonas);
-        // Ejecutar una vez al cargar para sincronizar (útil si el formulario se reutiliza)
+        // Ejecutar una vez al cargar para sincronizar
         document.addEventListener('DOMContentLoaded', filterZonas);
       })();
     </script>

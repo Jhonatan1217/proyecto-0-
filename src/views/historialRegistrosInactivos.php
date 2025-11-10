@@ -227,7 +227,6 @@
                 filterAreaSelect.value = '';
                 applyFilters();
             });
-
             applyFilters();
         });
     </script>
