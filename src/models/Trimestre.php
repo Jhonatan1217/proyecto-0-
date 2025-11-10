@@ -1,4 +1,5 @@
 <?php
+// Clase Trimestre para manejar operaciones CRUD sobre la tabla 'trimestre'
 class Trimestre {
     private $conn;
     private $table = "trimestre";
@@ -7,6 +8,7 @@ class Trimestre {
         $this->conn = $db;
     }
 
+    // Funcion para listar todos los trimestres
     public function listar() {
         $sql = "SELECT * FROM {$this->table}";
         $stmt = $this->conn->prepare($sql);
@@ -14,6 +16,7 @@ class Trimestre {
         return $stmt;
     }
 
+    // Funcion para crear un nuevo trimestre
     public function crear($numero_trimestre, $estado) {
         $sql = "INSERT INTO {$this->table} (numero_trimestre, estado) VALUES (:numero_trimestre, :estado)";
         $stmt = $this->conn->prepare($sql);
@@ -22,6 +25,7 @@ class Trimestre {
         return $stmt->execute();
     }
 
+    // Funcion para obtener un trimestre por su ID
     public function obtenerPorId($numero_trimestre) {
         $sql = "SELECT * FROM {$this->table} WHERE numero_trimestre = :numero_trimestre";
         $stmt = $this->conn->prepare($sql);
@@ -30,6 +34,7 @@ class Trimestre {
         return $stmt;
     }
 
+    // Funcion para actualizar un trimestre existente
     public function actualizar($numero_trimestre, $estado) {
         $sql = "UPDATE {$this->table} SET estado = :estado WHERE numero_trimestre = :numero_trimestre";
         $stmt = $this->conn->prepare($sql);
@@ -38,6 +43,7 @@ class Trimestre {
         return $stmt->execute();
     }
 
+    // Funcion para editar un trimestre existente
     public function editar($numero_trimestre, $nuevo_numero) {
     $sql = "UPDATE {$this->table} 
             SET numero_trimestre = :nuevo_numero 
@@ -47,6 +53,8 @@ class Trimestre {
     $stmt->bindParam(':numero_trimestre', $numero_trimestre);
     return $stmt->execute();
     }
+
+    // Funcion para verificar si un trimestre existe
     public function existe($numero_trimestre) {
     $sql = "SELECT COUNT(*) as total FROM {$this->table} WHERE numero_trimestre = :numero_trimestre";
     $stmt = $this->conn->prepare($sql);
@@ -56,7 +64,7 @@ class Trimestre {
     return $row['total'] > 0;
 }
 
-    // Suspender (estado = 0)
+    // Funcion para suspender un trimestre
     public function eliminar($numero_trimestre) {
         $sql = "UPDATE {$this->table} SET estado = 0 WHERE numero_trimestre = :numero_trimestre";
         $stmt = $this->conn->prepare($sql);
@@ -64,7 +72,7 @@ class Trimestre {
         return $stmt->execute();
     }
 
-    // Reactivar (estado = 1)
+    // Funcion para reactivar un trimestre
     public function reactivar($numero_trimestre) {
         $sql = "UPDATE {$this->table} SET estado = 1 WHERE numero_trimestre = :numero_trimestre";
         $stmt = $this->conn->prepare($sql);

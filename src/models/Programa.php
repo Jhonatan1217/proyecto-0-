@@ -1,4 +1,5 @@
 <?php
+// Clase Programa para manejar operaciones CRUD sobre la tabla 'programas'
 class Programa {
     private $conn;
     private $table = "programas";
@@ -7,7 +8,7 @@ class Programa {
         $this->conn = $db;
     }
 
-    // Listar todos los programas
+    // Funcion para listar todos los programas
     public function listar() {
         try {
             $sql = "SELECT * FROM " . $this->table;
@@ -19,7 +20,7 @@ class Programa {
         }
     }
 
-    // Obtener un programa por su ID
+    // Funcion para obtener un programa por su ID
     public function obtenerPorId($id_programa) {
         try {
             $sql = "SELECT * FROM " . $this->table . " WHERE id_programa = :id_programa";
@@ -32,7 +33,7 @@ class Programa {
         }
     }
 
-    // Crear un nuevo programa
+    // Funcion para crear un nuevo programa
     public function crear($nombre_programa, $descripcion, $duracion) {
         try {
             $sql = "INSERT INTO " . $this->table . " (nombre_programa, descripcion, duracion)
@@ -48,7 +49,7 @@ class Programa {
         }
     }
 
-    // Actualizar un programa existente
+    // Funcion para actualizar un programa existente
     public function actualizar($id_programa, $nombre_programa, $descripcion, $duracion) {
         try {
             $sql = "UPDATE " . $this->table . " 
@@ -68,7 +69,7 @@ class Programa {
         }
     }
 
-    // Eliminar un programa
+    // Funcion para eliminar un programa
     public function eliminar($id_programa) {
         try {
             $sql = "DELETE FROM " . $this->table . " WHERE id_programa = :id_programa";
