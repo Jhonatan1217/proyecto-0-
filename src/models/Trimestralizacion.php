@@ -1,6 +1,6 @@
 <?php
 require_once "../../config/database.php";
-
+// Clase Trimestralizacion para manejar operaciones CRUD sobre la tabla 'trimestralizacion'
 class Trimestralizacion {
     private $conn;
     private $table = "trimestralizacion";
@@ -8,10 +8,7 @@ class Trimestralizacion {
     public function __construct($db) {
         $this->conn = $db;
     }
-
-    // ============================================================
-    // LISTAR TRIMESTRALIZACIONES POR ZONA
-    // ============================================================
+    // Funcion para listar las trimestralizaciones por zona
     public function listar($id_zona = null) {
         try {
             if (!$id_zona) {
@@ -59,9 +56,7 @@ class Trimestralizacion {
         }
     }
 
-    // ============================================================
-    // OBTENER TRIMESTRALIZACIÓN POR ID
-    // ============================================================
+    // Funcion para obtener una trimestralizacion por su ID
     public function obtenerPorId($id_trimestral) {
         try {
             $sql = "SELECT 
@@ -96,9 +91,7 @@ class Trimestralizacion {
         }
     }
 
-    // ============================================================
-    // CREAR TRIMESTRALIZACIÓN
-    // ============================================================
+    // Funcion para crear una nueva trimestralizacion
     public function crear($id_horario) {
         try {
             // Verificar que el horario exista
@@ -127,9 +120,7 @@ class Trimestralizacion {
         }
     }
 
-    // ============================================================
-    // ACTUALIZAR TRIMESTRALIZACIÓN COMPLETA (POR ZONA)
-    // ============================================================
+    // Funcion para actualizar una trimestralizacion completa por zona
     public function actualizar($id_zona, $data) {
         try {
             foreach ($data as $fila) {
@@ -197,14 +188,12 @@ class Trimestralizacion {
         }
     }
 
-    // ============================================================
-    // ELIMINAR TRIMESTRALIZACIONES POR ZONA (marcar como INACTIVO)
-    // ============================================================
+    // Funcion para eliminar una trimestralizacion por zona
     public function eliminarPorZona($id_zona) {
         try {
             $this->conn->beginTransaction();
 
-            // Marcar todos los horarios de la zona como inactivos (estado = 0)
+            // Funcion para marcar todos los horarios de la zona como inactivos (estado = 0)
             $stmt = $this->conn->prepare("UPDATE horarios SET estado = 0 WHERE id_zona = :id_zona");
             $stmt->bindParam(':id_zona', $id_zona, PDO::PARAM_INT);
             $stmt->execute();

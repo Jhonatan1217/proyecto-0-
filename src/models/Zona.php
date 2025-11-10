@@ -7,12 +7,7 @@ class Zona {
         $this->conn = $db;
     }
 
-    /**
-     * Crear una nueva zona
-     * - Se ingresa el número de la zona (id_zona)
-     * - Se selecciona el área (id_area)
-     * - Se activa por defecto (estado = 1)
-     */
+    // Funcion para crear una nueva zona
     public function crear($id_zona, $id_area) {
         try {
             // Verificar si ya existe la combinación (id_zona, id_area)
@@ -35,10 +30,7 @@ class Zona {
         }
     }
 
-    /**
-     * Actualizar una zona existente
-     * - Permite cambiar el número de zona y el área (PK compuesta)
-     */
+    // Funcion para actualizar una zona existente
     public function actualizar($id_zona_actual, $id_area_actual, $id_zona_nueva, $id_area_nueva) {
         try {
             $sql = "UPDATE {$this->table}
@@ -61,9 +53,7 @@ class Zona {
         }
     }
 
-    /**
-     * Cambiar el estado de una zona (activar o desactivar)
-     */
+    // Funcion para cambiar el estado de una zona (activar o desactivar)
     public function cambiarEstado($id_zona, $id_area, $estado) {
         try {
             $sql = "UPDATE {$this->table} 
@@ -86,9 +76,7 @@ class Zona {
     }
 
 
-    /**
-     * Listar todas las zonas con su área correspondiente
-     */
+    // Funcion para listar todas las zonas con su área correspondiente
     public function listar() {
         try {
             $sql = "SELECT 
@@ -107,10 +95,7 @@ class Zona {
         }
     }
 
-    /**
-
-     * Listar zonas por área
-     */
+    // Funcion para listar las zonas por área
     public function listarPorArea($id_area) {
         try {
             $sql = "SELECT 
@@ -131,9 +116,7 @@ class Zona {
         }
     }
 
-    /**
-     * Obtener una zona específica
-     */
+    // Funcion para obtener una zona por su ID
     public function obtenerPorId($id_zona, $id_area) {
         try {
             $sql = "SELECT z.id_zona, z.id_area, a.nombre_area, z.estado
