@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Horarios Inactivos</title>
-    <link rel="stylesheet" href="<?= BASE_URL ?>public/css/fonts.css">
-    <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body class="flex flex-col min-h-screen font-sans bg-gray-100 text-gray-900">
@@ -72,11 +73,27 @@
             $stmt = $conn->prepare($sql);
             $stmt->execute();
             $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Función para obtener nombre por ID
+            function getNombre($conn, $tabla, $id_col, $nombre_col, $id) {
+                $sql = "SELECT $nombre_col FROM $tabla WHERE $id_col = ? LIMIT 1";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute([$id]);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                return $row ? $row[$nombre_col] : '';
+            }
             ?>
 
             <?php if ($result && count($result) > 0): ?>
                 <?php foreach ($result as $row): ?>
-
+                    <?php
+                        // Obtener nombres
+                        $nombreFicha = getNombre($conn, 'fichas', 'id_ficha', 'numero_ficha', $row['id_ficha']);
+                        $nombreInstructor = getNombre($conn, 'instructores', 'id_instructor', 'nombre_instructor', $row['id_instructor']);
+                        $nombreCompetencia = getNombre($conn, 'competencias', 'id_competencia', 'nombre_competencia', $row['id_competencia']);
+                        $nombrePrograma = getNombre($conn, 'programas', 'id_programa', 'nombre_programa', $row['id_programa']);
+                        $nombreArea = getNombre($conn, 'areas', 'id_area', 'nombre_area', $row['id_area']);
+                    ?>
                     <!-- Card de un horario -->
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md hover:translate-y-[-2px] transition-all duration-200 schedule-item"
                          data-zona="<?php echo $row['id_zona']; ?>"
@@ -103,23 +120,23 @@
                             </div>
 
                             <div class="flex flex-col gap-1">
-                                <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Area</span>
-                                <span class="text-sm font-medium text-gray-900">Area <?php echo $row['id_area']; ?></span>
+                                <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Área</span>
+                                <span class="text-sm font-medium text-gray-900"><?php echo $nombreArea; ?></span>
                             </div>
 
                             <div class="flex flex-col gap-1">
                                 <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Ficha</span>
-                                <span class="text-sm font-medium text-gray-900">Ficha <?php echo $row['id_ficha']; ?></span>
+                                <span class="text-sm font-medium text-gray-900"><?php echo $nombreFicha; ?></span>
                             </div>
 
                             <div class="flex flex-col gap-1">
                                 <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Instructor</span>
-                                <span class="text-sm font-medium text-gray-900">Instructor <?php echo $row['id_instructor']; ?></span>
+                                <span class="text-sm font-medium text-gray-900"><?php echo $nombreInstructor; ?></span>
                             </div>
 
                             <div class="flex flex-col gap-1">
                                 <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Competencia</span>
-                                <span class="text-sm font-medium text-gray-900">Competencia <?php echo $row['id_competencia']; ?></span>
+                                <span class="text-sm font-medium text-gray-900"><?php echo $nombreCompetencia; ?></span>
                             </div>
                         </div>
 
@@ -129,7 +146,7 @@
                                 Trimestre <?php echo $row['numero_trimestre']; ?>
                             </span>
                             <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">
-                                Programa <?php echo $row['id_programa']; ?>
+                                Programa <?php echo $nombrePrograma; ?>
                             </span>
                         </div>
                     </div>
