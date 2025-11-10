@@ -16,7 +16,7 @@ if (!isset($conn)) {
     exit;
 }
 
-
+// Instancia el modelo Horario pasando la conexión a la base de datos
 $horario = new Horario($conn);
 $accion = $_POST["accion"] ?? $_GET["accion"] ?? null;
 
@@ -30,6 +30,7 @@ if ($accion) {
         // CREAR HORARIO
         // ===============================
         case "crear":
+            // Parámetros necesarios
             $dia = $_POST["dia"];
             $hora_inicio = $_POST["hora_inicio"];
             $hora_fin = $_POST["hora_fin"];
@@ -39,9 +40,9 @@ if ($accion) {
             $id_instructor = $_POST["id_instructor"];
             $id_competencia = $_POST["id_competencia"];
             $numero_trimestre = $_POST["numero_trimestre"];
-
+            // Llamar al método de creación
             $resultado = $horario->crearHorario($dia, $hora_inicio, $hora_fin, $id_zona, $id_area, $id_ficha, $id_instructor, $id_competencia, $numero_trimestre);
-
+            // Responder según el resultado
             if ($resultado) {
                 $response = ["status" => "success", "message" => "Horario creado correctamente."];
             } else {
@@ -53,14 +54,15 @@ if ($accion) {
         // ACTUALIZAR HORARIO
         // ===============================
         case "actualizar":
+            // Parámetros necesarios
             $id_horario = $_POST["id_horario"];
             $id_ficha = $_POST["id_ficha"];
             $numero_trimestre = $_POST["numero_trimestre"];
             $id_instructor = $_POST["id_instructor"];
             $id_competencia = $_POST["id_competencia"];
-
+            // Llamar al método de actualización
             $resultado = $horario->actualizarHorario($id_horario, $id_ficha, $numero_trimestre, $id_instructor, $id_competencia);
-
+            // Responder según el resultado
             if ($resultado) {
                 $response = ["status" => "success", "message" => "Horario actualizado correctamente."];
             } else {
@@ -72,10 +74,10 @@ if ($accion) {
         // INHABILITAR HORARIOS POR ZONA
         // ===============================
         case "inhabilitarZona":
-            $id_zona = $_POST["id_zona"];
-
+            $id_zona = $_POST["id_zona"]; // Parámetro necesario
+            // Llamar al método de inhabilitación
             $resultado = $horario->inhabilitarPorZona($id_zona);
-
+            // Responder según el resultado
             if ($resultado) {
                 $response = ["status" => "success", "message" => "Horario de la zona inhabilitado correctamente."];
             } else {
@@ -87,10 +89,10 @@ if ($accion) {
         // ACTIVAR HORARIO
         // ===============================
         case "activar":
-            $id_horario = $_POST["id_horario"];
-
+            $id_horario = $_POST["id_horario"]; // Parámetro necesario
+            // Llamar al método de activación
             $resultado = $horario->activarHorario($id_horario);
-
+            // Responder según el resultado
             if ($resultado) {
                 $response = ["status" => "success", "message" => "Horario activado correctamente."];
             } else {
@@ -101,13 +103,13 @@ if ($accion) {
         // ===============================
         // LISTAR HORARIOS (opcional)
         // ===============================
-        case "listar":
-            $estado = $_POST["estado"] ?? $_GET["estado"] ?? 1;
-            $stmt = $horario->listarHorarios($estado);
+        case "listar": 
+            $estado = $_POST["estado"] ?? $_GET["estado"] ?? 1; // Parámetro opcional
+            $stmt = $horario->listarHorarios($estado); // Llamar al método de listado
             $data = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
             $response = ["status" => "success", "data" => $data];
             break;
-    }
+    } // fin switch
 }
 
 // Devuelve respuesta JSON al frontend

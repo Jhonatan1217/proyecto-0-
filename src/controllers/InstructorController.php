@@ -49,51 +49,51 @@ switch ($accion) {
 
     // Obtener un instructor por ID
     case 'obtener':
-        if (!isset($_GET['id_instructor'])) {
+        if (!isset($_GET['id_instructor'])) { 
             echo json_encode(['error' => 'Debe enviar el parámetro id_instructor']);
             exit;
         }
-        $res = $instructor->obtenerPorId($_GET['id_instructor']);
-        echo json_encode($res);
+        $res = $instructor->obtenerPorId($_GET['id_instructor']); // Llama al método del modelo
+        echo json_encode($res); // Devuelve el resultado en JSON
         break;
 
     // Crear un nuevo instructor
     case 'crear':
-        $data = json_decode(file_get_contents("php://input"), true);
+        $data = json_decode(file_get_contents("php://input"), true); // Leer JSON del cuerpo
 
-        $nombre = $data['nombre_instructor'] ?? $_POST['nombre_instructor'] ?? null;
-        $tipo   = $data['tipo_instructor']    ?? $_POST['tipo_instructor']    ?? null;
+        $nombre = $data['nombre_instructor'] ?? $_POST['nombre_instructor'] ?? null; // Soporta JSON o POST
+        $tipo   = $data['tipo_instructor']    ?? $_POST['tipo_instructor']    ?? null; // Soporta JSON o POST
 
-        if (!$nombre || !$tipo) {
+        if (!$nombre || !$tipo) { // Validar campos obligatorios
             echo json_encode(['error' => 'Debe enviar nombre_instructor y tipo_instructor']);
             exit;
         }
 
         // Normalizar y validar nombre (solo letras y espacios)
         $nombre = colapsarEspacios($nombre);
-        if ($nombre === '' || !validarSoloTexto($nombre)) {
+        if ($nombre === '' || !validarSoloTexto($nombre)) { // Validar solo texto
             echo json_encode(['error' => 'El nombre solo puede contener letras y espacios']);
             exit;
         }
 
         $tiposValidos = ['TECNICO', 'TRANSVERSAL', 'MIXTO'];
-        if (!in_array(strtoupper($tipo), $tiposValidos)) {
+        if (!in_array(strtoupper($tipo), $tiposValidos)) { // Validar tipo
             echo json_encode(['error' => 'El tipo_instructor debe ser TECNICO, TRANSVERSAL o MIXTO']);
             exit;
         }
 
-        $instructor->crear($nombre, strtoupper($tipo));
+        $instructor->crear($nombre, strtoupper($tipo)); // Llama al método del modelo
         echo json_encode(['mensaje' => 'Instructor creado correctamente']);
         break;
 
     // Actualizar un instructor existente
     case 'actualizar':
-        $data = json_decode(file_get_contents("php://input"), true);
-
+        $data = json_decode(file_get_contents("php://input"), true); // Leer JSON del cuerpo
+        // Soporta JSON o POST
         $id_instructor = $data['id_instructor']      ?? $_POST['id_instructor']      ?? null;
         $nombre        = $data['nombre_instructor']  ?? $_POST['nombre_instructor']  ?? null;
         $tipo          = $data['tipo_instructor']    ?? $_POST['tipo_instructor']    ?? null;
-
+        // Validar campos obligatorios
         if (!$id_instructor || !$nombre || !$tipo) {
             echo json_encode(['error' => 'Debe enviar id_instructor, nombre_instructor y tipo_instructor']);
             exit;
@@ -105,13 +105,12 @@ switch ($accion) {
             echo json_encode(['error' => 'El nombre solo puede contener letras y espacios']);
             exit;
         }
-
         $tiposValidos = ['TECNICO', 'TRANSVERSAL', 'MIXTO'];
-        if (!in_array(strtoupper($tipo), $tiposValidos)) {
+        if (!in_array(strtoupper($tipo), $tiposValidos)) { // Validar tipo
             echo json_encode(['error' => 'El tipo_instructor debe ser TECNICO, TRANSVERSAL o MIXTO']);
-            exit;
+            exit; 
         }
-
+        // Llama al método del modelo
         $instructor->actualizar($id_instructor, $nombre, strtoupper($tipo));
         echo json_encode(['mensaje' => 'Instructor actualizado correctamente']);
         break;
@@ -120,32 +119,33 @@ switch ($accion) {
     case 'eliminar':
         $data = json_decode(file_get_contents("php://input"), true);
         $id_instructor = $data['id_instructor'] ?? $_POST['id_instructor'] ?? null;
-
+        // Validar si se proporcionó ID
         if (!$id_instructor) {
             echo json_encode(['error' => 'Debe enviar el parámetro id_instructor']);
             exit;
-        }
-
+        } 
+        // Llama al método del modelo
         $instructor->eliminar($id_instructor);
         echo json_encode(['mensaje' => 'Instructor eliminado correctamente']);
         break;
 
     // Cambiar el estado (activo/inactivo)
     case 'cambiar_estado':
+        // Soporta JSON, POST o GET
         $data = json_decode(file_get_contents("php://input"), true);
         $id_instructor = $data['id_instructor'] ?? $_POST['id_instructor'] ?? $_GET['id_instructor'] ?? null;
         $estado        = $data['estado']        ?? $_POST['estado']        ?? $_GET['estado']        ?? null;
-
+        // Validar si se proporcionaron ambos
         if ($id_instructor === null || $estado === null) {
             echo json_encode(['error' => 'Debe enviar id_instructor y estado (1 o 0)']);
             exit;
         }
-
+        // Validar valor de estado
         if ($estado != 1 && $estado != 0) {
             echo json_encode(['error' => 'El estado debe ser 1 (activo) o 0 (inactivo)']);
             exit;
         }
-
+        // Llama al método del modelo
         $instructor->cambiarEstado($id_instructor, $estado);
         echo json_encode(['mensaje' => 'Estado del instructor actualizado correctamente']);
         break;
