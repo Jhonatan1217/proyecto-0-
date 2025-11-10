@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Horarios Inactivos</title>
+
     <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -11,19 +12,18 @@
 <body class="flex flex-col min-h-screen font-sans bg-gray-100 text-gray-900">
     <div class="flex-1 max-w-6xl w-full mx-auto px-4 md:px-6 py-6 md:py-8">
 
-        <!-- Header -->
         <div class="bg-white rounded-lg shadow-sm p-6 md:p-8 mb-6">
             <h1 class="text-2xl md:text-3xl font-bold mb-2" style="color:#39A900;">Horarios Inactivos</h1>
             <p class="text-gray-600 text-sm">Visualice y edite los horarios inactivos del sistema</p>
         </div>
 
-        <!-- Filtros -->
+        <!-- Bloque de filtros -->
         <div class="bg-white rounded-lg shadow-sm p-6 md:p-8 mb-6 border border-gray-200">
             <div class="flex flex-col md:flex-row md:justify-between gap-6">
 
                 <div class="flex flex-col md:flex-row gap-4 md:gap-6 flex-1">
 
-                    <!-- Zona -->
+                    <!-- Filtro Zona -->
                     <div class="flex flex-col gap-2 min-w-64">
                         <label for="filterZona" class="text-xs font-medium text-gray-600 uppercase tracking-wider">Zona</label>
                         <select id="filterZona"
@@ -34,7 +34,7 @@
                         </select>
                     </div>
 
-                    <!-- Área -->
+                    <!-- Filtro Área -->
                     <div class="flex flex-col gap-2 min-w-64">
                         <label for="filterArea" class="text-xs font-medium text-gray-600 uppercase tracking-wider">Área</label>
                         <select id="filterArea"
@@ -46,13 +46,15 @@
                     </div>
                 </div>
 
-                <!-- Acciones -->
+                <!-- Acciones y contador -->
                 <div class="flex flex-col md:flex-row gap-4 md:items-end">
 
+                    <!-- Botón limpiar -->
                     <button id="clearFilters" class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-lg text-sm font-semibold transition-colors duration-200 whitespace-nowrap h-fit">
                         Limpiar Filtros
                     </button>
 
+                    <!-- Contador -->
                     <div class="flex flex-col gap-1 text-right">
                         <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Resultados</span>
                         <span id="resultCount" class="text-lg font-bold" style="color:#39A900;">0 horarios</span>
@@ -61,10 +63,12 @@
             </div>
         </div>
 
-        <!-- Cards -->
+        <!-- Listado de horarios -->
         <div class="flex flex-col gap-4" id="scheduleContainer">
             <?php
             require_once(__DIR__ . '/../../config/database.php');
+
+            // Consulta de horarios inactivos
             $sql = "SELECT * FROM horarios WHERE estado = 0";
             $stmt = $conn->prepare($sql);
             $stmt->execute();
@@ -73,10 +77,13 @@
 
             <?php if ($result && count($result) > 0): ?>
                 <?php foreach ($result as $row): ?>
+
+                    <!-- Card de un horario -->
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md hover:translate-y-[-2px] transition-all duration-200 schedule-item"
                          data-zona="<?php echo $row['id_zona']; ?>"
                          data-area="<?php echo $row['id_area']; ?>">
 
+                        <!-- Cabecera del card -->
                         <div class="flex flex-col md:flex-row md:justify-between md:items-start pb-3 md:pb-4 border-b border-gray-100 mb-4">
                             <div class="flex items-center gap-3">
                                 <span class="text-xs font-medium text-gray-600"><?php echo $row['id_horario']; ?></span>
@@ -84,6 +91,7 @@
                             </div>
                         </div>
 
+                        <!-- Datos principales -->
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                             <div class="flex flex-col gap-1">
                                 <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Hora Inicio y Fin</span>
@@ -116,6 +124,7 @@
                             </div>
                         </div>
 
+                        <!-- Etiquetas inferiores -->
                         <div class="flex flex-wrap gap-2 pt-3 border-t border-gray-100">
                             <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">
                                 Trimestre <?php echo $row['numero_trimestre']; ?>
@@ -128,21 +137,25 @@
                 <?php endforeach; ?>
 
             <?php else: ?>
+
+                <!-- No existen -->
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
                     <span class="text-gray-600">No hay horarios inactivos.</span>
                 </div>
+
             <?php endif; ?>
         </div>
 
-        <!-- Sin resultados -->
+        <!-- Sin coincidencia -->
         <div id="noResults" class="hidden bg-white rounded-lg shadow-sm border border-gray-200 p-5">
             <span class="text-gray-600">No hay horarios que coincidan con los filtros seleccionados.</span>
         </div>
     </div>
 
-    <!-- Filtro JS -->
+    <!-- Lógica de filtros -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+
             const filterZonaSelect = document.getElementById('filterZona');
             const filterAreaSelect = document.getElementById('filterArea');
             const clearButton = document.getElementById('clearFilters');
@@ -151,6 +164,7 @@
             const noResults = document.getElementById('noResults');
             const scheduleContainer = document.getElementById('scheduleContainer');
 
+            // Recolección de zonas y áreas únicas
             const zonas = new Set();
             const areas = new Set();
 
@@ -190,6 +204,7 @@
                     }
                 });
 
+                // Mostrar mensaje si no hay coincidencias
                 if (visibleCount === 0) {
                     scheduleContainer.classList.add('hidden');
                     noResults.classList.remove('hidden');
@@ -198,6 +213,7 @@
                     noResults.classList.add('hidden');
                 }
 
+                // Contador actualizado
                 const word = visibleCount === 1 ? 'horario' : 'horarios';
                 resultCount.textContent = `${visibleCount} ${word}`;
             }
@@ -205,6 +221,7 @@
             filterZonaSelect.addEventListener('change', applyFilters);
             filterAreaSelect.addEventListener('change', applyFilters);
 
+            // Botón limpiar
             clearButton.addEventListener('click', function() {
                 filterZonaSelect.value = '';
                 filterAreaSelect.value = '';
