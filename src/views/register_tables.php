@@ -1,5 +1,5 @@
 <?php
-// Cargar datos desde la base de datos para los selects
+// Cargar datos desde la base de datos para los selects de áreas, zonas, instructores y trimestres
 require_once __DIR__ . '/../../config/database.php';
 
 $areas = [];
@@ -9,7 +9,7 @@ $trimestres = [];
 
 try {
     if (isset($conn)) {
-        // Áreas
+        // Áreas (desde DB)
         $s = $conn->prepare("SELECT id_area, nombre_area FROM areas WHERE estado = 1 ORDER BY nombre_area ASC");
         $s->execute();
         $areas = $s->fetchAll(PDO::FETCH_ASSOC);
@@ -30,6 +30,8 @@ try {
         $trimestres = $s->fetchAll(PDO::FETCH_ASSOC);
     }
 } catch (PDOException $e) {
+
+
     // No interrumpo la vista si falla la carga, se muestran los selects vacíos
 }
 ?>
@@ -315,7 +317,7 @@ try {
           let hasVisible = false;
 
           for (const opt of selZona.options) {
-            if (opt.value === "") { // always keep placeholder visible
+            if (opt.value === "") { 
               opt.hidden = false;
               opt.disabled = false;
               continue;
