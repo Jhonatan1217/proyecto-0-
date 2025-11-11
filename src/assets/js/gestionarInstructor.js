@@ -87,10 +87,11 @@
     if (u === "MIXTO") return "Mixto";
     return t;
   }
-  // Chip visual para el tipo; usa clases neutras y resalta MIXTO
+
+  // Chip visual para el tipo; ahora todos son del mismo color gris
   function tipoPill(tipo) {
     const u = (tipo || "").toString().toUpperCase();
-    const klass = (u === "MIXTO") ? "bg-black text-white" : "bg-gray-100 text-gray-700";
+    const klass = "bg-gray-100 text-gray-700"; // 🔹 Unifica color para todos los roles
     return `<span class="${klass} text-xs px-3 py-1 rounded-full">${prettyTipo(u)}</span>`;
   }
 
@@ -122,7 +123,7 @@
               </button>
               <label class="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" class="sr-only peer switch-estado" ${activo ? "checked" : ""}>
-                <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-green-500 transition"></div>
+                <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-[#39A900] transition"></div>
                 <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition peer-checked:translate-x-5"></div>
               </label>
             </div>
@@ -154,11 +155,10 @@
   }
 
   // ===== Crear (con bloqueo de navegación) =====
-  // Envío del formulario en AJAX con validación mínima
   form?.addEventListener("submit", async (e) => {
-    e.preventDefault();           // bloquea envío nativo
+    e.preventDefault();
     e.stopPropagation();
-    e.stopImmediatePropagation(); // refuerzo
+    e.stopImmediatePropagation();
 
     const nombre = (form.nombre_instructor.value || "").trim();
     const tipo = (form.tipo_instructor.value || "").trim();
@@ -174,7 +174,7 @@
       toast(res?.mensaje || "Instructor creado correctamente", "success");
       closeModal();
       await cargarInstructores();
-      return false; // nada de navegación
+      return false;
     } catch (e2) {
       toast(e2.message || "Error al crear", "error");
       return false;
@@ -182,7 +182,6 @@
   });
 
   // ===== Editar en línea / Guardar / Cancelar =====
-  // Maneja edición inline con reemplazo temporal de celdas por inputs/select
   tbody?.addEventListener("click", async (e) => {
     const row = e.target.closest("tr[data-id]");
     if (!row) return;
@@ -222,13 +221,11 @@
         <button class="btn-cancelar inline-flex items-center gap-2 px-5 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition" type="button">Cancelar</button>
       `;
 
-      // Restituye la fila si el usuario cancela la edición
       acciones.querySelector(".btn-cancelar").addEventListener("click", async () => {
         row.classList.remove("editando");
         await cargarInstructores();
       });
 
-      // Valida cambios y envía actualización si hay diferencias
       acciones.querySelector(".btn-guardar").addEventListener("click", async () => {
         const nombreNuevo = row.querySelector('input[data-edit="nombre"]').value.trim();
         const tipoNuevo = row.querySelector('select[data-edit="tipo"]').value.trim();
@@ -253,7 +250,6 @@
   });
 
   // ===== Cambiar estado =====
-  // Toggle del switch; si la API falla, se revierte el cambio visual
   tbody?.addEventListener("change", async (e) => {
     const sw = e.target.closest(".switch-estado");
     if (!sw) return;
@@ -272,7 +268,6 @@
   });
 
   // ===== Scroll interno: 5 filas visibles =====
-  // Calcula una altura máxima para mostrar ~5 filas con cabecera
   function ajustarAltoTabla() {
     if (!wrapTabla) return;
     const thead = document.querySelector("#tablaInstructores thead");
@@ -281,7 +276,10 @@
     const rowH  = firstRow ? firstRow.getBoundingClientRect().height : 56;
     const maxH = headH + rowH * 5;
     wrapTabla.style.maxHeight = `${Math.ceil(maxH)}px`;
+    wrapTabla.style.overflowY = "auto";
+    wrapTabla.style.overscrollBehavior = "contain";
   }
+
   window.addEventListener("resize", ajustarAltoTabla);
 
   // Init: carga inicial y ajuste de altura

@@ -9,7 +9,7 @@
 <body class="bg-white text-gray-900 font-sans">
 
   <div class="max-w-6xl mx-auto px-4 py-10">
-    <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-1 text-[#2a7f00]">Gestión de Trimestres</h1>
+    <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-1 text-[#39a900]">Gestión de Trimestres</h1>
     <p class="text-gray-600 mb-8">Administra los trimestres</p>
 
     <div class="bg-white border border-gray-200 rounded-2xl shadow-sm">

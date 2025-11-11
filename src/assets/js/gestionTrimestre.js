@@ -67,26 +67,51 @@ async function cargarTrimestres() {
       return;
     }
 
-    data.forEach(t => {
-      const tr = document.createElement("tr");
-      tr.className = "border-b";
-      tr.innerHTML = `
-        <td class="px-6 py-4 align-middle text-sm font-medium text-gray-800">Trimestre ${t.numero_trimestre}</td>
-        <td class="px-6 py-4 align-middle text-right">
-          <div class="flex justify-end items-center gap-3">
-            <button class="p-2 border rounded-xl hover:bg-gray-100 transition btnEditar" data-numero="${t.numero_trimestre}" title="Editar">
-              <img class="w-5 h-5" src="src/assets/img/pencil-line.svg" alt="Editar" />
-            </button>
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" class="sr-only peer toggleEstado" data-numero="${t.numero_trimestre}" ${t.estado == 1 ? "checked" : ""}>
-              <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-[#2a7f00] transition"></div>
-              <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition peer-checked:translate-x-5"></div>
-            </label>
-          </div>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
+   data.forEach(t => {
+  const tr = document.createElement("tr");
+  tr.className = "border-b";
+  tr.innerHTML = `
+    <td class="px-6 py-4 align-middle text-sm font-medium text-gray-800">
+      Trimestre ${t.numero_trimestre}
+    </td>
+    <td class="px-6 py-4 align-middle text-right">
+      <div class="flex justify-end items-center gap-3">
+        <button
+          class="p-2 border rounded-xl hover:bg-gray-100 transition btnEditar"
+          data-numero="${t.numero_trimestre}"
+          title="Editar"
+        >
+          <img class="w-5 h-5" src="src/assets/img/pencil-line.svg" alt="Editar" />
+        </button>
+
+        <!-- Switch -->
+        <label class="relative inline-flex items-center cursor-pointer select-none">
+          <input
+            type="checkbox"
+            class="sr-only peer toggleEstado"
+            data-numero="${t.numero_trimestre}"
+            ${t.estado == 1 ? "checked" : ""}
+            aria-checked="${t.estado == 1 ? "true" : "false"}"
+            aria-label="Activar trimestre ${t.numero_trimestre}"
+          >
+          <!-- Track -->
+          <div
+            class="w-11 h-6 rounded-full bg-gray-200 transition
+                   peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-[#39A900]/60
+                   peer-checked:bg-[#39A900] peer-disabled:opacity-60"
+          ></div>
+          <!-- Knob -->
+          <div
+            class="absolute left-0.5 top-0.5 w-5 h-5 rounded-full bg-white shadow
+                   transition-transform duration-200 ease-out
+                   peer-checked:translate-x-5"
+          ></div>
+        </label>
+      </div>
+    </td>
+  `;
+  tbody.appendChild(tr);
+});
 
     agregarEventosTabla();
   } catch (error) {

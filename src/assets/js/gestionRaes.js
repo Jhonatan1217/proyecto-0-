@@ -1,4 +1,3 @@
-
 (function () {
   const section = document.querySelector('section[data-tab="raes"]');
   if (!section) return; // Si no existe la pestaña RAEs, no ejecuta nada
@@ -8,6 +7,9 @@
 
   const BASE = (window.BASE_URL || '').replace(/\/+$/, '');
   const ICON_PENCIL = `${BASE}src/assets/img/pencil-line.svg`;
+
+  // <<< NUEVO >>> bandera para (des)activar autocompletado de código RAE
+  const AUTOCOMPLETE_RAE = false;
 
   // ==== Selectores filtros/listado ====
   const selProgFilter  = section.querySelector('#raeProgramFilter');
@@ -328,7 +330,7 @@
   }
 
   // El panel "card" del modal (ajusta el selector si tu HTML es distinto)
-  const modalPanel = modal?.querySelector('[data-panel], [role="dialog"], .panel, .card, .box')
+  const modalPanel = modal?.querySelector('[data-panel], [role="dialog"], .panel, .box')
                   || modal?.firstElementChild || modal;
 
   // Reinicia y aplica una clase de animación
@@ -387,7 +389,7 @@
   // Modal: cambios
   selProgInForm?.addEventListener('change', async () => {
     const pid = selProgInForm.value;
-    if (!editingRaeId && inCode) inCode.value = ''; // solo limpiar en modo crear
+    if (!editingRaeId && inCode) inCode.value = ''; // solo limpiar en modo crear (se mantiene)
     if (pid) {
       await loadCompetenciasFor(pid, selComp, true);
     } else {
@@ -395,9 +397,10 @@
     }
   });
 
+  // <<< MODIFICADO >>> ya no autocompleta el código al cambiar la competencia
   selComp?.addEventListener('change', () => {
     const cid = selComp.value || '';
-    if (!editingRaeId && inCode) {
+    if (!editingRaeId && inCode && AUTOCOMPLETE_RAE) {
       inCode.value = cid ? `${cid}-` : '';
     }
   });
@@ -518,7 +521,8 @@
     }
     if (isModalOpen() && selProgInForm && pid && selProgInForm.value === pid) {
       await loadCompetenciasFor(pid, selComp, true);
-      if (cid && selComp) {
+      // <<< MODIFICADO >>> ya no autocompleta si llega una nueva competencia
+      if (cid && selComp && AUTOCOMPLETE_RAE) {
         const has = Array.from(selComp.options).some(o => o.value === cid);
         if (has && !editingRaeId && !inCode.value) inCode.value = `${cid}-`;
       }

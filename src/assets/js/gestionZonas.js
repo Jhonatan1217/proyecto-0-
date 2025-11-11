@@ -3,8 +3,8 @@
   // CONFIGURACIÓN GLOBAL
   // =======================
   const API_URL = (typeof window !== "undefined" && window.API_URL)
-  ? window.API_URL
-  : "../controllers/ZonaController.php";
+    ? window.API_URL
+    : "../controllers/ZonaController.php";
 
   // =======================
   // ELEMENTOS DEL DOM
@@ -16,8 +16,14 @@
   const cancelBtn = document.getElementById("btnCancelarModalZonas");
   const panel = document.getElementById("modalPanel");
   const backdrop = document.getElementById("modalBackdrop");
+
+  // ⚠️ Mantengo tu selector existente:
+  const tabla = document.querySelector("#tablaInstructores");
   const tablaBody = document.querySelector("#tablaInstructores tbody");
   const inputZona = document.getElementById("id_zona");
+
+  // Wrapper para scroll interno (debe existir en el HTML)
+  const wrapTabla = document.getElementById("wrapTablaZonas") || document.getElementById("wrapTabla");
 
   // =======================
   // CONFIGURACIÓN TOAST
@@ -73,6 +79,29 @@
   });
 
   // =======================
+  // SCROLL INTERNO (5 filas)
+  // =======================
+  function ajustarAltoTablaZonas() {
+    if (!wrapTabla || !tabla) return;
+
+    const thead = tabla.querySelector("thead");
+    const firstRow = tabla.querySelector("tbody tr");
+    const filas = tabla.querySelectorAll("tbody tr").length;
+
+    // Alturas de respaldo
+    const headH = thead ? thead.getBoundingClientRect().height : 44;
+    const rowH  = firstRow ? firstRow.getBoundingClientRect().height : 56;
+
+    const maxFilas = 5;
+    const maxH = headH + rowH * maxFilas;
+
+    wrapTabla.style.maxHeight = `${Math.ceil(maxH)}px`;
+    wrapTabla.style.overflowY = filas > maxFilas ? "auto" : "visible";
+    wrapTabla.style.overscrollBehavior = "contain";
+  }
+  window.addEventListener("resize", ajustarAltoTablaZonas);
+
+  // =======================
   // CARGAR ÁREAS
   // =======================
   async function cargarAreas() {
@@ -94,7 +123,6 @@
         });
       } else {
         selectArea.innerHTML = `<option disabled selected value="">No hay áreas disponibles</option>`;
-        
       }
     } catch (err) {
       console.error("Error al cargar áreas:", err);
@@ -115,20 +143,24 @@
 
       if (json.status === "success") {
         if (!Array.isArray(json.data) || json.data.length === 0) {
-          tablaBody.innerHTML = `<tr><td colspan="3" class="text-center p-4 text-gray-500">No hay zonas registradas</td></tr>`; 
+          tablaBody.innerHTML = `<tr><td colspan="3" class="text-center p-4 text-gray-500">No hay zonas registradas</td></tr>`;
+          ajustarAltoTablaZonas();
           return;
         }
 
         tablaBody.innerHTML = json.data
           .map((z) => {
-            const color = z.nombre_area === "Confecciones" ? "bg-blue-600" : "bg-green-600";
+            // Pill EXACTO al de gestionarInstructor.js (sin borde)
+            const pill = `
+              <span class="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-full">
+                ${z.nombre_area || "—"}
+              </span>`.trim();
+
             return `
               <tr data-id="${z.id_zona}" data-id-area="${z.id_area ?? ""}" class="border-b">
                 <td class="px-6 py-4">${z.id_zona}</td>
                 <td class="px-6 py-4 text-center">
-                  <span class="${color} text-white text-xs px-3 py-1 rounded-full">
-                    ${z.nombre_area || "—"}
-                  </span>
+                  ${pill}
                 </td>
                 <td class="px-6 py-4 text-right">
                   <div class="flex justify-end items-center gap-3">
@@ -137,7 +169,7 @@
                     </button>
                     <label class="relative inline-flex items-center cursor-pointer">
                       <input type="checkbox" class="sr-only peer" ${Number(z.estado) === 1 ? "checked" : ""}>
-                      <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-green-500 transition"></div>
+                      <div class="w-11 h-6 bg-gray-200 rounded-full transition peer-checked:bg-[#39A900]"></div>
                       <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition peer-checked:translate-x-5"></div>
                     </label>
                   </div>
@@ -145,13 +177,17 @@
               </tr>`;
           })
           .join("");
+
+        ajustarAltoTablaZonas();
       } else {
         tablaBody.innerHTML = `<tr><td colspan="3" class="text-center p-4 text-red-500">${json.message || "Error al listar"}</td></tr>`;
+        ajustarAltoTablaZonas();
         Toast.fire({ icon: "error", title: json.message || "Error al listar zonas" });
       }
     } catch (err) {
       console.error("Error al cargar zonas:", err);
       tablaBody.innerHTML = `<tr><td colspan="3" class="text-center p-4 text-red-500">Error al cargar zonas</td></tr>`;
+      ajustarAltoTablaZonas();
       Toast.fire({ icon: "error", title: "Error al cargar zonas." });
     }
   }
@@ -185,7 +221,8 @@
       if (json.status === "success") {
         Toast.fire({ icon: "success", title: "Zona creada correctamente" });
         closeModal();
-        cargarZonas();
+        await cargarZonas();
+        ajustarAltoTablaZonas();
       } else {
         Toast.fire({ icon: "error", title: json.message || "No se pudo crear la zona." });
       }
@@ -230,7 +267,7 @@
     }
   });
 
-    // =======================
+  // =======================
   // EDITAR ZONA INLINE
   // =======================
   tablaBody?.addEventListener("click", async (e) => {
@@ -258,9 +295,7 @@
         opcionesHTML = json.data
           .map(
             (a) =>
-              `<option value="${a.id_area}" ${
-                a.nombre_area === areaOriginal ? "selected" : ""
-              }>${a.nombre_area}</option>`
+              `<option value="${a.id_area}" ${a.nombre_area === areaOriginal ? "selected" : ""}>${a.nombre_area}</option>`
           )
           .join("");
       } else {
@@ -271,17 +306,27 @@
       opcionesHTML = `<option disabled selected value="">Error al cargar</option>`;
     }
 
-    // 🔹 Reemplazar contenido de la fila
-    tdZona.innerHTML = `<input type="number" value="${zonaOriginal}" class="w-20 border rounded-lg text-center">`;
-    tdArea.innerHTML = `<select class="border rounded-lg px-2 py-1">${opcionesHTML}</select>`;
+    // 🔹 Reemplazar contenido de la fila (estilos sobrios como en gestionarInstructor.js)
+    tdZona.innerHTML = `<input type="number" value="${zonaOriginal}" class="w-20 rounded-lg border border-gray-200 px-3 py-2 text-center focus:outline-none focus:border-gray-300">`;
+    tdArea.innerHTML = `
+      <div class="relative max-w-[220px] mx-auto">
+        <select class="w-full appearance-none rounded-lg border border-gray-200 bg-white px-3 py-2 pr-8 focus:outline-none focus:border-gray-300">
+          ${opcionesHTML}
+        </select>
+        <svg class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.18l3.71-3.95a.75.75 0 111.08 1.04l-4.24 4.52a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+        </svg>
+      </div>`;
     tdAcc.innerHTML = `
-      <button class="btn-guardar bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 transition">Guardar</button>
-      <button class="btn-cancelar bg-gray-400 text-white px-3 py-1 rounded-lg hover:bg-gray-500 transition">Cancelar</button>
+      <button class="btn-guardar inline-flex items-center gap-2 px-5 py-2 rounded-xl border border-green-600 text-green-600 hover:bg-green-50 transition">Guardar</button>
+      <button class="btn-cancelar inline-flex items-center gap-2 px-5 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition">Cancelar</button>
     `;
 
-    tdAcc.querySelector(".btn-cancelar").addEventListener("click", cargarZonas);
+    tdAcc.querySelector(".btn-cancelar").addEventListener("click", async () => {
+      await cargarZonas();
+      ajustarAltoTablaZonas();
+    });
 
-    // 🔹 Guardar cambios
     tdAcc.querySelector(".btn-guardar").addEventListener("click", async () => {
       const id_zona_nueva = tdZona.querySelector("input").value.trim();
       const id_area_nueva = tdArea.querySelector("select").value.trim();
@@ -302,9 +347,8 @@
         const res = await fetch(API_URL, { method: "POST", body: fd });
         const text = await res.text();
         let json;
-        try {
-          json = JSON.parse(text);
-        } catch {
+        try { json = JSON.parse(text); }
+        catch {
           console.error("Respuesta no JSON:", text);
           Toast.fire({ icon: "error", title: "Error interno al actualizar." });
           return;
@@ -312,7 +356,8 @@
 
         if (json.status === "success") {
           Toast.fire({ icon: "success", title: "Zona actualizada correctamente." });
-          cargarZonas();
+          await cargarZonas();
+          ajustarAltoTablaZonas();
         } else {
           Toast.fire({ icon: "error", title: json.message || "No se pudo actualizar" });
         }
@@ -323,10 +368,10 @@
     });
   });
 
-
   // =======================
   // INICIALIZAR
   // =======================
   cargarAreas();
   cargarZonas();
+  ajustarAltoTablaZonas(); // por si ya hay filas renderizadas del servidor
 })();

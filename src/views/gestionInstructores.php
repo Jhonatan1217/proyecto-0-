@@ -6,7 +6,19 @@
   <title>Gestión de Instructores</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="../assets/css/register_tables.css">
-
+  <style>
+    /* Scroll igual que en zonas */
+    #wrapTabla::-webkit-scrollbar {
+      width: 8px;
+    }
+    #wrapTabla::-webkit-scrollbar-thumb {
+      background-color: rgba(0, 0, 0, 0.15);
+      border-radius: 10px;
+    }
+    #wrapTabla:hover::-webkit-scrollbar-thumb {
+      background-color: rgba(0, 0, 0, 0.25);
+    }
+  </style>
 </head>
 <body class="bg-white text-gray-900 font-sans">
 
@@ -28,17 +40,20 @@
         </button>
       </div>
 
-      <div id="wrapTabla" class="overflow-x-auto overflow-y-auto">
-        <table class="w-full text-left" id="tablaInstructores">
-          <thead>
-            <tr class="text-gray-600 text-sm border-b">
-              <th class="px-6 py-3 font-medium">Nombre</th>
-              <th class="px-6 py-3 font-medium text-center">Tipo</th>
-              <th class="px-6 py-3 font-medium text-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="tbodyInstructores" class="text-sm"></tbody>
-        </table>
+      <!-- Scroll interno igual que zonas -->
+      <div id="wrapTabla" class="overflow-hidden transition-all duration-300">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left" id="tablaInstructores">
+            <thead class="bg-gray-50">
+              <tr class="text-gray-600 text-sm border-b">
+                <th class="px-6 py-3 font-medium">Nombre</th>
+                <th class="px-6 py-3 font-medium text-center">Tipo</th>
+                <th class="px-6 py-3 font-medium text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyInstructores" class="text-sm"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -75,7 +90,7 @@
                   class="w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 py-3 pr-10 shadow-sm
                          focus:ring-0 focus:outline-none focus:border-gray-300">
                   <option disabled selected>Seleccione un tipo</option>
-                  <option value="TECNICO">Tecnico</option>
+                  <option value="TECNICO">Técnico</option>
                   <option value="TRANSVERSAL">Transversal</option>
                   <option value="MIXTO">Mixto</option>
                 </select>
@@ -105,15 +120,10 @@
 
   <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
 
-  <!-- 1) Primero defino la URL del controlador -->
   <script>
     window.API_URL = "<?= BASE_URL ?>src/controllers/InstructorController.php";
   </script>
 
-  <!-- 2) Luego cargo el JS de la pantalla (usa la URL de arriba) -->
-  <!-- IMPORTANTE: ajusta la ruta si tu /public está en medio, por ejemplo:
-       src="<?= BASE_URL ?>public/src/assets/js/gestionarInstructor.js"
-  -->
-  <script src="<?= BASE_URL ?>src/assets/js/gestionarInstructor.js?v=2" defer></script>
+  <script src="<?= BASE_URL ?>src/assets/js/gestionarInstructor.js?v=3" defer></script>
 </body>
 </html>
