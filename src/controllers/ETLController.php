@@ -1,16 +1,9 @@
 <?php
-// Mostrar errores (para depurar)
 ini_set("display_errors", 1);
 error_reporting(E_ALL);
 
-// 1) Cargar Autoload de Composer (para PhpSpreadsheet)
 require_once __DIR__ . '/../../vendor/autoload.php';
-
-// 2) Conexión a base de datos (usa tu archivo tal como lo tienes)
 require_once __DIR__ . '/../../config/database.php';
-// Ahora tienes disponible: $conn (NO $db)
-
-// 3) Modelos
 require_once __DIR__ . '/../models/Competencia.php';
 require_once __DIR__ . '/../models/Rae.php';
 
@@ -18,29 +11,20 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class EtlController {
 
-    public function test() {
-        echo "✅ CONTROLADOR FUNCIONA";
-    }
-
     public function subir() {
 
-        // Validar archivo
         if (!isset($_FILES['archivo'])) {
-            echo "❌ No se recibió archivo.";
+            echo " No se recibió archivo.";
             return;
         }
 
-        // Validar programa seleccionado
         $programa = $_POST['programa'] ?? null;
         if (!$programa) {
-            echo "❌ Debe seleccionar un programa.";
+            echo " Debe seleccionar un programa.";
             return;
         }
 
-        global $conn; // <- Importamos conexión correcta
-        $competenciasModel = new Competencia($conn);
-        $raesModel = new Rae($conn);
-
+        global $conn;
         $file = $_FILES['archivo']['tmp_name'];
 
         try {
@@ -51,7 +35,7 @@ class EtlController {
             $insertadasComp = 0;
             $insertadasRae = 0;
 
-            // La tabla comienza desde fila 14 -> índice 13
+            // Empieza en fila 14
             for ($i = 13; $i < count($rows); $i++) {
 
                 $comp = trim($rows[$i][5] ?? "");
@@ -59,47 +43,46 @@ class EtlController {
 
                 if ($comp === "" || $rae === "") continue;
 
-                // Separar COMPETENCIA: "228115 - APLICAR DISEÑO DE SOFTWARE"
+                // COMPETENCIA: "228115 - APLICAR DISEÑO DE SOFTWARE"
                 [$codC, $nomC] = array_map('trim', explode("-", $comp, 2));
 
-                // Crear competencia si no existe
-                $conn->prepare("INSERT IGNORE INTO competencias (codigo, nombre_competencia, id_programa, estado) VALUES (?, ?, ?, 1)")
-                     ->execute([$codC, $nomC, $programa]);
+                // Insertar competencia (id_competencia = código)
+                $stmt = $conn->prepare("
+                    INSERT IGNORE INTO competencias (id_competencia, id_programa, descripcion, nombre_competencia, estado)
+                    VALUES (?, ?, '', ?, 1)
+                ");
+                $stmt->execute([$codC, $programa, $nomC]);
 
-                // Obtener ID de competencia
-                $stmt = $conn->prepare("SELECT id_competencia FROM competencias WHERE codigo = ? AND id_programa = ?");
-                $stmt->execute([$codC, $programa]);
-                $idComp = $stmt->fetchColumn();
+                if ($stmt->rowCount() > 0) $insertadasComp++;
 
-                if ($idComp) $insertadasComp++;
-
-                // Separar RAE: "228115001 - DESCRIBIR LA ARQUITECTURA"
+                // RAE: "228115001 - DESCRIBIR LA ARQUITECTURA"
                 [$codR, $descR] = array_map('trim', explode("-", $rae, 2));
 
-                // Crear RAE si no existe
-                $conn->prepare("INSERT IGNORE INTO raes (codigo, descripcion, id_competencia, estado) VALUES (?, ?, ?, 1)")
-                     ->execute([$codR, $descR, $idComp]);
+                // Insertar RAE (id_rae = código)
+                $stmt2 = $conn->prepare("
+                    INSERT IGNORE INTO raes (id_rae, descripcion, id_competencia, estado)
+                    VALUES (?, ?, ?, 1)
+                ");
+                $stmt2->execute([$codR, $descR, $codC]);
 
-                $insertadasRae++;
+                if ($stmt2->rowCount() > 0) $insertadasRae++;
             }
 
-            echo "✅ Importación finalizada correctamente:<br>
-            • Competencias procesadas: $insertadasComp <br>
-            • Resultados de aprendizaje procesados: $insertadasRae";
+            echo "Importación completada:<br>
+                  • Competencias procesadas: $insertadasComp <br>
+                  • Resultados de aprendizaje procesados: $insertadasRae";
 
         } catch (Exception $e) {
-            echo "❌ Error procesando archivo: " . $e->getMessage();
+            echo "Error procesando archivo: " . $e->getMessage();
         }
     }
 }
 
-
-// ============ RUTEO ============ //
 $accion = $_GET['accion'] ?? null;
 $controller = new EtlController();
 
 if ($accion && method_exists($controller, $accion)) {
     $controller->$accion();
 } else {
-    echo "❌ Acción no válida";
+    echo "Acción no válida";
 }
