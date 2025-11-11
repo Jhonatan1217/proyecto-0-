@@ -76,6 +76,7 @@
 
             // Función para obtener nombre por ID
             function getNombre($conn, $tabla, $id_col, $nombre_col, $id) {
+                if (!$id) return '';
                 $sql = "SELECT $nombre_col FROM $tabla WHERE $id_col = ? LIMIT 1";
                 $stmt = $conn->prepare($sql);
                 $stmt->execute([$id]);
@@ -87,7 +88,7 @@
             <?php if ($result && count($result) > 0): ?>
                 <?php foreach ($result as $row): ?>
                     <?php
-                        // Obtener nombres
+                        // Obtener nombres (escapamos con htmlspecialchars al imprimir en attributes)
                         $nombreFicha = getNombre($conn, 'fichas', 'id_ficha', 'numero_ficha', $row['id_ficha']);
                         $nombreInstructor = getNombre($conn, 'instructores', 'id_instructor', 'nombre_instructor', $row['id_instructor']);
                         $nombreCompetencia = getNombre($conn, 'competencias', 'id_competencia', 'nombre_competencia', $row['id_competencia']);
@@ -96,14 +97,15 @@
                     ?>
                     <!-- Card de un horario -->
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md hover:translate-y-[-2px] transition-all duration-200 schedule-item"
-                         data-zona="<?php echo $row['id_zona']; ?>"
-                         data-area="<?php echo $row['id_area']; ?>">
+                         data-zona="<?php echo htmlspecialchars($row['id_zona']); ?>"
+                         data-area-id="<?php echo htmlspecialchars($row['id_area']); ?>"
+                         data-area-name="<?php echo htmlspecialchars($nombreArea); ?>"> 
 
                         <!-- Cabecera del card -->
                         <div class="flex flex-col md:flex-row md:justify-between md:items-start pb-3 md:pb-4 border-b border-gray-100 mb-4">
                             <div class="flex items-center gap-3">
-                                <span class="text-xs font-medium text-gray-600"><?php echo $row['id_horario']; ?></span>
-                                <span class="text-lg font-bold text-gray-900"><?php echo ucfirst(strtolower($row['dia'])); ?></span>
+                                <span class="text-xs font-medium text-gray-600"><?php echo htmlspecialchars($row['id_horario']); ?></span>
+                                <span class="text-lg font-bold text-gray-900"><?php echo htmlspecialchars(ucfirst(strtolower($row['dia']))); ?></span>
                             </div>
                         </div>
 
@@ -111,42 +113,42 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                             <div class="flex flex-col gap-1">
                                 <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Hora Inicio y Fin</span>
-                                <span class="text-sm font-medium text-gray-900"><?php echo $row['hora_inicio'] . ' - ' . $row['hora_fin']; ?></span>
+                                <span class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($row['hora_inicio'] . ' - ' . $row['hora_fin']); ?></span>
                             </div>
 
                             <div class="flex flex-col gap-1">
                                 <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">ID Zona</span>
-                                <span class="text-sm font-medium text-gray-900">Z-<?php echo $row['id_zona']; ?></span>
+                                <span class="text-sm font-medium text-gray-900">Z-<?php echo htmlspecialchars($row['id_zona']); ?></span>
                             </div>
 
                             <div class="flex flex-col gap-1">
                                 <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Área</span>
-                                <span class="text-sm font-medium text-gray-900"><?php echo $nombreArea; ?></span>
+                                <span class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($nombreArea); ?></span>
                             </div>
 
                             <div class="flex flex-col gap-1">
                                 <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Ficha</span>
-                                <span class="text-sm font-medium text-gray-900"><?php echo $nombreFicha; ?></span>
+                                <span class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($nombreFicha); ?></span>
                             </div>
 
                             <div class="flex flex-col gap-1">
                                 <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Instructor</span>
-                                <span class="text-sm font-medium text-gray-900"><?php echo $nombreInstructor; ?></span>
+                                <span class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($nombreInstructor); ?></span>
                             </div>
 
                             <div class="flex flex-col gap-1">
                                 <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Competencia</span>
-                                <span class="text-sm font-medium text-gray-900"><?php echo $nombreCompetencia; ?></span>
+                                <span class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($nombreCompetencia); ?></span>
                             </div>
                         </div>
 
                         <!-- Etiquetas inferiores -->
                         <div class="flex flex-wrap gap-2 pt-3 border-t border-gray-100">
                             <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">
-                                Trimestre <?php echo $row['numero_trimestre']; ?>
+                                Trimestre <?php echo htmlspecialchars($row['numero_trimestre']); ?>
                             </span>
                             <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">
-                                Programa <?php echo $nombrePrograma; ?>
+                                Programa <?php echo htmlspecialchars($nombrePrograma); ?>
                             </span>
                         </div>
                     </div>
@@ -182,13 +184,22 @@
 
             // Recolección de zonas y áreas únicas
             const zonas = new Set();
-            const areas = new Set();
+            const areas = new Map(); 
 
             scheduleItems.forEach(item => {
-                zonas.add(item.dataset.zona);
-                areas.add(item.dataset.area);
+
+                if (item.dataset.zona) zonas.add(item.dataset.zona);
+
+                
+                const areaId = item.dataset.areaId || item.dataset.area; 
+                const areaName = item.dataset.areaName || item.dataset.areaName === '' ? item.dataset.areaName : null;
+
+                if (areaId) {
+                    areas.set(areaId, areaName ? areaName : areaId);
+                }
             });
 
+            // Llenar select de Zonas 
             zonas.forEach(zona => {
                 const option = document.createElement('option');
                 option.value = zona;
@@ -196,10 +207,11 @@
                 filterZonaSelect.appendChild(option);
             });
 
-            areas.forEach(area => {
+            // Llenar select de Areas 
+            areas.forEach((nombre, id) => {
                 const option = document.createElement('option');
-                option.value = area;
-                option.textContent = `Área ${area}`;
+                option.value = id;
+                option.textContent = nombre;
                 filterAreaSelect.appendChild(option);
             });
 
@@ -210,7 +222,8 @@
 
                 scheduleItems.forEach(item => {
                     const zonaMatch = !selectedZona || item.dataset.zona === selectedZona;
-                    const areaMatch = !selectedArea || item.dataset.area === selectedArea;
+                    const itemAreaId = item.dataset.areaId || item.dataset.area; // compatibilidad
+                    const areaMatch = !selectedArea || itemAreaId === selectedArea;
 
                     if (zonaMatch && areaMatch) {
                         item.classList.remove('hidden');
@@ -220,16 +233,16 @@
                     }
                 });
 
-                // Mostrar mensaje si no hay coincidencias
+                // Mostrar/ocultar mensaje sin resultados
                 if (visibleCount === 0) {
-                    scheduleContainer.classList.add('hidden');
                     noResults.classList.remove('hidden');
                 } else {
-                    scheduleContainer.classList.remove('hidden');
                     noResults.classList.add('hidden');
                 }
 
-                // Contador actualizado
+                scheduleContainer.classList.remove('hidden');
+
+                // Actualizar contador
                 const word = visibleCount === 1 ? 'horario' : 'horarios';
                 resultCount.textContent = `${visibleCount} ${word}`;
             }
@@ -243,6 +256,7 @@
                 filterAreaSelect.value = '';
                 applyFilters();
             });
+
             applyFilters();
         });
     </script>
