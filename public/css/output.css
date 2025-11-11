@@ -1917,6 +1917,11 @@ video {
     --tw-ring-color: rgb(57 169 0/var(--tw-ring-opacity, 1))
 }
 
+.hover\:text-\[\#39a900\]:hover {
+  --tw-text-opacity: 1;
+  color: rgb(57 169 0 / var(--tw-text-opacity));
+}
+
 @media (min-width:640px) {
     .sm\:inline {
         display: inline

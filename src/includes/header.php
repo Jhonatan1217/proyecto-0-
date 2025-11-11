@@ -30,42 +30,42 @@
     </div>
 
     <ul class="p-4 space-y-4 text-gray-700">
-      <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
+      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/house.svg" alt="Icono de Inicio">
         <a href="<?= BASE_URL ?>index.php">Inicio</a>
       </li>
 
-      <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
+      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/map-pin.svg" alt="Icono de Zonas">
         <a href="<?= BASE_URL ?>index.php?page=src/views/gestionZonas">Zonas</a>
       </li>
 
-      <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
+      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/users.svg" alt="Icono de Instructores">
         <a href="<?= BASE_URL ?>index.php?page=src/views/gestionInstructores">Instructores</a>
       </li>
 
-      <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
+      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/house-plus.svg" alt="Icono de Áreas">
         <a href="<?= BASE_URL ?>index.php?page=src/views/gestionAreas">Áreas</a>
       </li>
 
-      <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
+      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/calendar-days.svg" alt="Icono de Horarios">
         <a href="<?= BASE_URL ?>index.php?page=src/views/register_tables  ">Horarios</a>
       </li>
 
-      <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
+      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/calendar-range.svg" alt="Icono de Trimestres">
         <a href="<?= BASE_URL ?>index.php?page=src/views/gestionTrimestres">Trimestres</a>
       </li>
 
-      <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
+      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/book-open.svg" alt="Icono de Competencias">
         <a href="<?= BASE_URL ?>index.php?page=src/views/gestionCompetencias">Competencias</a>
       </li>
 
-      <li class="flex items-center space-x-2 hover:text-green-500 cursor-pointer p-2">
+      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/calendar-range.svg" alt="Icono de Trimestres">
         <a href="<?= BASE_URL ?>index.php?page=src/views/historialRegistrosInactivos">Historial</a>
       </li>
