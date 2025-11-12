@@ -165,7 +165,7 @@
         </div>
 
         <!-- Sin coincidencia -->
-        <div id="noResults" class="hidden bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+        <div id="noResults" class="hidden bg-white rounded-lg shadow-sm border border-gray-200 p-5 mt-[15px]">
             <span class="text-gray-600">No hay horarios que coincidan con los filtros seleccionados.</span>
         </div>
     </div>
