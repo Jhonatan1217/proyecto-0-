@@ -449,22 +449,25 @@ async function descargarPDF() {
   await new Promise(r => setTimeout(r, 300));
 
   const canvas = await html2canvas(elementoClonado, {
-    scale: 2,
+    scale: 1.5,
     useCORS: true,
     backgroundColor: "#ffffff",
     scrollX: 0,
     scrollY: 0,
     windowWidth: elementoClonado.scrollWidth,
-    windowHeight: elementoClonado.scrollHeight
+    windowHeight: elementoClonado.scrollHeight,
+    logging: false
   });
 
   document.body.removeChild(elementoClonado);
 
-  const imgData = canvas.toDataURL("image/png");
+  // Convertir a JPEG con compresión en lugar de PNG
+  const imgData = canvas.toDataURL("image/jpeg", 0.75);
   const pdf = new jsPDF({
     orientation: "landscape",
     unit: "mm",
-    format: "a4"
+    format: "a4",
+    compress: true
   });
 
   const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -483,13 +486,13 @@ async function descargarPDF() {
   pdf.setFontSize(16);
   pdf.text(`Trimestralización - Zona ${id_zona}`, pdfWidth / 2, 10, { align: "center" });
 
-  pdf.addImage(imgData, "image/png", marginX, position, imgWidth, imgHeight);
+  pdf.addImage(imgData, "jpeg", marginX, position, imgWidth, imgHeight);
   heightLeft -= pdfHeight - position;
 
   while (heightLeft > 0) {
     pdf.addPage();
     position = 0;
-    pdf.addImage(imgData, "image/png", marginX, position - heightLeft, imgWidth, imgHeight);
+    pdf.addImage(imgData, "jpeg", marginX, position - heightLeft, imgWidth, imgHeight);
     heightLeft -= pdfHeight;
   }
 
