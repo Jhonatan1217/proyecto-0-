@@ -127,7 +127,7 @@ try {
     <!-- Botones de acciones -->
     <div id="botones-principales" class="mt-6 mb-6 flex justify-center gap-6">
       <button onclick="mostrarModalEliminar()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
-        Eliminar Trimestralización
+        Limpiar Trimestralización
       </button>
 
       <button id="btn-actualizar" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
@@ -148,7 +148,7 @@ try {
         <img class="w-16 h-16" src="<?= BASE_URL ?>src/assets/img/triangle-alert.svg" />
       </div>
       <h2 class="text-2xl font-bold text-center mb-8 text-gray-900">
-        ¿Estás seguro de querer eliminar la trimestralización?
+        ¿Estás seguro de querer limpiar la trimestralización?
       </h2>
       <div class="flex gap-6 justify-center">
         <button onclick="confirmarEliminar()" class="bg-green-600 hover:bg-green-700 text-white font-bold text-xl px-10 py-3 rounded-xl transition shadow-lg">
