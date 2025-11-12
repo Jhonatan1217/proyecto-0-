@@ -78,31 +78,38 @@ switch ($accion) {
 
         try {
             $stmt = $conn->prepare("
-                SELECT 
-                    h.id_horario,
-                    h.dia,
-                    h.hora_inicio,
-                    h.hora_fin,
-                    h.id_zona,
-                    h.id_area,
-                    h.numero_trimestre,
-                    h.estado,
-                    f.numero_ficha,
-                    f.nivel_ficha,
-                    i.nombre_instructor,
-                    i.tipo_instructor,
-                    c.id_competencia,
-                    c.nombre_competencia,
-                    c.descripcion
-                FROM horarios h
-                LEFT JOIN fichas f ON h.id_ficha = f.id_ficha
-                LEFT JOIN instructores i ON h.id_instructor = i.id_instructor
-                LEFT JOIN competencias c ON h.id_competencia = c.id_competencia
-                WHERE h.id_zona = :id_zona
-                  AND h.id_area = :id_area
-                  AND h.estado = 1
-                ORDER BY FIELD(UPPER(h.dia), 'LUNES','MARTES','MIERCOLES','JUEVES','VIERNES','SABADO'), h.hora_inicio
-            ");
+            SELECT 
+                h.id_horario,
+                h.dia,
+                h.hora_inicio,
+                h.hora_fin,
+                h.id_zona,
+                h.id_area,
+                h.numero_trimestre,
+                h.estado,
+                f.numero_ficha,
+                f.nivel_ficha,
+                i.nombre_instructor,
+                i.tipo_instructor,
+                c.id_competencia,
+                c.nombre_competencia,
+                c.descripcion AS descripcion_competencia,
+                r.id_rae,
+                r.descripcion AS descripcion_rae
+            FROM horarios h
+            LEFT JOIN fichas f ON h.id_ficha = f.id_ficha
+            LEFT JOIN instructores i ON h.id_instructor = i.id_instructor
+            LEFT JOIN competencias c ON h.id_competencia = c.id_competencia
+            LEFT JOIN raes r ON c.id_competencia = r.id_competencia
+            WHERE h.id_zona = :id_zona
+            AND h.id_area = :id_area
+            AND h.estado = 1
+            ORDER BY 
+                FIELD(UPPER(h.dia), 'LUNES','MARTES','MIERCOLES','JUEVES','VIERNES','SABADO'), 
+                h.hora_inicio
+        ");
+
+
             $stmt->execute([
                 ':id_zona' => intval($id_zona),
                 ':id_area' => intval($resolved_area)

@@ -131,12 +131,71 @@ async function cargarTrimestralizacion() {
 
     const activos = registrosServer.filter((d) => d && (d.estado === 1 || d.estado === "1"));
 
+    // Si no hay registros activos...
     if (!activos.length) {
       tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500">No hay registros activos para esta zona y área.</td></tr>`;
       Toast.fire({ icon: "info", title: "Sin registros activos" });
       return;
     }
 
+    // -------------------------
+    // AGRUPAR POR id_horario
+    // -------------------------
+    // Creamos un Map para agrupar las RAEs de cada horario en una sola estructura
+    const mapHorarios = new Map();
+
+    activos.forEach(r => {
+      const id = r.id_horario ?? (r.id_horario === 0 ? 0 : null);
+      if (id === null) return; // proteger por si hay filas mal formadas
+
+      if (!mapHorarios.has(id)) {
+        // Hacemos una copia de los campos "únicos" que queremos mantener
+        mapHorarios.set(id, {
+          id_horario: id,
+          dia: r.dia,
+          hora_inicio: r.hora_inicio,
+          hora_fin: r.hora_fin,
+          id_zona: r.id_zona,
+          id_area: r.id_area,
+          numero_trimestre: r.numero_trimestre,
+          estado: r.estado,
+          numero_ficha: r.numero_ficha,
+          nivel_ficha: r.nivel_ficha,
+          nombre_instructor: r.nombre_instructor,
+          tipo_instructor: r.tipo_instructor,
+          id_competencia: r.id_competencia,
+          nombre_competencia: r.nombre_competencia,
+          descripcion_competencia: r.descripcion_competencia ?? r.descripcion,
+          // RAEs acumuladas en un array
+          raesArray: []
+        });
+      }
+
+      // Añadir RAE si existe y no está ya añadida
+      const agr = mapHorarios.get(id);
+      if (r.id_rae) {
+        const textoRae = `${r.id_rae} - ${r.descripcion_rae ?? ""}`.trim();
+        // evitar duplicados de RAE en el mismo horario
+        if (textoRae && !agr.raesArray.includes(textoRae)) agr.raesArray.push(textoRae);
+      }
+    });
+
+    // Convertir map a array usable por el render
+    const horariosAgrupados = Array.from(mapHorarios.values());
+
+    // Opcional: si quieres que las RAEs salgan como HTML con saltos de línea
+    horariosAgrupados.forEach(h => {
+      if (h.raesArray.length) {
+        // crear HTML list (puedes cambiar a join(', ') si prefieres en línea)
+        h.raesHtml = `<ul class="list-disc ml-5 mt-1">${h.raesArray.map(x => `<li>${x}</li>`).join('')}</ul>`;
+      } else {
+        h.raesHtml = `<span class="text-gray-500 italic">Sin especificar</span>`;
+      }
+    });
+
+    // -------------------------
+    // RENDERIZAR USANDO horariosAgrupados
+    // -------------------------
     const dias = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"];
     const horas = Array.from({ length: 16 }, (_, i) => i + 6);
 
@@ -146,7 +205,8 @@ async function cargarTrimestralizacion() {
       fila.innerHTML = `<td class="border border-gray-700 p-2 font-medium">${hora}:00-${hora + 1}:00</td>`;
 
       dias.forEach((dia) => {
-        const registros = activos.filter((r) => {
+        // ahora filtramos la lista agrupada
+        const registros = horariosAgrupados.filter((r) => {
           if (!r.dia || r.dia.toUpperCase() !== dia) return false;
           const rStart = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
           const rEnd = r.hora_fin ? parseInt(r.hora_fin.split(":")[0], 10) : rStart + 1;
@@ -158,7 +218,7 @@ async function cargarTrimestralizacion() {
           const rStart = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
           const rEnd = r.hora_fin ? parseInt(r.hora_fin.split(":")[0], 10) : rStart + 1;
           if (hora === rStart) {
-            // agregamos data-id-instructor para que luego activarEdicion lo lea
+            // un solo bloque por horario (ya agrupado)
             contenido += `
               <div class="registro border-gray-300 pb-1 mb-1"
                    data-id="${r.id_horario || ""}"
@@ -168,9 +228,10 @@ async function cargarTrimestralizacion() {
                   (<span class="nivel_ficha">${(r.nivel_ficha ?? "" ).toString().toUpperCase()}</span>)
                 </div>
                 <div><strong>Competencia:</strong> <span class="competencia">${r.id_competencia} -  ${r.nombre_competencia}  </span></div>
-                <div><strong>Descripcion:</strong>  ${r.descripcion ?? "Sin especificar"}</div>
+                <div><strong>RAE(s):</strong> ${r.raesHtml}</div>
               </div>`;
           } else if (hora > rStart && hora < rEnd) {
+            // horas intermedias en rangos largos — mostramos solo instructor resumido
             contenido += `<div class="mb-1 border-gray-200 pb-1">
                 <strong>Instructor:</strong> ${r.nombre_instructor ?? ""} (${r.tipo_instructor ?? ""})
               </div>`;

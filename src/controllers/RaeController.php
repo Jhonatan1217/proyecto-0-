@@ -22,6 +22,16 @@ function inreq($k) {
 // ============================================================
 $accion = $_GET['accion'] ?? '';
 
+if ($_GET['accion'] === 'porCompetencia' && isset($_GET['id_competencia'])) {
+    $id = intval($_GET['id_competencia']);
+    $stmt = $conn->prepare("SELECT id_rae, descripcion FROM raes WHERE id_competencia = :id AND estado = 1");
+    $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+    $stmt->execute();
+    echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+    exit;
+}
+
+
 try {
   switch ($accion) {
 
