@@ -23,7 +23,7 @@
       <!-- Tabs: cambiamos de sección sin recargar -->
       <div class="bg-zinc-100 rounded-2xl p-1 flex items-center gap-1 justify-around">
         <button data-tab-btn="upload" class="tab-btn flex items-center justify-center gap-2 px-4 py-2 rounded-xl w-full sm:w-auto text-zinc-700">
-          <i data-lucide="upload" class="w-4 h-4"></i><span class="sm:inline">Carga Excel</span>
+          <img src="src/assets/img/upload-grey.svg" class="w-4 h-4">Carga Excel</span>
         </button> 
         <button data-tab-btn="programs" class="tab-btn flex items-center justify-center gap-2 px-4 py-2 rounded-xl w-full sm:w-auto text-zinc-700">
           <img src="src/assets/img/graduation-cap.svg" class="w-4 h-4"></i><span class=" sm:inline">Programas</span>
@@ -45,7 +45,7 @@
           <div class="rounded-2xl ring-1 ring-zinc-200 shadow-sm overflow-hidden bg-white">
             <div class="px-6 pt-6">
               <h3 class="text-lg font-semibold flex items-center gap-2">
-                <i data-lucide="upload" class="w-5 h-5"></i> Subir Archivo
+                <img src="src/assets/img/upload.svg" class="w-4 h-4"> Subir Archivo
               </h3>
               <p class="text-sm text-zinc-500">Seleccione un archivo Excel (.xlsx) para importar</p>
             </div>
@@ -68,8 +68,8 @@
 
             <div class="px-6 pb-6 space-y-4 mt-4">
               <label class="flex h-36 w-full cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-zinc-300 bg-zinc-50">
-                <div class="text-center">
-                  <i data-lucide="upload" class="mx-auto h-8 w-8" style="color:#a1a1aa"></i>
+                <div class="flex flex-col items-center text-center">
+                  <img src="src/assets/img/upload-white.svg" class="w-4 h-4 ">
                   <p class="mt-2 text-sm text-zinc-500">Click para seleccionar archivo</p>
                 </div>
                 <input type="file" id="inputExcel" name="archivo" class="hidden" accept=".xlsx,.xls" required />
@@ -350,11 +350,9 @@
       }
       // Click de pestañas + pestaña inicial
       btns.forEach(b => b.addEventListener('click', () => activate(b.getAttribute('data-tab-btn'))));
-      activate('programs');
+      activate('upload');
     })();
   </script>
-
-
 
   <!-- Endpoints y flags globales que usan los JS -->
   <script>
@@ -369,46 +367,8 @@
   <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionCompetencias.js?v=2" defer></script>
   <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionRaes.js?v=1" defer></script>
 
+  <!-- Agregar cargar programas dinámicamente -->
   <script>
-document.addEventListener("DOMContentLoaded", () => {
-
-  const btnProcesar = document.getElementById("btnProcesarExcel");
-  const inputFile = document.getElementById("inputExcel");
-  const selectProgram = document.getElementById("upload_program");
-
-  btnProcesar.addEventListener("click", function () {
-
-    if (selectProgram.value === "") {
-      document.getElementById("err_upload_program").classList.remove("hidden");
-      return;
-    }
-
-    if (inputFile.files.length === 0) {
-      alert("Seleccione un archivo Excel primero.");
-      return;
-    }
-
-    let formData = new FormData();
-    formData.append("archivo", inputFile.files[0]);
-    formData.append("programa", selectProgram.value);
-
-    fetch("<?= BASE_URL ?>src/controllers/EtlController.php?accion=subir", {
-      method: "POST",
-      body: formData
-    })
-    .then(r => r.text())
-    .then(r => {
-      console.log("RESPUESTA DEL SERVIDOR:", r);
-      alert(r);
-    })
-    .catch(e => console.error("ERROR:", e));
-
-  });
-
-});
-</script>
-
-<script>
 document.addEventListener("DOMContentLoaded", () => {
 
   const selectProgram = document.getElementById("upload_program");
@@ -426,8 +386,122 @@ document.addEventListener("DOMContentLoaded", () => {
           </option>`;
       });
     })
-    .catch(err => console.error("Error cargando programas:", err));
+    .catch(err => {
+      console.error("Error cargando programas:", err);
+      // Toast de error (solo toast)
+      if (window.Swal) {
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'error',
+          title: 'No se pudieron cargar los programas',
+          timer: 2500,
+          showConfirmButton: false,
+          timerProgressBar: true
+        });
+      }
+    });
 });
 </script>
+
+  <!-- Implementar SweetAlert para la carga de Excel (SOLO TOASTS) -->
+  <script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  const btnProcesar = document.getElementById("btnProcesarExcel");
+  const inputFile = document.getElementById("inputExcel");
+  const selectProgram = document.getElementById("upload_program");
+
+  btnProcesar.addEventListener("click", function () {
+
+    // Validar que hay un programa seleccionado (toast)
+    if (selectProgram.value === "") {
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'warning',
+        title: 'Seleccione un programa de formación',
+        timer: 2200,
+        showConfirmButton: false,
+        timerProgressBar: true
+      });
+      return;
+    }
+
+    // Validar que hay un archivo seleccionado (toast)
+    if (inputFile.files.length === 0) {
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'error',
+        title: 'Seleccione un archivo Excel (.xlsx)',
+        timer: 2200,
+        showConfirmButton: false,
+        timerProgressBar: true
+      });
+      return;
+    }
+
+    let formData = new FormData();
+    formData.append("archivo", inputFile.files[0]);
+    formData.append("programa", selectProgram.value);
+
+    // Toast de carga persistente (con loading). Se cierra manualmente.
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      title: 'Procesando archivo…',
+      icon: 'info',
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    fetch("<?= BASE_URL ?>src/controllers/EtlController.php?accion=subir", {
+      method: "POST",
+      body: formData
+    })
+    .then(r => r.text())
+    .then(r => {
+      console.log("RESPUESTA DEL SERVIDOR:", r);
+
+      // Cerrar el loading y mostrar éxito como toast
+      Swal.close();
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Archivo procesado correctamente',
+        timer: 2600,
+        showConfirmButton: false,
+        timerProgressBar: true
+      });
+
+      // Limpiar inputs después de éxito
+      inputFile.value = '';
+      selectProgram.value = '';
+    })
+    .catch(e => {
+      console.error("ERROR:", e);
+
+      // Cerrar el loading y mostrar error como toast
+      Swal.close();
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'error',
+        title: 'Error al procesar el archivo',
+        timer: 2600,
+        showConfirmButton: false,
+        timerProgressBar: true
+      });
+    });
+
+  });
+
+});
+</script>
+
 </body>
 </html>
