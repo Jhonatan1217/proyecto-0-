@@ -87,6 +87,7 @@ switch ($accion) {
                 h.id_area,
                 h.numero_trimestre,
                 h.estado,
+                h.id_rae AS raes_horario,      -- opcional, para ver el texto guardado
                 f.numero_ficha,
                 f.nivel_ficha,
                 i.nombre_instructor,
@@ -108,7 +109,6 @@ switch ($accion) {
                 FIELD(UPPER(h.dia), 'LUNES','MARTES','MIERCOLES','JUEVES','VIERNES','SABADO'), 
                 h.hora_inicio
         ");
-
 
             $stmt->execute([
                 ':id_zona' => intval($id_zona),
@@ -279,7 +279,18 @@ switch ($accion) {
 
             // Leer id_programa e id_rae enviados por el formulario (si vienen)
             $id_programa_post = isset($_POST['id_programa']) && $_POST['id_programa'] !== '' ? intval($_POST['id_programa']) : null;
-            $id_rae_post = isset($_POST['id_rae']) && $_POST['id_rae'] !== '' ? intval($_POST['id_rae']) : null;
+
+            // ===========================
+            // 🔥 AQUÍ EL CAMBIO IMPORTANTE
+            // ===========================
+            $id_rae_post = null;
+
+            if (!empty($_POST['id_rae'])) {
+                // `id_rae` llega como "5,7,10" -> lo limpiamos y volvemos a unir
+                $idsRae = array_filter(array_map('trim', explode(',', $_POST['id_rae'])));
+                // Guardamos TODOS los RAEs como texto en la columna VARCHAR
+                $id_rae_post = implode(',', $idsRae);   // ⬅️ ANTES se hacía intval($idsRae[0])
+            }
 
             // Priorizar id_competencia enviado por el formulario. Si no viene, usar descripcion para buscar/crear
             // pasando id_programa como información adicional al crear la competencia.
@@ -395,7 +406,6 @@ switch ($accion) {
 
             foreach ($registros as $r) {
                 if (empty($r['id_horario'])) continue;
-
 
                 // Actualizar ficha (número y nivel)
                 if (!empty($r['numero_ficha']) || !empty($r['nivel_ficha'])) {
