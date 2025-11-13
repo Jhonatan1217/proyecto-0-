@@ -14,11 +14,11 @@ class Horario {
      * El campo estado se activa por defecto (1).
      */
     // Funcion para crear un nuevo horario
-    public function crearHorario($dia, $hora_inicio, $hora_fin, $id_zona, $id_area, $id_ficha, $id_instructor, $id_competencia, $numero_trimestre) {
+    public function crearHorario($dia, $hora_inicio, $hora_fin, $id_zona, $id_area, $id_ficha, $id_instructor, $id_competencia, $numero_trimestre, $id_rae) {
         try {
             $sql = "INSERT INTO " . $this->table . " 
-                    (dia, hora_inicio, hora_fin, id_zona, id_area, id_ficha, id_instructor, id_competencia, numero_trimestre, estado)
-                    VALUES (:dia, :hora_inicio, :hora_fin, :id_zona, :id_area, :id_ficha, :id_instructor, :id_competencia, :numero_trimestre, 1)";
+                    (dia, hora_inicio, hora_fin, id_zona, id_area, id_ficha, id_instructor, id_competencia, id_rae, numero_trimestre, estado)
+                    VALUES (:dia, :hora_inicio, :hora_fin, :id_zona, :id_area, :id_ficha, :id_instructor, :id_competencia, :id_rae, :numero_trimestre, 1)";
             
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':dia', $dia);
@@ -29,6 +29,7 @@ class Horario {
             $stmt->bindParam(':id_ficha', $id_ficha);
             $stmt->bindParam(':id_instructor', $id_instructor);
             $stmt->bindParam(':id_competencia', $id_competencia);
+            $stmt->bindParam(':id_rae', $id_rae);
             $stmt->bindParam(':numero_trimestre', $numero_trimestre);
 
             if ($stmt->execute()) {
@@ -46,13 +47,14 @@ class Horario {
      * Solo actualiza: número ficha, trimestre, instructor y competencia
      */
     // Funcion para actualizar un horario existente
-    public function actualizarHorario($id_horario, $id_ficha, $numero_trimestre, $id_instructor, $id_competencia) {
+    public function actualizarHorario($id_horario, $id_ficha, $numero_trimestre, $id_instructor, $id_competencia, $id_rae) {
         try {
             $sql = "UPDATE " . $this->table . " 
                     SET id_ficha = :id_ficha, 
                         numero_trimestre = :numero_trimestre, 
                         id_instructor = :id_instructor, 
-                        id_competencia = :id_competencia
+                        id_competencia = :id_competencia,
+                        id_rae = :id_rae
                     WHERE id_horario = :id_horario";
 
             $stmt = $this->conn->prepare($sql);
@@ -61,6 +63,8 @@ class Horario {
             $stmt->bindParam(':numero_trimestre', $numero_trimestre);
             $stmt->bindParam(':id_instructor', $id_instructor);
             $stmt->bindParam(':id_competencia', $id_competencia);
+            $stmt->bindParam(':id_rae', $id_rae);
+
 
             if ($stmt->execute()) {
                 return true;
@@ -133,7 +137,8 @@ class Horario {
                         f.numero_ficha,
                         f.nivel_ficha,
                         i.nombre_instructor,
-                        c.descripcion AS competencia,
+                        c.nombre_competencia AS competencia,
+                        r.descripcion AS rae,
                         t.estado AS estado_trimestre
                     FROM horarios h
                     LEFT JOIN areas a ON h.id_area = a.id_area
@@ -141,6 +146,7 @@ class Horario {
                     LEFT JOIN fichas f ON h.id_ficha = f.id_ficha
                     LEFT JOIN instructores i ON h.id_instructor = i.id_instructor
                     LEFT JOIN competencias c ON h.id_competencia = c.id_competencia
+                    LEFT JOIN raes r ON h.id_rae = r.id_rae
                     LEFT JOIN trimestre t ON h.numero_trimestre = t.numero_trimestre
                     WHERE h.estado = :estado";
 

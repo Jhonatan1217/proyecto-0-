@@ -39,9 +39,10 @@ if ($accion) {
             $id_ficha = $_POST["id_ficha"];
             $id_instructor = $_POST["id_instructor"];
             $id_competencia = $_POST["id_competencia"];
+            $id_rae = $_POST["id_rae"];
             $numero_trimestre = $_POST["numero_trimestre"];
             // Llamar al método de creación
-            $resultado = $horario->crearHorario($dia, $hora_inicio, $hora_fin, $id_zona, $id_area, $id_ficha, $id_instructor, $id_competencia, $numero_trimestre);
+            $resultado = $horario->crearHorario($dia, $hora_inicio, $hora_fin, $id_zona, $id_area, $id_ficha, $id_instructor, $id_competencia, $id_rae, $numero_trimestre);
             // Responder según el resultado
             if ($resultado) {
                 $response = ["status" => "success", "message" => "Horario creado correctamente."];
@@ -60,8 +61,9 @@ if ($accion) {
             $numero_trimestre = $_POST["numero_trimestre"];
             $id_instructor = $_POST["id_instructor"];
             $id_competencia = $_POST["id_competencia"];
+            $id_rae = $_POST["id_rae"];
             // Llamar al método de actualización
-            $resultado = $horario->actualizarHorario($id_horario, $id_ficha, $numero_trimestre, $id_instructor, $id_competencia);
+            $resultado = $horario->actualizarHorario($id_horario, $id_ficha, $numero_trimestre, $id_instructor, $id_competencia, $id_rae);
             // Responder según el resultado
             if ($resultado) {
                 $response = ["status" => "success", "message" => "Horario actualizado correctamente."];
