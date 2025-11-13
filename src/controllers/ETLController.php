@@ -50,8 +50,8 @@ class EtlController {
 
                 // Insertar competencia (id_competencia = código)
                 $stmt = $conn->prepare("
-                    INSERT IGNORE INTO competencias (id_competencia, id_programa, descripcion, nombre_competencia, estado)
-                    VALUES (?, ?, '', ?, 1)
+                    INSERT IGNORE INTO competencias (id_competencia, id_programa, nombre_competencia, estado)
+                    VALUES (?, ?, ?, 1)
                 ");
                 $stmt->execute([$codC, $programa, $nomC]);
 
