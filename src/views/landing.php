@@ -358,38 +358,46 @@ $competencias = $s->fetchAll(PDO::FETCH_ASSOC);
     <script src="<?= BASE_URL ?>src/assets/js/formulario_trimestralizacion.js"></script>
 
     <script>
-      // Copiar atributos data-rae/data-programa desde la opción seleccionada al formulario
-      document.addEventListener('DOMContentLoaded', function () {
-        const form = document.querySelector('#formTrimestralizacion');
-        if (!form) return;
-        const selComp = form.querySelector('[name="id_competencia"]');
-        const raeField = form.querySelector('#id_rae_field');
-        const progField = form.querySelector('#id_programa_field');
-        const selProg = document.getElementById('id_programa_select');
+  document.addEventListener('DOMContentLoaded', function () {
+    const form = document.querySelector('#formTrimestralizacion');
+    if (!form) return;
 
-        function syncCompData() {
-          const opt = selComp && selComp.selectedOptions && selComp.selectedOptions[0];
-          if (!opt) return;
-          // Si no hay programa seleccionado en el select de programas, tomamos el data-programa de la competencia
-          if (progField && (!selProg || !selProg.value)) {
-            progField.value = opt.dataset.programa || '';
-          }
-        }
+    const selComp = form.querySelector('[name="id_competencia"]');
+    const raeField = form.querySelector('#id_rae_field');
+    const progField = form.querySelector('#id_programa_field');
+    const selProg = document.getElementById('id_programa_select');
 
-        // Cuando cambie la competencia, sincronizamos (RAEs y, si aplica, programa)
-        if (selComp) {
-          selComp.addEventListener('change', syncCompData);
-          syncCompData();
-        }
+    function syncCompData() {
+      const opt = selComp && selComp.selectedOptions && selComp.selectedOptions[0];
+      if (!opt) return;
 
-        // Cuando cambie el programa, actualizamos el hidden de id_programa
-        if (selProg && progField) {
-          selProg.addEventListener('change', function () {
-            progField.value = this.value || '';
-          });
-        }
+      // Si no hay programa seleccionado en el select de programas,
+      // tomamos el data-programa de la competencia seleccionada
+      if (progField && (!selProg || !selProg.value)) {
+        progField.value = opt.dataset.programa || '';
+      }
+
+      // ❌ LÍNEA ELIMINADA (era la que dañaba id_rae)
+      // raeField.value = opt.dataset.rae;
+
+      // ✔ AHORA id_rae_field SOLO LO MANEJA EL MODAL (correcto)
+    }
+
+    // Cuando cambie la competencia, sincronizamos programa
+    if (selComp) {
+      selComp.addEventListener('change', syncCompData);
+      syncCompData();
+    }
+
+    // Cuando cambie el programa manualmente, lo copiamos al hidden
+    if (selProg && progField) {
+      selProg.addEventListener('change', function () {
+        progField.value = this.value || '';
       });
-    </script>
+    }
+  });
+</script>
+
 
     <script>
       (function(){
