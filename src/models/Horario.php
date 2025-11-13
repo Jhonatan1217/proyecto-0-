@@ -131,24 +131,27 @@ class Horario {
     // Funcion para listar todos los horarios activos o inactivos
     public function listarHorarios($estado = 1) {
         try {
-            $sql = "SELECT h.*, 
-                        a.nombre_area,
-                        z.id_zona,
-                        f.numero_ficha,
-                        f.nivel_ficha,
-                        i.nombre_instructor,
-                        c.nombre_competencia AS competencia,
-                        r.descripcion AS rae,
-                        t.estado AS estado_trimestre
-                    FROM horarios h
-                    LEFT JOIN areas a ON h.id_area = a.id_area
-                    LEFT JOIN zonas z ON h.id_zona = z.id_zona
-                    LEFT JOIN fichas f ON h.id_ficha = f.id_ficha
-                    LEFT JOIN instructores i ON h.id_instructor = i.id_instructor
-                    LEFT JOIN competencias c ON h.id_competencia = c.id_competencia
-                    LEFT JOIN raes r ON h.id_rae = r.id_rae
-                    LEFT JOIN trimestre t ON h.numero_trimestre = t.numero_trimestre
-                    WHERE h.estado = :estado";
+            $sql ="SELECT h.*, 
+                    a.nombre_area,
+                    z.id_zona,
+                    f.numero_ficha,
+                    f.nivel_ficha,
+                    i.nombre_instructor,
+                    c.nombre_competencia AS competencia,
+                    (
+                        SELECT GROUP_CONCAT(r.descripcion SEPARATOR ' | ')
+                        FROM raes r
+                        WHERE FIND_IN_SET(r.id_rae, h.id_rae)
+                    ) AS raes_descripciones,
+                    t.estado AS estado_trimestre
+                FROM horarios h
+                LEFT JOIN areas a ON h.id_area = a.id_area
+                LEFT JOIN zonas z ON h.id_zona = z.id_zona
+                LEFT JOIN fichas f ON h.id_ficha = f.id_ficha
+                LEFT JOIN instructores i ON h.id_instructor = i.id_instructor
+                LEFT JOIN competencias c ON h.id_competencia = c.id_competencia
+                LEFT JOIN trimestre t ON h.numero_trimestre = t.numero_trimestre
+                WHERE h.estado = :estado";
 
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':estado', $estado);
