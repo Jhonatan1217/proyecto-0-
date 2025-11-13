@@ -64,33 +64,33 @@ case 'listar':
 
     try {
         $sql = "
-            SELECT 
-                h.id_horario,
-                h.dia,
-                h.hora_inicio,
-                h.hora_fin,
-                h.id_zona,
-                h.id_area,
-                h.numero_trimestre,
-                h.estado,
-                h.id_rae AS raes_horario,      -- opcional, para ver el texto guardado
-                f.numero_ficha,
-                f.nivel_ficha,
-                i.nombre_instructor,
-                i.tipo_instructor,
-                c.id_competencia,
-                c.nombre_competencia,
-                c.descripcion AS descripcion_competencia,
-                r.id_rae,
-                r.descripcion AS descripcion_rae
-            FROM horarios h
-            LEFT JOIN fichas f ON h.id_ficha = f.id_ficha
-            LEFT JOIN instructores i ON h.id_instructor = i.id_instructor
-            LEFT JOIN competencias c ON h.id_competencia = c.id_competencia
-            LEFT JOIN raes r ON FIND_IN_SET(r.id_rae, h.id_rae)
-            WHERE h.id_zona = :id_zona
-              AND h.estado = 1
-        ";
+        SELECT 
+            h.id_horario,
+            h.dia,
+            h.hora_inicio,
+            h.hora_fin,
+            h.id_zona,
+            h.id_area,
+            h.numero_trimestre,
+            h.estado,
+            h.id_rae AS raes_horario,
+            f.numero_ficha,
+            f.nivel_ficha,
+            i.nombre_instructor,
+            i.tipo_instructor,
+            c.id_competencia,
+            c.nombre_competencia,
+            r.id_rae,
+            r.descripcion AS descripcion_rae
+        FROM horarios h
+        LEFT JOIN fichas f ON h.id_ficha = f.id_ficha
+        LEFT JOIN instructores i ON h.id_instructor = i.id_instructor
+        LEFT JOIN competencias c ON h.id_competencia = c.id_competencia
+        LEFT JOIN raes r ON FIND_IN_SET(r.id_rae, h.id_rae)
+        WHERE h.id_zona = :id_zona
+        AND h.estado = 1
+    ";
+
 
         // Si el área viene definida, la agregamos como filtro adicional
         if (!empty($id_area_supplied)) {
