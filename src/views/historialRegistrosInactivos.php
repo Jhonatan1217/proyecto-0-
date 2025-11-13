@@ -144,10 +144,10 @@
 
                         <!-- Etiquetas inferiores -->
                         <div class="flex flex-wrap gap-2 pt-3 border-t border-gray-100">
-                            <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">
+                            <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-[#0a3a57]">
                                 Trimestre <?php echo htmlspecialchars($row['numero_trimestre']); ?>
                             </span>
-                            <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-blue-600">
+                            <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-[#0a3a57]">
                                 Programa <?php echo htmlspecialchars($nombrePrograma); ?>
                             </span>
                         </div>

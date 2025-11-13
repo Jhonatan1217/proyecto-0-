@@ -75,7 +75,7 @@
                 </div>
                 <input type="file" id="inputExcel" name="archivo" class="hidden" accept=".xlsx,.xls" required />
               </label>
-              <button id="btnProcesarExcel" class="w-full rounded-xl" style="background:#00324d;color:#fff;padding:.65rem 1rem;font-size:.875rem;font-weight:500">
+              <button id="btnProcesarExcel" class="w-full rounded-xl" style="background:#0a3a57;color:#fff;padding:.65rem 1rem;font-size:.875rem;font-weight:500">
                 Subir y Procesar
               </button>
 
@@ -92,7 +92,7 @@
             <h2 class="text-3xl text-[#39a900] font-bold">Programas de Formación</h2>
             <p class="text-sm text-zinc-500">Gestione los programas de formación disponibles</p>
           </div>
-          <button id="btnNewProgram" class="rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 bg-[#00324d] text-[#fff]">
+          <button id="btnNewProgram" class="rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 bg-[#0a3a57] text-[#fff]">
             <img src="src/assets/img/plus.svg" class="w-4 h-4" alt="signo de mas"> Nuevo Programa
           </button>
         </div>
@@ -113,7 +113,7 @@
             <select id="competencyProgramFilter" class="w-[260px] border border-zinc-300 rounded-xl px-3 py-2 text-sm select-nice">
               <option value="all">Todos los programas</option>
             </select>
-            <button id="btnNewCompetency" class="rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 bg-[#00324d] text-[#fff]">
+            <button id="btnNewCompetency" class="rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 bg-[#0a3a57] text-[#fff]">
               <img src="src/assets/img/plus.svg" class="w-4 h-4" alt="icono añadir"> Nueva Competencia
             </button>
 
@@ -133,7 +133,7 @@
             <h2 class="text-3xl font-bold">Resultados de Aprendizaje Esperados (RAE)</h2>
             <p class="text-sm text-zinc-500">Visualice y edite los RAE cargados</p>
           </div>
-          <button class="rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2  bg-[#00324d] text-[#fff]">
+          <button class="rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2  bg-[#0a3a57] text-[#fff]">
             <img src="src/assets/img/plus.svg" class="w-4 h-4"></i> Nuevo RAE
           </button>
         </div>
@@ -208,7 +208,7 @@
           Cancelar
         </button>
         <button type="submit" id="btnSubmitProgram"
-                class="rounded-xl px-4 py-2.5 text-sm font-medium bg-[#00324d] text-[#fff]">
+                class="rounded-xl px-4 py-2.5 text-sm font-medium bg-[#0a3a57] text-[#fff]">
           Guardar
         </button>
       </div>
@@ -268,7 +268,7 @@
           Cancelar
         </button>
         <button type="submit" id="btnSubmitCompetency"
-                class="rounded-xl px-4 py-2.5 text-sm font-medium bg-[#00324d] text-[#fff]">
+                class="rounded-xl px-4 py-2.5 text-sm font-medium bg-[#0a3a57] text-[#fff]">
           Guardar
         </button>
       </div>
@@ -325,7 +325,7 @@
 
       <div class="flex justify-end gap-3 pt-2">
         <button type="button" id="btnCancelRae" class="rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium">Cancelar</button>
-        <button type="submit" id="btnSubmitRae" class="rounded-xl px-4 py-2.5 text-sm font-medium bg-[#00324d] text-[#fff]">Guardar</button>
+        <button type="submit" id="btnSubmitRae" class="rounded-xl px-4 py-2.5 text-sm font-medium bg-[#0a3a57] text-[#fff]">Guardar</button>
       </div>
     </form>
   </div>

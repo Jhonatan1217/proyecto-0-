@@ -95,7 +95,7 @@ try {
 
   <!-- Botón de crear nueva trimestralización -->
   <button id="btnAbrirModal" 
-    class="flex items-center justify-center gap-2 w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 text-white font-semibold text-sm lg:text-base rounded-md bg-[#00324D] hover:bg-[#004a70] transition-colors duration-200 shadow-md">
+    class="flex items-center justify-center gap-2 w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 text-white font-semibold text-sm lg:text-base rounded-md bg-[#0a3a57] hover:bg-[#00304D] transition-colors duration-200 shadow-md">
       <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/plus.svg" />
     Nueva trimestralización
   </button>
@@ -126,15 +126,15 @@ try {
 
     <!-- Botones de acciones -->
     <div id="botones-principales" class="mt-6 mb-6 flex justify-center gap-6">
-      <button onclick="mostrarModalEliminar()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+      <button onclick="mostrarModalEliminar()" class="bg-[#0a3a57] text-white px-6 py-2 rounded-lg hover:bg-[#00304D] transition">
         Limpiar Trimestralización
       </button>
 
-      <button id="btn-actualizar" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+      <button id="btn-actualizar" class="bg-[#0a3a57] text-white px-6 py-2 rounded-lg hover:bg-[#00304D] transition">
         Actualizar Trimestralización
       </button>
 
-      <button onclick="descargarPDF()" class="bg-[#00324D] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center">
+      <button onclick="descargarPDF()" class="bg-[#0a3a57] text-white px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center">
         Descargar PDF
         <img src="<?= BASE_URL ?>src/assets/img/descargar.png" class="ml-2 w-5 h-5" alt="descargar">
       </button>
@@ -151,7 +151,7 @@ try {
         ¿Estás seguro de querer limpiar la trimestralización?
       </h2>
       <div class="flex gap-6 justify-center">
-        <button onclick="confirmarEliminar()" class="bg-green-600 hover:bg-green-700 text-white font-bold text-xl px-10 py-3 rounded-xl transition shadow-lg">
+        <button onclick="confirmarEliminar()" class="bg-[#4ebe15] hover:bg-[#39A900] text-white font-bold text-xl px-10 py-3 rounded-xl transition shadow-lg">
           Aceptar
         </button>
         <button onclick="cerrarModal()" class="bg-red-600 hover:bg-red-700 text-white font-bold text-xl px-10 py-3 rounded-xl transition shadow-lg">
@@ -307,7 +307,7 @@ try {
             <input type="hidden" name="id_rae" id="id_rae_field" value="">
             <input type="hidden" name="id_programa" id="id_programa_field" value="">
             <button type="submit"
-              class="w-full h-12 bg-[#0b2d5b] text-white rounded-lg text-sm lg:text-base font-semibold hover:bg-[#082244] transition-colors">
+              class="w-full h-12 bg-[#0a3a57] text-white rounded-lg text-sm lg:text-base font-semibold hover:bg-[#00304D] transition-colors">
               GUARDAR TRIMESTRALIZACIÓN
             </button>
           </form>

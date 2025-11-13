@@ -62,12 +62,12 @@ try {
   <div class="flex flex-col gap-3 lg:gap-4 items-center">
         <!-- Botón de crear -->
         <button type="button" id="btnAbrirModal"
-          class="w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-[#004A70] transition-colors duration-200 outline-none cursor-pointer hover:text-white">
+          class="w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-[#00304D] transition-colors duration-200 outline-none cursor-pointer hover:text-white">
           CREAR TRIMESTRALIZACIÓN
         </button>
 
         <a href="<?= BASE_URL ?>index.php?page=src/views/register_tables"
-          class="block text-center w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-[#004A70] transition-colors duration-200 outline-none cursor-pointer hover:text-white">
+          class="block text-center w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-[#00304D] transition-colors duration-200 outline-none cursor-pointer hover:text-white">
           VISUALIZAR HORARIO
         </a>
 
@@ -219,7 +219,7 @@ try {
             <input type="hidden" name="id_rae" id="id_rae_field" value="">
             <input type="hidden" name="id_programa" id="id_programa_field" value="">
             <button type="submit"
-              class="w-full h-12 bg-[#0b2d5b] text-white rounded-lg text-sm lg:text-base font-semibold hover:bg-[#082244] transition-colors">
+              class="w-full h-12 bg-[#0a3a57] text-white rounded-lg text-sm lg:text-base font-semibold hover:bg-[#00304D] transition-colors">
               GUARDAR TRIMESTRALIZACIÓN
             </button>
           </form>

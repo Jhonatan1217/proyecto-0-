@@ -30,7 +30,7 @@
 
         <button 
           id="btnAbrirModalZonas"
-          class="bg-[#00324D] text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-[#00273A] active:scale-[0.99] transition"
+          class="bg-[#0a3a57] text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-[#00304D] active:scale-[0.99] transition"
           type="button"
         >
           <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/plus.svg" alt="+" />
@@ -110,7 +110,7 @@
                 Cancelar
               </button>
               <button type="submit"
-                class="px-6 py-2.5 rounded-xl bg-[#00324D] text-white hover:bg-[#00273A] transition">
+                class="px-6 py-2.5 rounded-xl bg-[#0a3a57] text-white hover:bg-[#00304D] transition">
                 Crear Zona
               </button>
             </div>

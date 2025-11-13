@@ -25,7 +25,7 @@
         <!-- Botón Nueva Área -->
         <button
           id="btnAbrirModalArea"
-          class="bg-[#00324D] text-white px-5 py-2 rounded-lg flex items-center gap-2 hover:bg-[#00283D] active:scale-[0.98] transition"
+          class="bg-[#0a3a57] text-white px-5 py-2 rounded-lg flex items-center gap-2 hover:bg-[#00304D] active:scale-[0.98] transition"
           type="button"
         >
           <img class="w-4" src="<?= BASE_URL ?>src/assets/img/plus.svg" alt="Agregar" />
@@ -126,7 +126,7 @@
                 Cancelar
               </button>
               <button type="submit"
-                class="px-6 py-2.5 rounded-xl bg-[#00324D] text-white hover:bg-[#00273A] transition">
+                class="px-6 py-2.5 rounded-xl bg-[#0a3a57] text-white hover:bg-[#00304D] transition">
                 Crear Área
               </button>
             </div>
