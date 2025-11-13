@@ -71,6 +71,7 @@
                 <div class="flex flex-col items-center text-center">
                   <img src="src/assets/img/upload-white.svg" class="w-4 h-4 ">
                   <p class="mt-2 text-sm text-zinc-500">Click para seleccionar archivo</p>
+                  <span id="file-name" class="text-base text-gray-700 mt-2 hidden"></span>
                 </div>
                 <input type="file" id="inputExcel" name="archivo" class="hidden" accept=".xlsx,.xls" required />
               </label>
@@ -402,6 +403,23 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 });
+</script>
+
+
+<script>
+  const inputExcel = document.getElementById('inputExcel');
+  const fileNameSpan = document.getElementById('file-name');
+
+  inputExcel.addEventListener('change', () => {
+    const file = inputExcel.files[0];
+    if (file) {
+      fileNameSpan.textContent = `${file.name}`;
+      fileNameSpan.classList.remove('hidden');
+    } else {
+      fileNameSpan.textContent = '';
+      fileNameSpan.classList.add('hidden');
+    }
+  });
 </script>
 
   <!-- Implementar SweetAlert para la carga de Excel (SOLO TOASTS) -->
