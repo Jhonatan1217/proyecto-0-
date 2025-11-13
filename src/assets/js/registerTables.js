@@ -366,9 +366,9 @@ async function activarEdicion() {
     nivelDiv.textContent = `Nivel: ${nivel_ficha}`;
 
     // append a la fila (.registro)
+    reg.appendChild(sel);
     reg.appendChild(inputFicha);
     reg.appendChild(txt);
-    reg.appendChild(sel);
     reg.appendChild(nivelDiv);
   });
 
