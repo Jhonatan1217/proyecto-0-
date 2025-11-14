@@ -36,8 +36,19 @@
       </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+        <img src="<?= BASE_URL ?>src/assets/img/layout-grid.svg" alt="Icono de Áreas">
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionAreas">Áreas</a>
+      </li>
+
+      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/map-pin.svg" alt="Icono de Zonas">
         <a href="<?= BASE_URL ?>index.php?page=src/views/gestionZonas">Zonas</a>
+      </li>
+
+
+      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+        <img src="<?= BASE_URL ?>src/assets/img/layers.svg" alt="Icono de Trimestres">
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionTrimestres">Trimestres</a>
       </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
@@ -46,8 +57,8 @@
       </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/house-plus.svg" alt="Icono de Áreas">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionAreas">Áreas</a>
+        <img src="<?= BASE_URL ?>src/assets/img/book-open.svg" alt="Icono de Competencias">
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionCompetencias">Competencias</a>
       </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
@@ -56,17 +67,7 @@
       </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/calendar-range.svg" alt="Icono de Trimestres">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionTrimestres">Trimestres</a>
-      </li>
-
-      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/book-open.svg" alt="Icono de Competencias">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionCompetencias">Competencias</a>
-      </li>
-
-      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/calendar-range.svg" alt="Icono de Trimestres">
+        <img src="<?= BASE_URL ?>src/assets/img/history.svg" alt="Icono de Trimestres">
         <a href="<?= BASE_URL ?>index.php?page=src/views/historialRegistrosInactivos">Historial</a>
       </li>
     </ul>
