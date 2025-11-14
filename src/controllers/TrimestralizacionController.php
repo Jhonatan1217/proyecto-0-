@@ -50,76 +50,83 @@ function resolveAreaForZona(PDO $conn, $id_zona, $provided_area = null) {
 
 switch ($accion) {
 
-    // ============================================================
-    // LISTAR POR ZONA (AHORA EXIGE id_area RESOLUBLE)
-    // ============================================================
-    case 'listar':
-        $id_zona = $_GET['id_zona'] ?? null;
-        $id_area_supplied = $_GET['id_area'] ?? null;
+  // ============================================================
+// LISTAR POR ZONA (versión sin bloqueos y con RAEs directas)
+// ============================================================
+case 'listar':
+    $id_zona = $_GET['id_zona'] ?? null;
+    $id_area_supplied = $_GET['id_area'] ?? null;
 
-        if (!$id_zona) {
+    if (!$id_zona) {
+        echo json_encode(['status' => 'error', 'mensaje' => 'Falta id_zona']);
+        exit;
+    }
+
+    try {
+        $sql = "
+        SELECT 
+            h.id_horario,
+            h.dia,
+            h.hora_inicio,
+            h.hora_fin,
+            h.id_zona,
+            h.id_area,
+            h.numero_trimestre,
+            h.estado,
+            h.id_rae AS raes_horario,
+            f.numero_ficha,
+            f.nivel_ficha,
+            i.nombre_instructor,
+            i.tipo_instructor,
+            c.id_competencia,
+            c.nombre_competencia,
+            r.id_rae,
+            r.descripcion AS descripcion_rae
+        FROM horarios h
+        LEFT JOIN fichas f ON h.id_ficha = f.id_ficha
+        LEFT JOIN instructores i ON h.id_instructor = i.id_instructor
+        LEFT JOIN competencias c ON h.id_competencia = c.id_competencia
+        LEFT JOIN raes r ON FIND_IN_SET(r.id_rae, h.id_rae)
+        WHERE h.id_zona = :id_zona
+        AND h.estado = 1
+    ";
+
+
+        // Si el área viene definida, la agregamos como filtro adicional
+        if (!empty($id_area_supplied)) {
+            $sql .= " AND h.id_area = :id_area";
+        }
+
+        $sql .= "
+            ORDER BY 
+              FIELD(UPPER(h.dia), 'LUNES','MARTES','MIERCOLES','JUEVES','VIERNES','SABADO'), 
+              h.hora_inicio
+        ";
+
+        $stmt = $conn->prepare($sql);
+        $stmt->bindValue(':id_zona', intval($id_zona), PDO::PARAM_INT);
+
+        if (!empty($id_area_supplied)) {
+            $stmt->bindValue(':id_area', intval($id_area_supplied), PDO::PARAM_INT);
+        }
+
+        $stmt->execute();
+        $registros = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (!$registros) {
             echo json_encode([]);
             exit;
         }
 
-        // Intentamos resolver id_area: si hay ambigüedad, devolvemos error para que el frontend envíe id_area.
-        $resolved_area = resolveAreaForZona($conn, $id_zona, $id_area_supplied);
+        echo json_encode($registros);
+    } catch (PDOException $e) {
+        echo json_encode([
+            'status' => 'error',
+            'mensaje' => 'Error al obtener registros: ' . $e->getMessage()
+        ]);
+    }
+    break;
 
-        if ($resolved_area === null) {
-            // Si el frontend suministró id_area y no existe la pareja, devolvemos vacío/ error
-            if (!empty($id_area_supplied)) {
-                echo json_encode([]);
-                exit;
-            }
-            // Si no se proporcionó, aclaramos que es necesario
-            echo json_encode(['status' => 'error', 'mensaje' => 'Ambigüedad en zona: debe proporcionar id_area junto con id_zona']);
-            exit;
-        }
-
-        try {
-            $stmt = $conn->prepare("
-            SELECT 
-                h.id_horario,
-                h.dia,
-                h.hora_inicio,
-                h.hora_fin,
-                h.id_zona,
-                h.id_area,
-                h.numero_trimestre,
-                h.estado,
-                h.id_rae AS raes_horario,      -- opcional, para ver el texto guardado
-                f.numero_ficha,
-                f.nivel_ficha,
-                i.nombre_instructor,
-                i.tipo_instructor,
-                c.id_competencia,
-                c.nombre_competencia,
-                c.descripcion AS descripcion_competencia,
-                r.id_rae,
-                r.descripcion AS descripcion_rae
-            FROM horarios h
-            LEFT JOIN fichas f ON h.id_ficha = f.id_ficha
-            LEFT JOIN instructores i ON h.id_instructor = i.id_instructor
-            LEFT JOIN competencias c ON h.id_competencia = c.id_competencia
-            LEFT JOIN raes r ON c.id_competencia = r.id_competencia
-            WHERE h.id_zona = :id_zona
-            AND h.id_area = :id_area
-            AND h.estado = 1
-            ORDER BY 
-                FIELD(UPPER(h.dia), 'LUNES','MARTES','MIERCOLES','JUEVES','VIERNES','SABADO'), 
-                h.hora_inicio
-        ");
-
-            $stmt->execute([
-                ':id_zona' => intval($id_zona),
-                ':id_area' => intval($resolved_area)
-            ]);
-            $registros = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            echo json_encode($registros);
-        } catch (PDOException $e) {
-            echo json_encode(['status' => 'error', 'mensaje' => 'Error al obtener registros: ' . $e->getMessage()]);
-        }
-        break;
 
     // ============================================================
     // OBTENER POR ID
