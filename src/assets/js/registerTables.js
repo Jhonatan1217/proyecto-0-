@@ -401,10 +401,10 @@ async function activarEdicion() {
       opt.value = c.id_competencia;
       opt.textContent = c.nombre_competencia;
 
-      // seleccionar la competencia ya existente en la fila
-      if (c.nombre_competencia.trim() === competencia.trim()) {
-        opt.selected = true;
-      }
+     // seleccionar la competencia ya existente en la fila
+     if (c.nombre_competencia.trim() === competenciaTexto.trim()) {
+      opt.selected = true;
+      }
 
       selCompetencia.appendChild(opt);
     });
