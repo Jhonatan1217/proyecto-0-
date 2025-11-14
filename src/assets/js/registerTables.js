@@ -386,14 +386,6 @@ async function activarEdicion() {
     // -----------------------
     reg.innerHTML = "";
 
-    // input ficha
-    const inputFicha = document.createElement("input");
-    inputFicha.type = "text";
-    inputFicha.value = ficha;
-    inputFicha.placeholder = "Número de ficha";
-    inputFicha.className = "ficha-input block w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm";
-
-
     // select competencias
     const selCompetencia = document.createElement("select");
     selCompetencia.className = "competencia-select w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm";
@@ -441,6 +433,7 @@ async function activarEdicion() {
     const inputFicha = document.createElement("input");
     inputFicha.type = "text";
     inputFicha.value = ficha;
+    inputFicha.placeholder = "Número de ficha";
     inputFicha.className = "ficha-input block w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm";
 
     // -----------------------
@@ -539,8 +532,8 @@ async function guardarCambios() {
   const filas = Array.from(registros).map((r) => {
     const id_horario = r.getAttribute("data-id");
     const numero_ficha = r.querySelector(".ficha-input")?.value || "";
-    const descripcion = r.querySelector(".competencia-input")?.value || "";
-    const id_instructor = r.querySelector(".instructor-select")?.value || "";
+    const descripcion = r.querySelector("select.competencia-select")?.value || "";
+    const id_instructor = r.querySelector("select.instructor-select")?.value || "";
 
     // leer checkboxes RAE
     const raes = [...r.querySelectorAll(".rae-container input[type=checkbox]")]
@@ -555,12 +548,7 @@ async function guardarCambios() {
       raes
     };
   });
-  const filas = Array.from(registros).map((r) => ({
-    id_horario: r.getAttribute("data-id"),
-    numero_ficha: r.querySelector("input")?.value || "",
-    descripcion: r.querySelector("select.competencia-select")?.value || "",
-    id_instructor: r.querySelector("select.instructor-select")?.value || ""
-  }));
+ 
 
   try {
     const res = await fetch(`${BASE_URL}src/controllers/trimestralizacionController.php?accion=actualizar&id_zona=${id_zona}`, {
