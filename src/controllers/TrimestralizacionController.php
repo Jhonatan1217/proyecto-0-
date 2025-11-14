@@ -444,19 +444,19 @@ case 'listar':
                     ]);
                 }
 
-                // Actualizar competencia
+                // Actualizar competencia seleccionada (id_competencia)
                 if (!empty($r['descripcion'])) {
                     $stmtComp = $conn->prepare("
-                        UPDATE competencias c
-                        INNER JOIN horarios h ON c.id_competencia = h.id_competencia
-                        SET c.descripcion = :descripcion
-                        WHERE h.id_horario = :id_horario
+                        UPDATE horarios
+                        SET id_competencia = :id_competencia
+                        WHERE id_horario = :id_horario
                     ");
                     $stmtComp->execute([
-                        ':descripcion' => $r['descripcion'],
+                        ':id_competencia' => intval($r['descripcion']),
                         ':id_horario' => $r['id_horario']
                     ]);
                 }
+
 
                 $actualizados++;
             }
