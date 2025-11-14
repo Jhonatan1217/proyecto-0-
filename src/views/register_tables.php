@@ -165,7 +165,7 @@ try {
   <script src="<?= BASE_URL ?>src/assets/js/registerTables.js"></script>
   <script src="<?= BASE_URL ?>src/assets/js/html2canvas.min.js"></script>
   <script src="<?= BASE_URL ?>src/assets/js/jspdf.umd.min.js"></script>
-  <script src="<?= BASE_URL ?>src/assets/js/registerTables.js"></script>
+
 
   <div
       id="modalCrearLanding"
