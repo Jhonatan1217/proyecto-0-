@@ -224,8 +224,8 @@ async function cargarTrimestralizacion() {
             // un solo bloque por horario (ya agrupado)
             contenido += `
               <div class="registro border-gray-300 pb-1 mb-1"
-                   data-id="${r.id_horario || ""}"
-                   data-id-instructor="${r.id_instructor ?? ""}">
+                  data-id="${r.id_horario || ""}"
+                  data-id-instructor="${r.id_instructor ?? ""}">
                 <div><strong>Instructor:</strong> ${r.nombre_instructor ?? ""} (${r.tipo_instructor ?? ""})</div>
                 <div><strong>Ficha:</strong> <span class="ficha">${r.numero_ficha ?? ""}</span>
                   (<span class="nivel_ficha">${(r.nivel_ficha ?? "" ).toString().toUpperCase()}</span>)
@@ -262,6 +262,26 @@ async function cargarTrimestralizacion() {
 // LISTAR INSTRUCTORES
 // =======================
 let listaInstructores = [];
+let listaCompetencias = [];
+
+async function cargarCompetencias() {
+  try {
+    const res = await fetch(`${BASE_URL}src/controllers/CompetenciaController.php?accion=listar`);
+    const data = await res.json();
+
+    console.log("Competencias recibidas:", data);
+
+    const array = Array.isArray(data)
+      ? data
+      : (Array.isArray(data.data) ? data.data : []);
+
+    listaCompetencias = array;
+
+  } catch (error) {
+    console.error("Error cargando competencias:", error);
+    listaCompetencias = [];
+  }
+}
 
 async function cargarInstructores() {
   try {
@@ -313,8 +333,9 @@ async function activarEdicion() {
   try {
     // 1) cargar instructores (si falla, lista queda vacía pero no rompe)
     await cargarInstructores();
+    await cargarCompetencias();
   } catch (err) {
-    console.error("Error al cargar instructores en activarEdicion:", err);
+    console.error("Error al cargar instructores en activar Edicion:", err);
   }
 
   // 2) obtener registros
@@ -341,11 +362,30 @@ async function activarEdicion() {
     inputFicha.placeholder = "Número de ficha";
     inputFicha.className = "ficha-input block w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm";
 
-    // textarea competencia
-    const txt = document.createElement("textarea");
-    txt.rows = 2;
-    txt.className = "competencia-input w-full px-2 py-1 border border-gray-400 rounded text-sm resize-none";
-    txt.textContent = competencia;
+
+    // select competencias
+    const selCompetencia = document.createElement("select");
+    selCompetencia.className = "competencia-select w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm";
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Seleccione competencia";
+    selCompetencia.appendChild(placeholder);
+
+    // rellenar select desde la db
+    listaCompetencias.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c.id_competencia;
+      opt.textContent = c.nombre_competencia;
+
+      // seleccionar la competencia ya existente en la fila
+      if (c.nombre_competencia.trim() === competencia.trim()) {
+        opt.selected = true;
+      }
+
+      selCompetencia.appendChild(opt);
+    });
+
 
     // select instructores
     const sel = document.createElement("select");
@@ -371,7 +411,7 @@ async function activarEdicion() {
 
     // append a la fila (.registro)
     reg.appendChild(inputFicha);
-    reg.appendChild(txt);
+    reg.appendChild(selCompetencia);
     reg.appendChild(sel);
     reg.appendChild(nivelDiv);
   });
@@ -413,7 +453,7 @@ async function guardarCambios() {
   const filas = Array.from(registros).map((r) => ({
     id_horario: r.getAttribute("data-id"),
     numero_ficha: r.querySelector("input")?.value || "",
-    descripcion: r.querySelector("textarea")?.value || "",
+    descripcion: r.querySelector("select.competencia-select")?.value || "",
     id_instructor: r.querySelector("select.instructor-select")?.value || ""
   }));
 
