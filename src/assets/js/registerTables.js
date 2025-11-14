@@ -42,6 +42,7 @@ async function cargarAreasYZonas() {
     // Cargar ÁREAS
     const resAreas = await fetch(`${BASE_URL}src/controllers/AreaController.php?accion=listar`);
     const dataAreas = await resAreas.json();
+    
 
     if (dataAreas.status === "success" && Array.isArray(dataAreas.data)) {
       selectArea.innerHTML = `<option value="" hidden selected>SELECCIONE EL ÁREA</option>`;
@@ -85,19 +86,20 @@ async function cargarAreasYZonas() {
       }
     });
 
-    // Cambiar zona → mostrar tabla
     selectZona.addEventListener("change", (e) => {
-      id_zona = e.target.value;
-      if (!id_zona) {
-        toggleTabla(false);
-        return;
-      }
-      const h1 = document.querySelector("#cabecera-trimestralizacion h1");
-      if (h1) h1.innerHTML = `VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA ${id_zona}`;
-      toggleTabla(true);
-      cargarTrimestralizacion();
-      Toast.fire({ icon: "info", title: `Zona ${id_zona} seleccionada` });
-    });
+    id_zona = e.target.value;
+    console.log("Zona seleccionada:", id_zona); // <-- agrega esto
+    if (!id_zona) {
+      toggleTabla(false);
+      return;
+    }
+    const h1 = document.querySelector("#cabecera-trimestralizacion h1");
+    if (h1) h1.innerHTML = `VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA ${id_zona}`;
+    toggleTabla(true);
+    cargarTrimestralizacion();
+    Toast.fire({ icon: "info", title: `Zona ${id_zona} seleccionada` });
+  });
+
   } catch (err) {
     console.error("Error en cargarAreasYZonas:", err);
     Toast.fire({ icon: "error", title: "Error al conectar con el servidor" });
@@ -124,6 +126,7 @@ async function cargarTrimestralizacion() {
     // Ahora enviamos también el área
     const res = await fetch(`${BASE_URL}src/controllers/TrimestralizacionController.php?accion=listar&id_zona=${id_zona}&id_area=${id_area}`);
     const data = await res.json();
+    console.log("Datos recibidos del servidor:", data);
     tbody.innerHTML = "";
 
     // data debe ser un array; si tu controller devuelve estructura {status:..., data: [...]}
@@ -265,18 +268,19 @@ async function cargarInstructores() {
     const res = await fetch(`${BASE_URL}src/controllers/InstructorController.php?accion=listar`);
     const data = await res.json();
 
-    // console diagnóstico
     console.log("Respuesta del servidor (Instructores):", data);
 
-    // aceptar tanto {status,data:[]} como directamente array
-    const instructoresArray = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
+    const instructoresArray = Array.isArray(data)
+      ? data
+      : (Array.isArray(data.data) ? data.data : []);
 
-    if (instructoresArray.length) {
-      listaInstructores = instructoresArray;
-      // intentar rellenar un select global solo si existe (no es obligatorio)
+    // 🔥 FILTRAR SOLO INSTRUCTORES ACTIVOS (estado = 1)
+    listaInstructores = instructoresArray.filter(i => String(i.estado) === "1");
+
+    if (listaInstructores.length > 0) {
       llenarSelectInstructores(listaInstructores);
     } else {
-      Toast.fire({ icon: "warning", title: "No hay instructores disponibles" });
+      Toast.fire({ icon: "warning", title: "No hay instructores activos" });
       listaInstructores = [];
     }
 

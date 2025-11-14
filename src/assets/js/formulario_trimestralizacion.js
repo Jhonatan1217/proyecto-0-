@@ -77,13 +77,20 @@ if (!window.TRIMESTRALIZACION_INIT) {
         fd.set("area", id_area);
 
         // Asegurar que id_competencia, id_programa e id_rae se envían explícitamente.
-        // Tomamos la opción seleccionada y copiamos sus data-attributes al FormData.
+        // - id_programa viene del data-attribute de la opción seleccionada
+        // - id_rae viene del campo hidden que se rellena desde el modal de selección
         try {
           const selOpt = form.querySelector("[name='id_competencia'] option:checked");
+          const id_rae_field = form.querySelector("[name='id_rae']");
+          
           if (id_competencia) fd.set('id_competencia', id_competencia);
+          
+          // Obtener programa desde el data-attribute de la competencia
           const programa = selOpt && selOpt.dataset ? (selOpt.dataset.programa || '') : '';
-          const rae = selOpt && selOpt.dataset ? (selOpt.dataset.rae || '') : '';
           fd.set('id_programa', programa);
+          
+          // Obtener RAEs del campo hidden (que se rellenó en el modal de selección)
+          const rae = id_rae_field ? (id_rae_field.value || '') : '';
           fd.set('id_rae', rae);
         } catch (err) {
           // No bloquear si algo falla aquí; el servidor hará validaciones.
