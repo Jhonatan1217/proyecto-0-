@@ -447,16 +447,36 @@ case 'listar':
                 // Actualizar competencia seleccionada (id_competencia)
                 if (!empty($r['descripcion'])) {
                     $stmtComp = $conn->prepare("
-                        UPDATE horarios
-                        SET id_competencia = :id_competencia
-                        WHERE id_horario = :id_horario
+                        UPDATE competencias c
+                        INNER JOIN horarios h ON c.id_competencia = h.id_competencia
+                        SET c.nombre_competencia = :nombre
+                        WHERE h.id_horario = :id_horario
                     ");
                     $stmtComp->execute([
-                        ':id_competencia' => intval($r['descripcion']),
+                        ':nombre' => $r['descripcion'],
                         ':id_horario' => $r['id_horario']
                     ]);
                 }
 
+                if (isset($r['raes'])) {
+
+                if (is_array($r['raes'])) {
+                    $raeString = implode(",", array_map('trim', $r['raes']));
+                } else {
+                    $raeString = trim($r['raes']);
+                }
+
+                $stmtRae = $conn->prepare("
+                    UPDATE horarios
+                    SET id_rae = :id_rae
+                    WHERE id_horario = :id_horario
+                ");
+
+                $stmtRae->execute([
+                    ':id_rae' => $raeString,
+                    ':id_horario' => $r['id_horario']
+                ]);
+            }
 
                 $actualizados++;
             }

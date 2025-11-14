@@ -88,7 +88,7 @@ async function cargarAreasYZonas() {
 
     selectZona.addEventListener("change", (e) => {
     id_zona = e.target.value;
-    console.log("Zona seleccionada:", id_zona); // <-- agrega esto
+    console.log("Zona seleccionada:", id_zona); 
     if (!id_zona) {
       toggleTabla(false);
       return;
@@ -169,7 +169,6 @@ async function cargarTrimestralizacion() {
           id_competencia: r.id_competencia,
           nombre_competencia: r.nombre_competencia,
           descripcion_competencia: r.descripcion_competencia ?? r.descripcion,
-          // RAEs acumuladas en un array
           raesArray: []
         });
       }
@@ -326,33 +325,65 @@ function llenarSelectInstructores(instructores) {
   });
 }
 
+async function obtenerRoesPorCompetencia(id_competencia) {
+  try {
+    const res = await fetch(`${BASE_URL}src/controllers/RaeController.php?accion=porCompetencia&id_competencia=${id_competencia}`);
+    const data = await res.json();
+
+    console.log("RAEs de la BD:", data);
+
+    // El controlador devuelve un array directo
+    if (Array.isArray(data)) return data;
+
+    return [];
+  } catch (e) {
+    console.error("Error obteniendo RAEs:", e);
+    return [];
+  }
+}
+
+
 // =======================
 // MODO EDICIÓN
 // =======================
 async function activarEdicion() {
   try {
-    // 1) cargar instructores (si falla, lista queda vacía pero no rompe)
     await cargarInstructores();
     await cargarCompetencias();
   } catch (err) {
     console.error("Error al cargar instructores en activar Edicion:", err);
   }
 
-  // 2) obtener registros
   const registros = document.querySelectorAll("#tbody-horarios .registro");
   if (!registros.length) {
     Toast.fire({ icon: "warning", title: "No hay datos para editar" });
     return;
   }
 
-  // 3) para cada registro, crear inputs/select por DOM (más robusto)
-  registros.forEach((reg) => {
+  for (const reg of registros) {
+
+    // -----------------------
+    // 1. DATOS ORIGINALES
+    // -----------------------
     const ficha = reg.querySelector(".ficha")?.textContent.trim() || "";
-    const competencia = reg.querySelector(".competencia")?.textContent.trim() || "";
+    const competenciaTexto = reg.querySelector(".competencia")?.textContent.trim() || "";
     const nivel_ficha = reg.querySelector(".nivel_ficha")?.textContent.trim() || "";
     const idInstructor = reg.getAttribute("data-id-instructor") || "";
 
-    // limpiar contenido previo
+    // separación del ID de la competencia
+    const id_competencia = competenciaTexto.split("-")[0]?.trim();
+
+    // Obtener RAEs ya asignados (li)
+    const ul = reg.querySelector("ul");
+    let raesExistentes = [];
+    if (ul) raesExistentes = [...ul.querySelectorAll("li")].map(li => li.textContent.trim());
+
+    // Obtener RAEs de BD
+    const raesBD = await obtenerRoesPorCompetencia(id_competencia);
+
+    // -----------------------
+    // 2. LIMPIAR CONTENIDO
+    // -----------------------
     reg.innerHTML = "";
 
     // input ficha
@@ -390,12 +421,12 @@ async function activarEdicion() {
     // select instructores
     const sel = document.createElement("select");
     sel.className = "instructor-select w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm";
+
     const placeholderOpt = document.createElement("option");
     placeholderOpt.value = "";
     placeholderOpt.textContent = "Seleccione instructor";
     sel.appendChild(placeholderOpt);
 
-    // poblar opciones desde listaInstructores (ya cargada)
     listaInstructores.forEach((inst) => {
       const opt = document.createElement("option");
       opt.value = inst.id_instructor;
@@ -404,21 +435,75 @@ async function activarEdicion() {
       sel.appendChild(opt);
     });
 
-    // nivel (solo lectura visible)
+    // -----------------------
+    // 4. FICHA
+    // -----------------------
+    const inputFicha = document.createElement("input");
+    inputFicha.type = "text";
+    inputFicha.value = ficha;
+    inputFicha.className = "ficha-input block w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm";
+
+    // -----------------------
+    // 5. COMPETENCIA
+    // -----------------------
+    const txt = document.createElement("textarea");
+    txt.rows = 2;
+    txt.className = "competencia-input w-full px-2 py-1 border border-gray-400 rounded text-sm resize-none";
+    txt.textContent = competenciaTexto;
+
+    // -----------------------
+    // 6. CHECKBOX de RAEs
+    // -----------------------
+    const contRAE = document.createElement("div");
+    contRAE.className = "rae-container mt-2 p-2 border rounded bg-gray-50";
+
+    const labelRae = document.createElement("div");
+    labelRae.textContent = "RAE(s):";
+    labelRae.className = "font-semibold mb-1 text-sm";
+    contRAE.appendChild(labelRae);
+
+    // crear cada checkbox
+    raesBD.forEach((rae) => {
+      const descripcion = (rae.descripcion ?? rae.descripcion_rae ?? "").trim();
+      const textoRae = `${rae.id_rae} - ${descripcion}`;
+
+      const div = document.createElement("div");
+      div.className = "flex items-center gap-2 mb-1";
+
+      const chk = document.createElement("input");
+      chk.type = "checkbox";
+      chk.dataset.idRae = rae.id_rae;
+
+      // ✔ MARCAR si esta rae EXISTE en la lista original
+      chk.checked = raesExistentes.includes(textoRae);
+
+      const lbl = document.createElement("label");
+      lbl.textContent = textoRae;
+      lbl.className = "text-sm";
+
+      div.appendChild(chk);
+      div.appendChild(lbl);
+      contRAE.appendChild(div);
+    });
+
+    // -----------------------
+    // 7. NIVEL
+    // -----------------------
     const nivelDiv = document.createElement("div");
     nivelDiv.className = "text-xs text-gray-500 mt-1";
     nivelDiv.textContent = `Nivel: ${nivel_ficha}`;
 
-    // append a la fila (.registro)
-    reg.appendChild(inputFicha);
-    reg.appendChild(selCompetencia);
+    // -----------------------
+    // 8. Ensamblar
+    // -----------------------
     reg.appendChild(sel);
+    reg.appendChild(inputFicha);
+    reg.appendChild(txt);
+    reg.appendChild(contRAE);
     reg.appendChild(nivelDiv);
-  });
+  }
 
-  // ocultar botones principales y mostrar botones edición
-  const botonesPrincipales = document.getElementById("botones-principales");
-  if (botonesPrincipales) botonesPrincipales.style.display = "none";
+  document.getElementById("botones-principales").style.display = "none";
   mostrarBotonesEdicion();
 }
 
@@ -450,6 +535,26 @@ function mostrarBotonesEdicion() {
 // =======================
 async function guardarCambios() {
   const registros = document.querySelectorAll("#tbody-horarios .registro");
+
+  const filas = Array.from(registros).map((r) => {
+    const id_horario = r.getAttribute("data-id");
+    const numero_ficha = r.querySelector(".ficha-input")?.value || "";
+    const descripcion = r.querySelector(".competencia-input")?.value || "";
+    const id_instructor = r.querySelector(".instructor-select")?.value || "";
+
+    // leer checkboxes RAE
+    const raes = [...r.querySelectorAll(".rae-container input[type=checkbox]")]
+      .filter(chk => chk.checked)
+      .map(chk => chk.dataset.idRae);
+
+    return {
+      id_horario,
+      numero_ficha,
+      descripcion,
+      id_instructor,
+      raes
+    };
+  });
   const filas = Array.from(registros).map((r) => ({
     id_horario: r.getAttribute("data-id"),
     numero_ficha: r.querySelector("input")?.value || "",
@@ -467,10 +572,8 @@ async function guardarCambios() {
     const data = await res.json();
     if (data && (data.success || data.status === "success")) {
       Toast.fire({ icon: "success", title: "Cambios guardados correctamente" });
-      const be = document.getElementById("botones-edicion");
-      if (be) be.remove();
-      const bp = document.getElementById("botones-principales");
-      if (bp) bp.style.display = "flex";
+      document.getElementById("botones-edicion")?.remove();
+      document.getElementById("botones-principales").style.display = "flex";
       cargarTrimestralizacion();
     } else {
       console.error("guardarCambios respuesta inesperada:", data);
@@ -481,6 +584,7 @@ async function guardarCambios() {
     Toast.fire({ icon: "error", title: "Error de conexión al guardar" });
   }
 }
+
 
 function cancelarEdicion() {
   Swal.fire({

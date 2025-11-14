@@ -30,7 +30,6 @@ class Trimestralizacion {
                         i.nombre_instructor,
                         i.tipo_instructor,
                         c.id_competencia,
-                        c.descripcion
                     FROM {$this->table} t
                     INNER JOIN horarios h ON t.id_horario = h.id_horario
                     LEFT JOIN zonas z ON h.id_zona = z.id_zona
@@ -73,7 +72,6 @@ class Trimestralizacion {
                         i.nombre_instructor,
                         i.tipo_instructor,
                         c.id_competencia,
-                        c.descripcion
                     FROM {$this->table} t
                     INNER JOIN horarios h ON t.id_horario = h.id_horario
                     INNER JOIN zonas z ON h.id_zona = z.id_zona
@@ -172,7 +170,6 @@ class Trimestralizacion {
                 $stmt = $this->conn->prepare("
                     UPDATE competencias c
                     INNER JOIN horarios h ON c.id_competencia = h.id_competencia
-                    SET c.descripcion = :descripcion
                     WHERE h.id_horario = :id_horario
                 ");
                 $stmt->execute([

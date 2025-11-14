@@ -1,3 +1,5 @@
+Model
+
 <?php
 // Clase Competencia para manejar operaciones CRUD sobre la tabla 'Competencias'
 class Competencia {
@@ -34,16 +36,15 @@ class Competencia {
     }
 
     // Funcion para crear una nueva competencia
-    public function crear($id_competencia, $id_programa, $nombre_competencia, $descripcion) {
+    public function crear($id_competencia, $id_programa, $nombre_competencia) {
         try {
             $sql = "INSERT INTO {$this->table}
-                    (id_competencia, id_programa, nombre_competencia, descripcion, estado)
-                    VALUES (:id_competencia, :id_programa, :nombre_competencia, :descripcion, 1)";
+                    (id_competencia, id_programa, nombre_competencia, estado)
+                    VALUES (:id_competencia, :id_programa, :nombre_competencia, 1)";
             $stmt = $this->conn->prepare($sql);
             $stmt->bindValue(':id_competencia', $id_competencia);
             $stmt->bindValue(':id_programa', $id_programa);
             $stmt->bindValue(':nombre_competencia', $nombre_competencia);
-            $stmt->bindValue(':descripcion', $descripcion);
             $stmt->execute();
             return ['ok' => true, 'id_competencia' => $id_competencia];
         } catch (PDOException $e) {
@@ -52,9 +53,9 @@ class Competencia {
     }
 
     // Actualizar (permite opcionalmente cambiar id_programa)
-    public function actualizar($id_competencia, $nombre_competencia, $descripcion, $id_programa = null) {
+    public function actualizar($id_competencia, $nombre_competencia, $id_programa = null) {
         try {
-            $sets = ["nombre_competencia = :nombre_competencia", "descripcion = :descripcion"];
+            $sets = ["nombre_competencia = :nombre_competencia"];
             if ($id_programa !== null && $id_programa !== '') {
                 $sets[] = "id_programa = :id_programa";
             }
@@ -62,7 +63,6 @@ class Competencia {
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':id_competencia', $id_competencia);
             $stmt->bindParam(':nombre_competencia', $nombre_competencia);
-            $stmt->bindParam(':descripcion', $descripcion);
             if (strpos($sql, 'id_programa = :id_programa') !== false) {
                 $stmt->bindParam(':id_programa', $id_programa);
             }
