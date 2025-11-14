@@ -1,10 +1,13 @@
-*{ 
+/* -----------------------------------------
+   Reset básico + tipografía
+------------------------------------------ */
+/* *{ 
     box-sizing: border-box; 
 }
 
 body { 
     font-family: "Work Sans", sans-serif; 
-}
+} */
 
 input::placeholder,
 textarea::placeholder,
@@ -13,6 +16,7 @@ select::placeholder{
     opacity:1; 
 }
 
+/* Chevron de los selects generales */
 .select-chev{
     appearance:none;
     -webkit-appearance:none;
@@ -24,6 +28,7 @@ select::placeholder{
     padding-right:3rem;
 }
 
+/* Icono calendario en select de día */
 .select-cal{
     background-image:url("../img/calendar-1.svg") !important;
     background-position:right 18px center !important;
@@ -35,7 +40,7 @@ select::-ms-expand{
     display:none;
 }
 
-/* Texto gris por defecto; negro al seleccionar una opción válida */
+/* Texto gris por defecto */
 select{
     color:#3c3c3c !important;
 }
@@ -68,7 +73,7 @@ select:has(option:checked:not([value=""])){
     padding-bottom:0.75rem;
 }
 
- /* Animación sutil al abrir */
+/* Animación sutil al abrir */
 .modal-enter { 
     transform: scale(0.98); 
     opacity: 0; 
@@ -87,4 +92,45 @@ select:has(option:checked:not([value=""])){
 .backdrop-enter-active { 
     opacity: 1; 
     transition: opacity 150ms ease; 
+}
+
+/* =========================================================
+   LAYOUT DEL FORM DEL MODAL
+   - Base: una columna.
+   - Portátiles: posibilidad de 2 campos por fila con .field.
+   - Monitores grandes: más ancho y más espacio.
+   ========================================================= */
+
+/* Base: una sola columna con separación cómoda */
+#modalCard .form-grid{
+    display:flex;
+    flex-direction:column;
+    gap:0.75rem; /* similar a gap-3 */
+}
+
+/* Campos genéricos */
+#modalCard .form-grid .field,
+#modalCard .form-grid .field-full{
+    width:100%;
+}
+
+/* Monitores grandes: una columna, tarjeta más ancha y con más aire */
+@media (min-width:1601px){
+    #modalCard{
+        max-width:1100px;
+        padding-left:3rem;
+        padding-right:3rem;
+    }
+
+    #modalCard .form-grid{
+        flex-direction:column;
+        flex-wrap:nowrap;
+        gap:1.75rem;  /* AUMENTADO: antes 1rem */
+    }
+
+    #modalCard .form-grid .field,
+    #modalCard .form-grid .field-full{
+        width:100%;
+        margin-bottom: 13px;
+    }
 }

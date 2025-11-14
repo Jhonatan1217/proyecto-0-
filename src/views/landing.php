@@ -27,30 +27,24 @@ try {
         $instructores = $s->fetchAll(PDO::FETCH_ASSOC);
 
         // Trimestres
-        $s = $conn->prepare("SELECT numero_trimestre, estado FROM trimestre ORDER BY numero_trimestre ASC");
+        $s = $conn->prepare("SELECT numero_trimestre, estado FROM trimestre WHERE estado = 1 ORDER BY numero_trimestre ASC");
         $s->execute();
         $trimestres = $s->fetchAll(PDO::FETCH_ASSOC);
 
-        // Trimestres
-$s = $conn->prepare("SELECT numero_trimestre, estado FROM trimestre ORDER BY numero_trimestre ASC");
-$s->execute();
-$trimestres = $s->fetchAll(PDO::FETCH_ASSOC);
+        // 🔹 Programas de formación
+        $s = $conn->prepare("
+            SELECT id_programa, nombre_programa
+            FROM programas
+            WHERE estado = 1
+            ORDER BY nombre_programa ASC
+        ");
+        $s->execute();
+        $programas = $s->fetchAll(PDO::FETCH_ASSOC);
 
-// 🔹 Programas de formación
-$s = $conn->prepare("
-    SELECT id_programa, nombre_programa
-    FROM programas
-    WHERE estado = 1
-    ORDER BY nombre_programa ASC
-");
-$s->execute();
-$programas = $s->fetchAll(PDO::FETCH_ASSOC);
-
-// Competencias
-$s = $conn->prepare("SELECT id_competencia, nombre_competencia, id_programa FROM competencias WHERE estado = 1 ORDER BY nombre_competencia ASC");
-$s->execute();
-$competencias = $s->fetchAll(PDO::FETCH_ASSOC);
-
+        // Competencias
+        $s = $conn->prepare("SELECT id_competencia, nombre_competencia, id_programa FROM competencias WHERE estado = 1 ORDER BY nombre_competencia ASC");
+        $s->execute();
+        $competencias = $s->fetchAll(PDO::FETCH_ASSOC);
     }
 } catch (PDOException $e) {
     // No interrumpo la vista si falla la carga, se muestran los selects vacíos
@@ -69,6 +63,37 @@ $competencias = $s->fetchAll(PDO::FETCH_ASSOC);
 
     <!-- SweetAlert2 -->
     <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
+
+    <!-- 💡 Layout del formulario: 1 col (móvil), 2 cols en portátiles, original en monitores grandes -->
+    <style>
+      /* Por defecto: comportamiento original (bloques apilados) */
+      #modalCard .form-grid {
+        display: block;
+      }
+
+      /* Portátiles tipo MacBook (aprox 768px - 1600px) → 2 columnas */
+      @media (min-width: 768px) and (max-width: 1600px) {
+        #modalCard .form-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          column-gap: 0.75rem; /* aprox gap-3 */
+          row-gap: 0.75rem;
+        }
+        #modalCard .form-grid .field-full {
+          grid-column: span 2;
+        }
+      }
+
+      /* Monitores grandes → volvemos al diseño original (apilado) */
+      @media (min-width: 1601px) {
+        #modalCard .form-grid {
+          display: block;
+        }
+        #modalCard .form-grid .field-full {
+          grid-column: auto;
+        }
+      }
+    </style>
   </head>
   <body class="flex flex-col min-h-screen font-sans text-center bg-white text-gray-900">
     <!-- Contenido principal -->
@@ -79,12 +104,12 @@ $competencias = $s->fetchAll(PDO::FETCH_ASSOC);
       <div class="flex flex-col gap-3 lg:gap-4 items-center">
         <!-- Botón de crear -->
         <button type="button" id="btnAbrirModal"
-          class="w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-[#00304D] transition-colors duration-200 outline-none cursor-pointer hover:text-white">
+          class="w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-[#004A70] transition-colors duration-200 outline-none cursor-pointer hover:text-white">
           CREAR TRIMESTRALIZACIÓN
         </button>
 
         <a href="<?= BASE_URL ?>index.php?page=src/views/register_tables"
-          class="block text-center w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-[#00304D] transition-colors duration-200 outline-none cursor-pointer hover:text-white">
+          class="block text-center w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 lg:px-8 lg:py-3 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-[#004A70] transition-colors duración-200 outline-none cursor-pointer hover:text-white">
           VISUALIZAR HORARIO
         </a>
       </div>
@@ -127,146 +152,177 @@ $competencias = $s->fetchAll(PDO::FETCH_ASSOC);
 
           <!-- Formulario -->
           <form id="formTrimestralizacion" action="<?= BASE_URL ?>src/controllers/TrimestralizacionController.php?accion=crear" method="POST" class="trimestralizacion-form space-y-3 text-sm lg:text-base">
-            <!-- AREA -->
-            <select name="area" id="id_area" 
-              class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
-              <option value="">Seleccione el area a la que pertenece la ficha</option>
-              <?php foreach ($areas as $a): ?>
-                <option value="<?= htmlspecialchars($a['id_area']) ?>"><?= htmlspecialchars($a['nombre_area']) ?></option>
-              <?php endforeach; ?>
-            </select>
+            
+            <!-- 🔹 GRID para controlar columnas solo por CSS -->
+            <div class="form-grid">
 
-            <!-- ZONA -->
-            <select name="zona" id="id_zona" 
-              class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
-              <option value="">Seleccione la zona a la que pertenece la ficha</option>
-              <?php foreach ($zonas as $z): ?>
-                <?php $label = isset($z['id_zona']) ? "Zona " . $z['id_zona'] : "Zona"; ?>
-                <option value="<?= htmlspecialchars($z['id_zona']) ?>" data-area="<?= htmlspecialchars($z['id_area'] ?? '') ?>">
-                  <?= htmlspecialchars($label) ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
+              <!-- AREA -->
+              <div class="field">
+                <select name="area" id="id_area" 
+                  class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
+                  <option value="">Seleccione el area a la que pertenece la ficha</option>
+                  <?php foreach ($areas as $a): ?>
+                    <option value="<?= htmlspecialchars($a['id_area']) ?>"><?= htmlspecialchars($a['nombre_area']) ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
 
-            <select name="nivel_ficha" 
-              class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
-              <option value="">Seleccione el nivel de la ficha</option>
-              <option value="tecnico">Tecnico</option>
-              <option value="tecnologo">Tecnologo</option>
-            </select>
-
-            <!-- TRIMESTRE -->
-            <select name="numero_trimestre" 
-              class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
-              <option value="">Seleccione el trimestre que cursa la ficha</option>
-              <?php foreach ($trimestres as $t): ?>
-                <option value="<?= htmlspecialchars($t['numero_trimestre']) ?>" <?= ($t['estado']==1) ? '' : '' ?>>
-                  <?= "Trimestre " . htmlspecialchars($t['numero_trimestre']) . (($t['estado']==1) ? " (activo)" : "") ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
-
-            <div class="flex flex-minw-0 gap-3 flex-col sm:flex-row lg:flex-row">
-              <input type="text" name="numero_ficha" id="numero_ficha" placeholder="Número de la ficha" 
-                class="form-field basis-1/2 w-full h-12 px-4 pr-12 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm"/>
-                
-              <!-- INSTRUCTOR -->
-              <select name="nombre_instructor" id="nombre_instructor"
-                class="select-chev form-field basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
-                <option value="">Seleccione el instructor</option>
-                <?php foreach ($instructores as $ins): ?>
-                  <option value="<?= htmlspecialchars($ins['nombre_instructor']) ?>" data-tipo="<?= htmlspecialchars($ins['tipo_instructor']) ?>">
-                    <?= htmlspecialchars($ins['nombre_instructor']) ?> <?= isset($ins['tipo_instructor']) ? "— " . htmlspecialchars($ins['tipo_instructor']) : "" ?>
-                  </option>
-                <?php endforeach; ?>
-              </select>
-            </div>
-
-            <select name="dia_semana" id="dia" 
-              class="select-chev select-cal form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
-              <option value="">Seleccione el día</option>
-              <option value="lunes">Lunes</option>
-              <option value="martes">Martes</option>
-              <option value="miercoles">Miércoles</option>
-              <option value="jueves">Jueves</option>
-              <option value="viernes">Viernes</option>
-              <option value="sabado">Sábado</option>
-            </select>
-
-            <div class="flex flex-minw-0 gap-3 flex-col sm:flex-row lg:flex-row">
-              <select name="hora_inicio" id="hora_inicio" 
-                class="select-chev form-field basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
-                <option value="">Hora de inicio</option>
-                <?php for ($i = 6; $i <= 22; $i++): ?>
-                  <option value="<?= $i ?>:00"><?= $i ?>:00</option>
-                <?php endfor; ?>
-              </select>
-
-              <select name="hora_fin" id="hora_fin" 
-                class="select-chev form-field basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
-                <option value="">Hora de fin</option>
-                <?php for ($i = 7; $i <= 22; $i++): ?>
-                  <option value="<?= $i ?>:00"><?= $i ?>:00</option>
-                <?php endfor; ?>
-              </select>
-            </div>
-
-            <!-- 🔹 NUEVO: SELECT DE PROGRAMAS DE FORMACIÓN -->
-            <select
-              id="id_programa_select"
-              name="id_programa_select"
-              class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm mt-1">
-              <option value="">Seleccione el programa de formación</option>
-              <?php if (empty($programas)): ?>
-                <option disabled>No se encontraron programas activos</option>
-                <!-- programas: <?= htmlspecialchars(json_encode($programas)) ?> -->
-              <?php else: ?>
-                <?php foreach ($programas as $prog): ?>
-                  <option value="<?= htmlspecialchars($prog['id_programa']) ?>">
-                    <?= htmlspecialchars($prog['nombre_programa']) ?>
-                  </option>
-                <?php endforeach; ?>
-              <?php endif; ?>
-            </select>
-
-            <!-- Select para vincular competencia existente -->
-            <div class="relative">
-              <select
-                id="id_competencia"
-                name="id_competencia"
-                class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm mt-1">
-                <option value="">Seleccione la competencia (opcional)</option>
-                <?php if (empty($competencias)): ?>
-                  <option disabled>No se encontraron competencias activas</option>
-                  <!-- competencias: <?= htmlspecialchars(json_encode($competencias)) ?> -->
-                <?php else: ?>
-                  <?php foreach ($competencias as $comp): ?>
-                    <?php $valueComp = htmlspecialchars($comp['id_competencia']); ?>
-                    <option value="<?= $valueComp ?>"
-                            data-desc="<?= htmlspecialchars($comp['descripcion'] ?? '') ?>"
-                            data-programa="<?= htmlspecialchars($comp['id_programa'] ?? '') ?>">
-                      <?= htmlspecialchars($comp['nombre_competencia'] ?? $comp['descripcion'] ?? ('Competencia ' . ($comp['id_competencia'] ?? ''))) ?>
+              <!-- ZONA -->
+              <div class="field">
+                <select name="zona" id="id_zona" 
+                  class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
+                  <option value="">Seleccione la zona a la que pertenece la ficha</option>
+                  <?php foreach ($zonas as $z): ?>
+                    <?php $label = isset($z['id_zona']) ? "Zona " . $z['id_zona'] : "Zona"; ?>
+                    <option value="<?= htmlspecialchars($z['id_zona']) ?>" data-area="<?= htmlspecialchars($z['id_area'] ?? '') ?>">
+                      <?= htmlspecialchars($label) ?>
                     </option>
                   <?php endforeach; ?>
-                <?php endif; ?>
-              </select>
-            </div>
+                </select>
+              </div>
 
-            <!-- BOTÓN PARA ABRIR MODAL DE RAEs ASOCIADAS -->
-            <button
-              type="button"
-              id="btnSeleccionarRaes"
-              class="w-full h-10 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-[#00324D] hover:bg-[#f4f4f5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-              Seleccionar RAEs de la competencia
-            </button>
-            <small id="textoResumenRaes" class="block mt-1 text-[11px] text-gray-500 text-left"></small>
+              <!-- NIVEL FICHA -->
+              <div class="field">
+                <select name="nivel_ficha" 
+                  class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
+                  <option value="">Seleccione el nivel de la ficha</option>
+                  <option value="tecnico">Tecnico</option>
+                  <option value="tecnologo">Tecnologo</option>
+                </select>
+              </div>
+
+              <!-- TRIMESTRE -->
+              <div class="field">
+                <select name="numero_trimestre" 
+                  class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
+                  <option value="">Seleccione el trimestre que cursa la ficha</option>
+                  <?php foreach ($trimestres as $t): ?>
+                    <option value="<?= htmlspecialchars($t['numero_trimestre']) ?>">
+                      <?= "Trimestre " . htmlspecialchars($t['numero_trimestre']) ?>
+                    </option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+
+              <!-- NÚMERO FICHA + INSTRUCTOR (ya tenían su propio flex, lo respetamos) -->
+              <div class="field-full">
+                <div class="flex flex-minw-0 gap-3 flex-col sm:flex-row lg:flex-row">
+                  <input type="text" name="numero_ficha" id="numero_ficha" placeholder="Número de la ficha" 
+                    class="form-field basis-1/2 w-full h-12 px-4 pr-12 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm"/>
+                  
+                  <select name="nombre_instructor" id="nombre_instructor"
+                    class="select-chev form-field basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
+                    <option value="">Seleccione el instructor</option>
+                    <?php foreach ($instructores as $ins): ?>
+                      <option value="<?= htmlspecialchars($ins['nombre_instructor']) ?>" data-tipo="<?= htmlspecialchars($ins['tipo_instructor']) ?>">
+                        <?= htmlspecialchars($ins['nombre_instructor']) ?> <?= isset($ins['tipo_instructor']) ? "— " . htmlspecialchars($ins['tipo_instructor']) : "" ?>
+                      </option>
+                    <?php endforeach; ?>
+                  </select>
+                </div>
+              </div>
+
+              <!-- DÍA SEMANA -->
+              <div class="field">
+                <select name="dia_semana" id="dia" 
+                  class="select-chev select-cal form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
+                  <option value="">Seleccione el día</option>
+                  <option value="lunes">Lunes</option>
+                  <option value="martes">Martes</option>
+                  <option value="miercoles">Miércoles</option>
+                  <option value="jueves">Jueves</option>
+                  <option value="viernes">Viernes</option>
+                  <option value="sabado">Sábado</option>
+                </select>
+              </div>
+
+              <!-- PROGRAMA -->
+              <div class="field">
+                <select
+                  id="id_programa_select"
+                  name="id_programa_select"
+                  class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm mt-1">
+                  <option value="">Seleccione el programa de formación</option>
+                  <?php if (empty($programas)): ?>
+                    <option disabled>No se encontraron programas activos</option>
+                    <!-- programas: <?= htmlspecialchars(json_encode($programas)) ?> -->
+                  <?php else: ?>
+                    <?php foreach ($programas as $prog): ?>
+                      <option value="<?= htmlspecialchars($prog['id_programa']) ?>">
+                        <?= htmlspecialchars($prog['nombre_programa']) ?>
+                      </option>
+                    <?php endforeach; ?>
+                  <?php endif; ?>
+                </select>
+              </div>
+
+              <!-- HORAS (ya tenían su flex propio) -->
+              <div class="field-full">
+                <div class="flex flex-minw-0 gap-3 flex-col sm:flex-row lg:flex-row">
+                  <select name="hora_inicio" id="hora_inicio" 
+                    class="select-chev form-field basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
+                    <option value="">Hora de inicio</option>
+                    <?php for ($i = 6; $i <= 22; $i++): ?>
+                      <option value="<?= $i ?>:00"><?= $i ?>:00</option>
+                    <?php endfor; ?>
+                  </select>
+
+                  <select name="hora_fin" id="hora_fin" 
+                    class="select-chev form-field basis-1/2 w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm">
+                    <option value="">Hora de fin</option>
+                    <?php for ($i = 7; $i <= 22; $i++): ?>
+                      <option value="<?= $i ?>:00"><?= $i ?>:00</option>
+                    <?php endfor; ?>
+                  </select>
+                </div>
+              </div>
+
+              <!-- COMPETENCIA -->
+              <div class="field-full">
+                <div class="relative">
+                  <select
+                    id="id_competencia"
+                    name="id_competencia"
+                    class="select-chev form-field w-full h-12 px-4 text-[13px] rounded-xl border-0 outline-none bg-white shadow placeholder-gray-400 sm:px-4 lg:px-6 sm:text-sm mt-1">
+                    <option value="">Seleccione la competencia</option>
+                    <?php if (empty($competencias)): ?>
+                      <option disabled>No se encontraron competencias activas</option>
+                      <!-- competencias: <?= htmlspecialchars(json_encode($competencias)) ?> -->
+                    <?php else: ?>
+                      <?php foreach ($competencias as $comp): ?>
+                        <?php $valueComp = htmlspecialchars($comp['id_competencia']); ?>
+                        <option value="<?= $valueComp ?>"
+                                data-desc="<?= htmlspecialchars($comp['descripcion'] ?? '') ?>"
+                                data-programa="<?= htmlspecialchars($comp['id_programa'] ?? '') ?>">
+                          <?= htmlspecialchars($comp['nombre_competencia'] ?? $comp['descripcion'] ?? ('Competencia ' . ($comp['id_competencia'] ?? ''))) ?>
+                        </option>
+                      <?php endforeach; ?>
+                    <?php endif; ?>
+                  </select>
+                </div>
+              </div>
+
+              <!-- BOTÓN RAEs + CONTADOR -->
+              <div class="field-full">
+                <div class="flex items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    id="btnSeleccionarRaes"
+                    class="flex-1 h-10 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-[#00324D] hover:bg-[#f4f4f5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    Seleccionar RAEs de la competencia
+                  </button>
+                  <small id="textoResumenRaes" class="text-[11px] text-gray-500 whitespace-nowrap px-3 py-2 bg-gray-50 rounded-lg border border-gray-200"></small>
+                </div>
+              </div>
+
+            </div><!-- /form-grid -->
 
             <!-- Campos ocultos -->
             <input type="hidden" name="id_rae" id="id_rae_field" value="">
             <input type="hidden" name="id_programa" id="id_programa_field" value="">
 
             <button type="submit"
-              class="w-full h-12 bg-[#0a3a57] text-white rounded-lg text-sm lg:text-base font-semibold hover:bg-[#00304D] transition-colors">
+              class="w-full h-12 bg-[#0b2d5b] text-white rounded-lg text-sm lg:text-base font-semibold hover:bg-[#082244] transition-colors">
               GUARDAR TRIMESTRALIZACIÓN
             </button>
           </form>
@@ -290,9 +346,9 @@ $competencias = $s->fetchAll(PDO::FETCH_ASSOC);
       <div class="fixed inset-0 flex items-center justify-center p-4">
         <div
           id="modalRaesCard"
-          class="bg-white w-full max-w-[420px] sm:max-w-[520px] md:max-w-[560px] rounded-2xl shadow-md border border-[#d8d8d8] px-4 sm:px-6 pt-5 pb-6 mx-3"
+          class="bg-white w-full max-w-[420px] sm:max-w-[520px] md:max-w-[560px] rounded-2xl shadow-md border border-[#d8d8d8] px-4 sm:px-6 pt-12 pb-6 mx-3"
         >
-          <div class="flex items-start justify-between mb-2">
+          <div class="flex items-start justify_between mb-2 mt-4">
             <div class="text-left">
               <h3 id="tituloModalRaes" class="text-[1rem] text-[#0c2443] font-semibold">
                 RAEs asociadas a la competencia
@@ -349,6 +405,88 @@ $competencias = $s->fetchAll(PDO::FETCH_ASSOC);
     </div>
     <!-- ============== /MODAL RAEs ============== -->
 
+    <!-- ============== MODAL DUPLICAR HORARIO ============== -->
+    <div
+      id="modalDuplicarHorario"
+      class="fixed inset-0 z-50 hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tituloModalDuplicar"
+    >
+      <!-- Backdrop -->
+      <div id="modalDuplicarBackdrop" class="fixed inset-0 bg-black/40"></div>
+
+      <!-- Contenedor centrado -->
+      <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div
+          class="bg-white w-full max-w-[420px] sm:max-w-[520px] md:max-w-[560px] rounded-2xl shadow-md border border-[#d8d8d8] px-4 sm:px-6 pt-10 pb-6 mx-3"
+        >
+          <!-- Header -->
+          <div class="flex items-start justify-between mb-2 mt-4">
+            <div class="text-left">
+              <h3 id="tituloModalDuplicar" class="text-[1rem] text-[#0c2443] font-semibold">
+                ¿Aplicar este horario a otro día?
+              </h3>
+              <p class="text-xs text-gray-500 mt-1">
+                Puedes duplicar la misma información en un día diferente.
+              </p>
+            </div>
+            <button
+              type="button"
+              id="btnCerrarModalDuplicar"
+              class="ml-3 -mt-1 text-gray-500 hover:text-gray-700"
+              aria-label="Cerrar"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div class="border-b border-[#dcdcdc] mb-3"></div>
+
+          <!-- Select de día destino -->
+          <div class="mb-4 text-left">
+            <label for="selectDiaDuplicar" class="block text-xs sm:text-sm text-gray-700 mb-1">
+              Selecciona el día al que deseas aplicar también este horario:
+            </label>
+            <select
+              id="selectDiaDuplicar"
+              class="select-chev form-field w-full h-10 px-3 text-[13px] rounded-xl border border-gray-200 outline-none bg-white placeholder-gray-400 sm:text-sm"
+            >
+              <option value="">Seleccione un día</option>
+              <option value="lunes">Lunes</option>
+              <option value="martes">Martes</option>
+              <option value="miercoles">Miércoles</option>
+              <option value="jueves">Jueves</option>
+              <option value="viernes">Viernes</option>
+              <option value="sabado">Sábado</option>
+            </select>
+            <small id="mensajeErrorDuplicar" class="mt-1 block text-[11px] text-red-500 hidden">
+              Debes seleccionar un día diferente al original.
+            </small>
+          </div>
+
+          <!-- Acciones -->
+          <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              id="btnSoloEsteDia"
+              class="w-full sm:w-auto px-3 py-2 text-xs sm:text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              No, solo este día
+            </button>
+            <button
+              type="button"
+              id="btnDuplicarDia"
+              class="w-full sm:w-auto px-3 py-2 text-xs sm:text-sm rounded-lg bg-[#0b2d5b] text-white font-medium hover:bg-[#082244]"
+            >
+              Sí, duplicar horario
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ============== /MODAL DUPLICAR HORARIO ============== -->
+
     <script>
       window.BASE_URL = window.BASE_URL || "<?= BASE_URL ?>";
     </script>
@@ -358,48 +496,6 @@ $competencias = $s->fetchAll(PDO::FETCH_ASSOC);
     <script src="<?= BASE_URL ?>src/assets/js/formulario_trimestralizacion.js"></script>
 
     <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    const form = document.querySelector('#formTrimestralizacion');
-    if (!form) return;
-
-    const selComp = form.querySelector('[name="id_competencia"]');
-    const raeField = form.querySelector('#id_rae_field');
-    const progField = form.querySelector('#id_programa_field');
-    const selProg = document.getElementById('id_programa_select');
-
-    function syncCompData() {
-      const opt = selComp && selComp.selectedOptions && selComp.selectedOptions[0];
-      if (!opt) return;
-
-      // Si no hay programa seleccionado en el select de programas,
-      // tomamos el data-programa de la competencia seleccionada
-      if (progField && (!selProg || !selProg.value)) {
-        progField.value = opt.dataset.programa || '';
-      }
-
-      // ❌ LÍNEA ELIMINADA (era la que dañaba id_rae)
-      // raeField.value = opt.dataset.rae;
-
-      // ✔ AHORA id_rae_field SOLO LO MANEJA EL MODAL (correcto)
-    }
-
-    // Cuando cambie la competencia, sincronizamos programa
-    if (selComp) {
-      selComp.addEventListener('change', syncCompData);
-      syncCompData();
-    }
-
-    // Cuando cambie el programa manualmente, lo copiamos al hidden
-    if (selProg && progField) {
-      selProg.addEventListener('change', function () {
-        progField.value = this.value || '';
-      });
-    }
-  });
-</script>
-
-
-    <script>
       (function(){
         const selArea = document.getElementById('id_area');
         const selZona = document.getElementById('id_zona');
@@ -407,7 +503,6 @@ $competencias = $s->fetchAll(PDO::FETCH_ASSOC);
 
         function filterZonas() {
           const areaVal = selArea.value;
-          let hasVisible = false;
 
           for (const opt of selZona.options) {
             if (opt.value === "") {
@@ -420,7 +515,6 @@ $competencias = $s->fetchAll(PDO::FETCH_ASSOC);
             const show = areaVal !== "" ? (String(optArea) === String(areaVal)) : true;
             opt.hidden = !show;
             opt.disabled = !show;
-            if (show) hasVisible = true;
           }
 
           // Si la zona actualmente seleccionada queda oculta
@@ -443,7 +537,6 @@ $competencias = $s->fetchAll(PDO::FETCH_ASSOC);
 
         function filtrarCompetenciasPorPrograma() {
           const progVal = selProg.value;
-          let tieneVisible = false;
 
           for (const opt of selComp.options) {
             if (opt.value === "") {
@@ -452,14 +545,11 @@ $competencias = $s->fetchAll(PDO::FETCH_ASSOC);
               continue;
             }
             const optProg = opt.dataset.programa ?? "";
-            // Si hay programa seleccionado, solo mostramos competencias de ese programa
-            const show = progVal !== "" ? (String(optProg) === String(progVal)) : true;
+            const show = progVal !== "" && (String(optProg) === String(progVal));
             opt.hidden = !show;
             opt.disabled = !show;
-            if (show) tieneVisible = true;
           }
 
-          // Si la competencia seleccionada ya no pertenece al programa filtrado, limpiamos el select
           const selectedOpt = selComp.selectedOptions[0];
           if (selectedOpt && selectedOpt.hidden) {
             selComp.value = "";
@@ -467,224 +557,211 @@ $competencias = $s->fetchAll(PDO::FETCH_ASSOC);
         }
 
         selProg.addEventListener('change', filtrarCompetenciasPorPrograma);
-        // Ejecutamos una vez al cargar, por si viene algo seteado
         document.addEventListener('DOMContentLoaded', filtrarCompetenciasPorPrograma);
       })();
     </script>
 
     <!-- LÓGICA DEL MODAL DE RAEs POR COMPETENCIA -->
-   <!-- LÓGICA DEL MODAL DE RAEs POR COMPETENCIA -->
-<script>
-(function () {
-    const BASE_URL = window.BASE_URL || '';
-    const API_RAES = (BASE_URL + 'src/controllers/RaeController.php?accion=listar').replace(/\/+$/, '');
-    
-    const form = document.getElementById('formTrimestralizacion');
-    if (!form) return;
+    <script>
+    (function () {
+        const BASE_URL = window.BASE_URL || '';
+        const API_RAES = (BASE_URL + 'src/controllers/RaeController.php?accion=listar').replace(/\/+$/, '');
+        
+        const form = document.getElementById('formTrimestralizacion');
+        if (!form) return;
 
-    const selComp = document.getElementById('id_competencia');
-    const hiddenRaes = document.getElementById('id_rae_field');
-    const resumenRaes = document.getElementById('textoResumenRaes');
-    const btnRaes = document.getElementById('btnSeleccionarRaes');
+        const selComp = document.getElementById('id_competencia');
+        const hiddenRaes = document.getElementById('id_rae_field');
+        const resumenRaes = document.getElementById('textoResumenRaes');
+        const btnRaes = document.getElementById('btnSeleccionarRaes');
 
-    const modalRaes = document.getElementById('modalRaes');
-    const backdropRaes = document.getElementById('modalRaesBackdrop');
-    const btnCerrarModalRaes = document.getElementById('btnCerrarModalRaes');
-    const btnCancelarRaes = document.getElementById('btnCancelarRaes');
-    const btnGuardarRaes = document.getElementById('btnGuardarRaes');
-    const listaRaesModal = document.getElementById('listaRaesModal');
-    const chkRaesTodos = document.getElementById('chkRaesTodos');
-    const contadorRaesSeleccionadas = document.getElementById('contadorRaesSeleccionadas');
-    const subtituloModalRaes = document.getElementById('subtituloModalRaes');
+        const modalRaes = document.getElementById('modalRaes');
+        const backdropRaes = document.getElementById('modalRaesBackdrop');
+        const btnCerrarModalRaes = document.getElementById('btnCerrarModalRaes');
+        const btnCancelarRaes = document.getElementById('btnCancelarRaes');
+        const btnGuardarRaes = document.getElementById('btnGuardarRaes');
+        const listaRaesModal = document.getElementById('listaRaesModal');
+        const chkRaesTodos = document.getElementById('chkRaesTodos');
+        const contadorRaesSeleccionadas = document.getElementById('contadorRaesSeleccionadas');
+        const subtituloModalRaes = document.getElementById('subtituloModalRaes');
 
-    if (!selComp || !btnRaes || !modalRaes) return;
+        if (!selComp || !btnRaes || !modalRaes) return;
 
-    // Toast helper usando SweetAlert
-    function toast(msg, type = 'info') {
-      if (window.Swal) {
-        Swal.fire({
-          toast: true,
-          position: 'top-end',
-          icon: type,
-          title: msg,
-          showConfirmButton: false,
-          timer: 2200,
-          timerProgressBar: true
-        });
-      } else {
-        alert(msg);
-      }
-    }
-
-    function actualizarResumen() {
-      const valor = (hiddenRaes.value || '').trim();
-      if (!valor) {
-        resumenRaes.textContent = 'No hay RAEs seleccionadas.';
-        return;
-      }
-      const partes = valor.split(',').map(v => v.trim()).filter(Boolean);
-      if (!partes.length) {
-        resumenRaes.textContent = 'No hay RAEs seleccionadas.';
-        return;
-      }
-      resumenRaes.textContent = partes.length === 1
-        ? '1 RAE seleccionada.'
-        : partes.length + ' RAEs seleccionadas.';
-    }
-
-    function abrirModalRaes() {
-      modalRaes.classList.remove('hidden');
-    }
-
-    function cerrarModalRaes() {
-      modalRaes.classList.add('hidden');
-    }
-
-    function contarSeleccionadas() {
-      const checks = listaRaesModal.querySelectorAll('.chk-rae-modal:checked');
-      const cantidad = checks.length;
-
-      contadorRaesSeleccionadas.textContent =
-        cantidad === 0 ? '' :
-        cantidad === 1 ? '1 RAE seleccionada' :
-        cantidad + ' RAEs seleccionadas';
-    }
-
-    // 🔥 AUTO-GUARDADO — actualiza hidden en tiempo real
-    function actualizarHiddenAuto() {
-      const checks = listaRaesModal.querySelectorAll('.chk-rae-modal:checked');
-      const ids = Array.from(checks).map(ch => ch.value);
-      hiddenRaes.value = ids.join(',');
-      actualizarResumen();
-    }
-
-    // Seleccionar todas
-    function aplicarSeleccionTodos() {
-      const checks = listaRaesModal.querySelectorAll('.chk-rae-modal');
-      const checked = chkRaesTodos.checked;
-      checks.forEach(ch => { ch.checked = checked; });
-      contarSeleccionadas();
-      actualizarHiddenAuto(); // 🔥 auto-guardado
-    }
-
-    async function cargarRaesPorCompetencia(idComp) {
-      listaRaesModal.innerHTML = '<p class="text-gray-500 text-xs">Cargando RAEs...</p>';
-      chkRaesTodos.checked = false;
-      contadorRaesSeleccionadas.textContent = '';
-
-      try {
-        const resp = await fetch(API_RAES + '&id_competencia=' + encodeURIComponent(idComp));
-        const data = await resp.json();
-
-        const lista = Array.isArray(data) ? data : (data.data || []);
-        if (!lista.length) {
-          listaRaesModal.innerHTML = '<p class="text-gray-500 text-xs">No hay RAEs asociadas a esta competencia.</p>';
-          hiddenRaes.value = "";   // 🔥 limpiar hidden si no hay RAEs
-          actualizarResumen();
-          return;
+        function toast(msg, type = 'info') {
+          if (window.Swal) {
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: type,
+              title: msg,
+              showConfirmButton: false,
+              timer: 2200,
+              timerProgressBar: true
+            });
+          } else {
+            alert(msg);
+          }
         }
 
-        const seleccionadasPrevias = (hiddenRaes.value || '').split(',')
-          .map(v => v.trim())
-          .filter(Boolean);
-
-        const frag = document.createDocumentFragment();
-
-        lista.forEach((r) => {
-          const id = r.id_rae || r.id || r.ID_RAE;
-          const codigo = r.codigo_rae || r.codigo || r.codigoRAE || '';
-          const desc = r.descripcion || r.descripcion_rae || r.nombre_rae || r.nombre || '';
-
-          if (!id) return;
-
-          const label = document.createElement('label');
-          label.className = 'flex items-start gap-2 py-1 border-b border-gray-100 last:border-b-0 cursor-pointer text-[11px] sm:text-xs text-gray-800';
-
-          const input = document.createElement('input');
-          input.type = 'checkbox';
-          input.value = id;
-          input.className = 'mt-[3px] chk-rae-modal rounded border-gray-300';
-
-          if (seleccionadasPrevias.includes(String(id))) {
-            input.checked = true;
+        function actualizarResumen() {
+          const valor = (hiddenRaes.value || '').trim();
+          if (!valor) {
+            resumenRaes.textContent = 'No hay RAEs seleccionadas.';
+            return;
           }
+          const partes = valor.split(',').map(v => v.trim()).filter(Boolean);
+          if (!partes.length) {
+            resumenRaes.textContent = 'No hay RAEs seleccionadas.';
+            return;
+          }
+          resumenRaes.textContent = partes.length === 1
+            ? '1 RAE seleccionada.'
+            : partes.length + ' RAEs seleccionadas.';
+        }
 
-          const span = document.createElement('span');
-          span.innerHTML = (codigo ? ('<strong>' + codigo + '</strong> — ') : '') +
-                           (desc || '(sin descripción)');
+        function abrirModalRaes() {
+          modalRaes.classList.remove('hidden');
+        }
 
-          label.appendChild(input);
-          label.appendChild(span);
-          frag.appendChild(label);
+        function cerrarModalRaes() {
+          modalRaes.classList.add('hidden');
+        }
+
+        function contarSeleccionadas() {
+          const checks = listaRaesModal.querySelectorAll('.chk-rae-modal:checked');
+          const cantidad = checks.length;
+
+          contadorRaesSeleccionadas.textContent =
+            cantidad === 0 ? '' :
+            cantidad === 1 ? '1 RAE seleccionada' :
+            cantidad + ' RAEs seleccionadas';
+        }
+
+        function actualizarHiddenAuto() {
+          const checks = listaRaesModal.querySelectorAll('.chk-rae-modal:checked');
+          const ids = Array.from(checks).map(ch => ch.value);
+          hiddenRaes.value = ids.join(',');
+          actualizarResumen();
+        }
+
+        function aplicarSeleccionTodos() {
+          const checks = listaRaesModal.querySelectorAll('.chk-rae-modal');
+          const checked = chkRaesTodos.checked;
+          checks.forEach(ch => { ch.checked = checked; });
+          contarSeleccionadas();
+          actualizarHiddenAuto();
+        }
+
+        async function cargarRaesPorCompetencia(idComp) {
+          listaRaesModal.innerHTML = '<p class="text-gray-500 text-xs">Cargando RAEs...</p>';
+          chkRaesTodos.checked = false;
+          contadorRaesSeleccionadas.textContent = '';
+
+          try {
+            const resp = await fetch(API_RAES + '&id_competencia=' + encodeURIComponent(idComp));
+            const data = await resp.json();
+
+            const lista = Array.isArray(data) ? data : (data.data || []);
+            if (!lista.length) {
+              listaRaesModal.innerHTML = '<p class="text-gray-500 text-xs">No hay RAEs asociadas a esta competencia.</p>';
+              hiddenRaes.value = "";
+              actualizarResumen();
+              return;
+            }
+
+            const seleccionadasPrevias = (hiddenRaes.value || '').split(',')
+              .map(v => v.trim())
+              .filter(Boolean);
+
+            const frag = document.createDocumentFragment();
+
+            lista.forEach((r) => {
+              const id = r.id_rae || r.id || r.ID_RAE;
+              const codigo = r.codigo_rae || r.codigo || r.codigoRAE || '';
+              const desc = r.descripcion || r.descripcion_rae || r.nombre_rae || r.nombre || '';
+
+              if (!id) return;
+
+              const label = document.createElement('label');
+              label.className = 'flex items-start gap-2 py-1 border-b border-gray-100 last:border-b-0 cursor-pointer text-[11px] sm:text-xs text-gray-800';
+
+              const input = document.createElement('input');
+              input.type = 'checkbox';
+              input.value = id;
+              input.className = 'mt-[3px] chk-rae-modal rounded border-gray-300';
+
+              if (seleccionadasPrevias.includes(String(id))) {
+                input.checked = true;
+              }
+
+              const span = document.createElement('span');
+              span.innerHTML = (codigo ? ('<strong>' + codigo + '</strong> — ') : '') +
+                               (desc || '(sin descripción)');
+
+              label.appendChild(input);
+              label.appendChild(span);
+              frag.appendChild(label);
+            });
+
+            listaRaesModal.innerHTML = '';
+            listaRaesModal.appendChild(frag);
+
+            contarSeleccionadas();
+            actualizarHiddenAuto();
+          } catch (err) {
+            console.error(err);
+            listaRaesModal.innerHTML = '<p class="text-red-500 text-xs">Error al cargar las RAEs.</p>';
+          }
+        }
+
+        function toggleBotonRaes() {
+          btnRaes.disabled = !selComp.value;
+        }
+
+        toggleBotonRaes();
+        actualizarResumen();
+
+        selComp.addEventListener('change', () => {
+          toggleBotonRaes();
+          hiddenRaes.value = "";
+          actualizarResumen();
         });
 
-        listaRaesModal.innerHTML = '';
-        listaRaesModal.appendChild(frag);
+        btnRaes.addEventListener('click', async () => {
+          const idComp = selComp.value;
+          if (!idComp) {
+            toast('Primero selecciona una competencia.', 'warning');
+            return;
+          }
 
-        contarSeleccionadas();
-        actualizarHiddenAuto(); // 🔥 también al cargar se sincroniza
-      } catch (err) {
-        console.error(err);
-        listaRaesModal.innerHTML = '<p class="text-red-500 text-xs">Error al cargar las RAEs.</p>';
-      }
-    }
+          const opt = selComp.selectedOptions[0];
+          const nombreComp = opt ? (opt.textContent || '').trim() : '';
+          subtituloModalRaes.textContent = nombreComp;
 
-    // ===================================================
-    //            EVENTOS PRINCIPALES
-    // ===================================================
-    function toggleBotonRaes() {
-      btnRaes.disabled = !selComp.value;
-    }
+          await cargarRaesPorCompetencia(idComp);
+          abrirModalRaes();
+        });
 
-    toggleBotonRaes();
-    actualizarResumen();
+        [btnCerrarModalRaes, btnCancelarRaes].forEach(btn => {
+          if (btn) btn.addEventListener('click', cerrarModalRaes);
+        });
 
-    selComp.addEventListener('change', () => {
-      toggleBotonRaes();
-      hiddenRaes.value = ""; // limpiar RAEs si cambias competencia
-      actualizarResumen();
-    });
+        if (backdropRaes) backdropRaes.addEventListener('click', cerrarModalRaes);
 
-    btnRaes.addEventListener('click', async () => {
-      const idComp = selComp.value;
-      if (!idComp) {
-        toast('Primero selecciona una competencia.', 'warning');
-        return;
-      }
+        chkRaesTodos.addEventListener('change', aplicarSeleccionTodos);
 
-      const opt = selComp.selectedOptions[0];
-      const nombreComp = opt ? (opt.textContent || '').trim() : '';
-      subtituloModalRaes.textContent = nombreComp;
+        listaRaesModal.addEventListener('change', (e) => {
+          if (e.target.classList.contains('chk-rae-modal')) {
+            contarSeleccionadas();
+            actualizarHiddenAuto();
+          }
+        });
 
-      await cargarRaesPorCompetencia(idComp);
-      abrirModalRaes();
-    });
-
-    // Cerrar modal
-    [btnCerrarModalRaes, btnCancelarRaes].forEach(btn => {
-      if (btn) btn.addEventListener('click', cerrarModalRaes);
-    });
-
-    if (backdropRaes) backdropRaes.addEventListener('click', cerrarModalRaes);
-
-    // Select all
-    chkRaesTodos.addEventListener('change', aplicarSeleccionTodos);
-
-    // Checkbox individual — 🔥 auto-guardado
-    listaRaesModal.addEventListener('change', (e) => {
-      if (e.target.classList.contains('chk-rae-modal')) {
-        contarSeleccionadas();
-        actualizarHiddenAuto();  // 🔥 cada check actualiza el hidden
-      }
-    });
-
-    // Botón "Guardar selección" (opcional) — ahora solo cierra
-    btnGuardarRaes.addEventListener('click', () => {
-      cerrarModalRaes();
-    });
-})();
-</script>
-
+        btnGuardarRaes.addEventListener('click', () => {
+          cerrarModalRaes();
+        });
+    })();
+    </script>
 
   </body>
 </html>
