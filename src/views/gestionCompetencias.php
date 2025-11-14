@@ -99,6 +99,15 @@
 
         <div id="programsGrid" class="grid gap-5 md:grid-cols-2 lg:grid-cols-3"></div>
         <div id="programsEmpty" class="hidden rounded-2xl ring-1 ring-zinc-200 shadow-sm"></div>
+
+        <!-- PAGINACIÓN PROGRAMAS -->
+        <div id="programsPagination" class="flex items-center justify-center mt-6 gap-2 hidden">
+          <button id="pgPrev" class="px-4 py-2 rounded-xl border border-zinc-300 bg-white text-sm hover:bg-zinc-100 disabled:opacity-40"><</button>
+          <div class="flex items-center gap-3">
+            <span id="pgInfo" class="text-sm text-zinc-600"></span>
+          </div>
+          <button id="pgNext" class="px-4 py-2 rounded-xl border border-zinc-300 bg-white text-sm hover:bg-zinc-100 disabled:opacity-40">></button>
+        </div>
       </section>
 
       <!-- ========== COMPETENCIAS ========== -->
@@ -122,6 +131,15 @@
         <div id="competenciesList" class="space-y-5"></div>
         <div id="competenciesEmpty" class="hidden rounded-2xl ring-1 ring-zinc-200 shadow-sm">
           <div class="py-12 text-center text-zinc-500">No hay competencias que coincidan con el filtro seleccionado.</div>
+        </div>
+
+        <!-- PAGINACIÓN COMPETENCIAS -->
+        <div id="competenciasPagination" class="flex items-center justify-center mt-6 gap-2 hidden">
+          <button id="cpPrev" class="px-4 py-2 rounded-xl border border-zinc-300 bg-white text-sm hover:bg-zinc-100 disabled:opacity-40"><</button>
+          <div class="flex items-center gap-3">
+            <span id="cpInfo" class="text-sm text-zinc-600"></span>
+          </div>
+          <button id="cpNext" class="px-4 py-2 rounded-xl border border-zinc-300 bg-white text-sm hover:bg-zinc-100 disabled:opacity-40">></button>
         </div>
       </section>
 
@@ -150,6 +168,15 @@
         <div id="raesList" class="space-y-4"></div>
         <div id="raesEmpty" class="hidden rounded-2xl ring-1 ring-zinc-200 shadow-sm">
           <div class="py-12 text-center text-zinc-500">No hay RAE que coincidan con los filtros seleccionados.</div>
+        </div>
+
+        <!-- PAGINACIÓN RAE -->
+        <div id="raePagination" class="flex items-center justify-center mt-6 gap-2 hidden">
+          <button id="raePrev" class="px-4 py-2 rounded-xl border border-zinc-300 bg-white text-sm hover:bg-zinc-100 disabled:opacity-40"><</button>
+          <div class="flex items-center gap-3">
+            <span id="raeInfo" class="text-sm text-zinc-600"></span>
+          </div>
+          <button id="raeNext" class="px-4 py-2 rounded-xl border border-zinc-300 bg-white text-sm hover:bg-zinc-100 disabled:opacity-40">></button>
         </div>
       </section>
 
@@ -520,6 +547,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 </script>
+
+<!-- ==========================
+     PAGINACIÓN FRONTEND (PROGRAMAS, COMPETENCIAS, RAE)
+     ========================== -->
+<script src="src/assets/js/paginacion.js"></script>
 
 </body>
 </html>
