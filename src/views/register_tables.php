@@ -1,4 +1,9 @@
 <?php
+
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 // Cargar datos desde la base de datos para los selects de áreas, zonas, instructores y trimestres
 require_once __DIR__ . '/../../config/database.php';
 

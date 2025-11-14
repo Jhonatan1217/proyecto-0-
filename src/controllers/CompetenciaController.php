@@ -77,7 +77,6 @@ switch ($accion) {
     $id_competencia     = $data['id_competencia']     ?? null; // código manual
     $id_programa        = $data['id_programa']        ?? null; // FK obligatoria
     $nombre_competencia = $data['nombre_competencia'] ?? null;
-    $descripcion        = $data['descripcion']        ?? null;
 // Validaciones
     if (!$id_competencia || trim($id_competencia) === '') { // código obligatorio
       fail('Debe enviar id_competencia (código manual).');
@@ -85,15 +84,14 @@ switch ($accion) {
     if (!$id_programa || trim($id_programa) === '') {
       fail('Debe enviar id_programa (FK obligatoria).');
     }
-    if (!$nombre_competencia || trim($nombre_competencia) === '' || !$descripcion || trim($descripcion) === '') {
-      fail('Debe enviar nombre_competencia y descripcion válidos.');
+    if (!$nombre_competencia || trim($nombre_competencia) === '') {
+      fail('Debe enviar nombre_competencia.');
     }
 // Crear competencia
     ok($competencia->crear(
       $id_competencia,
       $id_programa,
       trim($nombre_competencia), 
-      trim($descripcion)
     ));
     break;
   }
@@ -110,7 +108,6 @@ switch ($accion) {
 
     // Campos opcionales en edición (partial update)
     $nombre       = array_key_exists('nombre_competencia', $data) ? trim((string)$data['nombre_competencia']) : null;
-    $descripcion  = array_key_exists('descripcion', $data)        ? trim((string)$data['descripcion'])        : null;
     $id_programa  = array_key_exists('id_programa', $data)        ? $data['id_programa']                       : null;
      // Construir consulta dinámica
     $sets   = [];
@@ -128,10 +125,6 @@ switch ($accion) {
     if ($nombre !== null) {
       $sets[]            = 'nombre_competencia = :nombre';
       $params[':nombre'] = $nombre;
-    }
-    if ($descripcion !== null) {
-      $sets[]                 = 'descripcion = :descripcion';
-      $params[':descripcion'] = $descripcion;
     }
     if ($id_programa !== null && $id_programa !== '') {
       $sets[]                 = 'id_programa = :id_programa';
