@@ -268,18 +268,19 @@ async function cargarInstructores() {
     const res = await fetch(`${BASE_URL}src/controllers/InstructorController.php?accion=listar`);
     const data = await res.json();
 
-    // console diagnóstico
     console.log("Respuesta del servidor (Instructores):", data);
 
-    // aceptar tanto {status,data:[]} como directamente array
-    const instructoresArray = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
+    const instructoresArray = Array.isArray(data)
+      ? data
+      : (Array.isArray(data.data) ? data.data : []);
 
-    if (instructoresArray.length) {
-      listaInstructores = instructoresArray;
-      // intentar rellenar un select global solo si existe (no es obligatorio)
+    // 🔥 FILTRAR SOLO INSTRUCTORES ACTIVOS (estado = 1)
+    listaInstructores = instructoresArray.filter(i => String(i.estado) === "1");
+
+    if (listaInstructores.length > 0) {
       llenarSelectInstructores(listaInstructores);
     } else {
-      Toast.fire({ icon: "warning", title: "No hay instructores disponibles" });
+      Toast.fire({ icon: "warning", title: "No hay instructores activos" });
       listaInstructores = [];
     }
 
