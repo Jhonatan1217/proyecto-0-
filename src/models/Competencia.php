@@ -1,5 +1,3 @@
-Model
-
 <?php
 // Clase Competencia para manejar operaciones CRUD sobre la tabla 'Competencias'
 class Competencia {
