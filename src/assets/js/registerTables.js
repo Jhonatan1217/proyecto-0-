@@ -432,7 +432,7 @@ function mostrarBotonesEdicion() {
 
   const guardar = document.createElement("button");
   guardar.textContent = "Guardar cambios";
-  guardar.className = "bg-[#4ebe15] text-white px-6 py-2 rounded-lg hover:bg-[#39A900] transition";
+  guardar.className = "bg-[#39a900] text-white px-6 py-2 rounded-lg hover:bg-[#4ebe15] transition";
   guardar.onclick = guardarCambios;
 
   const cancelar = document.createElement("button");
