@@ -597,6 +597,63 @@ function cancelarEdicion() {
 }
 
 // =======================
+// CARGAR ÁREAS Y ZONAS ACTIVAS PARA LOS FILTROS SUPERIORES
+// =======================
+
+(async function cargarFiltrosSuperiores() {
+
+    const selArea = document.getElementById("selectArea");
+    const selZona = document.getElementById("selectZona");
+
+    // Si no existen en esta vista, no hacemos nada
+    if (!selArea || !selZona) return;
+
+    // Usamos la BASE_URL que ya defines en la vista (window.BASE_URL)
+    const base = (window.BASE_URL || '').replace(/\/+$/, '/') ;
+
+    try {
+        // 🔥 Cargar ÁREAS activas
+        const respAreas = await fetch(base + "src/controllers/AreaController.php?accion=listar");
+        const dataAreas = await respAreas.json();
+
+        selArea.innerHTML = `
+            <option value="" hidden>SELECCIONE EL ÁREA</option>
+        `;
+
+        (dataAreas?.data || []).forEach(a => {
+            if (String(a.estado) === "1") {   // Solo áreas activas
+                selArea.innerHTML += `
+                    <option value="${a.id_area}">${a.nombre_area}</option>
+                `;
+            }
+        });
+
+        // 🔥 Cargar ZONAS SOLO ACTIVAS
+        const respZonas = await fetch(base + "src/controllers/ZonaController.php?accion=listar");
+        const dataZonas = await respZonas.json();
+
+        selZona.innerHTML = `
+            <option value="" hidden>SELECCIONE LA ZONA</option>
+        `;
+
+        (dataZonas?.data || []).forEach(z => {
+            if (String(z.estado) === "1") {   // 👈 SOLO ACTIVAS
+                selZona.innerHTML += `
+                    <option value="${z.id_zona}" data-area="${z.id_area}">
+                        Zona ${z.id_zona}
+                    </option>
+                `;
+            }
+        });
+
+    } catch (error) {
+        console.error("❌ Error cargando áreas/zonas:", error);
+    }
+
+})();
+
+
+// =======================
 // ELIMINAR TODO
 // =======================
 async function confirmarEliminar() {
