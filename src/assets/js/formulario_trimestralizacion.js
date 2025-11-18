@@ -70,6 +70,10 @@ if (!window.TRIMESTRALIZACION_INIT) {
         ? form.querySelector("[name='id_competencia']").value.trim()
         : "";
 
+      // ✅ NUEVO: id de la(s) RAE(s) seleccionada(s) desde el hidden
+      const idRaeField = form.querySelector("[name='id_rae']");
+      const id_rae = idRaeField ? idRaeField.value.trim() : "";
+
       const campos = [zona, nivel, numeroFicha, instructor, dia, horaInicio, horaFin, id_competencia];
       const vacios = campos.filter((v) => v === "").length;
 
@@ -140,6 +144,15 @@ if (!window.TRIMESTRALIZACION_INIT) {
 
       if (!id_competencia) {
         Toast.fire({ icon: "warning", title: "Seleccione la competencia" });
+        return { ok: false };
+      }
+
+      // ✅ NUEVO: validación formal de RAE obligatoria
+      if (!id_rae) {
+        Toast.fire({
+          icon: "warning",
+          title: "Debe seleccionar al menos una RAE asociada a la competencia."
+        });
         return { ok: false };
       }
 
