@@ -83,6 +83,41 @@
                 $row = $stmt->fetch(PDO::FETCH_ASSOC);
                 return $row ? $row[$nombre_col] : '';
             }
+
+            // Función para obtener múltiples nombres/descripcion cuando el campo almacena IDs separados por comas
+            function getNombresMultiple($conn, $tabla, $id_col, $nombre_col, $ids) {
+                if (!$ids) return '';
+                // Separar y limpiar
+                $parts = array_filter(array_map('trim', explode(',', (string)$ids)), function($v) { return $v !== ''; });
+                if (!$parts) return '';
+
+                // Construir placeholders para la consulta IN
+                $placeholders = implode(',', array_fill(0, count($parts), '?'));
+                $sql = "SELECT $id_col, $nombre_col FROM $tabla WHERE $id_col IN ($placeholders)";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute(array_values($parts));
+                $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                // Mapear id => nombre
+                $map = [];
+                foreach ($rows as $r) {
+                    $map[(string)$r[$id_col]] = $r[$nombre_col];
+                }
+
+                // Mantener el orden original de los IDs y sustituir por descripción cuando exista
+                $out = [];
+                foreach ($parts as $id) {
+                    $key = (string)$id;
+                    if (isset($map[$key]) && $map[$key] !== '') {
+                        $out[] = $map[$key];
+                    } else {
+                        // Si no se encuentra descripción, mostrar el ID como fallback
+                        $out[] = $key;
+                    }
+                }
+
+                return implode(' || ', $out);
+            }
             ?>
 
             <?php if ($result && count($result) > 0): ?>
@@ -94,6 +129,8 @@
                         $nombreCompetencia = getNombre($conn, 'competencias', 'id_competencia', 'nombre_competencia', $row['id_competencia']);
                         $nombrePrograma = getNombre($conn, 'programas', 'id_programa', 'nombre_programa', $row['id_programa']);
                         $nombreArea = getNombre($conn, 'areas', 'id_area', 'nombre_area', $row['id_area']);
+                        // Obtener descripciones de las RAEs (separadas por comas en BD)
+                        $descripcionRae = getNombresMultiple($conn, 'raes', 'id_rae', 'descripcion', $row['id_rae']);
                     ?>
                     <!-- Card de un horario -->
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md hover:translate-y-[-2px] transition-all duration-200 schedule-item"
@@ -149,6 +186,9 @@
                             </span>
                             <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-[#0a3a57]">
                                 Programa <?php echo htmlspecialchars($nombrePrograma); ?>
+                            </span>
+                            <span class="inline-flex items-center px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-blue-50 text-[#0a3a57]">
+                                Rae <?php echo htmlspecialchars($descripcionRae); ?>
                             </span>
                         </div>
                     </div>
