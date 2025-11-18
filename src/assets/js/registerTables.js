@@ -123,18 +123,14 @@ async function cargarTrimestralizacion() {
   }
 
   try {
-    // Ahora enviamos también el área
     const res = await fetch(`${BASE_URL}src/controllers/TrimestralizacionController.php?accion=listar&id_zona=${id_zona}&id_area=${id_area}`);
     const data = await res.json();
     console.log("Datos recibidos del servidor:", data);
     tbody.innerHTML = "";
 
-    // data debe ser un array; si tu controller devuelve estructura {status:..., data: [...]}
     const registrosServer = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
-
     const activos = registrosServer.filter((d) => d && (d.estado === 1 || d.estado === "1"));
 
-    // Si no hay registros activos...
     if (!activos.length) {
       tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500">No hay registros activos para esta zona y área.</td></tr>`;
       Toast.fire({ icon: "info", title: "Sin registros activos" });
@@ -144,15 +140,12 @@ async function cargarTrimestralizacion() {
     // -------------------------
     // AGRUPAR POR id_horario
     // -------------------------
-    // Creamos un Map para agrupar las RAEs de cada horario en una sola estructura
     const mapHorarios = new Map();
-
     activos.forEach(r => {
       const id = r.id_horario ?? (r.id_horario === 0 ? 0 : null);
-      if (id === null) return; // proteger por si hay filas mal formadas
+      if (id === null) return;
 
       if (!mapHorarios.has(id)) {
-        // Hacemos una copia de los campos "únicos" que queremos mantener
         mapHorarios.set(id, {
           id_horario: id,
           dia: r.dia,
@@ -168,36 +161,27 @@ async function cargarTrimestralizacion() {
           tipo_instructor: r.tipo_instructor,
           id_competencia: r.id_competencia,
           nombre_competencia: r.nombre_competencia,
-          descripcion_competencia: r.descripcion_competencia ?? r.descripcion,
           raesArray: []
         });
       }
 
-      // Añadir RAE si existe y no está ya añadida
       const agr = mapHorarios.get(id);
       if (r.id_rae) {
         const textoRae = `${r.id_rae} - ${r.descripcion_rae ?? ""}`.trim();
-        // evitar duplicados de RAE en el mismo horario
         if (textoRae && !agr.raesArray.includes(textoRae)) agr.raesArray.push(textoRae);
       }
     });
 
-    // Convertir map a array usable por el render
     const horariosAgrupados = Array.from(mapHorarios.values());
 
-    // Opcional: si quieres que las RAEs salgan como HTML con saltos de línea
     horariosAgrupados.forEach(h => {
       if (h.raesArray.length) {
-        // crear HTML list (puedes cambiar a join(', ') si prefieres en línea)
         h.raesHtml = `<ul class="list-disc ml-5 mt-1">${h.raesArray.map(x => `<li>${x}</li>`).join('')}</ul>`;
       } else {
         h.raesHtml = `<span class="text-gray-500 italic">Sin especificar</span>`;
       }
     });
 
-    // -------------------------
-    // RENDERIZAR USANDO horariosAgrupados
-    // -------------------------
     const dias = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"];
     const horas = Array.from({ length: 16 }, (_, i) => i + 6);
 
@@ -207,7 +191,6 @@ async function cargarTrimestralizacion() {
       fila.innerHTML = `<td class="border border-gray-700 p-2 font-medium">${hora}:00-${hora + 1}:00</td>`;
 
       dias.forEach((dia) => {
-        // ahora filtramos la lista agrupada
         const registros = horariosAgrupados.filter((r) => {
           if (!r.dia || r.dia.toUpperCase() !== dia) return false;
           const rStart = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
@@ -217,28 +200,34 @@ async function cargarTrimestralizacion() {
 
         let contenido = "";
         registros.forEach((r) => {
-          const rStart = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
-          const rEnd = r.hora_fin ? parseInt(r.hora_fin.split(":")[0], 10) : rStart + 1;
-          if (hora === rStart) {
-            // un solo bloque por horario (ya agrupado)
-            contenido += `
-              <div class="registro border-gray-300 pb-1 mb-1"
-                  data-id="${r.id_horario || ""}"
-                  data-id-instructor="${r.id_instructor ?? ""}">
-                <div><strong>Instructor:</strong> ${r.nombre_instructor ?? ""} (${r.tipo_instructor ?? ""})</div>
-                <div><strong>Ficha:</strong> <span class="ficha">${r.numero_ficha ?? ""}</span>
-                  (<span class="nivel_ficha">${(r.nivel_ficha ?? "" ).toString().toUpperCase()}</span>)
-                </div>
-                <div><strong>Competencia:</strong> <span class="competencia">${r.id_competencia} -  ${r.nombre_competencia}  </span></div>
-                <div><strong>RAE(s):</strong> ${r.raesHtml}</div>
-              </div>`;
-          } else if (hora > rStart && hora < rEnd) {
-            // horas intermedias en rangos largos — mostramos solo instructor resumido
-            contenido += `<div class="mb-1 border-gray-200 pb-1">
-                <strong>Instructor:</strong> ${r.nombre_instructor ?? ""} (${r.tipo_instructor ?? ""})
-              </div>`;
-          }
-        });
+        const rStart = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
+        const rEnd = r.hora_fin ? parseInt(r.hora_fin.split(":")[0], 10) : rStart + 1;
+
+        if (hora === rStart) {
+          contenido += `
+            <div class="registro border-gray-300 pb-1 mb-1"
+                data-id="${r.id_horario || ""}"
+                data-id-instructor="${r.id_instructor ?? ""}"
+                data-id-competencia="${r.id_competencia ?? ""}">
+              <div><strong>Instructor:</strong> ${r.nombre_instructor ?? ""} (${r.tipo_instructor ?? ""})</div>
+              <div><strong>Ficha:</strong> <span class="ficha">${r.numero_ficha ?? ""}</span>
+                (<span class="nivel_ficha">${(r.nivel_ficha ?? "" ).toString().toUpperCase()}</span>)
+              </div>
+              <div><strong>Competencia:</strong> 
+                <span class="competencia">
+                  ${r.id_competencia ? r.id_competencia : ''} - ${r.nombre_competencia ? r.nombre_competencia : "(Sin nombre)"}
+                </span>
+              </div>
+
+              <div><strong>RAE(s):</strong> ${r.raesHtml}</div>
+            </div>`;
+        } else if (hora > rStart && hora < rEnd) {
+          contenido += `<div class="mb-1 border-gray-200 pb-1">
+              <strong>Instructor:</strong> ${r.nombre_instructor ?? ""} (${r.tipo_instructor ?? ""})
+            </div>`;
+        }
+      });
+
 
         fila.innerHTML += `
           <td class="border border-gray-700 p-2 text-sm text-left leading-tight">
@@ -256,6 +245,7 @@ async function cargarTrimestralizacion() {
     Toast.fire({ icon: "error", title: "Error al cargar trimestralización" });
   }
 }
+
 
 // =======================
 // LISTAR INSTRUCTORES
@@ -344,14 +334,14 @@ async function obtenerRoesPorCompetencia(id_competencia) {
 
 
 // =======================
-// MODO EDICIÓN
+// MODO EDICIÓN CORREGIDO
 // =======================
 async function activarEdicion() {
   try {
     await cargarInstructores();
     await cargarCompetencias();
   } catch (err) {
-    console.error("Error al cargar instructores en activar Edicion:", err);
+    console.error("Error al cargar instructores en activarEdicion:", err);
   }
 
   const registros = document.querySelectorAll("#tbody-horarios .registro");
@@ -360,75 +350,46 @@ async function activarEdicion() {
     return;
   }
 
-  for (const reg of registros) {
+  // Guardar RAEs originales por horario
+  const registrosRaePorHorario = {};
+  registros.forEach(reg => {
+    const ul = reg.querySelector("ul");
+    const idHorario = reg.getAttribute("data-id");
+    if (ul && idHorario) {
+      registrosRaePorHorario[idHorario] = [...ul.querySelectorAll("li")].map(li => li.textContent.split("-")[0].trim());
+    }
+  });
 
+  for (const reg of registros) {
     // -----------------------
-    // 1. DATOS ORIGINALES
+    // DATOS ORIGINALES
     // -----------------------
     const ficha = reg.querySelector(".ficha")?.textContent.trim() || "";
-    const competenciaTexto = reg.querySelector(".competencia")?.textContent.trim() || "";
     const nivel_ficha = reg.querySelector(".nivel_ficha")?.textContent.trim() || "";
     const idInstructor = reg.getAttribute("data-id-instructor") || "";
-
-    // separación del ID de la competencia
-    const id_competencia = competenciaTexto.split("-")[0]?.trim();
-
-    // Obtener RAEs ya asignados (li)
-    const ul = reg.querySelector("ul");
-    let raesExistentes = [];
-    if (ul) raesExistentes = [...ul.querySelectorAll("li")].map(li => li.textContent.trim());
-
-    // Obtener RAEs de BD
-    const raesBD = await obtenerRoesPorCompetencia(id_competencia);
+    const id_competencia = reg.getAttribute("data-id-competencia") || "";
 
     // -----------------------
-    // 2. LIMPIAR CONTENIDO
+    // LIMPIAR CONTENIDO
     // -----------------------
     reg.innerHTML = "";
 
-    // select competencias
-    const selCompetencia = document.createElement("select");
-    selCompetencia.className = "competencia-select w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm";
-
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent = "Seleccione competencia";
-    selCompetencia.appendChild(placeholder);
-
-    // rellenar select desde la db
-    listaCompetencias.forEach(c => {
-      const opt = document.createElement("option");
-      opt.value = c.id_competencia;
-      opt.textContent = c.nombre_competencia;
-
-     // seleccionar la competencia ya existente en la fila
-     if (c.nombre_competencia.trim() === competenciaTexto.trim()) {
-      opt.selected = true;
-      }
-
-      selCompetencia.appendChild(opt);
-    });
-
-
-    // select instructores
-    const sel = document.createElement("select");
-    sel.className = "instructor-select w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm";
-
-    const placeholderOpt = document.createElement("option");
-    placeholderOpt.value = "";
-    placeholderOpt.textContent = "Seleccione instructor";
-    sel.appendChild(placeholderOpt);
-
-    listaInstructores.forEach((inst) => {
+    // -----------------------
+    // SELECT INSTRUCTORES
+    // -----------------------
+    const selInstructor = document.createElement("select");
+    selInstructor.className = "instructor-select w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm";
+    selInstructor.innerHTML = `<option value="">Seleccione instructor</option>`;
+    listaInstructores.forEach(inst => {
       const opt = document.createElement("option");
       opt.value = inst.id_instructor;
       opt.textContent = `${inst.nombre_instructor} (${inst.tipo_instructor})`;
       if (String(inst.id_instructor) === String(idInstructor)) opt.selected = true;
-      sel.appendChild(opt);
+      selInstructor.appendChild(opt);
     });
 
     // -----------------------
-    // 4. FICHA
+    // INPUT FICHA
     // -----------------------
     const inputFicha = document.createElement("input");
     inputFicha.type = "text";
@@ -437,65 +398,87 @@ async function activarEdicion() {
     inputFicha.className = "ficha-input block w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm";
 
     // -----------------------
-    // 5. COMPETENCIA
+    // SELECT COMPETENCIAS
     // -----------------------
-    const txt = document.createElement("textarea");
-    txt.rows = 2;
-    txt.className = "competencia-input w-full px-2 py-1 border border-gray-400 rounded text-sm resize-none";
-    txt.textContent = competenciaTexto;
+    const selectComp = document.createElement("select");
+    selectComp.className = "competencia-select w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm";
+    selectComp.innerHTML = `<option value="">Seleccione competencia</option>`;
+    listaCompetencias.forEach(c => {
+      const opt = document.createElement("option");
+      // Mostrar id y nombre juntos
+      opt.value = c.id_competencia;
+      opt.textContent = `${c.id_competencia} - ${c.nombre_competencia?.trim() ?? "(Sin nombre)"}`;
+      if (String(c.id_competencia) === String(id_competencia)) opt.selected = true;
+      selectComp.appendChild(opt);
+    });
+
 
     // -----------------------
-    // 6. CHECKBOX de RAEs
+    // CONTENEDOR RAEs
     // -----------------------
     const contRAE = document.createElement("div");
     contRAE.className = "rae-container mt-2 p-2 border rounded bg-gray-50";
-
     const labelRae = document.createElement("div");
     labelRae.textContent = "RAE(s):";
     labelRae.className = "font-semibold mb-1 text-sm";
     contRAE.appendChild(labelRae);
 
-    // crear cada checkbox
-    raesBD.forEach((rae) => {
-      const descripcion = (rae.descripcion ?? rae.descripcion_rae ?? "").trim();
-      const textoRae = `${rae.id_rae} - ${descripcion}`;
+    // Función para renderizar RAEs
+    const renderRAEs = (idCompetencia, marcarOriginales = true) => {
+      contRAE.querySelectorAll("div:not(:first-child)").forEach(d => d.remove());
+      if (!idCompetencia) return;
 
-      const div = document.createElement("div");
-      div.className = "flex items-center gap-2 mb-1";
+      obtenerRoesPorCompetencia(idCompetencia).then(raesBD => {
+        const raesExistentes = marcarOriginales ? (registrosRaePorHorario[reg.dataset.id] || []) : [];
+        raesBD.forEach(rae => {
+          const descripcion = (rae.descripcion ?? rae.descripcion_rae ?? "").trim();
+          const textoRae = `${rae.id_rae} - ${descripcion}`;
+          const div = document.createElement("div");
+          div.className = "flex items-center gap-2 mb-1";
 
-      const chk = document.createElement("input");
-      chk.type = "checkbox";
-      chk.dataset.idRae = rae.id_rae;
+          const chk = document.createElement("input");
+          chk.type = "checkbox";
+          chk.dataset.idRae = rae.id_rae;
+          if (raesExistentes.includes(String(rae.id_rae))) chk.checked = true;
 
-      // ✔ MARCAR si esta rae EXISTE en la lista original
-      chk.checked = raesExistentes.includes(textoRae);
+          const lbl = document.createElement("label");
+          lbl.textContent = textoRae;
+          lbl.className = "text-sm";
 
-      const lbl = document.createElement("label");
-      lbl.textContent = textoRae;
-      lbl.className = "text-sm";
+          div.appendChild(chk);
+          div.appendChild(lbl);
+          contRAE.appendChild(div);
+        });
+      });
+    };
 
-      div.appendChild(chk);
-      div.appendChild(lbl);
-      contRAE.appendChild(div);
+    // Render inicial
+    renderRAEs(id_competencia);
+
+    // Cambiar competencia → recargar RAEs
+    selectComp.addEventListener("change", (e) => {
+      const nuevaCompId = e.target.value;
+      renderRAEs(nuevaCompId, false); // al cambiar, no marcar los antiguos
     });
 
     // -----------------------
-    // 7. NIVEL
+    // NIVEL
     // -----------------------
     const nivelDiv = document.createElement("div");
     nivelDiv.className = "text-xs text-gray-500 mt-1";
     nivelDiv.textContent = `Nivel: ${nivel_ficha}`;
 
     // -----------------------
-    // 8. Ensamblar
+    // ENSAMBLAR
     // -----------------------
-    reg.appendChild(sel);
+    reg.appendChild(selInstructor);
     reg.appendChild(inputFicha);
-    reg.appendChild(txt);
+    reg.appendChild(selectComp);
     reg.appendChild(contRAE);
     reg.appendChild(nivelDiv);
   }
 
+  // Mostrar botones de edición
   document.getElementById("botones-principales").style.display = "none";
   mostrarBotonesEdicion();
 }
@@ -530,12 +513,19 @@ async function guardarCambios() {
   const registros = document.querySelectorAll("#tbody-horarios .registro");
 
   const filas = Array.from(registros).map((r) => {
-    const id_horario = r.getAttribute("data-id");
+    const id_horario = r.getAttribute("data-id") || "";
     const numero_ficha = r.querySelector(".ficha-input")?.value || "";
-    const descripcion = r.querySelector("select.competencia-select")?.value || "";
+
+    const selectComp = r.querySelector("select.competencia-select");
+    const id_competencia = selectComp?.value || ""; 
+    
+
+    // Solo para mostrar en la tabla, no para backend
+    const competenciaObj = listaCompetencias.find(c => String(c.id_competencia) === String(id_competencia));
+    const nombre_competencia = competenciaObj ? `${competenciaObj.id_competencia} - ${competenciaObj.nombre_competencia?.trim()}` : "";
+
     const id_instructor = r.querySelector("select.instructor-select")?.value || "";
 
-    // leer checkboxes RAE
     const raes = [...r.querySelectorAll(".rae-container input[type=checkbox]")]
       .filter(chk => chk.checked)
       .map(chk => chk.dataset.idRae);
@@ -543,12 +533,12 @@ async function guardarCambios() {
     return {
       id_horario,
       numero_ficha,
-      descripcion,
+      id_competencia,       // <-- el ID real que guarda la BD
+      nombre_competencia,   // <-- solo para mostrar en tabla
       id_instructor,
       raes
     };
   });
- 
 
   try {
     const res = await fetch(`${BASE_URL}src/controllers/trimestralizacionController.php?accion=actualizar&id_zona=${id_zona}`, {
@@ -562,7 +552,7 @@ async function guardarCambios() {
       Toast.fire({ icon: "success", title: "Cambios guardados correctamente" });
       document.getElementById("botones-edicion")?.remove();
       document.getElementById("botones-principales").style.display = "flex";
-      cargarTrimestralizacion();
+      cargarTrimestralizacion(); // recarga mostrando "ID - nombre"
     } else {
       console.error("guardarCambios respuesta inesperada:", data);
       Toast.fire({ icon: "error", title: "Error al guardar cambios" });

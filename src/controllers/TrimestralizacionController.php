@@ -288,7 +288,7 @@ case 'listar':
             $id_programa_post = isset($_POST['id_programa']) && $_POST['id_programa'] !== '' ? intval($_POST['id_programa']) : null;
 
             // ===========================
-            // 🔥 AQUÍ EL CAMBIO IMPORTANTE
+            // AQUÍ EL CAMBIO IMPORTANTE
             // ===========================
             $id_rae_post = null;
 
@@ -444,16 +444,15 @@ case 'listar':
                     ]);
                 }
 
-                // Actualizar competencia seleccionada (id_competencia)
-                if (!empty($r['descripcion'])) {
+                // Se toco la consulta de este controlador
+                if (!empty($r['id_competencia'])) {
                     $stmtComp = $conn->prepare("
-                        UPDATE competencias c
-                        INNER JOIN horarios h ON c.id_competencia = h.id_competencia
-                        SET c.nombre_competencia = :nombre
-                        WHERE h.id_horario = :id_horario
+                        UPDATE horarios
+                        SET id_competencia = :id_competencia
+                        WHERE id_horario = :id_horario
                     ");
                     $stmtComp->execute([
-                        ':nombre' => $r['descripcion'],
+                        ':id_competencia' => $r['id_competencia'],
                         ':id_horario' => $r['id_horario']
                     ]);
                 }
