@@ -119,7 +119,7 @@ try {
       <!-- Selector de Área -->
       <div class="relative">
         <select id="selectArea" name="id_area"
-          class="appearance-none w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-gray-100 transition-colors duration-200 outline-none cursor-pointer pr-10">
+          class="appearance-none w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-gray-100 transition-colors duración-200 outline-none cursor-pointer pr-10">
           <option value="" class="text-[#00324D]" selected hidden>SELECCIONE EL ÁREA</option>
         </select>
         <img 
@@ -132,7 +132,7 @@ try {
       <!-- Selector de Zona -->
       <div class="relative">
         <select id="selectZona" name="id_zona"
-          class="appearance-none w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-gray-100 transition-colors duration-200 outline-none cursor-pointer pr-10">
+          class="appearance-none w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-gray-100 transition-colors duración-200 outline-none cursor-pointer pr-10">
           <option value="" class="text-[#00324D]" selected hidden>SELECCIONE LA ZONA</option>
         </select>
         <img 
@@ -145,7 +145,7 @@ try {
 
     <!-- Botón de crear nueva trimestralización (abre el mismo modal que en la landing) -->
     <button id="btnAbrirModal" 
-      class="flex items-center justify-center gap-2 w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 text-white font-semibold text-sm lg:text-base rounded-md bg-[#0a3a57] hover:bg-[#00304D] transition-colors duration-200 shadow-md">
+      class="flex items-center justify-center gap-2 w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 text-white font-semibold text-sm lg:text-base rounded-md bg-[#0a3a57] hover:bg-[#00304D] transition-colors duración-200 shadow-md">
         <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/plus.svg" />
       Nueva trimestralización
     </button>
@@ -203,7 +203,7 @@ try {
         <button onclick="confirmarEliminar()" class="bg-[#4ebe15] hover:bg-[#39A900] text-white font-bold text-xl px-10 py-3 rounded-xl transition shadow-lg">
           Aceptar
         </button>
-        <button onclick="cerrarModal()" class="bg-red-600 hover:bg-red-700 text-white font-bold text-xl px-10 py-3 rounded-xl transition shadow-lg">
+        <button onclick="cerrarModal()" class="bg-red-600 hover:bg-red-700 text-white font-bold text-xl px-10 py-3 rounded-xl transición shadow-lg">
           Cancelar
         </button>
       </div>
@@ -519,16 +519,16 @@ try {
       <!-- Contenedor centrado -->
       <div class="fixed inset-0 flex items-center justify-center p-4">
         <div
-          class="bg-white w-full max-w-[420px] sm:max-w-[520px] md:max-w-[560px] rounded-2xl shadow-md border border-[#d8d8d8] px-4 sm:px-6 pt-10 pb-6 mx-3"
+          class="bg-white w-full max-w-[420px] sm:max-w-[520px] md:max-w-[560px] rounded-2xl shadow-md border border-[#dd8d8] px-4 sm:px-6 pt-10 pb-6 mx-3"
         >
           <!-- Header -->
           <div class="flex items-start justify-between mb-2 mt-4">
             <div class="text-left">
               <h3 id="tituloModalDuplicar" class="text-[1rem] text-[#0c2443] font-semibold">
-                ¿Aplicar este horario a otro día?
+                ¿Aplicar este horario a otros días?
               </h3>
               <p class="text-xs text-gray-500 mt-1">
-                Puedes duplicar la misma información en un día diferente.
+                Marca los días en los que también quieres usar este mismo horario.
               </p>
             </div>
             <button
@@ -543,25 +543,56 @@ try {
 
           <div class="border-b border-[#dcdcdc] mb-3"></div>
 
-          <!-- Select de día destino -->
+          <!-- Checklist + select oculto -->
           <div class="mb-4 text-left">
-            <label for="selectDiaDuplicar" class="block text-xs sm:text-sm text-gray-700 mb-1">
-              Selecciona el día al que deseas aplicar también este horario:
+            <label class="block text-xs sm:text-sm text-gray-700 mb-1">
+              Selecciona el/los día(s) al que deseas aplicar también este horario:
             </label>
+
+            <!-- 📝 Checklist visible -->
+            <div id="checklistDias" class="mt-1 grid grid-cols-2 gap-2 text-xs sm:text-sm">
+              <label class="flex items-center gap-2">
+                <input type="checkbox" class="chk-dia-duplicar rounded border-gray-300" value="lunes">
+                <span>Lunes</span>
+              </label>
+              <label class="flex items-center gap-2">
+                <input type="checkbox" class="chk-dia-duplicar rounded border-gray-300" value="martes">
+                <span>Martes</span>
+              </label>
+              <label class="flex items-center gap-2">
+                <input type="checkbox" class="chk-dia-duplicar rounded border-gray-300" value="miercoles">
+                <span>Miércoles</span>
+              </label>
+              <label class="flex items-center gap-2">
+                <input type="checkbox" class="chk-dia-duplicar rounded border-gray-300" value="jueves">
+                <span>Jueves</span>
+              </label>
+              <label class="flex items-center gap-2">
+                <input type="checkbox" class="chk-dia-duplicar rounded border-gray-300" value="viernes">
+                <span>Viernes</span>
+              </label>
+              <label class="flex items-center gap-2">
+                <input type="checkbox" class="chk-dia-duplicar rounded border-gray-300" value="sabado">
+                <span>Sábado</span>
+              </label>
+            </div>
+
+            <!-- 🔒 Select oculto para que lo use formulario_trimestralizacion.js -->
             <select
               id="selectDiaDuplicar"
-              class="select-chev form-field w-full h-10 px-3 text-[13px] rounded-xl border border-gray-200 outline-none bg-white placeholder-gray-400 sm:text-sm"
+              multiple
+              class="hidden"
             >
-              <option value="">Seleccione un día</option>
-              <option value="lunes">Lunes</option>
-              <option value="martes">Martes</option>
-              <option value="miercoles">Miércoles</option>
-              <option value="jueves">Jueves</option>
-              <option value="viernes">Viernes</option>
-              <option value="sabado">Sábado</option>
+              <option value="lunes">lunes</option>
+              <option value="martes">martes</option>
+              <option value="miercoles">miercoles</option>
+              <option value="jueves">jueves</option>
+              <option value="viernes">viernes</option>
+              <option value="sabado">sabado</option>
             </select>
+
             <small id="mensajeErrorDuplicar" class="mt-1 block text-[11px] text-red-500 hidden">
-              Debes seleccionar un día diferente al original.
+              Debes seleccionar al menos un día diferente al original.
             </small>
           </div>
 

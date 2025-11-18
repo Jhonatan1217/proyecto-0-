@@ -148,7 +148,7 @@
       <section data-tab="raes" class="tab-pane mt-8 hidden">
         <div class="flex items-center justify-between flex-wrap gap-4 mb-6">
           <div>
-            <h2 class="text-3xl font-bold">Resultados de Aprendizaje Esperados (RAE)</h2>
+            <h2 class="text-3xl text-[#39a900] font-bold">Resultados de Aprendizaje Esperados (RAE)</h2>
             <p class="text-sm text-zinc-500">Visualice y edite los RAE cargados</p>
           </div>
           <button class="rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2  bg-[#0a3a57] text-[#fff]">
@@ -453,8 +453,8 @@ document.addEventListener("DOMContentLoaded", () => {
   <script>
 document.addEventListener("DOMContentLoaded", () => {
 
-  const btnProcesar = document.getElementById("btnProcesarExcel");
-  const inputFile = document.getElementById("inputExcel");
+  const btnProcesar   = document.getElementById("btnProcesarExcel");
+  const inputFile     = document.getElementById("inputExcel");
   const selectProgram = document.getElementById("upload_program");
 
   btnProcesar.addEventListener("click", function () {
@@ -511,8 +511,10 @@ document.addEventListener("DOMContentLoaded", () => {
     .then(r => {
       console.log("RESPUESTA DEL SERVIDOR:", r);
 
-      // Cerrar el loading y mostrar éxito como toast
+      // Cerrar el loading
       Swal.close();
+
+      // ✅ Notificar éxito
       Swal.fire({
         toast: true,
         position: 'top-end',
@@ -526,6 +528,9 @@ document.addEventListener("DOMContentLoaded", () => {
       // Limpiar inputs después de éxito
       inputFile.value = '';
       selectProgram.value = '';
+
+      // ✅ Lanzar evento global para que otros módulos recarguen datos
+      window.dispatchEvent(new Event('excel-subido-ok'));
     })
     .catch(e => {
       console.error("ERROR:", e);
@@ -547,6 +552,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 </script>
+
 
 <!-- ==========================
      PAGINACIÓN FRONTEND (PROGRAMAS, COMPETENCIAS, RAE)

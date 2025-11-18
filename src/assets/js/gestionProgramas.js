@@ -395,5 +395,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================
     // Carga inicial de datos
     loadPrograms();
+
+    // 🔁 NUEVO: recargar programas cuando se procese el Excel sin refrescar la página
+    window.addEventListener('excel-subido-ok', () => {
+      loadPrograms();
+    });
   })();
 });

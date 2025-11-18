@@ -3,7 +3,6 @@ if (!window.TRIMESTRALIZACION_INIT) {
   window.TRIMESTRALIZACION_INIT = true;
 
   document.addEventListener("DOMContentLoaded", () => {
-    // Configuración del Toast (SweetAlert2)
     const Toast = Swal.mixin({
       toast: true,
       position: "top-end",
@@ -12,40 +11,25 @@ if (!window.TRIMESTRALIZACION_INIT) {
       timerProgressBar: true
     });
 
-    const TOAST_TIME = 2600; // ⏱ mismo tiempo que el toast
+    const TOAST_TIME = 2600;
 
-    // 🔁 Helper para redirigir a la vista de horario
     function redirectToHorario() {
       const base = (window.BASE_URL || '');
       const redirect = `${base}index.php?page=src/views/register_tables`;
       window.location.replace(redirect);
     }
 
-    // 🔁 Helper para cerrar el modal de crear trimestralización (si existe)
     function cerrarModalCrear() {
       const modal = document.getElementById("modalCrearLanding");
       if (modal) modal.classList.add("hidden");
     }
 
-    // ================== FUNCIÓN DE VALIDACIÓN REUTILIZABLE ==================
-    /**
-     * Valida el formulario de horario.
-     * - form: elemento <form>
-     * - overrideDia: si se pasa, se usa este día en lugar del seleccionado en el form
-     * Devuelve:
-     *   { ok:false } si algo falla (ya muestra el Toast correspondiente),
-     *   { ok:true, zona, id_area, nivel, numeroFicha, instructor, dia, horaInicio, horaFin, id_competencia }
-     *    si todo está correcto.
-     */
     function validarFormularioHorario(form, overrideDia = null) {
-      // ========== OBTENER VALORES ==========
       const zona = form.querySelector("[name='zona']").value.trim();
 
-      // Intentamos obtener el id_area
       let areaField = form.querySelector("[name='area']");
       let id_area = areaField ? areaField.value.trim() : "";
 
-      // Si no hay campo "area", buscamos un data-area en la opción seleccionada
       if (!id_area) {
         const optZona = form.querySelector("[name='zona'] option:checked");
         if (optZona && optZona.dataset && optZona.dataset.area) {
@@ -65,19 +49,16 @@ if (!window.TRIMESTRALIZACION_INIT) {
       const horaInicio = form.querySelector("[name='hora_inicio']").value.trim();
       const horaFin = form.querySelector("[name='hora_fin']").value.trim();
 
-      // id de la competencia seleccionada
       const id_competencia = form.querySelector("[name='id_competencia']")
         ? form.querySelector("[name='id_competencia']").value.trim()
         : "";
 
-      // ✅ NUEVO: id de la(s) RAE(s) seleccionada(s) desde el hidden
       const idRaeField = form.querySelector("[name='id_rae']");
       const id_rae = idRaeField ? idRaeField.value.trim() : "";
 
       const campos = [zona, nivel, numeroFicha, instructor, dia, horaInicio, horaFin, id_competencia];
       const vacios = campos.filter((v) => v === "").length;
 
-      // ========== VALIDACIONES ==========
       if (vacios === campos.length) {
         Toast.fire({ icon: "warning", title: "Por favor llenar todos los campos" });
         return { ok: false };
@@ -147,7 +128,6 @@ if (!window.TRIMESTRALIZACION_INIT) {
         return { ok: false };
       }
 
-      // ✅ NUEVO: validación formal de RAE obligatoria
       if (!id_rae) {
         Toast.fire({
           icon: "warning",
@@ -156,7 +136,6 @@ if (!window.TRIMESTRALIZACION_INIT) {
         return { ok: false };
       }
 
-      // Si todo pasó las validaciones:
       return {
         ok: true,
         zona,
@@ -171,16 +150,16 @@ if (!window.TRIMESTRALIZACION_INIT) {
       };
     }
 
-    // ================== REFERENCIAS AL MODAL PHP DE DUPLICAR ==================
-    const modalDup          = document.getElementById("modalDuplicarHorario");
-    const backdropDup       = document.getElementById("modalDuplicarBackdrop");
-    const selDiaDup         = document.getElementById("selectDiaDuplicar");
-    const msgErrorDup       = document.getElementById("mensajeErrorDuplicar");
-    const btnSoloEsteDia    = document.getElementById("btnSoloEsteDia");
-    const btnDuplicarDia    = document.getElementById("btnDuplicarDia");
-    const btnCerrarDup      = document.getElementById("btnCerrarModalDuplicar");
+    // ================== MODAL DUPLICAR ==================
+    const modalDup       = document.getElementById("modalDuplicarHorario");
+    const backdropDup    = document.getElementById("modalDuplicarBackdrop");
+    const selDiaDup      = document.getElementById("selectDiaDuplicar");
+    const checklistDias  = document.getElementById("checklistDias");
+    const msgErrorDup    = document.getElementById("mensajeErrorDuplicar");
+    const btnSoloEsteDia = document.getElementById("btnSoloEsteDia");
+    const btnDuplicarDia = document.getElementById("btnDuplicarDia");
+    const btnCerrarDup   = document.getElementById("btnCerrarModalDuplicar");
 
-    // Contexto que usará el modal de duplicar
     let duplicacionCtx = {
       form: null,
       diaOriginal: "",
@@ -190,11 +169,19 @@ if (!window.TRIMESTRALIZACION_INIT) {
 
     function limpiarModalDuplicar() {
       if (selDiaDup) {
-        selDiaDup.value = "";
-        // Mostrar todas las opciones por si antes se ocultó alguna
         Array.from(selDiaDup.options).forEach(opt => {
+          opt.selected = false;
           opt.hidden = false;
           opt.disabled = false;
+        });
+      }
+      if (checklistDias) {
+        checklistDias.querySelectorAll(".chk-dia-duplicar").forEach(ch => {
+          ch.checked = false;
+          ch.disabled = false;
+          if (ch.parentElement) {
+            ch.parentElement.classList.remove("opacity-50", "pointer-events-none");
+          }
         });
       }
       if (msgErrorDup) msgErrorDup.classList.add("hidden");
@@ -202,7 +189,6 @@ if (!window.TRIMESTRALIZACION_INIT) {
 
     function abrirModalDuplicar(ctx) {
       if (!modalDup || !selDiaDup) {
-        // Si por alguna razón no existe el modal, solo redirigimos
         cerrarModalCrear();
         redirectToHorario();
         return;
@@ -213,7 +199,6 @@ if (!window.TRIMESTRALIZACION_INIT) {
 
       const { diaOriginal } = duplicacionCtx;
 
-      // Ocultamos/deshabilitamos del select el día original
       if (diaOriginal) {
         Array.from(selDiaDup.options).forEach(opt => {
           if (!opt.value) return;
@@ -222,6 +207,18 @@ if (!window.TRIMESTRALIZACION_INIT) {
             opt.hidden = true;
           }
         });
+
+        if (checklistDias) {
+          checklistDias.querySelectorAll(".chk-dia-duplicar").forEach(ch => {
+            if (ch.value === diaOriginal) {
+              ch.checked = false;
+              ch.disabled = true;
+              if (ch.parentElement) {
+                ch.parentElement.classList.add("opacity-50", "pointer-events-none");
+              }
+            }
+          });
+        }
       }
 
       modalDup.classList.remove("hidden");
@@ -229,17 +226,12 @@ if (!window.TRIMESTRALIZACION_INIT) {
 
     function cerrarModalDuplicar(soloCerrar = false) {
       if (modalDup) modalDup.classList.add("hidden");
-
-      // soloCerrar = true  -> solo cierra el modal
-      // soloCerrar = false -> cerrar y redirigir (caso cancelar / solo este día)
       if (!soloCerrar) {
         cerrarModalCrear();
         redirectToHorario();
       }
     }
 
-    // ✅ Helper para el caso "No, solo este día" (o cerrar el modal)
-    // Aquí es donde mostramos la alerta de "Horario creado correctamente"
     function confirmarSoloEsteDia() {
       if (modalDup) modalDup.classList.add("hidden");
       Toast.fire({
@@ -247,139 +239,148 @@ if (!window.TRIMESTRALIZACION_INIT) {
         title: "¡Horario creado correctamente!"
       });
       cerrarModalCrear();
-      // ⏱ Damos tiempo a que se vea el toast ANTES de redirigir
       setTimeout(() => {
         redirectToHorario();
       }, TOAST_TIME);
     }
 
-    // ========== EVENTOS DEL MODAL DE DUPLICAR ==========
+    // 🔄 Sincronizar checklist -> select oculto
+    if (checklistDias && selDiaDup) {
+      checklistDias.addEventListener("change", (e) => {
+        const target = e.target;
+        if (!target.classList.contains("chk-dia-duplicar")) return;
+        const value = target.value;
+        const opt = Array.from(selDiaDup.options).find(o => o.value === value);
+        if (opt) {
+          opt.selected = target.checked;
+        }
+      });
+    }
 
-    // Botón: "No, solo este día" -> cierra modal, muestra toast y redirige
     if (btnSoloEsteDia) {
       btnSoloEsteDia.addEventListener("click", () => {
         confirmarSoloEsteDia();
       });
     }
 
-    // Botón cerrar (X) -> se comporta como "solo este día"
     if (btnCerrarDup) {
       btnCerrarDup.addEventListener("click", () => {
         confirmarSoloEsteDia();
       });
     }
 
-    // Clic en fondo del modal -> también como "solo este día"
     if (backdropDup) {
       backdropDup.addEventListener("click", () => {
         confirmarSoloEsteDia();
       });
     }
 
-    // Botón: "Sí, duplicar horario"
     if (btnDuplicarDia) {
       btnDuplicarDia.addEventListener("click", async () => {
         if (!selDiaDup) return;
 
-        const diaDestino = selDiaDup.value;
         const { form, diaOriginal } = duplicacionCtx;
 
-        // Validación: debe escoger un día y no puede ser el mismo
-        if (!diaDestino || diaDestino === diaOriginal) {
-          if (msgErrorDup) msgErrorDup.classList.remove("hidden");
-          return;
-        }
-        if (msgErrorDup) msgErrorDup.classList.add("hidden");
-
-        // Si por alguna razón perdimos el form, cerramos y redirigimos
         if (!form) {
           cerrarModalDuplicar(false);
           return;
         }
 
-        // 🛡️ MISMAS VALIDACIONES QUE EL FORMULARIO DE CREAR,
-        // pero usando el día destino del select del modal.
-        const resultadoVal = validarFormularioHorario(form, diaDestino);
-        if (!resultadoVal.ok) {
-          // Si algo falla, NO se envía el fetch de duplicar.
+        const diasSeleccionados = Array.from(selDiaDup.options)
+          .filter(opt => opt.selected && opt.value && opt.value !== diaOriginal)
+          .map(opt => opt.value);
+
+        if (!diasSeleccionados.length) {
+          if (msgErrorDup) msgErrorDup.classList.remove("hidden");
+          return;
+        }
+        if (msgErrorDup) msgErrorDup.classList.add("hidden");
+
+        let huboError = false;
+        let mensajeError = "";
+
+        for (const diaDestino of diasSeleccionados) {
+          const resultadoVal = validarFormularioHorario(form, diaDestino);
+          if (!resultadoVal.ok) {
+            huboError = true;
+            mensajeError = "El horario original se guardó, pero uno de los duplicados no es válido.";
+            break;
+          }
+
+          const { id_area, id_competencia } = resultadoVal;
+
+          const fd2 = new FormData(form);
+          fd2.set("dia_semana", diaDestino);
+          fd2.set("area", id_area);
+          fd2.set("duplicar_desde", diaOriginal || "");
+
+          try {
+            const id_rae_field = form.querySelector("[name='id_rae']");
+            const selOpt = form.querySelector("[name='id_competencia'] option:checked");
+
+            if (id_competencia) {
+              fd2.set("id_competencia", id_competencia);
+            }
+
+            const programa = selOpt && selOpt.dataset ? (selOpt.dataset.programa || "") : "";
+            fd2.set("id_programa", programa);
+
+            const rae = id_rae_field ? (id_rae_field.value || "") : "";
+            fd2.set("id_rae", rae);
+          } catch (err) {
+            console.warn("No se pudo anexar id_programa/id_rae al FormData (duplicado)", err);
+          }
+
+          try {
+            const res2 = await fetch(form.action, {
+              method: "POST",
+              body: fd2,
+              headers: {
+                "X-Requested-With": "XMLHttpRequest",
+                "Accept": "application/json"
+              },
+              credentials: "same-origin"
+            });
+
+            const data2 = await res2.json().catch(() => ({}));
+
+            if (!res2.ok || data2.status === "error" || data2.error) {
+              const mensaje2 =
+                data2.mensaje ||
+                data2.error ||
+                "El horario original se guardó, pero hubo un error al duplicarlo en uno de los días seleccionados.";
+
+              huboError = true;
+              mensajeError = mensaje2;
+              break;
+            }
+
+          } catch (err) {
+            console.error("Error duplicando horario:", err);
+            huboError = true;
+            mensajeError = "Error al duplicar horario en uno de los días seleccionados.";
+            break;
+          }
+        }
+
+        if (huboError) {
+          Toast.fire({
+            icon: "warning",
+            title: mensajeError || "El horario original se guardó, pero hubo errores al duplicar."
+          });
           return;
         }
 
-        const { id_area, id_competencia } = resultadoVal;
+        Toast.fire({
+          icon: "success",
+          title: "¡Horario creado y duplicado correctamente!"
+        });
 
-        // 🔁 Armamos formData para la segunda inserción, cambiando solo el día
-        const fd2 = new FormData(form);
-        fd2.set("dia_semana", diaDestino);
-        fd2.set("area", id_area);
-        fd2.set("duplicar_desde", diaOriginal || "");
-
-        try {
-          const id_rae_field = form.querySelector("[name='id_rae']");
-          const selOpt = form.querySelector("[name='id_competencia'] option:checked");
-
-          if (id_competencia) {
-            fd2.set("id_competencia", id_competencia);
-          }
-
-          // programa desde el data-attribute de la competencia
-          const programa = selOpt && selOpt.dataset ? (selOpt.dataset.programa || "") : "";
-          fd2.set("id_programa", programa);
-
-          // RAEs desde el hidden
-          const rae = id_rae_field ? (id_rae_field.value || "") : "";
-          fd2.set("id_rae", rae);
-        } catch (err) {
-          console.warn("No se pudo anexar id_programa/id_rae al FormData (duplicado)", err);
-        }
-
-        try {
-          const res2 = await fetch(form.action, {
-            method: "POST",
-            body: fd2,
-            headers: {
-              "X-Requested-With": "XMLHttpRequest",
-              "Accept": "application/json"
-            },
-            credentials: "same-origin"
-          });
-
-          const data2 = await res2.json().catch(() => ({}));
-
-          if (!res2.ok || data2.status === "error" || data2.error) {
-            const mensaje2 =
-              data2.mensaje ||
-              data2.error ||
-              "El horario original se guardó, pero hubo un error al duplicarlo en el otro día.";
-
-            // ⚠️ MOSTRAMOS EL ERROR Y NO REDIRIGIMOS,
-            // para que el usuario pueda ver la validación y corregir.
-            Toast.fire({ icon: "warning", title: mensaje2 });
-            // No cerramos ni redirigimos aquí.
-            return;
-          }
-
-          // ✅ Todo bien: original + duplicado
-          Toast.fire({
-            icon: "success",
-            title: "¡Horario creado correctamente!"
-          });
-
-          // Cerramos modales y redirigimos después del toast
-          cerrarModalDuplicar(true); // solo cerrar modal duplicar
-          cerrarModalCrear();
-          setTimeout(() => {
-            redirectToHorario();
-          }, TOAST_TIME);
-
-        } catch (err) {
-          console.error("Error duplicando horario:", err);
-          Toast.fire({
-            icon: "error",
-            title: "Error al duplicar horario"
-          });
-          // Tampoco redirigimos de una, para que se vea la alerta
-          return;
-        }
+        cerrarModalDuplicar(true);
+        cerrarModalCrear();
+        setTimeout(() => {
+          redirectToHorario();
+        }, TOAST_TIME);
       });
     }
 
@@ -388,10 +389,8 @@ if (!window.TRIMESTRALIZACION_INIT) {
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
-        // 🛡️ Usamos la MISMA función de validación
         const resultado = validarFormularioHorario(form);
         if (!resultado.ok) {
-          // Si algo falla, no se envía nada
           return;
         }
 
@@ -401,24 +400,18 @@ if (!window.TRIMESTRALIZACION_INIT) {
           id_competencia
         } = resultado;
 
-        // ========== ENVÍO PRIMER HORARIO ==========
         const fd = new FormData(form);
-
-        // Enviamos también el id_area
         fd.set("area", id_area);
 
-        // Asegurar que id_competencia, id_programa e id_rae se envían explícitamente.
         try {
           const selOpt = form.querySelector("[name='id_competencia'] option:checked");
           const id_rae_field = form.querySelector("[name='id_rae']");
 
           if (id_competencia) fd.set("id_competencia", id_competencia);
 
-          // Obtener programa desde el data-attribute de la competencia
           const programa = selOpt && selOpt.dataset ? selOpt.dataset.programa || "" : "";
           fd.set("id_programa", programa);
 
-          // Obtener RAEs del campo hidden (que se rellenó en el modal de selección)
           const rae = id_rae_field ? id_rae_field.value || "" : "";
           fd.set("id_rae", rae);
         } catch (err) {
@@ -438,18 +431,11 @@ if (!window.TRIMESTRALIZACION_INIT) {
 
           const data = await res.json().catch(() => ({}));
 
-          // ---------- ERRORES DEL SERVIDOR ----------
           if (!res.ok || data.status === "error" || data.error) {
             const mensaje = data.mensaje || data.error || "Ocurrió un error en el servidor.";
-            // ⚠️ Solo mostramos el toast, NO redirigimos
             return Toast.fire({ icon: "error", title: mensaje });
           }
 
-          // 🔥 Ya NO mostramos aquí el toast de éxito.
-          // El mensaje de éxito se muestra cuando el usuario decide
-          // si duplica o no el horario.
-
-          // 🔥 Ahora abrimos el modal PHP de duplicar horario
           abrirModalDuplicar({
             form,
             diaOriginal: dia,

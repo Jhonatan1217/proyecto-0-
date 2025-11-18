@@ -1,3 +1,4 @@
+// src/assets/js/gestionRaes.js
 (function () {
   const section = document.querySelector('section[data-tab="raes"]');
   if (!section) return; // Si no existe la pestaña RAEs, no ejecuta nada
@@ -16,6 +17,28 @@
   const selCompFilter  = section.querySelector('#raeCompetencyFilter');
   const list           = section.querySelector('#raesList');
   const emptyBox       = section.querySelector('#raesEmpty');
+
+  // <<< NUEVO >>> plantillas para estados vacíos
+  const EMPTY_TEMPLATE_FIRST = `
+    <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
+      <p class="text-sm text-zinc-500 max-w-md mb-4">
+        No hay RAEs registrados 
+      </p>
+       <button id="btnFirstCompetency"
+                      class="flex items-center gap-2  bg-[#00324d] text-white px-4 py-2 rounded-xl font-medium text-sm">
+                <img src="src/assets/img/plus.svg" class="w-4 h-4" alt="simbolo de mas" />
+                Crear Primera RAE
+              </button>
+    </div>
+  `;
+
+  const EMPTY_TEMPLATE_FILTER = `
+    <div class="flex items-center justify-center py-12 px-4 text-center">
+      <p class="text-sm md:text-base text-zinc-500">
+        No hay RAE que coincidan con los filtros seleccionados.
+      </p>
+    </div>
+  `;
 
   // ==== Modal ====
   const modal     = document.getElementById('modalRae');
@@ -200,14 +223,47 @@
     const url  = `${API_RAES}?accion=listar&${q({ id_programa, id_competencia })}`;
     const rows = await fetchJSON(url);
 
-    // Render
     list.innerHTML = '';
     const data = Array.isArray(rows) ? rows : (rows.data || []);
+
+    // <<< NUEVO >>> manejo de estados vacíos
     if (!data.length) {
+      if (!emptyBox) return;
+
+      // comprobamos si existen RAEs sin filtros (para diferenciar vacío total vs sin coincidencias)
+      let anyRaes = false;
+      try {
+        const allRes = await fetchJSON(`${API_RAES}?accion=listar&${q({ id_programa: 'all', id_competencia: 'all' })}`);
+        const allData = Array.isArray(allRes) ? allRes : (allRes.data || []);
+        anyRaes = allData.length > 0;
+      } catch (e) {
+        console.error('[RAEs] comprobar RAEs existentes:', e);
+      }
+
       emptyBox.classList.remove('hidden');
+
+      if (!anyRaes) {
+        // No hay NINGÚN RAE en la base → mostrar recuadro para crear el primero
+        emptyBox.innerHTML = EMPTY_TEMPLATE_FIRST;
+
+        const btnCreate = emptyBox.querySelector('[data-create-first-rae]');
+        if (btnCreate && !btnCreate.dataset.bound) {
+          btnCreate.dataset.bound = '1';
+          btnCreate.addEventListener('click', () => {
+            // reutilizamos el mismo flujo del botón "+ Nuevo RAE"
+            openModal();
+          });
+        }
+      } else {
+        // Sí hay RAEs, pero los filtros actuales no devuelven resultados
+        emptyBox.innerHTML = EMPTY_TEMPLATE_FILTER;
+      }
+
       return;
     }
-    emptyBox.classList.add('hidden');
+
+    // Hay datos → ocultar recuadro vacío y renderizar tarjetas
+    if (emptyBox) emptyBox.classList.add('hidden');
 
     for (const r of data) {
       const idRae   = pick(r, ['id_rae','codigo','codigo_rae','idRAE'], '');
@@ -346,23 +402,23 @@
 
   // ==== Abrir / Cerrar modal ====
   function openModal() {
-  if (form) form.reset();
-  editingRaeId = null; editingSnap = null;
-  if (titleRae) titleRae.textContent = 'Nuevo RAE';
-  if (inCode) inCode.value = '';
-  if (selComp) selComp.innerHTML = `<option value="">Seleccione una competencia</option>`;
+    if (form) form.reset();
+    editingRaeId = null; editingSnap = null;
+    if (titleRae) titleRae.textContent = 'Nuevo RAE';
+    if (inCode) inCode.value = '';
+    if (selComp) selComp.innerHTML = `<option value="">Seleccione una competencia</option>`;
 
-  // Mostrar
-  backdrop.classList.remove('hidden');
-  modal.classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
+    // Mostrar
+    backdrop.classList.remove('hidden');
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
 
-  // Animaciones de ENTRADA
-  play(backdrop,  'animate-backdrop');
-  play(modalPanel,'animate-modal');
+    // Animaciones de ENTRADA
+    play(backdrop,  'animate-backdrop');
+    play(modalPanel,'animate-modal');
 
-  window.lucide?.createIcons?.();
-}
+    window.lucide?.createIcons?.();
+  }
 
   function closeModal() {
     backdrop.classList.add('hidden');
@@ -528,6 +584,25 @@
       }
     }
     await loadRaes();
+  });
+
+  // 🔁 NUEVO: cuando se suba el Excel, recargar Programas + Competencias (filtros) + RAEs
+  window.addEventListener('excel-subido-ok', async () => {
+    try {
+      // recarga lista de programas para filtros y modal
+      await loadPrograms();
+
+      // actualiza las competencias según el programa seleccionado en el filtro
+      if (selProgFilter && selCompFilter) {
+        await loadCompetenciasFor(selProgFilter.value || 'all', selCompFilter, false);
+      }
+
+      // recargar la lista de RAEs con los datos recién importados
+      await loadRaes();
+    } catch (e) {
+      console.error('[RAEs] recarga tras Excel:', e);
+      toast.err('No fue posible actualizar los RAEs después de la carga Excel');
+    }
   });
 
   // ==== Init ====

@@ -642,6 +642,13 @@
     renderList();
   });
 
+  // 🔁 NUEVO: cuando se suba el Excel, recargar programas + competencias + RAEs sin recargar página
+  window.addEventListener('excel-subido-ok', async () => {
+    await loadPrograms({ preserveSelection: true });
+    await loadCompetencias();
+    await tryLoadRaeMap();
+  });
+
   // INIT
   (async function init(){
     await loadPrograms({ preserveSelection: true });

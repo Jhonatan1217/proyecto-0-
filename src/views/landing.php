@@ -76,7 +76,7 @@ try {
         #modalCard .form-grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
-          column-gap: 0.75rem; /* aprox gap-3 */
+          column-gap: 0.75rem;
           row-gap: 0.75rem;
         }
         #modalCard .form-grid .field-full {
@@ -204,7 +204,7 @@ try {
                 </select>
               </div>
 
-              <!-- NÚMERO FICHA + INSTRUCTOR (ya tenían su propio flex, lo respetamos) -->
+              <!-- NÚMERO FICHA + INSTRUCTOR -->
               <div class="field-full">
                 <div class="flex flex-minw-0 gap-3 flex-col sm:flex-row lg:flex-row">
                   <input type="text" name="numero_ficha" id="numero_ficha" placeholder="Número de la ficha" 
@@ -245,7 +245,6 @@ try {
                   <option value="">Seleccione el programa de formación</option>
                   <?php if (empty($programas)): ?>
                     <option disabled>No se encontraron programas activos</option>
-                    <!-- programas: <?= htmlspecialchars(json_encode($programas)) ?> -->
                   <?php else: ?>
                     <?php foreach ($programas as $prog): ?>
                       <option value="<?= htmlspecialchars($prog['id_programa']) ?>">
@@ -256,7 +255,7 @@ try {
                 </select>
               </div>
 
-              <!-- HORAS (ya tenían su flex propio) -->
+              <!-- HORAS -->
               <div class="field-full">
                 <div class="flex flex-minw-0 gap-3 flex-col sm:flex-row lg:flex-row">
                   <select name="hora_inicio" id="hora_inicio" 
@@ -287,14 +286,12 @@ try {
                     <option value="">Seleccione la competencia</option>
                     <?php if (empty($competencias)): ?>
                       <option disabled>No se encontraron competencias activas</option>
-                      <!-- competencias: <?= htmlspecialchars(json_encode($competencias)) ?> -->
                     <?php else: ?>
                       <?php foreach ($competencias as $comp): ?>
                         <?php $valueComp = htmlspecialchars($comp['id_competencia']); ?>
                         <option value="<?= $valueComp ?>"
-                                data-desc="<?= htmlspecialchars($comp['descripcion'] ?? '') ?>"
                                 data-programa="<?= htmlspecialchars($comp['id_programa'] ?? '') ?>">
-                          <?= htmlspecialchars($comp['nombre_competencia'] ?? $comp['descripcion'] ?? ('Competencia ' . ($comp['id_competencia'] ?? ''))) ?>
+                          <?= htmlspecialchars($comp['nombre_competencia'] ?? ('Competencia ' . ($comp['id_competencia'] ?? ''))) ?>
                         </option>
                       <?php endforeach; ?>
                     <?php endif; ?>
@@ -329,9 +326,10 @@ try {
         </div>
       </div>
     </div>
-    <!-- ============== /MODAL ============== -->
+    <!-- ============== /MODAL CREAR ============== -->
 
-    <!-- ============== MODAL RAEs POR COMPETENCIA ============== -->
+    <!-- ============== MODAL RAEs ============== -->
+    <!-- (igual que ya lo tenías, no lo toco) -->
     <div
       id="modalRaes"
       class="fixed inset-0 z-50 hidden"
@@ -339,10 +337,7 @@ try {
       aria-modal="true"
       aria-labelledby="tituloModalRaes"
     >
-      <!-- Backdrop RAEs -->
       <div id="modalRaesBackdrop" class="fixed inset-0 bg-black/40"></div>
-
-      <!-- Contenedor centrado RAEs -->
       <div class="fixed inset-0 flex items-center justify-center p-4">
         <div
           id="modalRaesCard"
@@ -367,7 +362,6 @@ try {
 
           <div class="border-b border-[#dcdcdc] mb-3"></div>
 
-          <!-- Select all -->
           <div class="flex items-center justify-between mb-2">
             <label class="flex items-center gap-2 text-xs sm:text-sm text-gray-700">
               <input type="checkbox" id="chkRaesTodos" class="rounded border-gray-300">
@@ -376,14 +370,11 @@ try {
             <span id="contadorRaesSeleccionadas" class="text-[11px] text-gray-500"></span>
           </div>
 
-          <!-- Contenedor de lista de RAEs -->
           <div id="listaRaesModal"
                class="mt-2 max-h-64 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-left text-xs sm:text-sm">
-            <!-- Se llena dinámicamente desde JS -->
             <p class="text-gray-500 text-xs">Cargando RAEs...</p>
           </div>
 
-          <!-- Acciones -->
           <div class="mt-4 flex justify-end gap-2">
             <button
               type="button"
@@ -413,22 +404,19 @@ try {
       aria-modal="true"
       aria-labelledby="tituloModalDuplicar"
     >
-      <!-- Backdrop -->
       <div id="modalDuplicarBackdrop" class="fixed inset-0 bg-black/40"></div>
 
-      <!-- Contenedor centrado -->
       <div class="fixed inset-0 flex items-center justify-center p-4">
         <div
           class="bg-white w-full max-w-[420px] sm:max-w-[520px] md:max-w-[560px] rounded-2xl shadow-md border border-[#d8d8d8] px-4 sm:px-6 pt-10 pb-6 mx-3"
         >
-          <!-- Header -->
           <div class="flex items-start justify-between mb-2 mt-4">
             <div class="text-left">
               <h3 id="tituloModalDuplicar" class="text-[1rem] text-[#0c2443] font-semibold">
-                ¿Aplicar este horario a otro día?
+                ¿Aplicar este horario a otros días?
               </h3>
               <p class="text-xs text-gray-500 mt-1">
-                Puedes duplicar la misma información en un día diferente.
+                Marca los días en los que también quieres usar este mismo horario.
               </p>
             </div>
             <button
@@ -443,29 +431,58 @@ try {
 
           <div class="border-b border-[#dcdcdc] mb-3"></div>
 
-          <!-- Select de día destino -->
           <div class="mb-4 text-left">
-            <label for="selectDiaDuplicar" class="block text-xs sm:text-sm text-gray-700 mb-1">
-              Selecciona el día al que deseas aplicar también este horario:
+            <label class="block text-xs sm:text-sm text-gray-700 mb-1">
+              Selecciona el/los día(s) al que deseas aplicar también este horario:
             </label>
+
+            <!-- 📝 Checklist visible -->
+            <div id="checklistDias" class="mt-1 grid grid-cols-2 gap-2 text-xs sm:text-sm">
+              <label class="flex items-center gap-2">
+                <input type="checkbox" class="chk-dia-duplicar rounded border-gray-300" value="lunes">
+                <span>Lunes</span>
+              </label>
+              <label class="flex items-center gap-2">
+                <input type="checkbox" class="chk-dia-duplicar rounded border-gray-300" value="martes">
+                <span>Martes</span>
+              </label>
+              <label class="flex items-center gap-2">
+                <input type="checkbox" class="chk-dia-duplicar rounded border-gray-300" value="miercoles">
+                <span>Miércoles</span>
+              </label>
+              <label class="flex items-center gap-2">
+                <input type="checkbox" class="chk-dia-duplicar rounded border-gray-300" value="jueves">
+                <span>Jueves</span>
+              </label>
+              <label class="flex items-center gap-2">
+                <input type="checkbox" class="chk-dia-duplicar rounded border-gray-300" value="viernes">
+                <span>Viernes</span>
+              </label>
+              <label class="flex items-center gap-2">
+                <input type="checkbox" class="chk-dia-duplicar rounded border-gray-300" value="sabado">
+                <span>Sábado</span>
+              </label>
+            </div>
+
+            <!-- 🔒 Select oculto para no romper la lógica JS -->
             <select
               id="selectDiaDuplicar"
-              class="select-chev form-field w-full h-10 px-3 text-[13px] rounded-xl border border-gray-200 outline-none bg-white placeholder-gray-400 sm:text-sm"
+              multiple
+              class="hidden"
             >
-              <option value="">Seleccione un día</option>
-              <option value="lunes">Lunes</option>
-              <option value="martes">Martes</option>
-              <option value="miercoles">Miércoles</option>
-              <option value="jueves">Jueves</option>
-              <option value="viernes">Viernes</option>
-              <option value="sabado">Sábado</option>
+              <option value="lunes">lunes</option>
+              <option value="martes">martes</option>
+              <option value="miercoles">miercoles</option>
+              <option value="jueves">jueves</option>
+              <option value="viernes">viernes</option>
+              <option value="sabado">sabado</option>
             </select>
+
             <small id="mensajeErrorDuplicar" class="mt-1 block text-[11px] text-red-500 hidden">
-              Debes seleccionar un día diferente al original.
+              Debes seleccionar al menos un día diferente al original.
             </small>
           </div>
 
-          <!-- Acciones -->
           <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
             <button
               type="button"
@@ -485,16 +502,16 @@ try {
         </div>
       </div>
     </div>
-    <!-- ============== /MODAL DUPLICAR HORARIO ============== -->
+    <!-- ============== /MODAL DUPLICAR ============== -->
 
     <script>
       window.BASE_URL = window.BASE_URL || "<?= BASE_URL ?>";
     </script>
 
-    <!-- tipo_instructor se determina en el servidor, no hay select correspondiente -->
     <script src="<?= BASE_URL ?>src/assets/js/landing.js"></script>
     <script src="<?= BASE_URL ?>src/assets/js/formulario_trimestralizacion.js"></script>
 
+    <!-- Filtro zonas por área -->
     <script>
       (function(){
         const selArea = document.getElementById('id_area');
@@ -511,24 +528,21 @@ try {
               continue;
             }
             const optArea = opt.dataset.area ?? "";
-            // Si no hay área seleccionada, mostrar todas las zonas
             const show = areaVal !== "" ? (String(optArea) === String(areaVal)) : true;
             opt.hidden = !show;
             opt.disabled = !show;
           }
 
-          // Si la zona actualmente seleccionada queda oculta
           const selectedOpt = selZona.selectedOptions[0];
           if (selectedOpt && selectedOpt.hidden) selZona.value = "";
         }
 
         selArea.addEventListener('change', filterZonas);
-        // Ejecutar una vez al cargar para sincronizar
         document.addEventListener('DOMContentLoaded', filterZonas);
       })();
     </script>
 
-    <!-- 🔹 LÓGICA PARA FILTRAR COMPETENCIAS SEGÚN PROGRAMA -->
+    <!-- Filtro competencias por programa -->
     <script>
       (function () {
         const selProg = document.getElementById('id_programa_select');
@@ -561,7 +575,7 @@ try {
       })();
     </script>
 
-    <!-- LÓGICA DEL MODAL DE RAEs POR COMPETENCIA -->
+    <!-- Modal RAEs (igual al que ya tenías) -->
     <script>
     (function () {
         const BASE_URL = window.BASE_URL || '';
