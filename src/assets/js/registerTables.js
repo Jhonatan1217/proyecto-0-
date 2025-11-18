@@ -540,6 +540,16 @@ async function guardarCambios() {
     };
   });
 
+  // VALIDACIÓN: exigir al menos una RAE por registro
+  const filaSinRae = filas.find(f => !Array.isArray(f.raes) || f.raes.length === 0);
+  if (filaSinRae) {
+    Toast.fire({
+      icon: "warning",
+      title: `Debe seleccionar al menos 1 RAE para actualizar el horario `
+    });
+    return;
+  }
+
   try {
     const res = await fetch(`${BASE_URL}src/controllers/trimestralizacionController.php?accion=actualizar&id_zona=${id_zona}`, {
       method: "POST",
