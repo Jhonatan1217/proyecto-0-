@@ -282,12 +282,6 @@
                class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none">
       </div>
 
-      <div>
-        <label class="block text-sm font-medium mb-1">Descripción</label>
-        <textarea id="cp_desc" rows="3"
-                  placeholder="Ej: Competencia enfocada en el diseño, implementación y documentación de soluciones de software según las necesidades del cliente."
-                  class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none"></textarea>
-      </div>
 
       <div class="flex justify-end gap-3 pt-2">
         <button type="button" id="btnCancelCompetency"

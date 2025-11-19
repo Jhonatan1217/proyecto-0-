@@ -576,7 +576,7 @@
     if (!payload.nombre_competencia) { t.warn('El nombre es obligatorio'); return; }
     if (!isEditing && !payload.codigo_competencia) { t.warn('El código es obligatorio'); return; }
     if (!isEditing && !payload.id_programa) { t.warn('Seleccione un programa'); return; }
-    if (!isEditing && !payload.descripcion) { t.warn('La descripción es obligatoria'); return; }
+  
 
     // ====== NUEVO: validación de duplicado al enviar ======
     const dupNow = newCode ? codeExists(newCode, isEditing ? editingId : null) : false;
