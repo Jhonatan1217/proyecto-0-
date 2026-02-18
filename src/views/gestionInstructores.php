@@ -18,6 +18,72 @@
     #wrapTabla:hover::-webkit-scrollbar-thumb {
       background-color: rgba(0, 0, 0, 0.25);
     }
+
+    /* ============================
+       RESPONSIVE + ACCIONES / LÁPIZ
+       ============================ */
+
+    /* Header responsive: en móvil se apila */
+    @media (max-width: 640px) {
+      .header-instructores {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+      }
+
+      .header-instructores h2 {
+        font-size: 1rem;
+      }
+
+      .header-instructores p {
+        font-size: 0.85rem;
+      }
+
+      .btn-nuevo-instructor {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    /* Asegurar que el botón de editar (lápiz) nunca se colapse */
+    .btn-editar {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* Contenedor de acciones en la última columna:
+       mantiene lápiz + lo que tengas (switch, etc.) en una sola línea */
+    #tablaInstructores td:last-child > div {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: nowrap;
+    }
+
+    /* Ajustes de tabla en pantallas pequeñas */
+    @media (max-width: 640px) {
+      #tablaInstructores th,
+      #tablaInstructores td {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+      }
+
+      /* Dar más espacio a la columna Acciones para que el lápiz no desaparezca */
+      #tablaInstructores th:last-child,
+      #tablaInstructores td:last-child {
+        width: 120px;   /* si ves que sigue justo, puedes subir a 140px */
+        white-space: nowrap;
+      }
+
+      /* Opcional: limitar un poco el alto visible y usar el scroll interno */
+      #wrapTabla {
+        max-height: 320px;
+        overflow-y: auto;
+      }
+    }
   </style>
 </head>
 <body class="bg-white text-gray-900 font-sans">
@@ -27,13 +93,13 @@
     <p class="text-gray-500 mb-6">Administra los instructores y sus tipos</p>
 
     <div class="bg-white shadow rounded-2xl border border-gray-200">
-      <div class="flex items-center justify-between p-6 border-b">
+      <div class="flex items-center justify-between p-6 border-b header-instructores">
         <div>
           <h2 class="text-xl font-semibold">Instructores</h2>
           <p class="text-sm text-gray-500">Lista de todos los instructores registrados</p>
         </div>
         <button id="btnAbrirModalInstructor"
-          class="bg-[#0a3a57] text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-[#00304D] active:scale-[0.99] transition"
+          class="bg-[#0a3a57] text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-[#00304D] active:scale-[0.99] transition btn-nuevo-instructor"
           type="button">
           <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/plus.svg" />
           <span>Nuevo Instructor</span>

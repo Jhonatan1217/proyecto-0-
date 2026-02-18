@@ -10,6 +10,65 @@
     #wrapTablaZonas::-webkit-scrollbar { width: 8px; }
     #wrapTablaZonas::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.15); border-radius: 10px; }
     #wrapTablaZonas:hover::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.25); }
+
+    /* ============================
+       SOPORTE PARA LÁPIZ / ACCIONES
+       (por si hay botón .btn-editar en las filas)
+       ============================ */
+    .btn-editar {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* Contenedor de acciones en la última columna:
+       mantiene lápiz + switch (o lo que haya) en una sola línea */
+    #tablaInstructores td:last-child > div {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: nowrap;
+    }
+
+    /* ============================
+       RESPONSIVE EXTRA (SIN CAMBIAR DISEÑO)
+       ============================ */
+    @media (max-width: 640px) {
+      /* Header de la card: título + botón se apilan */
+      .bg-white.shadow.rounded-2xl.border.border-gray-200 > .flex {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+      }
+
+      /* Botón "Nueva Zona" ocupa ancho completo en móvil */
+      #btnAbrirModalZonas {
+        width: 100%;
+        justify-content: center;
+      }
+
+      /* Ajustar paddings de la tabla para pantallas pequeñas */
+      #tablaInstructores th,
+      #tablaInstructores td {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+      }
+
+      /* Dar más espacio a la columna Acciones para que no se rompa */
+      #tablaInstructores th:last-child,
+      #tablaInstructores td:last-child {
+        width: 120px;        /* si queda justo, puedes subir a 140px */
+        white-space: nowrap; /* que no baje el contenido a otra línea */
+      }
+
+      /* Altura máxima del wrapper y scroll vertical interno en móvil */
+      #wrapTablaZonas {
+        max-height: 320px;
+        overflow-y: auto;
+      }
+    }
   </style>
 </head>
 <body class="bg-white text-gray-900 font-sans">

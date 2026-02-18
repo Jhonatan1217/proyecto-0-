@@ -17,10 +17,21 @@
   const tbody = $("#tbodyInstructores");
   const wrapTabla = document.getElementById("wrapTabla");
 
+  // 🔹 Lista en memoria para validaciones (ej. nombres duplicados)
+  let listaInstructores = [];
+
   // Toast simple: prioriza SweetAlert si está disponible; si no, usa alert como respaldo
   function toast(msg, type = "success") {
     if (window.Swal) {
-      Swal.fire({ toast:true, position:"top-end", icon:type, title:msg, showConfirmButton:false, timer:2200, timerProgressBar:true });
+      Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: type,
+        title: msg,
+        showConfirmButton: false,
+        timer: 2200,
+        timerProgressBar: true
+      });
     } else {
       alert((type === "error" ? "❌ " : type === "warning" ? "⚠️ " : "✅ ") + msg);
     }
@@ -71,7 +82,10 @@
     const url = `${API_URL}?accion=${encodeURIComponent(accion)}`;
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json; charset=utf-8", Accept: "application/json" },
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        Accept: "application/json"
+      },
       credentials: "same-origin",
       body: JSON.stringify(payload),
     });
@@ -145,7 +159,8 @@
   async function cargarInstructores() {
     try {
       const res = await apiGet({ accion: "listar" });
-      renderRows(extraerLista(res));
+      listaInstructores = extraerLista(res) || [];     // 🔹 Guardamos en memoria
+      renderRows(listaInstructores);
     } catch (e) {
       console.error(e);
       tbody.innerHTML = `<tr><td class="px-6 py-6 text-red-600" colspan="3">${e.message}</td></tr>`;
@@ -164,12 +179,37 @@
     const tipo = (form.tipo_instructor.value || "").trim();
 
     if (!nombre || !tipo || tipo === "Seleccione un tipo") {
-      toast("Complete nombre y tipo de instructor", "warning");
+      toast("Debe diligenciar el nombre y el tipo de instructor.", "warning");
+      return false;
+    }
+
+    // 🔸 Validación: no permitir nombres duplicados
+    const nombreNormalizado = nombre
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .trim();
+
+    const existe = listaInstructores.some((inst) => {
+      const n = (inst.nombre_instructor ?? inst.nombre ?? "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+      return n === nombreNormalizado;
+    });
+
+    if (existe) {
+      toast(
+        "Ya existe un instructor registrado con este nombre. Por favor verifique la información.",
+        "warning"
+      );
       return false;
     }
 
     try {
-      const res = await apiPost("crear", { nombre_instructor: nombre, tipo_instructor: tipo });
+      const res = await apiPost("crear", {
+        nombre_instructor: nombre,
+        tipo_instructor: tipo
+      });
       if (res?.error) throw new Error(res.error);
       toast(res?.mensaje || "Instructor creado correctamente", "success");
       closeModal();
@@ -232,12 +272,18 @@
 
         const noCambioNombre = nombreNuevo === nombreActual;
         const noCambioTipo = tipoNuevo.toUpperCase() === tipoActual;
-        if (noCambioNombre && noCambioTipo) return toast("Debes modificar al menos un campo antes de guardar", "warning");
+        if (noCambioNombre && noCambioTipo)
+          return toast("Debes modificar al menos un campo antes de guardar", "warning");
 
-        if (!nombreNuevo || !tipoNuevo) return toast("Complete nombre y tipo de instructor", "warning");
+        if (!nombreNuevo || !tipoNuevo)
+          return toast("Complete nombre y tipo de instructor", "warning");
 
         try {
-          const res = await apiPost("actualizar", { id_instructor: id, nombre_instructor: nombreNuevo, tipo_instructor: tipoNuevo });
+          const res = await apiPost("actualizar", {
+            id_instructor: id,
+            nombre_instructor: nombreNuevo,
+            tipo_instructor: tipoNuevo
+          });
           if (res?.error) throw new Error(res.error);
           toast(res?.mensaje || "Instructor actualizado", "success");
           row.classList.remove("editando");
@@ -260,7 +306,12 @@
     try {
       const res = await apiPost("cambiar_estado", { id_instructor: id, estado: nuevoEstado });
       if (res?.error) throw new Error(res.error);
-      toast(nuevoEstado === 0 ? "Usuario deshabilitado correctamente" : (res?.mensaje || "Usuario habilitado correctamente"), "success");
+      toast(
+        nuevoEstado === 0
+          ? "Usuario deshabilitado correctamente"
+          : (res?.mensaje || "Usuario habilitado correctamente"),
+        "success"
+      );
     } catch (e4) {
       sw.checked = !sw.checked;
       toast(e4.message || "No se pudo cambiar el estado", "error");

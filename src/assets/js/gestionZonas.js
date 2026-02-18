@@ -42,6 +42,26 @@
     },
   });
 
+  // ☑️ Helper para detectar errores de clave duplicada
+  function esErrorDuplicado(mensajeCrudo = "") {
+    const msg = String(mensajeCrudo).toLowerCase();
+    return (
+      msg.includes("duplicate entry") ||
+      msg.includes("1062") ||
+      msg.includes("sqlstate[23000]")
+    );
+  }
+
+  // ☑️ Helper para detectar mensajes de "sin cambios"
+  function esSinCambios(mensajeCrudo = "") {
+    const msg = String(mensajeCrudo).toLowerCase();
+    return (
+      msg.includes("no hubo cambios") ||
+      msg.includes("sin cambios") ||
+      msg.includes("no se encontró la zona")
+    );
+  }
+
   // =======================
   // FUNCIONES MODAL
   // =======================
@@ -110,7 +130,7 @@
     selectArea.innerHTML = `<option disabled selected value="">Cargando áreas...</option>`;
 
     try {
-      const res = await fetch("src/controllers/areaController.php?accion=listar");
+      const res = await fetch("src/controllers/AreaController.php?accion=listar");
       const json = await res.json();
 
       if (json.status === "success" && Array.isArray(json.data) && json.data.length > 0) {
@@ -201,7 +221,7 @@
     const id_area = formZona.id_area?.value?.trim();
 
     if (!id_zona || !id_area) {
-      Toast.fire({ icon: "warning", title: "Debes ingresar número de zona y seleccionar un área." });
+      Toast.fire({ icon: "warning", title: "Debes ingresar el número de zona y seleccionar un área." });
       return;
     }
     if (isNaN(id_zona) || parseInt(id_zona) <= 0) {
@@ -219,16 +239,32 @@
       const json = await res.json();
 
       if (json.status === "success") {
-        Toast.fire({ icon: "success", title: "Zona creada correctamente" });
+        Toast.fire({ icon: "success", title: "Zona creada correctamente." });
         closeModal();
         await cargarZonas();
         ajustarAltoTablaZonas();
       } else {
-        Toast.fire({ icon: "error", title: json.message || "No se pudo crear la zona." });
+        // ✅ Manejo elegante de clave duplicada al CREAR
+        if (esErrorDuplicado(json.message)) {
+          Toast.fire({
+            icon: "warning",
+            title: "Ya existe una zona registrada con este identificador para el área seleccionada. Por favor verifique la información."
+          });
+        } else if (esSinCambios(json.message)) {
+          Toast.fire({
+            icon: "warning",
+            title: "No se han detectado cambios en la información de la zona."
+          });
+        } else {
+          Toast.fire({
+            icon: "error",
+            title: json.message || "No se pudo crear la zona. Intente nuevamente."
+          });
+        }
       }
     } catch (err) {
       console.error("Error al crear zona:", err);
-      Toast.fire({ icon: "error", title: "Error al crear zona." });
+      Toast.fire({ icon: "error", title: "Error al crear la zona. Intente nuevamente." });
     }
   });
 
@@ -244,7 +280,7 @@
     const nuevoEstado = chk.checked ? 1 : 0;
 
     if (!id_zona || !id_area) {
-      Toast.fire({ icon: "error", title: "No se pudo identificar la zona/área." });
+      Toast.fire({ icon: "error", title: "No se pudo identificar la zona o el área seleccionada." });
       return;
     }
 
@@ -259,11 +295,11 @@
       const json = await res.json();
       Toast.fire({
         icon: json.status === "success" ? "success" : "error",
-        title: json.message || (json.status === "success" ? "Estado actualizado" : "No se pudo actualizar"),
+        title: json.message || (json.status === "success" ? "Estado actualizado correctamente." : "No se pudo actualizar el estado.")
       });
     } catch (err) {
       console.error("Error al cambiar estado:", err);
-      Toast.fire({ icon: "error", title: "Error al cambiar el estado." });
+      Toast.fire({ icon: "error", title: "Error al cambiar el estado de la zona." });
     }
   });
 
@@ -288,7 +324,7 @@
     // 🔹 Cargar áreas dinámicamente desde la DB
     let opcionesHTML = `<option disabled selected value="">Cargando áreas...</option>`;
     try {
-      const res = await fetch("src/controllers/areaController.php?accion=listar");
+      const res = await fetch("src/controllers/AreaController.php?accion=listar");
       const json = await res.json();
 
       if (json.status === "success" && Array.isArray(json.data)) {
@@ -306,7 +342,7 @@
       opcionesHTML = `<option disabled selected value="">Error al cargar</option>`;
     }
 
-    // 🔹 Reemplazar contenido de la fila (estilos sobrios como en gestionarInstructor.js)
+    // 🔹 Reemplazar contenido de la fila
     tdZona.innerHTML = `<input type="number" value="${zonaOriginal}" class="w-20 rounded-lg border border-gray-200 px-3 py-2 text-center focus:outline-none focus:border-gray-300">`;
     tdArea.innerHTML = `
       <div class="relative max-w-[220px] mx-auto">
@@ -336,6 +372,15 @@
         return;
       }
 
+      // 🔸 Si no se modificó ni el número de zona ni el área, avisamos y NO llamamos a la API
+      if (id_zona_nueva === id_zona_actual && id_area_nueva === id_area_actual) {
+        Toast.fire({
+          icon: "warning",
+          title: "No se han detectado cambios en la información de la zona."
+        });
+        return;
+      }
+
       const fd = new FormData();
       fd.append("accion", "actualizar");
       fd.append("id_zona_actual", id_zona_actual);
@@ -347,10 +392,26 @@
         const res = await fetch(API_URL, { method: "POST", body: fd });
         const text = await res.text();
         let json;
-        try { json = JSON.parse(text); }
-        catch {
+
+        try {
+          json = JSON.parse(text);
+        } catch {
           console.error("Respuesta no JSON:", text);
-          Toast.fire({ icon: "error", title: "Error interno al actualizar." });
+
+          // ✅ Si la respuesta cruda trae el error de duplicado, lo mostramos bonito
+          if (esErrorDuplicado(text)) {
+            Toast.fire({
+              icon: "warning",
+              title: "Ya existe una zona registrada con este identificador para el área seleccionada. Por favor verifique la información."
+            });
+          } else if (esSinCambios(text)) {
+            Toast.fire({
+              icon: "warning",
+              title: "No se han detectado cambios en la información de la zona."
+            });
+          } else {
+            Toast.fire({ icon: "error", title: "Error interno al actualizar la zona. Intente nuevamente." });
+          }
           return;
         }
 
@@ -359,11 +420,27 @@
           await cargarZonas();
           ajustarAltoTablaZonas();
         } else {
-          Toast.fire({ icon: "error", title: json.message || "No se pudo actualizar" });
+          // ✅ Manejo elegante de clave duplicada al ACTUALIZAR
+          if (esErrorDuplicado(json.message)) {
+            Toast.fire({
+              icon: "warning",
+              title: "Ya existe una zona registrada con este identificador para el área seleccionada. Por favor verifique la información."
+            });
+          } else if (esSinCambios(json.message)) {
+            Toast.fire({
+              icon: "warning",
+              title: "No se han detectado cambios en la información de la zona."
+            });
+          } else {
+            Toast.fire({
+              icon: "error",
+              title: json.message || "No se pudo actualizar la zona. Intente nuevamente."
+            });
+          }
         }
       } catch (err) {
         console.error("Error al actualizar zona:", err);
-        Toast.fire({ icon: "error", title: "Error al actualizar zona." });
+        Toast.fire({ icon: "error", title: "Error al actualizar la zona. Intente nuevamente." });
       }
     });
   });

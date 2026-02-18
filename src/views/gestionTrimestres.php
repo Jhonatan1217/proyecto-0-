@@ -5,6 +5,64 @@
   <title>Gestión de Trimestres</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
+
+  <style>
+    /* Asegurar que el botón de editar nunca se colapse */
+    .btn-editar {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* Contenedor de acciones en la última columna
+       (para el <div> donde pones lápiz + switch o lo que sea) */
+    #tablaTrimestres td:last-child > div {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: nowrap;
+    }
+
+    /* ============================
+       RESPONSIVE EXTRA (SIN CAMBIAR DISEÑO)
+       ============================ */
+    @media (max-width: 640px) {
+      /* Header de la card: título + botón se apilan en columna */
+      .bg-white.border.border-gray-200.rounded-2xl.shadow-sm > .flex {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+      }
+
+      /* Botón "Nuevo Trimestre" ocupa todo el ancho en móvil */
+      #btnAbrirModalTrimestre {
+        width: 100%;
+        justify-content: center;
+      }
+
+      /* Paddings un poco más pequeños en tabla para móvil */
+      #tablaTrimestres th,
+      #tablaTrimestres td {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+      }
+
+      /* Más espacio fijo para la columna Acciones para que no se corte el lápiz */
+      #tablaTrimestres th:last-child,
+      #tablaTrimestres td:last-child {
+        width: 120px;      /* si ves que va justo, sube a 140px */
+        white-space: nowrap;
+      }
+
+      /* Altura máxima del bloque de tabla + scroll vertical interno en móvil */
+      .bg-white.border.border-gray-200.rounded-2xl.shadow-sm > .overflow-x-auto {
+        max-height: 320px;
+        overflow-y: auto;
+      }
+    }
+  </style>
 </head>
 <body class="bg-white text-gray-900 font-sans">
 

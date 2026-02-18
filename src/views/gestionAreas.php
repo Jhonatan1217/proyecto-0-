@@ -4,6 +4,67 @@
   <meta charset="UTF-8">
   <title>Gestión de Áreas</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Ajustes específicos para que el lápiz SIEMPRE se vea en pantallas pequeñas -->
+  <style>
+    /* Asegurar que el botón de editar nunca se colapse */
+    .btn-editar {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* Evitar que el contenido de acciones se parta en varias líneas */
+    #tablaAreas td .acciones {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: nowrap;
+    }
+
+    /* En pantallas pequeñas, darle un ancho mínimo decente a la columna de Acciones */
+    @media (max-width: 640px) {
+      #tablaAreas th:last-child,
+      #tablaAreas td:last-child {
+        width: 120px; /* puedes subirlo a 140 si lo ves muy justo */
+      }
+    }
+
+    /* ============================
+       RESPONSIVE EXTRA (SIN CAMBIAR DISEÑO)
+       ============================ */
+
+    /* Header de la card: en móvil se apila título + botón */
+    @media (max-width: 640px) {
+      /* Header de esta card específica */
+      .bg-white.shadow.rounded-2xl.border.border-gray-200 > .flex {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+      }
+
+      /* Botón "Nueva Área" ocupa ancho completo en móvil */
+      #btnAbrirModalArea {
+        width: 100%;
+        justify-content: center;
+      }
+
+      /* Ajustar paddings de la tabla para pantallas pequeñas */
+      #tablaAreas th,
+      #tablaAreas td {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+      }
+
+      /* Altura máxima del wrapper y scroll vertical interno en móvil */
+      #areasWrapper {
+        max-height: 320px; /* igual que instructores/zona */
+        overflow-y: auto;
+      }
+    }
+  </style>
 </head>
 
 <body class="bg-white text-gray-900 font-sans">
@@ -35,54 +96,58 @@
 
       <!-- Tabla -->
       <div class="overflow-x-auto">
-        <table class="w-full text-left" id="tablaAreas">
-          <thead>
-            <tr class="text-gray-600 text-sm border-b">
-              <th class="px-6 py-3 font-medium w-3/4">Nombre Área</th>
-              <th class="px-6 py-3 font-medium text-right w-1/4">Acciones</th>
-            </tr>
-          </thead>
+        <!-- Wrapper con scroll vertical controlado por JS (igual a instructores) -->
+        <div id="areasWrapper" class="w-full">
+          <table class="w-full text-left" id="tablaAreas">
+            <thead>
+              <tr class="text-gray-600 text-sm border-b">
+                <!-- Quité w-3/4 / w-1/4 rígidos para que la tabla se adapte mejor -->
+                <th class="px-6 py-3 font-medium">Nombre Área</th>
+                <th class="px-6 py-3 font-medium text-right">Acciones</th>
+              </tr>
+            </thead>
 
-          <tbody class="text-sm">
-            <!-- Filas de ejemplo (serán reemplazadas al cargar) -->
-            <tr class="border-b">
-              <td class="px-6 py-4">Polivalente</td>
-              <td class="px-6 py-4 text-right">
-                <div class="flex justify-end items-center gap-3">
-                  <button class="btn-editar p-2 border rounded-lg hover:bg-gray-50 transition" type="button" title="Editar">
-                    <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/pencil-line.svg" alt="Editar" />
-                  </button>
-                  <!-- Switch -->
-                  <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" class="sr-only peer" checked>
-                    <div class="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-[#39A900] transition"></div>
-                    <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition peer-checked:translate-x-5"></div>
-                  </label>
-                </div>
-              </td>
-            </tr>
+            <tbody class="text-sm">
+              <!-- Filas de ejemplo (serán reemplazadas al cargar) -->
+              <tr class="border-b">
+                <td class="px-6 py-4">Polivalente</td>
+                <td class="px-6 py-4 text-right">
+                  <div class="acciones">
+                    <button class="btn-editar p-2 border rounded-lg hover:bg-gray-50 transition" type="button" title="Editar">
+                      <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/pencil-line.svg" alt="Editar" />
+                    </button>
+                    <!-- Switch -->
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" class="sr-only peer" checked>
+                      <div class="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-[#39A900] transition"></div>
+                      <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition peer-checked:translate-x-5"></div>
+                    </label>
+                  </div>
+                </td>
+              </tr>
 
-            <tr>
-              <td class="px-6 py-4">Infraestructura</td>
-              <td class="px-6 py-4 text-right">
-                <div class="flex justify-end items-center gap-3">
-                  <button class="btn-editar p-2 border rounded-lg hover:bg-gray-50 transition" type="button" title="Editar">
-                    <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/pencil-line.svg" alt="Editar" />
-                  </button>
-                  <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" class="sr-only peer">
-                    <div class="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-[#39A900] transition"></div>
-                    <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition peer-checked:translate-x-5"></div>
-                  </label>
-                </div>
-              </td>
-            </tr>
-            <!-- /Ejemplo -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
+              <tr>
+                <td class="px-6 py-4">Infraestructura</td>
+                <td class="px-6 py-4 text-right">
+                  <div class="acciones">
+                    <button class="btn-editar p-2 border rounded-lg hover:bg-gray-50 transition" type="button" title="Editar">
+                      <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/pencil-line.svg" alt="Editar" />
+                    </button>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" class="sr-only peer">
+                      <div class="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-[#39A900] transition"></div>
+                      <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition peer-checked:translate-x-5"></div>
+                    </label>
+                  </div>
+                </td>
+              </tr>
+              <!-- /Ejemplo -->
+            </tbody>
+          </table>
+        </div><!-- /areasWrapper -->
+      </div><!-- /overflow-x-auto -->
+    </div><!-- /card -->
+  </div><!-- /page -->
 
   <!-- ========== MODAL: Nueva Área ========== -->
   <div id="modalArea" class="fixed inset-0 z-50 hidden">

@@ -23,6 +23,7 @@
   const emptyBox      = document.getElementById('competenciesEmpty');
   const btnNew        = document.getElementById('btnNewCompetency');
   const filterProgram = document.getElementById('competencyProgramFilter');
+  const searchInput   = document.getElementById('competencySearch'); // ⭐ NUEVO: buscador por nombre/código
 
   const modal     = document.getElementById('modalCompetency');
   const backdrop  = document.getElementById('modalCompetencyBackdrop');
@@ -291,10 +292,28 @@
 
     const pf = filterProgram?.value || 'all';
     const isFiltering = !!filterProgram && pf !== 'all';
+
+    // ⭐ NUEVO: término de búsqueda (nombre / código)
+    const rawSearch = (searchInput?.value || '').trim().toLowerCase();
+    const hasSearch = rawSearch.length > 0;
+
     const data = ITEMS.filter(c => {
-      if (!isFiltering) return true;
-      if (!c.program_id) return false;
-      return String(c.program_id) === String(pf);
+      // Filtro por programa (ya lo tenías)
+      if (isFiltering) {
+        if (!c.program_id) return false;
+        if (String(c.program_id) !== String(pf)) return false;
+      }
+
+      // Filtro por buscador (nombre / código)
+      if (hasSearch) {
+        const name = (c.name || '').toLowerCase();
+        const code = (c.code || '').toLowerCase();
+        if (!name.includes(rawSearch) && !code.includes(rawSearch)) {
+          return false;
+        }
+      }
+
+      return true;
     });
 
     list.innerHTML = '';
@@ -329,7 +348,7 @@
           <div class="w-full rounded-2xl border border-zinc-200 bg-white">
             <div class="flex items-center justify-center text-center py-16">
               <p class="text-zinc-500 text-sm sm:text-base">
-                No hay competencias que coincidan con el filtro seleccionado.
+                No hay competencias que coincidan con los criterios seleccionados.
               </p>
             </div>
           </div>
@@ -449,6 +468,11 @@
   backdrop?.addEventListener('click', (e) => { if (e.target === backdrop) closeModal(); });
 
   filterProgram?.addEventListener('change', renderList);
+
+  // ⭐ NUEVO: evento del buscador (filtra por nombre/código)
+  searchInput?.addEventListener('input', () => {
+    renderList();
+  });
 
   function onCollapseClick(e) {
     const btn = e.currentTarget;

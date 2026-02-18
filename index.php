@@ -17,7 +17,7 @@ define('BASE_URL', $protocol . $host . $script_dir);
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Proyecto 0</title>
+    <title>Proyecto Z</title>
     <link rel="icon" type="image/png" href="./src/assets/img/logoSena.png">
     <link rel="stylesheet" href="./public/css/output.css">
 </head>

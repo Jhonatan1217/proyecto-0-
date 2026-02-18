@@ -101,25 +101,25 @@ try {
   </style>
 </head>
 
-<body class="text-center font-sans min-h-screen flex flex-col bg-gray-50">
+<body class="text-center font-sans min-h-screen flex flex-col bg-gray-50 overflow-x-hidden">
 
-<header class="mt-10 text-center" id="cabecera-trimestralizacion">
-  <h1 class="text-3xl font-bold text-gray-900">
+<header class="mt-10 text-center px-4 sm:px-8" id="cabecera-trimestralizacion">
+  <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 break-words">
     VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA 
     <?php echo isset($_GET['id_zona']) ? htmlspecialchars($_GET['id_zona']) : '—'; ?>
   </h1>
-  <h2 class="text-xl text-gray-700 mb-6">
+  <h2 class="text-base sm:text-xl text-gray-700 mb-6">
     Sistema de gestión de trimestralización <br> SENA
   </h2>
 
   <!-- Contenedor principal de selects y botón -->
-  <div class="flex justify-between items-center w-full px-16 my-6">
+  <div class="flex flex-col md:flex-row justify-between items-center w-full px-4 sm:px-8 lg:px-16 my-6 gap-4 md:gap-6">
     
-    <div class="flex gap-8">
+    <div class="flex flex-col sm:flex-row gap-4 sm:gap-8 w-full md:w-auto">
       <!-- Selector de Área -->
-      <div class="relative">
+      <div class="relative w-full sm:w-auto">
         <select id="selectArea" name="id_area"
-          class="appearance-none w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-gray-100 transition-colors duración-200 outline-none cursor-pointer pr-10">
+          class="appearance-none w-full sm:w-60 lg:w-72 xl:w-80 2xl:w-96 px-4 sm:px-6 py-2 border border-gray-400 text-xs sm:text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-gray-100 transition-colors duración-200 outline-none cursor-pointer pr-10">
           <option value="" class="text-[#00324D]" selected hidden>SELECCIONE EL ÁREA</option>
         </select>
         <img 
@@ -130,9 +130,9 @@ try {
       </div>
 
       <!-- Selector de Zona -->
-      <div class="relative">
+      <div class="relative w-full sm:w-auto">
         <select id="selectZona" name="id_zona"
-          class="appearance-none w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 border border-gray-400 text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-gray-100 transition-colors duración-200 outline-none cursor-pointer pr-10">
+          class="appearance-none w-full sm:w-60 lg:w-72 xl:w-80 2xl:w-96 px-4 sm:px-6 py-2 border border-gray-400 text-xs sm:text-sm lg:text-base xl:text-lg rounded-md text-[#00324D] font-bold bg-white hover:bg-gray-100 transition-colors duración-200 outline-none cursor-pointer pr-10">
           <option value="" class="text-[#00324D]" selected hidden>SELECCIONE LA ZONA</option>
         </select>
         <img 
@@ -145,7 +145,7 @@ try {
 
     <!-- Botón de crear nueva trimestralización (abre el mismo modal que en la landing) -->
     <button id="btnAbrirModal" 
-      class="flex items-center justify-center gap-2 w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 text-white font-semibold text-sm lg:text-base rounded-md bg-[#0a3a57] hover:bg-[#00304D] transition-colors duración-200 shadow-md">
+      class="flex items-center justify-center gap-2 w-full md:w-60 lg:w-72 xl:w-80 2xl:w-96 px-6 py-2 text-white font-semibold text-sm lg:text-base rounded-md bg-[#0a3a57] hover:bg-[#00304D] transition-colors duración-200 shadow-md">
         <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/plus.svg" />
       Nueva trimestralización
     </button>
@@ -153,12 +153,12 @@ try {
 </header>
 
   <!-- Contenido principal -->
-  <main class="flex flex-col items-center flex-grow">
-    <section id="tabla-horarios" class="w-11/12 max-h-[500px] overflow-y-auto shadow-lg bg-white rounded-xl">
-      <table class="border border-gray-700 border-collapse w-full text-sm">
+  <main class="flex flex-col items-center flex-grow px-2 sm:px-4 pb-6">
+    <section id="tabla-horarios" class="w-full sm:w-11/12 max-h-[500px] overflow-y-auto overflow-x-auto shadow-lg bg-white rounded-xl">
+      <table class="border border-gray-700 border-collapse w-full text-xs sm:text-sm min-w-[640px]">
         <thead class="sticky top-0 bg-green-600 text-white z-10">
           <tr>
-            <th class="border border-gray-700 p-3">Hora</th>
+            <th class="border border-gray-700 p-2 sm:p-3">Hora</th>
             <th class="border border-gray-700 p-2">Lunes</th>
             <th class="border border-gray-700 p-2">Martes</th>
             <th class="border border-gray-700 p-2">Miércoles</th>
@@ -174,16 +174,16 @@ try {
     </section>
 
     <!-- Botones de acciones -->
-    <div id="botones-principales" class="mt-6 mb-6 flex justify-center gap-6">
-      <button onclick="mostrarModalEliminar()" class="bg-[#0a3a57] text-white px-6 py-2 rounded-lg hover:bg-[#00304D] transition">
+    <div id="botones-principales" class="mt-6 mb-6 flex flex-col sm:flex-row flex-wrap justify-center items-stretch gap-3 sm:gap-6 w-full sm:w-auto px-2">
+      <button onclick="mostrarModalEliminar()" class="bg-[#0a3a57] text-white px-6 py-2 rounded-lg hover:bg-[#00304D] transition w-full sm:w-auto">
         Limpiar Trimestralización
       </button>
 
-      <button id="btn-actualizar" class="bg-[#0a3a57] text-white px-6 py-2 rounded-lg hover:bg-[#00304D] transition">
+      <button id="btn-actualizar" class="bg-[#0a3a57] text-white px-6 py-2 rounded-lg hover:bg-[#00304D] transition w-full sm:w-auto">
         Actualizar Trimestralización
       </button>
 
-      <button onclick="descargarPDF()" class="bg-[#0a3a57] text-white px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center">
+      <button onclick="descargarPDF()" class="bg-[#0a3a57] text-white px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">
         Descargar PDF
         <img src="<?= BASE_URL ?>src/assets/img/descargar.png" class="ml-2 w-5 h-5" alt="descargar">
       </button>
@@ -191,19 +191,19 @@ try {
   </main>
 
   <!-- Modal Eliminar -->
-  <div id="modalEliminar" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-11/12">
+  <div id="modalEliminar" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+    <div class="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 max-w-2xl w-full sm:w-11/12 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-center mb-4">
         <img class="w-16 h-16" src="<?= BASE_URL ?>src/assets/img/triangle-alert.svg" />
       </div>
-      <h2 class="text-2xl font-bold text-center mb-8 text-gray-900">
+      <h2 class="text-xl sm:text-2xl font-bold text-center mb-8 text-gray-900">
         ¿Estás seguro de querer limpiar la trimestralización?
       </h2>
-      <div class="flex gap-6 justify-center">
-        <button onclick="confirmarEliminar()" class="bg-[#4ebe15] hover:bg-[#39A900] text-white font-bold text-xl px-10 py-3 rounded-xl transition shadow-lg">
+      <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center">
+        <button onclick="confirmarEliminar()" class="bg-[#4ebe15] hover:bg-[#39A900] text-white font-bold text-lg sm:text-xl px-8 sm:px-10 py-3 rounded-xl transition shadow-lg w-full sm:w-auto">
           Aceptar
         </button>
-        <button onclick="cerrarModal()" class="bg-red-600 hover:bg-red-700 text-white font-bold text-xl px-10 py-3 rounded-xl transición shadow-lg">
+        <button onclick="cerrarModal()" class="bg-red-600 hover:bg-red-700 text-white font-bold text-lg sm:text-xl px-8 sm:px-10 py-3 rounded-xl transición shadow-lg w-full sm:w-auto">
           Cancelar
         </button>
       </div>
@@ -234,7 +234,7 @@ try {
       <div class="fixed inset-0 flex items-center justify-center p-4 z-50">
         <div
           id="modalCard"
-          class="bg-white w-full max-w-[420px] sm:max-w-[520px] md:max-w-[640px] lg:max-w-[720px] xl:max-w-[860px] rounded-2xl shadow-md border border-[#d8d8d8] px-4 sm:px-6 md:px-8 lg:px-10 pt-6 sm:pt-8 pb-8 sm:pb-10 mx-3 lg:mx-0"
+          class="bg-white w-full max-w-[420px] sm:max-w-[520px] md:max-w-[640px] lg:max-w-[720px] xl:max-w-[860px] rounded-2xl shadow-md border border-[#d8d8d8] px-4 sm:px-6 md:px-8 lg:px-10 pt-6 sm:pt-8 pb-8 sm:pb-10 mx-3 lg:mx-0 max-h-[90vh] overflow-y-auto"
         >
           <!-- Cabecera con botón cerrar -->
           <div class="flex items-start justify-between">
@@ -405,14 +405,14 @@ try {
 
               <!-- BOTÓN RAEs + CONTADOR -->
               <div class="field-full">
-                <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center justify-between gap-3 flex-col sm:flex-row">
                   <button
                     type="button"
                     id="btnSeleccionarRaes"
-                    class="flex-1 h-10 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-[#00324D] hover:bg-[#f4f4f5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    class="flex-1 h-10 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-[#00324D] hover:bg-[#f4f4f5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full">
                     Seleccionar RAEs de la competencia
                   </button>
-                  <small id="textoResumenRaes" class="text-[11px] text-gray-500 whitespace-nowrap px-3 py-2 bg-gray-50 rounded-lg border border-gray-200"></small>
+                  <small id="textoResumenRaes" class="text-[11px] text-gray-500 whitespace-nowrap px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 w-full sm:w-auto text-left sm:text-right"></small>
                 </div>
               </div>
 
@@ -447,7 +447,7 @@ try {
       <div class="fixed inset-0 flex items-center justify-center p-4">
         <div
           id="modalRaesCard"
-          class="bg-white w-full max-w-[420px] sm:max-w-[520px] md:max-w-[560px] rounded-2xl shadow-md border border-[#d8d8d8] px-4 sm:px-6 pt-12 pb-6 mx-3"
+          class="bg-white w-full max-w-[420px] sm:max-w-[520px] md:max-w-[560px] rounded-2xl shadow-md border border-[#d8d8d8] px-4 sm:px-6 pt-12 pb-6 mx-3 max-h-[90vh] overflow-y-auto"
         >
           <div class="flex items-start justify_between mb-2 mt-4">
             <div class="text-left">
@@ -484,18 +484,18 @@ try {
           </div>
 
           <!-- Acciones -->
-          <div class="mt-4 flex justify-end gap-2">
+          <div class="mt-4 flex flex-col sm:flex-row justify-end gap-2">
             <button
               type="button"
               id="btnCancelarRaes"
-              class="px-3 py-2 text-xs sm:text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+              class="px-3 py-2 text-xs sm:text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 w-full sm:w-auto"
             >
               Cancelar
             </button>
             <button
               type="button"
               id="btnGuardarRaes"
-              class="px-3 py-2 text-xs sm:text-sm rounded-lg bg-[#0b2d5b] text-white font-medium hover:bg-[#082244]"
+              class="px-3 py-2 text-xs sm:text-sm rounded-lg bg-[#0b2d5b] text-white font-medium hover:bg-[#082244] w-full sm:w-auto"
             >
               Guardar selección
             </button>
@@ -519,7 +519,7 @@ try {
       <!-- Contenedor centrado -->
       <div class="fixed inset-0 flex items-center justify-center p-4">
         <div
-          class="bg-white w-full max-w-[420px] sm:max-w-[520px] md:max-w-[560px] rounded-2xl shadow-md border border-[#dd8d8] px-4 sm:px-6 pt-10 pb-6 mx-3"
+          class="bg-white w-full max-w-[420px] sm:max-w-[520px] md:max-w-[560px] rounded-2xl shadow-md border border-[#dd8d8] px-4 sm:px-6 pt-10 pb-6 mx-3 max-h-[90vh] overflow-y-auto"
         >
           <!-- Header -->
           <div class="flex items-start justify-between mb-2 mt-4">

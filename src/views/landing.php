@@ -55,7 +55,7 @@ try {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Proyecto 0</title>
+    <title>Proyecto Z</title>
 
     <!-- Fuente Work Sans (el modal la usa) -->
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/fonts.css">
@@ -65,40 +65,80 @@ try {
     <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
 
     <!-- 💡 Layout del formulario: 1 col (móvil), 2 cols en portátiles, original en monitores grandes -->
-    <style>
-      /* Por defecto: comportamiento original (bloques apilados) */
-      #modalCard .form-grid {
-        display: block;
-      }
 
-      /* Portátiles tipo MacBook (aprox 768px - 1600px) → 2 columnas */
-      @media (min-width: 768px) and (max-width: 1600px) {
-        #modalCard .form-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          column-gap: 0.75rem;
-          row-gap: 0.75rem;
-        }
-        #modalCard .form-grid .field-full {
-          grid-column: span 2;
-        }
-      }
+<style>
+  #modalCard .form-grid {
+    display: block;
+  }
 
-      /* Monitores grandes → volvemos al diseño original (apilado) */
-      @media (min-width: 1601px) {
-        #modalCard .form-grid {
-          display: block;
-        }
-        #modalCard .form-grid .field-full {
-          grid-column: auto;
-        }
-      }
-    </style>
+  /* Portátiles tipo MacBook (aprox 768px - 1600px) → 2 columnas */
+  @media (min-width: 768px) and (max-width: 1600px) {
+    #modalCard .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: 0.75rem;
+      row-gap: 0.75rem;
+    }
+    #modalCard .form-grid .field-full {
+      grid-column: span 2;
+    }
+  }
+
+  /* Monitores grandes → volvemos al diseño original (apilado) */
+  @media (min-width: 1601px) {
+    #modalCard .form-grid {
+      display: block;
+    }
+    #modalCard .form-grid .field-full {
+      grid-column: auto;
+    }
+  }
+
+  /* 📱 Ajustes SOLO para celular */
+  @media (max-width: 640px) {
+
+    /* 🚀 espacio entre campos */
+    #modalCard .form-grid .field,
+    #modalCard .form-grid .field-full {
+      margin-bottom: 12px;
+    }
+
+    /* 🚀 que no corte texto */
+    #modalCard select,
+    #modalCard input {
+      white-space: normal;
+      line-height: 1.3;
+      font-size: 14px;
+      padding-right: 2.5rem;
+    }
+
+    /* 🚀 separo más el botón de guardar del final */
+    #formTrimestralizacion {
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+    }
+
+    #modalWrapperCrear{
+      align-items: flex-start;
+      padding-top: 1.7rem;
+      padding-bottom: 1.7rem;
+    }
+
+    #modalCard{
+      margin-left: 1rem;
+      margin-right: 1rem;
+      max-height: calc(100vh - 3rem);
+      overflow-y: auto;
+      padding-bottom: 25px !important;
+    }
+  }
+</style>
+
   </head>
   <body class="flex flex-col min-h-screen font-sans text-center bg-white text-gray-900">
     <!-- Contenido principal -->
     <main class="flex flex-col items-center mt-20 flex-1 px-4 lg:px-8 xl:px-16 2xl:px-32">
-      <h1 class="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-bold text-[#39A900] mb-2">PROYECTO 0</h1>
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-bold text-[#39A900] mb-2">PROYECTO Z</h1>
       <p class="text-sm sm:text-base lg:text-lg xl:text-xl 2xl:text-2xl mb-8">Crea y ajusta horarios en segundos</p>
 
       <div class="flex flex-col gap-3 lg:gap-4 items-center">
@@ -127,7 +167,7 @@ try {
       <div id="modalBackdrop" class="fixed inset-0 bg-black/40"></div>
 
       <!-- Contenedor centrado -->
-      <div class="fixed inset-0 flex items-center justify-center p-4 z-50">
+      <div id="modalWrapperCrear" class="fixed inset-0 flex items-center justify-center p-4 z-50">
         <div
           id="modalCard"
           class="bg-white w-full max-w-[420px] sm:max-w-[520px] md:max-w-[640px] lg:max-w-[720px] xl:max-w-[860px] rounded-2xl shadow-md border border-[#d8d8d8] px-4 sm:px-6 md:px-8 lg:px-10 pt-6 sm:pt-8 pb-8 sm:pb-10 mx-3 lg:mx-0"
@@ -329,7 +369,6 @@ try {
     <!-- ============== /MODAL CREAR ============== -->
 
     <!-- ============== MODAL RAEs ============== -->
-    <!-- (igual que ya lo tenías, no lo toco) -->
     <div
       id="modalRaes"
       class="fixed inset-0 z-50 hidden"
@@ -575,7 +614,7 @@ try {
       })();
     </script>
 
-    <!-- Modal RAEs (igual al que ya tenías) -->
+    <!-- Modal RAEs -->
     <script>
     (function () {
         const BASE_URL = window.BASE_URL || '';
