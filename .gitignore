@@ -1,4 +1,4 @@
 .config/database.php
-
+/vendor
 node_modules/
 

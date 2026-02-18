@@ -208,7 +208,13 @@ document.addEventListener('DOMContentLoaded', () => {
       card.innerHTML = `
         <div class="flex items-start justify-between gap-4">
           <div class="flex-1 space-y-1.5">
-            <h3 class="text-lg font-semibold leading-snug">${escapeHtml(p.nombre_programa || '')}</h3>
+            <h3
+  class="text-lg font-semibold leading-snug"
+  style="word-break: break-word; overflow-wrap: anywhere;"
+>
+  ${escapeHtml(p.nombre_programa || '')}
+</h3>
+
             <p class="text-sm text-zinc-500">Código: <span class="font-medium">${escapeHtml(p.id_programa || '')}</span></p>
           </div>
           <div class="flex items-center gap-2">
