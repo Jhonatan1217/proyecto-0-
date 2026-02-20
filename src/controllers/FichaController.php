@@ -107,13 +107,13 @@ try {
             $numero_ficha = $data['numero_ficha'] ?? $_POST['numero_ficha'] ?? null;
             $jornada = $data['jornada'] ?? $_POST['jornada'] ?? null;
             $modalidad = $data['modalidad'] ?? $_POST['modalidad'] ?? null;
-            $lider_grupo = $data['lider_grupo'] ?? $_POST['lider_grupo'] ?? null;
+            $id_lider_grupo = $data['id_lider_grupo'] ?? $_POST['id_lider_grupo'] ?? null;
 
             // Validaciones
-            if (!$numero_ficha || !$jornada || !$modalidad) {
+            if (!$numero_ficha || !$jornada || !$modalidad || !$id_lider_grupo) {
                 echo json_encode([
                     'status' => 'error',
-                    'message' => 'Debe enviar numero_ficha, jornada y modalidad'
+                    'message' => 'Debe enviar numero_ficha, jornada, modalidad e id_lider_grupo'
                 ]);
                 exit;
             }
@@ -147,7 +147,7 @@ try {
                 exit;
             }
 
-            $id_creado = $ficha->crear($numero_ficha, $jornada, $modalidad, $lider_grupo);
+            $id_creado = $ficha->crear($numero_ficha, $jornada, $modalidad, $id_lider_grupo);
             
             echo json_encode([
                 'status' => 'success',
@@ -164,12 +164,12 @@ try {
             $numero_ficha = $data['numero_ficha'] ?? $_POST['numero_ficha'] ?? null;
             $jornada = $data['jornada'] ?? $_POST['jornada'] ?? null;
             $modalidad = $data['modalidad'] ?? $_POST['modalidad'] ?? null;
-            $lider_grupo = $data['lider_grupo'] ?? $_POST['lider_grupo'] ?? null;
+            $id_lider_grupo = $data['id_lider_grupo'] ?? $_POST['id_lider_grupo'] ?? null;
 
-            if (!$id_ficha || !$numero_ficha || !$jornada || !$modalidad) {
+            if (!$id_ficha || !$numero_ficha || !$jornada || !$modalidad || !$id_lider_grupo) {
                 echo json_encode([
                     'status' => 'error',
-                    'message' => 'Debe enviar id_ficha, numero_ficha, jornada y modalidad'
+                    'message' => 'Debe enviar id_ficha, numero_ficha, jornada, modalidad e id_lider_grupo'
                 ]);
                 exit;
             }
@@ -203,7 +203,7 @@ try {
                 exit;
             }
 
-            $ficha->actualizar($id_ficha, $numero_ficha, $jornada, $modalidad, $lider_grupo);
+            $ficha->actualizar($id_ficha, $numero_ficha, $jornada, $modalidad, $id_lider_grupo);
             
             echo json_encode([
                 'status' => 'success',
@@ -237,17 +237,17 @@ try {
             $data = json_decode(file_get_contents("php://input"), true);
             
             $id_ficha = $data['id_ficha'] ?? $_POST['id_ficha'] ?? null;
-            $id_instructor = $data['id_instructor'] ?? $_POST['id_instructor'] ?? null;
+            $id_lider_grupo = $data['id_lider_grupo'] ?? $_POST['id_lider_grupo'] ?? null;
 
-            if (!$id_ficha || !$id_instructor) {
+            if (!$id_ficha || !$id_lider_grupo) {
                 echo json_encode([
                     'status' => 'error',
-                    'message' => 'Debe enviar id_ficha y id_instructor'
+                    'message' => 'Debe enviar id_ficha y id_lider_grupo'
                 ]);
                 exit;
             }
 
-            $ficha->cambiarLider($id_ficha, $id_instructor);
+            $ficha->cambiarLider($id_ficha, $id_lider_grupo);
             
             echo json_encode([
                 'status' => 'success',
