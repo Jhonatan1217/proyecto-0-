@@ -1959,9 +1959,10 @@ video {
     }
 
     .sm\:flex-row {
-        flex-direction: row
+        flex-direction: row;
+        margin-bottom: 2%;
+        width: 50%;
     }
-
     .sm\:px-4 {
         padding-left: 1rem;
         padding-right: 1rem
