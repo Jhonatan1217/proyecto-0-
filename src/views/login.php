@@ -69,12 +69,12 @@
                 Bienvenido
             </h1>
 
-            <form action="procesar_login.php" method="POST" class="flex flex-col gap-6">
+            <form action="src/controllers/login_controller.php" method="POST" class="flex flex-col gap-6">
 
                 <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-medium text-gray-700">Correo Electronico</label>
                     <input
-                        name="email"
+                        name="correo"
                         type="email"
                         required
                         class="h-11 w-full rounded-lg border border-gray-300 px-4 text-sm focus:border-green-600 focus:ring-2 focus:ring-green-600/30 focus:outline-none"
@@ -130,7 +130,7 @@
 
 </main>
 
-<script src="js/login.js"></script>
+<script src="./src/assets/js/login.js"></script>
 
 </body>
 </html>
