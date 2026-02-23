@@ -1,14 +1,20 @@
 <?php
-// Página solicitada (por defecto 'landing')
-$page = $_GET['page'] ?? 'landing';
 
-// Evitar rutas maliciosas
+$page = $_GET['page'] ?? 'landing';
 $page = basename($page);
+
+// Páginas públicas (no requieren login)
+$paginas_publicas = ['login', 'landing'];
+
+// Si NO está logueado y la página NO es pública → redirigir
+if (!isset($_SESSION['usuario_id']) && !in_array($page, $paginas_publicas)) {
+    header("Location: index.php?page=login");
+    exit;
+}
 
 // Ruta de la vista
 $file = __DIR__ . "/../views/$page.php";
 
-// Cargar vista o mostrar mensaje de error
 if (file_exists($file)) {
     include $file;
 } else {
