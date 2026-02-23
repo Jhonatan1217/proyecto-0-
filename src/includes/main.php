@@ -1,19 +1,16 @@
 <?php
-// Página solicitada (por defecto 'landing')
-$page = $_GET['page'] ?? 'landing';
 
-// Evitar rutas maliciosas
-$page = basename($page);
+$pagina = $_GET['page'] ?? 'src/views/landing';
 
-// Ruta de la vista
-$file = __DIR__ . "/../views/$page.php";
+/* Seguridad básica */
+$pagina = str_replace(['..', './'], '', $pagina);
 
-// Cargar vista o mostrar mensaje de error
-if (file_exists($file)) {
-    include $file;
+/* Construimos la ruta */
+$ruta = BASE_PATH . '/' . $pagina . '.php';
+
+/* Si existe el archivo lo cargamos */
+if (file_exists($ruta)) {
+    require $ruta;
 } else {
-    echo "<p style='color:red; text-align:center; padding:2rem;'>
-            La página solicitada <strong>$page</strong> no existe.
-          </p>";
+    require BASE_PATH . '/src/views/404.php';
 }
-?>
