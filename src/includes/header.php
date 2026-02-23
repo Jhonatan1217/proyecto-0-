@@ -83,13 +83,8 @@
       </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/user-star.svg" alt="Icono de Coordinadores">
-        <a href="#">Coordinadores</a>
-      </li>
-
-      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/users.svg" alt="Icono de Instructores">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionInstructores">Instructores</a>
+        <img src="<?= BASE_URL ?>src/assets/img/users.svg" alt="Icono de Usuarios">
+        <a href="#">Usuarios</a>
       </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
@@ -112,19 +107,19 @@
         <ul class="pl-12 mt-2 space-y-2 hidden" id="academicos-submenu">
           <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
             <img src="<?= BASE_URL ?>src/assets/img/upload.svg" alt="Icono de Carga Excel" class="w-5 h-5">
-            <a href="<?= BASE_URL ?>index.php?page=src/views/cargaExcel">Carga Excel</a>
+            <a href="#">Carga Excel</a>
           </li>
           <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
             <img src="<?= BASE_URL ?>src/assets/img/graduation-cap.svg" alt="Icono de Programas" class="w-5 h-5">
-            <a href="<?= BASE_URL ?>index.php?page=src/views/programas">Programas</a>
+            <a href="#">Programas</a>
           </li>
           <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
             <img src="<?= BASE_URL ?>src/assets/img/book.svg" alt="Icono de Competencias" class="w-5 h-5">
-            <a href="<?= BASE_URL ?>index.php?page=src/views/competencias">Competencias</a>
+            <a href="<?= BASE_URL ?>index.php?page=src/views/gestionCompetencias">Competencias</a>
           </li>
           <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
             <img src="<?= BASE_URL ?>src/assets/img/target.svg" alt="Icono de RAE" class="w-5 h-5">
-            <a href="<?= BASE_URL ?>index.php?page=src/views/rae">RAE</a>
+            <a href="#">RAE</a>
           </li>
         </ul>
       </li>
