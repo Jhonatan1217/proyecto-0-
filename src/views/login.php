@@ -65,6 +65,14 @@
     <div class="flex flex-1 items-center justify-center bg-white px-6 py-12 lg:px-16">
         <div class="w-full max-w-sm">
 
+        <div class="mb-6">
+            <a href="index.php" class="inline-block">
+                <img src="src/assets/img/flecha_izquierda.png"
+                    alt="Volver"
+                    class="w-6 h-6 opacity-70 hover:opacity-100 transition">
+            </a>
+        </div>
+
             <h1 class="mb-10 text-center text-4xl font-bold text-green-700">
                 Bienvenido
             </h1>

@@ -12,61 +12,124 @@
   <link rel="stylesheet" href="<?= BASE_URL ?>public/css/fonts.css">
 </head>
 
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+  const btn = document.getElementById("userDropdownBtn");
+  const menu = document.getElementById("userMenu");
+  const chevron = document.getElementById("chevronIcon");
+  const container = document.getElementById("userDropdownContainer");
+
+  btn.addEventListener("click", function (e) {
+    e.stopPropagation();
+    menu.classList.toggle("hidden");
+    chevron.classList.toggle("rotate-180");
+  });
+
+  document.addEventListener("click", function (e) {
+    if (!container.contains(e.target)) {
+      menu.classList.add("hidden");
+      chevron.classList.remove("rotate-180");
+    }
+  });
+
+});
+</script>
+
 <body class="flex flex-col min-h-screen font-sans bg-white text-gray-900">
 
-  <!-- Header -->
-  <header class="flex items-center justify-between px-6 py-4 border-b shadow-sm">
-    <img src="<?= BASE_URL ?>src/assets/img/logoSena.png" alt="SENA Logo" class="h-10" />
+<!-- Header -->
+<header class="flex items-center justify-between px-6 py-4 border-b shadow-sm bg-white">
 
-    <!-- Widget de usuario --> 
+  <!-- IZQUIERDA: LOGO -->
+  <div class="flex items-center">
+    <img src="<?= BASE_URL ?>src/assets/img/logoSena.png"
+         alt="SENA Logo"
+         class="h-10" />
+  </div>
+
+  <!-- DERECHA -->
+  <div class="flex items-center gap-8">
+
     <?php
-    $nombre = $_SESSION['user_name'] ?? 'Usuario';
-    $rol = $_SESSION['user_role'] ?? 'Invitado';
+      $nombre = $_SESSION['usuario_nombre'] ?? 'Usuario';
+      $correo = $_SESSION['usuario_correo'] ?? '';
+      $iniciales = strtoupper(substr($nombre, 0, 2));
     ?>
 
-    <div class="relative flex items-center space-x-3 border-r pr-4 border-gray-200">
+    <!-- USER DROPDOWN -->
+    <div class="relative" id="userDropdownContainer">
 
-      <button onclick="toggleUserMenu()" class="flex items-center space-x-3 focus:outline-none">
-        
-        <div class="text-right hidden sm:block">
+      <button id="userDropdownBtn"
+        class="flex items-center space-x-3 focus:outline-none">
+
+        <!-- AVATAR -->
+       <div class="w-10 h-10 min-w-[40px] min-h-[40px]
+            bg-gray-600 text-white
+            rounded-full
+            flex items-center justify-center
+            font-semibold text-sm
+            leading-none">
+        <?= $iniciales ?>
+      </div>
+
+        <!-- TEXT -->
+        <div class="text-left">
           <p class="text-sm font-semibold text-gray-800 leading-none">
             <?= htmlspecialchars($nombre) ?>
           </p>
           <p class="text-xs text-gray-500">
-            <?= htmlspecialchars($rol) ?>
+            <?= htmlspecialchars($correo) ?>
           </p>
         </div>
 
-        <div class="h-9 w-9 bg-[#39a900] text-white rounded-full flex items-center justify-center font-bold">
-          <?= strtoupper(substr($nombre, 0, 1)) ?>
-        </div>
+        <!-- CHEVRON -->
+        <svg id="chevronIcon"
+             class="w-4 h-4 text-gray-600 transition-transform duration-200"
+             fill="none"
+             stroke="currentColor"
+             viewBox="0 0 24 24"
+             stroke-width="2">
+          <path stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M19 9l-7 7-7-7" />
+        </svg>
+
       </button>
 
-      <!-- Dropdown -->
-      <div id="userMenu" class="hidden absolute right-0 top-12 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-        <a href="/perfil" class="block px-4 py-2 text-sm hover:bg-gray-100">
+      <!-- DROPDOWN -->
+      <div id="userMenu"
+           class="hidden absolute right-0 mt-3 w-56
+                  bg-white border border-gray-200
+                  rounded-xl shadow-lg z-50 overflow-hidden">
+
+        <a href="#" class="block px-4 py-3 text-sm hover:bg-gray-100">
           Mi perfil
         </a>
-        <a href="/cambiar-password" class="block px-4 py-2 text-sm hover:bg-gray-100">
+
+        <a href="#" class="block px-4 py-3 text-sm hover:bg-gray-100">
           Cambiar contraseña
         </a>
-        <hr>
-        <a href="/logout.php" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
-          Cerrar sesión
-        </a>
-      </div>
 
+        <div class="border-t"></div>
+
+        <a href="index.php?page=logout"
+           class="block px-4 py-3 text-sm text-red-600 hover:bg-gray-100">
+           Cerrar sesión
+        </a>
+
+      </div>
     </div>
 
-    <script>
-    function toggleUserMenu() {
-      document.getElementById("userMenu").classList.toggle("hidden");
-    }
-    </script>
+    <!-- MENU HAMBURGUESA -->
+    <img src="<?= BASE_URL ?>src/assets/img/menu.svg"
+         alt="Menú"
+         id="menu-hamburguesa"
+         class="h-8 w-8 cursor-pointer" />
 
-    <!-- Botón imagen menú -->
-    <img src="<?= BASE_URL ?>src/assets/img/menu.svg" alt="Menú" id="menu-hamburguesa" class="h-8 w-8 cursor-pointer" />
-  </header>
+  </div>
+
+</header>
 
   <!-- Menú lateral -->
   <nav id="menu-lateral" class="fixed top-0 right-0 h-full w-80 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out z-50 pointer-events-none">

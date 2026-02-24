@@ -6,6 +6,16 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
+// Manejo de logout
+if (isset($_GET['page']) && $_GET['page'] === 'logout') {
+    $_SESSION = [];
+    session_unset();
+    session_destroy();
+
+    header("Location: index.php?page=login");
+    exit;
+}
+
 define('BASE_PATH', __DIR__);
 
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
