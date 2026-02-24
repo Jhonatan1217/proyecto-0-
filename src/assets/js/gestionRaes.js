@@ -22,23 +22,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const raesEmpty = document.getElementById('raesEmpty');
     const raeProgramFilter = document.getElementById('raeProgramFilter');
     const raeCompetencyFilter = document.getElementById('raeCompetencyFilter');
-    const btnNewRae = document.querySelector('[data-tab="raes"] button.bg-\\[\\#0a3a57\\]');
+    const btnNewRae = document.getElementById('btnNewRae');
     
     // Modal elementos
     const modal = document.getElementById('modalRae');
     const backdrop = document.getElementById('modalRaeBackdrop');
     const form = modal ? modal.querySelector('#formRaeNew') : null;
+    const inpProgram = modal ? modal.querySelector('#rae_program') : null;
     const inpCompetency = modal ? modal.querySelector('#rae_competency') : null;
     const inpCode = modal ? modal.querySelector('#rae_code') : null;
     const inpDesc = modal ? modal.querySelector('#rae_desc') : null;
     const btnClose = modal ? modal.querySelector('#btnCloseRae') : null;
     const btnCancel = modal ? modal.querySelector('#btnCancelRae') : null;
+    const modalTitle = modal ? modal.querySelector('#modalRaeTitle') : null;
 
     let editingId = null;
     let allRaes = [];
     let programs = [];
     let competencies = [];
     let filteredRaes = [];
+    let currentPage = 1;
+    const itemsPerPage = 10;
 
     // ===============================
     // TOASTS
@@ -60,87 +64,62 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================
     // API HELPERS
     // ===============================
-    async function apiListar() {
-      try {
-        const r = await fetch(`${API}?accion=listar`, { 
-          credentials: 'same-origin',
-          headers: { 'Accept': 'application/json' }
-        });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const data = await r.json();
-        console.log('RAEs recibidos:', data);
-        return data;
-      } catch (error) {
-        console.error('Error en apiListar:', error);
-        throw error;
+    async function apiRequest(accion, method = 'GET', data = null) {
+      let url = `${API}?accion=${accion}`;
+      const options = {
+        method: method,
+        credentials: 'same-origin',
+        headers: method !== 'GET' ? { 'Content-Type': 'application/json' } : {}
+      };
+      
+      if (method === 'GET' && data) {
+        const params = new URLSearchParams(data);
+        url += '&' + params.toString();
       }
+      
+      if (method !== 'GET' && data) {
+        options.body = JSON.stringify(data);
+      }
+      
+      const r = await fetch(url, options);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    }
+
+    async function apiListar() {
+      return apiRequest('listar', 'GET');
     }
 
     async function apiListarProgramas() {
-      try {
-        const r = await fetch(`${API_PROGRAMAS}?accion=listar`, { 
-          credentials: 'same-origin',
-          headers: { 'Accept': 'application/json' }
-        });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const data = await r.json();
-        console.log('Programas recibidos:', data);
-        return data;
-      } catch (error) {
-        console.error('Error cargando programas:', error);
-        return [];
-      }
+      const r = await fetch(`${API_PROGRAMAS}?accion=listar`, { 
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
     }
 
     async function apiListarCompetencias(programaId = null) {
-      try {
-        let url = `${API_COMPETENCIAS}?accion=listar`;
-        if (programaId) url += `&id_programa=${programaId}`;
-        const r = await fetch(url, { 
-          credentials: 'same-origin',
-          headers: { 'Accept': 'application/json' }
-        });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const data = await r.json();
-        console.log('Competencias recibidas:', data);
-        return data;
-      } catch (error) {
-        console.error('Error cargando competencias:', error);
-        return [];
-      }
+      let url = `${API_COMPETENCIAS}?accion=listar`;
+      if (programaId) url += `&id_programa=${programaId}`;
+      const r = await fetch(url, { 
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
     }
 
     async function apiCrear(payload) {
-      const r = await fetch(`${API}?accion=crear`, {
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin', 
-        body: JSON.stringify(payload),
-      });
-      return r.json();
+      return apiRequest('crear', 'POST', payload);
     }
 
     async function apiActualizar(payload) {
-      const r = await fetch(`${API}?accion=actualizar`, {
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin', 
-        body: JSON.stringify(payload),
-      });
-      return r.json();
+      return apiRequest('actualizar', 'POST', payload);
     }
 
     async function apiCambiarEstado(id_rae, estado) {
-      const payload = {
-        id_rae: id_rae,
-        estado: estado
-      };
-      const r = await fetch(`${API}?accion=inhabilitar`, { 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload) 
-      });
-      return r.json();
+      return apiRequest('inhabilitar', 'POST', { id_rae, estado });
     }
 
     // ===============================
@@ -153,10 +132,10 @@ document.addEventListener('DOMContentLoaded', () => {
       return t.innerHTML;
     }
 
-    function renderSwitch(active) {
+    function renderSwitch(active, id_rae) {
       return `
         <label class="switch relative inline-flex items-center cursor-pointer select-none">
-          <input type="checkbox" class="peer sr-only" ${active ? 'checked' : ''} />
+          <input type="checkbox" class="peer sr-only estado-switch" data-id="${id_rae}" ${active ? 'checked' : ''} />
           <span class="block w-11 h-6 rounded-full bg-zinc-300 peer-checked:bg-[#39A900] transition-colors"></span>
           <span class="dot absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-transform peer-checked:translate-x-5"></span>
         </label>
@@ -166,17 +145,28 @@ document.addEventListener('DOMContentLoaded', () => {
     function openModal(isCreate = true, data = null) {
       editingId = isCreate ? null : (data?.id_rae ?? null);
       
-      // Cargar competencias en el select
-      if (inpCompetency) {
-        inpCompetency.innerHTML = '<option value="">Seleccione una competencia</option>';
-        competencies.forEach(c => {
-          const selected = (!isCreate && data?.id_competencia == c.id_competencia) ? 'selected' : '';
-          inpCompetency.innerHTML += `<option value="${c.id_competencia}" ${selected}>${escapeHtml(c.nombre_competencia || c.nombre || 'Sin nombre')}</option>`;
+      // Resetear selects
+      if (inpProgram) {
+        inpProgram.innerHTML = '<option value="">Seleccione programa</option>';
+        programs.forEach(p => {
+          const selected = (!isCreate && data?.id_programa == p.id_programa) ? 'selected' : '';
+          inpProgram.innerHTML += `<option value="${p.id_programa}" ${selected}>${escapeHtml(p.nombre_programa)}</option>`;
         });
+        inpProgram.disabled = false;
       }
 
-      if (inpCode) inpCode.value = isCreate ? '' : (data?.id_rae ?? data?.codigo ?? '');
+      // Cargar competencias si es edición
+      if (!isCreate && data?.id_programa) {
+        cargarCompetenciasPorPrograma(data.id_programa, data.id_competencia);
+      } else if (inpCompetency) {
+        inpCompetency.innerHTML = '<option value="">Primero seleccione un programa</option>';
+        inpCompetency.disabled = true;
+      }
+
+      if (inpCode) inpCode.value = isCreate ? '' : (data?.id_rae ?? '');
       if (inpDesc) inpDesc.value = isCreate ? '' : (data?.descripcion ?? '');
+
+      if (modalTitle) modalTitle.textContent = isCreate ? 'Nuevo RAE' : 'Editar RAE';
 
       modal?.classList.remove('hidden');
       backdrop?.classList.remove('hidden');
@@ -187,6 +177,29 @@ document.addEventListener('DOMContentLoaded', () => {
       backdrop?.classList.add('hidden');
       if (form) form.reset();
       editingId = null;
+      if (inpCompetency) {
+        inpCompetency.innerHTML = '<option value="">Primero seleccione un programa</option>';
+        inpCompetency.disabled = true;
+      }
+    }
+
+    async function cargarCompetenciasPorPrograma(programaId, selectedCompetenciaId = null) {
+      if (!programaId || !inpCompetency) return;
+      
+      try {
+        const data = await apiListarCompetencias(programaId);
+        const comps = Array.isArray(data) ? data : [];
+        
+        inpCompetency.innerHTML = '<option value="">Seleccione una competencia</option>';
+        inpCompetency.disabled = false;
+        
+        comps.forEach(c => {
+          const selected = (selectedCompetenciaId && c.id_competencia == selectedCompetenciaId) ? 'selected' : '';
+          inpCompetency.innerHTML += `<option value="${c.id_competencia}" ${selected}>${escapeHtml(c.nombre_competencia || c.nombre || 'Sin nombre')}</option>`;
+        });
+      } catch (error) {
+        console.error('Error cargando competencias:', error);
+      }
     }
 
     function filtrarRaes() {
@@ -210,9 +223,16 @@ document.addEventListener('DOMContentLoaded', () => {
       return comp ? (comp.nombre_competencia || comp.nombre || 'Competencia') : 'Competencia no encontrada';
     }
 
+    function getProgramaNombre(id_programa) {
+      if (!id_programa) return 'Sin programa';
+      const prog = programs.find(p => p.id_programa == id_programa);
+      return prog ? prog.nombre_programa : 'Programa no encontrado';
+    }
+
     function createCard(r) {
       const activo = r.estado == 1 || r.estado === true || String(r.estado) === '1';
       const competenciaNombre = getCompetenciaNombre(r.id_competencia);
+      const programaNombre = getProgramaNombre(r.id_programa);
 
       const card = document.createElement('div');
       card.className = 'bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm hover:shadow transition';
@@ -223,18 +243,21 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="flex-1">
             <div class="flex items-center gap-3 flex-wrap mb-2">
               <h3 class="text-lg font-semibold">${escapeHtml(r.descripcion || '')}</h3>
-              <span class="text-sm text-zinc-500">Código: ${escapeHtml(r.id_rae || r.codigo || '')}</span>
+              <span class="text-sm text-zinc-500">Código: ${escapeHtml(r.id_rae || '')}</span>
             </div>
-            <div class="flex items-center gap-2 text-sm">
+            <div class="flex items-center gap-2 text-sm flex-wrap">
+              <span class="px-3 py-1 bg-zinc-100 rounded-full">${escapeHtml(programaNombre)}</span>
               <span class="px-3 py-1 bg-zinc-100 rounded-full">${escapeHtml(competenciaNombre)}</span>
-              <span class="px-3 py-1 bg-zinc-100 rounded-full">${escapeHtml(r.nombre_programa || 'Sin programa')}</span>
             </div>
           </div>
           <div class="flex items-center gap-2">
             <button class="p-2 hover:bg-zinc-100 rounded-lg edit-btn" title="Editar">
-              <img src="src/assets/img/pencil-line.svg" alt="Editar" class="w-4 h-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 3l4 4-7 7H10v-4l7-7z"/>
+                <path d="M3 21h18"/>
+              </svg>
             </button>
-            ${renderSwitch(activo)}
+            ${renderSwitch(activo, r.id_rae)}
           </div>
         </div>
       `;
@@ -245,49 +268,42 @@ document.addEventListener('DOMContentLoaded', () => {
         openModal(false, r);
       });
 
-      const sw = card.querySelector('input[type="checkbox"]');
-      sw?.addEventListener('change', async (e) => {
-        e.stopPropagation();
-        const checked = sw.checked;
-        const nuevoEstado = checked ? 1 : 0;
-        
-        try {
-          const res = await apiCambiarEstado(r.id_rae, nuevoEstado);
-          if (res?.error) {
+      const sw = card.querySelector('.estado-switch');
+sw?.addEventListener('change', async (e) => {
+    e.stopPropagation();
+    const checked = sw.checked;
+    const nuevoEstado = checked ? 1 : 0;
+    
+    try {
+        const res = await apiCambiarEstado(r.id_rae, nuevoEstado);
+        if (res?.error) {
             t.err(res.error);
             sw.checked = !checked;
-          } else {
-            t.ok(nuevoEstado ? 'RAE activado' : 'RAE inhabilitado');
-            r.estado = nuevoEstado;
-          }
-        } catch (error) {
-          console.error('Error cambiando estado:', error);
-          t.err('No se pudo cambiar el estado.');
-          sw.checked = !checked;
+        } else {
+            t.ok(checked ? 'RAE activado' : 'RAE inhabilitado');
+            
+            window.dispatchEvent(new CustomEvent('raes:changed'));
+            
+            await loadRaes();
         }
-      });
+    } catch (error) {
+        console.error('Error cambiando estado:', error);
+        t.err('No se pudo cambiar el estado.');
+        sw.checked = !checked;
+    }
+});
 
       return card;
     }
 
     function renderList(list) {
-      console.log('Renderizando lista de RAEs:', list.length);
-      
-      if (!raesList) {
-        console.error('raesList no encontrado');
-        return;
-      }
+      if (!raesList) return;
 
       raesList.innerHTML = '';
 
       if (!Array.isArray(list) || list.length === 0) {
         if (raesEmpty) {
           raesEmpty.classList.remove('hidden');
-          raesEmpty.innerHTML = `
-            <div class="py-12 text-center text-zinc-500">
-              No hay RAE que coincidan con los filtros seleccionados.
-            </div>
-          `;
         }
         return;
       }
@@ -296,8 +312,12 @@ document.addEventListener('DOMContentLoaded', () => {
         raesEmpty.classList.add('hidden');
       }
       
+      const start = (currentPage - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const paginatedList = list.slice(start, end);
+      
       const frag = document.createDocumentFragment();
-      list.forEach(r => {
+      paginatedList.forEach(r => {
         try {
           frag.appendChild(createCard(r));
         } catch (error) {
@@ -305,6 +325,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
       raesList.appendChild(frag);
+      
+      updatePagination(list.length);
     }
 
     // ===============================
@@ -322,7 +344,12 @@ document.addEventListener('DOMContentLoaded', () => {
           });
         }
 
-        console.log('Programas cargados:', programs.length);
+        if (inpProgram) {
+          inpProgram.innerHTML = '<option value="">Seleccione programa</option>';
+          programs.forEach(p => {
+            inpProgram.innerHTML += `<option value="${p.id_programa}">${escapeHtml(p.nombre_programa)}</option>`;
+          });
+        }
       } catch (e) {
         console.error('Error cargando programas:', e);
       }
@@ -339,16 +366,6 @@ document.addEventListener('DOMContentLoaded', () => {
             raeCompetencyFilter.innerHTML += `<option value="${c.id_competencia}">${escapeHtml(c.nombre_competencia || c.nombre || 'Sin nombre')}</option>`;
           });
         }
-
-        // También actualizar el select del modal
-        if (inpCompetency) {
-          inpCompetency.innerHTML = '<option value="">Seleccione una competencia</option>';
-          competencies.forEach(c => {
-            inpCompetency.innerHTML += `<option value="${c.id_competencia}">${escapeHtml(c.nombre_competencia || c.nombre || 'Sin nombre')}</option>`;
-          });
-        }
-
-        console.log('Competencias cargadas:', competencies.length);
       } catch (e) {
         console.error('Error cargando competencias:', e);
       }
@@ -361,10 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const data = await apiListar();
-        console.log('Datos recibidos en loadRaes:', data);
-        
         allRaes = Array.isArray(data) ? data : [];
-        console.log('RAEs procesados:', allRaes.length);
         
         const filtrados = filtrarRaes();
         renderList(filtrados);
@@ -373,12 +387,55 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Error en loadRaes:', error);
         if (raesEmpty) {
           raesEmpty.classList.remove('hidden');
-          raesEmpty.innerHTML = '<div class="py-12 text-center text-red-600">Error al cargar RAEs. Verifique la conexión.</div>';
-        }
-        if (raesList) {
-          raesList.innerHTML = '';
+          raesEmpty.innerHTML = '<div class="py-12 text-center text-red-600">Error al cargar RAEs</div>';
         }
       }
+    }
+
+    // ===============================
+    // PAGINACIÓN
+    // ===============================
+    const raePrev = document.getElementById('raePrev');
+    const raeNext = document.getElementById('raeNext');
+    const raeInfo = document.getElementById('raeInfo');
+    const paginationContainer = document.getElementById('raePagination');
+
+    function updatePagination(totalItems) {
+      if (!raeInfo || !paginationContainer) return;
+      
+      const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+      
+      if (totalItems <= itemsPerPage) {
+        paginationContainer.classList.add('hidden');
+        return;
+      }
+      
+      paginationContainer.classList.remove('hidden');
+      raeInfo.textContent = `Página ${currentPage} de ${totalPages}`;
+      
+      if (raePrev) raePrev.disabled = currentPage <= 1;
+      if (raeNext) raeNext.disabled = currentPage >= totalPages;
+    }
+
+    if (raePrev) {
+      raePrev.addEventListener('click', () => {
+        if (currentPage > 1) {
+          currentPage--;
+          const filtrados = filtrarRaes();
+          renderList(filtrados);
+        }
+      });
+    }
+
+    if (raeNext) {
+      raeNext.addEventListener('click', () => {
+        const filtrados = filtrarRaes();
+        const totalPages = Math.ceil(filtrados.length / itemsPerPage) || 1;
+        if (currentPage < totalPages) {
+          currentPage++;
+          renderList(filtrados);
+        }
+      });
     }
 
     // ===============================
@@ -399,8 +456,13 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
+    if (backdrop) {
+      backdrop.addEventListener('click', closeModal);
+    }
+
     if (raeProgramFilter) {
       raeProgramFilter.addEventListener('change', async () => {
+        currentPage = 1;
         const programaId = raeProgramFilter.value !== 'all' ? raeProgramFilter.value : null;
         await loadCompetencias(programaId);
         await loadRaes();
@@ -409,126 +471,89 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (raeCompetencyFilter) {
       raeCompetencyFilter.addEventListener('change', () => {
+        currentPage = 1;
         loadRaes();
       });
     }
 
+    if (inpProgram) {
+      inpProgram.addEventListener('change', function() {
+        const programaId = this.value;
+        if (programaId) {
+          cargarCompetenciasPorPrograma(programaId);
+        } else {
+          if (inpCompetency) {
+            inpCompetency.innerHTML = '<option value="">Primero seleccione un programa</option>';
+            inpCompetency.disabled = true;
+          }
+        }
+      });
+    }
+
     if (form) {
-      form.addEventListener('submit', async e => {
+    form.addEventListener('submit', async e => {
         e.preventDefault();
 
+        const id_programa = inpProgram?.value;
         const id_competencia = inpCompetency?.value;
         const id_rae = (inpCode?.value || '').trim();
         const descripcion = (inpDesc?.value || '').trim();
 
+        if (!id_programa) return t.warn('Seleccione un programa');
         if (!id_competencia) return t.warn('Seleccione una competencia');
         if (!id_rae) return t.warn('El código es obligatorio');
         if (!descripcion) return t.warn('La descripción es obligatoria');
 
         const payload = {
-          id_rae: id_rae,
-          id_competencia: id_competencia,
-          descripcion: descripcion
+            id_rae: id_rae,
+            id_competencia: id_competencia,
+            descripcion: descripcion
         };
 
-        console.log('Enviando payload:', payload);
-
         try {
-          let res;
-          if (editingId) {
-            payload.id_rae = editingId;
-            payload.nuevo_id_rae = id_rae;
-            res = await apiActualizar(payload);
-          } else {
-            res = await apiCrear(payload);
-          }
-          
-          console.log('Respuesta del servidor:', res);
-          
-          if (res?.error) {
-            return t.err(res.error);
-          }
+            let res;
+            if (editingId) {
+                payload.id_rae = editingId;
+                payload.nuevo_id_rae = id_rae;
+                res = await apiActualizar(payload);
+            } else {
+                res = await apiCrear(payload);
+            }
+            
+            if (res?.error) {
+                return t.err(res.error);
+            }
 
-          closeModal();
-          t.ok(editingId ? 'RAE actualizado' : 'RAE creado');
-          await loadRaes();
-          
+            closeModal();
+            t.ok(editingId ? 'RAE actualizado' : 'RAE creado');
+            
+            window.dispatchEvent(new CustomEvent('raes:changed'));
+            
+            await loadRaes();
+            
         } catch (error) {
-          console.error('Error guardando RAE:', error);
-          t.err('Error al guardar');
+            console.error('Error guardando RAE:', error);
+            t.err('Error al guardar');
         }
-      });
-    }
-
-    // Cerrar modal al hacer clic en el backdrop
-    if (backdrop) {
-      backdrop.addEventListener('click', closeModal);
-    }
-
-    // ===============================
-    // PAGINACIÓN
-    // ===============================
-    const raePrev = document.getElementById('raePrev');
-    const raeNext = document.getElementById('raeNext');
-    const raeInfo = document.getElementById('raeInfo');
-    
-    let currentPage = 1;
-    const itemsPerPage = 10;
-
-    function updatePagination() {
-      if (!raeInfo) return;
-      const totalPages = Math.ceil(filteredRaes.length / itemsPerPage) || 1;
-      raeInfo.textContent = `Página ${currentPage} de ${totalPages}`;
-      
-      if (raePrev) raePrev.disabled = currentPage <= 1;
-      if (raeNext) raeNext.disabled = currentPage >= totalPages;
-    }
-
-    if (raePrev) {
-      raePrev.addEventListener('click', () => {
-        if (currentPage > 1) {
-          currentPage--;
-          const start = (currentPage - 1) * itemsPerPage;
-          const end = start + itemsPerPage;
-          renderList(filteredRaes.slice(start, end));
-          updatePagination();
-        }
-      });
-    }
-
-    if (raeNext) {
-      raeNext.addEventListener('click', () => {
-        const totalPages = Math.ceil(filteredRaes.length / itemsPerPage) || 1;
-        if (currentPage < totalPages) {
-          currentPage++;
-          const start = (currentPage - 1) * itemsPerPage;
-          const end = start + itemsPerPage;
-          renderList(filteredRaes.slice(start, end));
-          updatePagination();
-        }
-      });
+    });
     }
 
     // ===============================
     // INIT
     // ===============================
-    console.log('Inicializando gestión de RAEs...');
-    
     Promise.all([loadPrograms(), loadCompetencias(), loadRaes()])
       .then(() => {
-        console.log('Datos cargados correctamente');
+        console.log('Datos de RAEs cargados correctamente');
       })
       .catch(error => {
         console.error('Error en carga inicial:', error);
       });
 
     window.addEventListener('excel-subido-ok', () => {
-      console.log('Excel subido, recargando RAEs...');
       loadRaes();
     });
 
     window.addEventListener('programs:changed', () => {
-      console.log('Programas cambiados, recargando...');
       loadPrograms();
       loadCompetencias();
     });

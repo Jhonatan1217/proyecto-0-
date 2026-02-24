@@ -215,8 +215,8 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let i = 0; i < asignados.length; i++) {
             let inst = asignados[i];
             html += '<div class="flex items-center gap-3 p-3 bg-zinc-50 rounded-lg border border-zinc-200">';
-            html += '  <div class="w-8 h-8 rounded-full bg-[#0a3a57] bg-opacity-20 flex items-center justify-center">';
-            html += '    <span class="text-sm font-bold text-[#0a3a57]">' + (inst.nombre_instructor ? inst.nombre_instructor.charAt(0).toUpperCase() : '?') + '</span>';
+            html += '  <div class="w-8 h-8 rounded-full bg-[#39a900] bg-opacity-20 flex items-center justify-center">';
+            html += '    <span class="text-sm font-bold text-[#5B5B5B]">' + (inst.nombre_instructor ? inst.nombre_instructor.charAt(0).toUpperCase() : '?') + '</span>';
             html += '  </div>';
             html += '  <div class="flex-1">';
             html += '    <p class="text-sm font-medium text-zinc-800">' + escapeHtml(inst.nombre_instructor) + '</p>';
@@ -648,75 +648,98 @@ document.addEventListener('DOMContentLoaded', function() {
     // ===============================
     // EVENTO FORM PROGRAMA
     // ===============================
-    formProgram.addEventListener('submit', function(e) {
-        e.preventDefault();
+    // ===============================
+// EVENTO FORM PROGRAMA
+// ===============================
+formProgram.addEventListener('submit', function(e) {
+    e.preventDefault();
 
-        var id_programa = inpCode.value.trim();
-        var nombre_programa = inpName.value.trim();
-        var nivel_formacion = inpNivel.value;
-        var descripcion = inpDesc.value.trim();
-        var duracion = inpHours.value.trim();
-        var id_instructor = selectInstructor ? selectInstructor.value : '';
+    var id_programa = inpCode.value.trim();
+    var nombre_programa = inpName.value.trim();
+    var nivel_formacion = inpNivel.value;
+    var descripcion = inpDesc.value.trim();
+    var duracion = inpHours.value.trim();
+    var id_instructor = selectInstructor ? selectInstructor.value : '';
 
-        if (!id_programa || !nombre_programa) {
-            showToast('warning', 'Código y nombre son obligatorios');
-            return;
-        }
+    if (!id_programa || !nombre_programa) {
+        showToast('warning', 'Código y nombre son obligatorios');
+        return;
+    }
 
-        if (!nivel_formacion) {
-            showToast('warning', 'Debe seleccionar un tipo de programa');
-            return;
-        }
+    if (!nivel_formacion) {
+        showToast('warning', 'Debe seleccionar un tipo de programa');
+        return;
+    }
 
-        var datos = {
-            id_programa: parseInt(id_programa),
-            nombre_programa: nombre_programa,
-            nivel_formacion: nivel_formacion,
-            descripcion: descripcion,
-            duracion: duracion ? parseInt(duracion) : 0
-        };
+    var datos = {
+        id_programa: parseInt(id_programa),
+        nombre_programa: nombre_programa,
+        nivel_formacion: nivel_formacion,
+        descripcion: descripcion,
+        duracion: duracion ? parseInt(duracion) : 0
+    };
 
-        if (editingId) {
-            datos.id_programa = editingId;
-            datos.nuevo_id_programa = parseInt(id_programa);
-            
-            actualizarPrograma(datos, function(res) {
-                if (res && res.error) {
-                    showToast('error', res.error);
-                } else {
-                    if (id_instructor) {
-                        asignarInstructores(parseInt(id_programa), [parseInt(id_instructor)], function() {
-                            closeModalProgram();
-                            showToast('success', 'Programa actualizado');
-                            listarProgramas(); // Actualizar la vista
-                        });
-                    } else {
+    if (editingId) {
+        datos.id_programa = editingId;
+        datos.nuevo_id_programa = parseInt(id_programa);
+        
+        actualizarPrograma(datos, function(res) {
+            if (res && res.error) {
+                showToast('error', res.error);
+            } else {
+                if (id_instructor) {
+                    asignarInstructores(parseInt(id_programa), [parseInt(id_instructor)], function() {
                         closeModalProgram();
                         showToast('success', 'Programa actualizado');
-                        listarProgramas(); // Actualizar la vista
-                    }
-                }
-            });
-        } else {
-            crearPrograma(datos, function(res) {
-                if (res && res.error) {
-                    showToast('error', res.error);
+                        
+                        window.dispatchEvent(new CustomEvent('programs:changed'));
+                        window.dispatchEvent(new CustomEvent('competencias:changed'));
+                        window.dispatchEvent(new CustomEvent('raes:changed'));
+                        
+                        listarProgramas();
+                    });
                 } else {
-                    if (id_instructor) {
-                        asignarInstructores(parseInt(id_programa), [parseInt(id_instructor)], function() {
-                            closeModalProgram();
-                            showToast('success', 'Programa creado');
-                            listarProgramas(); // Actualizar la vista
-                        });
-                    } else {
+                    closeModalProgram();
+                    showToast('success', 'Programa actualizado');
+                    
+                    window.dispatchEvent(new CustomEvent('programs:changed'));
+                    window.dispatchEvent(new CustomEvent('competencias:changed'));
+                    window.dispatchEvent(new CustomEvent('raes:changed'));
+                    
+                    listarProgramas();
+                }
+            }
+        });
+    } else {
+        crearPrograma(datos, function(res) {
+            if (res && res.error) {
+                showToast('error', res.error);
+            } else {
+                if (id_instructor) {
+                    asignarInstructores(parseInt(id_programa), [parseInt(id_instructor)], function() {
                         closeModalProgram();
                         showToast('success', 'Programa creado');
-                        listarProgramas(); // Actualizar la vista
-                    }
+                        
+                        window.dispatchEvent(new CustomEvent('programs:changed'));
+                        window.dispatchEvent(new CustomEvent('competencias:changed'));
+                        window.dispatchEvent(new CustomEvent('raes:changed'));
+                        
+                        listarProgramas();
+                    });
+                } else {
+                    closeModalProgram();
+                    showToast('success', 'Programa creado');
+                    
+                    window.dispatchEvent(new CustomEvent('programs:changed'));
+                    window.dispatchEvent(new CustomEvent('competencias:changed'));
+                    window.dispatchEvent(new CustomEvent('raes:changed'));
+                    
+                    listarProgramas();
                 }
-            });
-        }
-    });
+            }
+        });
+    }
+});
 
     // ===============================
     // INICIO
