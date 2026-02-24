@@ -1,16 +1,25 @@
 <?php
 
-$pagina = $_GET['page'] ?? 'src/views/landing';
+$page = $_GET['page'] ?? 'landing';
+$page = basename($page);
 
-/* Seguridad básica */
-$pagina = str_replace(['..', './'], '', $pagina);
+// Páginas públicas (no requieren login)
+$paginas_publicas = ['login', 'landing'];
 
-/* Construimos la ruta */
-$ruta = BASE_PATH . '/' . $pagina . '.php';
-
-/* Si existe el archivo lo cargamos */
-if (file_exists($ruta)) {
-    require $ruta;
-} else {
-    require BASE_PATH . '/src/views/404.php';
+// Si NO está logueado y la página NO es pública → redirigir
+if (!isset($_SESSION['usuario_id']) && !in_array($page, $paginas_publicas)) {
+    header("Location: index.php?page=login");
+    exit;
 }
+
+// Ruta de la vista
+$file = __DIR__ . "/../views/$page.php";
+
+if (file_exists($file)) {
+    include $file;
+} else {
+    echo "<p style='color:red; text-align:center; padding:2rem;'>
+            La página solicitada <strong>$page</strong> no existe.
+          </p>";
+}
+?>

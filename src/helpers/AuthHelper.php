@@ -4,7 +4,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 function isAuthenticated() {
-    return isset($_SESSION['user_id']);
+    return isset($_SESSION['usuario_id']);
 }
 
 function requireAuth() {
@@ -24,7 +24,7 @@ function user($key = null) {
     }
 
     return $_SESSION;
-}
+}   
 
 function hasRole($role) {
     return isset($_SESSION['user_role']) && $_SESSION['user_role'] === $role;

@@ -120,5 +120,4 @@
   </nav>
 
   <script src="<?= BASE_URL ?>src/assets/js/header.js"></script>
-</body>
-</html>
+
