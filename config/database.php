@@ -1,7 +1,7 @@
 <?php
 // DATOS DE CONEXIÓN CON LA BASE DE DATOS
 $host   = 'localhost';           // MySQL Host Name
-$dbname = 'proyecto-z';        // MySQL DB Name
+$dbname = 'proyecto_z';        // MySQL DB Name
 $user   = 'root';                   // MySQL User Name (SIN TAB)
 $pass   = '';                    // tu contraseña del vPanel
 
@@ -17,3 +17,4 @@ try {
     exit;
 }
 ?>
+        
