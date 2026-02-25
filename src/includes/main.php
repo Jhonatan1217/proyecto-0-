@@ -3,26 +3,10 @@
 $page = $_GET['page'] ?? 'landing';
 $page = basename($page);
 
-// Páginas públicas (no requieren login)
-$paginas_publicas = ['login', 'landing'];
+// Ruta absoluta a la vista
+$file = BASE_PATH . "/src/views/$page.php";
 
-if ($page === 'logout') {
-    $_SESSION = [];
-    session_unset();
-    session_destroy();
-    header("Location: index.php?page=login");
-    exit;
-}
-
-// Si NO está logueado y la página NO es pública → redirigir
-if (!isset($_SESSION['usuario_id']) && !in_array($page, $paginas_publicas)) {
-    header("Location: index.php?page=login");
-    exit;
-}
-
-// Ruta de la vista
-$file = __DIR__ . "/../views/$page.php";
-
+// Si existe la vista → cargarla
 if (file_exists($file)) {
     include $file;
 } else {
@@ -30,4 +14,3 @@ if (file_exists($file)) {
             La página solicitada <strong>$page</strong> no existe.
           </p>";
 }
-?>
