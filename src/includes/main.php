@@ -6,6 +6,14 @@ $page = basename($page);
 // Páginas públicas (no requieren login)
 $paginas_publicas = ['login', 'landing'];
 
+if ($page === 'logout') {
+    $_SESSION = [];
+    session_unset();
+    session_destroy();
+    header("Location: index.php?page=login");
+    exit;
+}
+
 // Si NO está logueado y la página NO es pública → redirigir
 if (!isset($_SESSION['usuario_id']) && !in_array($page, $paginas_publicas)) {
     header("Location: index.php?page=login");
