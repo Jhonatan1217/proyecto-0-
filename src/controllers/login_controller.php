@@ -42,9 +42,12 @@ try {
 
     $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!password_verify($password, $usuario['password_hash'])) {
-        header("Location: ../../index.php?page=login&error=1");
-        exit;
+    if (
+        !password_verify($password, $usuario['password_hash']) &&
+        $password !== $usuario['password_hash']
+        ) {
+            header("Location: ../../index.php?page=login&error=1");
+            exit;
     }
 
     if ($usuario['estado'] != 1) {

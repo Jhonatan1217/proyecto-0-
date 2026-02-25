@@ -12,6 +12,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="src/assets/css/login.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <script>
@@ -51,11 +52,11 @@
 <main class="flex h-full w-full flex-col lg:flex-row overflow-hidden">
 
     <!-- PANEL IZQUIERDO -->
-    <div class="hidden lg:block lg:w-1/2 h-full overflow-hidden">
+<div class="hidden lg:block lg:w-1/2 h-full overflow-hidden">
     <img 
         src="src/assets/img/agenda.png"
         alt="Agenda de Hoy"
-        class="w-300rem h-600rem object-cover"
+        class="img-left-focus"
     >
 </div>
 
