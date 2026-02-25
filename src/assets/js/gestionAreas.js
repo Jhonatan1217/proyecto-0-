@@ -391,3 +391,24 @@
     cargarAreas();
   });
 })();
+
+document.addEventListener("DOMContentLoaded", function () {
+  const buscador = document.getElementById("buscadorArea");
+  const tabla = document.getElementById("tablaAreas");
+  const filas = tabla.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
+
+  buscador.addEventListener("keyup", function () {
+    const filtro = buscador.value.toLowerCase();
+
+    for (let i = 0; i < filas.length; i++) {
+      const celdaNombre = filas[i].getElementsByTagName("td")[0];
+      
+      if (celdaNombre) {
+        const texto = celdaNombre.textContent || celdaNombre.innerText;
+        filas[i].style.display = texto.toLowerCase().includes(filtro)
+          ? ""
+          : "none";
+      }
+    }
+  });
+});
