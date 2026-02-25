@@ -33,6 +33,10 @@ require_once BASE_PATH . '/src/helpers/AuthHelper.php';
     <title>Proyecto Z</title>
     <link rel="icon" type="image/png" href="./src/assets/img/logoSena.png">
     <link rel="stylesheet" href="./public/css/output.css">
+    <!-- Fuente -->
+    <link rel="stylesheet" href="<?= BASE_URL ?>public/css/fonts.css">
+    <!-- SweetAlert2 local -->
+    <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
 </head>
 
 <body class="flex flex-col min-h-screen font-sans bg-white text-gray-900">
