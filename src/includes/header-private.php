@@ -178,7 +178,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/folder-minus.svg" alt="Icono de Grupos">
-        <a href="#">Grupos</a>
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionGrupos">Grupos</a>
       </li>
 
       <li class="relative">
