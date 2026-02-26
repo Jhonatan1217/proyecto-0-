@@ -86,3 +86,117 @@
     </div>
   </div>
 </div>
+
+<!-- ================= MODAL ================= -->
+
+<div id="modalGrupo"
+  class="hidden items-center justify-center z-50">
+
+  <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl border border-gray-200 p-8 relative">
+
+    <!-- Botón cerrar -->
+    <button id="btnCerrarModal"
+      class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-lg">
+      ✕
+    </button>
+
+    <h2 class="text-2xl font-bold text-[#39A900] mb-6">Nuevo Grupo</h2>
+
+    <form id="formGrupo" class="space-y-5">
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+        <!-- Número -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">
+            Número de Ficha
+          </label>
+          <input type="number" name="numero_ficha" required
+            class="w-full border border-gray-300 rounded-xl px-4 py-2.5
+                   focus:ring-2 focus:ring-[#39A900]/20
+                   focus:border-[#39A900] outline-none transition">
+        </div>
+
+        <!-- Programa -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">
+            Programa
+          </label>
+          <select name="id_programa" id="selectProgramaModal" required
+            class="w-full border border-gray-300 rounded-xl px-4 py-2.5
+                   focus:ring-2 focus:ring-[#39A900]/20
+                   focus:border-[#39A900] outline-none transition">
+            <option value="">Seleccione un programa</option>
+          </select>
+        </div>
+
+        <!-- Jornada -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">
+            Jornada
+          </label>
+          <select name="jornada" required
+            class="w-full border border-gray-300 rounded-xl px-4 py-2.5
+                   focus:ring-2 focus:ring-[#39A900]/20
+                   focus:border-[#39A900] outline-none transition">
+            <option value="Diurna">Diurna</option>
+            <option value="Nocturna">Nocturna</option>
+            <option value="Mixta">Mixta</option>
+          </select>
+        </div>
+
+        <!-- Modalidad -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">
+            Modalidad
+          </label>
+          <select name="modalidad" required
+            class="w-full border border-gray-300 rounded-xl px-4 py-2.5
+                   focus:ring-2 focus:ring-[#39A900]/20
+                   focus:border-[#39A900] outline-none transition">
+            <option value="Presencial">Presencial</option>
+            <option value="Virtual">Virtual</option>
+            <option value="A Distancia">A Distancia</option>
+          </select>
+        </div>
+
+        <!-- Líder -->
+        <div class="md:col-span-2">
+          <label class="block text-sm font-semibold text-gray-700 mb-1">
+            Líder de Grupo
+          </label>
+          <select name="id_lider_grupo" id="selectLiderModal" required
+            class="w-full border border-gray-300 rounded-xl px-4 py-2.5
+                   focus:ring-2 focus:ring-[#39A900]/20
+                   focus:border-[#39A900] outline-none transition">
+            <option value="">Seleccione líder</option>
+          </select>
+        </div>
+
+      </div>
+
+      <!-- Botones -->
+      <div class="flex justify-end gap-3 pt-6">
+
+        <button type="button" id="btnCancelar"
+          class="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-600
+                 hover:bg-gray-50 transition">
+          Cancelar
+        </button>
+
+        <button type="submit"
+          class="px-6 py-2.5 rounded-xl bg-[#0a3a57] text-white
+                 hover:bg-[#00304D] transition shadow-sm">
+          Guardar Grupo
+        </button>
+
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script>
+window.API_FICHA = "<?= BASE_URL ?>src/controllers/fichaController.php";
+</script>
+<script src="<?= BASE_URL ?>src/assets/js/gestionGrupos.js"></script>
