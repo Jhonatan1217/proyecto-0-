@@ -1,72 +1,31 @@
-/* --- Switch Accesible y Funcional --- */
-.switch {
-  --h: 22px;
-  --w: 42px;
-  position: relative;
-  display: inline-block; /* Para que respete dimensiones */
-  width: var(--w);
-  height: var(--h);
-  border-radius: 999px;
-  background: #e5e7eb;
-  transition: background-color .2s;
-  cursor: pointer;
-}
+.switch{--h:22px;--w:42px;position:relative;width:var(--w);height:var(--h);border-radius:999px;background:#e5e7eb;transition:.2s}
+    .switch input{display:none}
+    .switch .dot{position:absolute;inset:3px auto auto 3px;width:16px;height:16px;border-radius:999px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.15);transition:.2s}
+    .switch input:checked + .dot{transform:translateX(20px)}
+    .switch .track{transition:background-color .2s ease}
+    .tabs-pill-active{background:#fff;border:1px solid #e5e7eb;box-shadow:0 1px 0 rgba(0,0,0,.04)}
+    .rotate-90{transform:rotate(90deg)}
+    .hidden{display:none}
 
-/* Ocultar input manteniendo accesibilidad */
-.switch input {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
+    
 
-/* Cambiar color de fondo cuando está activo */
-.switch:has(input:checked) {
-  background: #0a3a57; /* Tu color corporativo */
-}
+    /* --- Animaciones modal --- */
+    @keyframes modalIn {
+      from { opacity:.0; transform: translateY(8px) scale(.98); }
+      to   { opacity:1;  transform: translateY(0)   scale(1); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; } to { opacity: 1; }
+    }
+    .animate-modal    { animation: modalIn .28s ease-out; }
+    .animate-backdrop { animation: fadeIn  .18s ease-out; }
 
-.switch .dot {
-  position: absolute;
-  inset: 3px auto auto 3px;
-  width: 16px;
-  height: 16px;
-  border-radius: 999px;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(0,0,0,.15);
-  transition: transform .2s ease;
-}
-
-/* Movimiento del punto */
-.switch input:checked + .dot {
-  transform: translateX(20px);
-}
-
-/* --- Tabs y Utilidades --- */
-.tabs-pill-active {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0,0,0,.08);
-}
-
-/* --- Select Personalizado --- */
-.select-nice {
-  -webkit-appearance: none;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 1rem 1rem;
-  padding-right: 2.5rem;
-}
-
-/* --- Animaciones --- */
-@keyframes modalIn {
-  from { opacity: 0; transform: translateY(8px) scale(.98); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-@keyframes fadeIn {
-  from { opacity: 0; } to { opacity: 1; }
-}
-
-.animate-modal    { animation: modalIn .28s ease-out forwards; }
-.animate-backdrop { animation: fadeIn .18s ease-out forwards; }
+    /* --- Select con flecha separada del borde --- */
+    .select-nice{
+      -webkit-appearance:none; appearance:none;
+      background-image:url("../img/chevron-down.svg");
+      background-repeat:no-repeat;
+      background-position: right .75rem center;
+      background-size: 1rem 1rem;
+      padding-right: 2.25rem; /* espacio para la flecha */
+    }
