@@ -86,7 +86,7 @@
             require_once(__DIR__ . '/../../config/database.php');
 
             // Consulta de horarios inactivos
-            $sql = "SELECT * FROM horarios WHERE estado = 0";
+            $sql = "SELECT * FROM horario WHERE estado = 0";
             $stmt = $conn->prepare($sql);
             $stmt->execute();
             $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
