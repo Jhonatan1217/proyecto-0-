@@ -251,12 +251,9 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
           <div class="flex items-center gap-2">
-            <button class="p-2 hover:bg-zinc-100 rounded-lg edit-btn" title="Editar">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M17 3l4 4-7 7H10v-4l7-7z"/>
-                <path d="M3 21h18"/>
-              </svg>
-            </button>
+           <button class="p-2 hover:bg-zinc-100 rounded-lg edit-btn" title="Editar">
+                  <img src="src/assets/img/pencil-line.svg" alt="Editar" class="w-4 h-4">
+                </button>
             ${renderSwitch(activo, r.id_rae)}
           </div>
         </div>

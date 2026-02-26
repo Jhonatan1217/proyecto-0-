@@ -47,6 +47,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentPage = 1;
     const itemsPerPage = 10;
 
+    // Elementos de paginación
+    const cpPrev = document.getElementById('cpPrev');
+    const cpNext = document.getElementById('cpNext');
+    const cpInfo = document.getElementById('cpInfo');
+    const paginationContainer = document.getElementById('competenciasPagination');
+
     const Toast = Swal.mixin({
       toast: true,
       position: 'top-end',
@@ -323,7 +329,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </svg>
                 ${raesCount} RAEs
               </button>
-              
               <div class="flex items-center gap-2">
                 <button class="p-2 hover:bg-zinc-100 rounded-lg edit-btn" title="Editar">
                   <img src="src/assets/img/pencil-line.svg" alt="Editar" class="w-4 h-4">
@@ -331,6 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${renderSwitch(activo, c.id_competencia)}
               </div>
             </div>
+              
             
             <div class="raes-container mt-3" style="display: none;"></div>
           </div>
@@ -376,10 +382,17 @@ document.addEventListener('DOMContentLoaded', () => {
       return card;
     }
 
-    function renderList(list) {
+    // ===============================
+    // FUNCIÓN DE RENDERIZADO CON PAGINACIÓN
+    // ===============================
+    async function renderList(list) {
       if (!competenciesList) return;
 
+      // Limpiar el contenedor y el objeto de RAEs
       competenciesList.innerHTML = '';
+      
+      // IMPORTANTE: Limpiar RAEs de la página anterior
+      raesPorCompetencia = {};
 
       if (!Array.isArray(list) || list.length === 0) {
         if (competenciesEmpty) {
@@ -390,6 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           `;
         }
+        if (paginationContainer) paginationContainer.classList.add('hidden');
         return;
       }
 
@@ -397,28 +411,88 @@ document.addEventListener('DOMContentLoaded', () => {
         competenciesEmpty.classList.add('hidden');
       }
 
+      // Aplicar paginación
       const start = (currentPage - 1) * itemsPerPage;
       const end = start + itemsPerPage;
       const paginatedList = list.slice(start, end);
 
-      const frag = document.createDocumentFragment();
+      // Mostrar indicador de carga
+      competenciesList.innerHTML = '<div class="text-center py-8 text-zinc-500">Cargando RAEs...</div>';
 
-      Promise.all(paginatedList.map(c =>
-        apiListarRaesPorCompetencia(c.id_competencia).then(raes => {
+      // Cargar RAEs para las competencias de esta página
+      for (const c of paginatedList) {
+        try {
+          const raes = await apiListarRaesPorCompetencia(c.id_competencia);
           raesPorCompetencia[c.id_competencia] = raes;
-        })
-      )).then(() => {
-        paginatedList.forEach(c => {
-          try {
-            frag.appendChild(createCard(c));
-          } catch (error) {
-            console.error('Error creando tarjeta:', error);
-          }
-        });
-        competenciesList.appendChild(frag);
-        updatePagination(list.length);
+        } catch (error) {
+          console.error(`Error cargando RAEs para competencia ${c.id_competencia}:`, error);
+          raesPorCompetencia[c.id_competencia] = [];
+        }
+      }
+
+      // Limpiar el indicador de carga
+      competenciesList.innerHTML = '';
+
+      // Renderizar las tarjetas
+      const frag = document.createDocumentFragment();
+      paginatedList.forEach(c => {
+        try {
+          frag.appendChild(createCard(c));
+        } catch (error) {
+          console.error('Error creando tarjeta:', error);
+        }
       });
+      
+      competenciesList.appendChild(frag);
+      updatePagination(list.length);
     }
+
+    // ===============================
+    // FUNCIÓN DE PAGINACIÓN
+    // ===============================
+    function updatePagination(totalItems) {
+      if (!cpInfo || !paginationContainer) return;
+
+      const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+
+      if (totalItems <= itemsPerPage) {
+        paginationContainer.classList.add('hidden');
+        return;
+      }
+
+      paginationContainer.classList.remove('hidden');
+      cpInfo.textContent = `Página ${currentPage} de ${totalPages} · ${totalItems} items`;
+
+      if (cpPrev) cpPrev.disabled = currentPage <= 1;
+      if (cpNext) cpNext.disabled = currentPage >= totalPages;
+    }
+
+    // ===============================
+    // EVENTOS DE PAGINACIÓN - CORREGIDOS
+    // ===============================
+    // ===============================
+// EVENTOS DE PAGINACIÓN - CORREGIDOS
+// ===============================
+if (cpPrev) {
+  cpPrev.addEventListener('click', () => {
+    if (currentPage > 1) {
+      currentPage--;
+      // Usar filteredCompetencies directamente sin llamar a filtrarCompetencias()
+      renderList(filteredCompetencies);
+    }
+  });
+}
+
+if (cpNext) {
+  cpNext.addEventListener('click', () => {
+    const totalPages = Math.ceil(filteredCompetencies.length / itemsPerPage) || 1;
+    if (currentPage < totalPages) {
+      currentPage++;
+      // Usar filteredCompetencies directamente sin llamar a filtrarCompetencias()
+      renderList(filteredCompetencies);
+    }
+  });
+}
 
     // ===============================
     // CARGA DE DATOS
@@ -455,10 +529,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await apiListar();
         allCompetencies = Array.isArray(data) ? data : [];
 
-        raesPorCompetencia = {};
-
         const filtrados = filtrarCompetencias();
-        renderList(filtrados);
+        await renderList(filtrados);
 
       } catch (error) {
         console.error('Error en loadCompetencies:', error);
@@ -467,52 +539,6 @@ document.addEventListener('DOMContentLoaded', () => {
           competenciesEmpty.innerHTML = '<div class="py-12 text-center text-red-600">Error al cargar competencias.</div>';
         }
       }
-    }
-
-    // ===============================
-    // PAGINACIÓN
-    // ===============================
-    const cpPrev = document.getElementById('cpPrev');
-    const cpNext = document.getElementById('cpNext');
-    const cpInfo = document.getElementById('cpInfo');
-    const paginationContainer = document.getElementById('competenciasPagination');
-
-    function updatePagination(totalItems) {
-      if (!cpInfo || !paginationContainer) return;
-
-      const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-
-      if (totalItems <= itemsPerPage) {
-        paginationContainer.classList.add('hidden');
-        return;
-      }
-
-      paginationContainer.classList.remove('hidden');
-      cpInfo.textContent = `Página ${currentPage} de ${totalPages} · ${totalItems} items`;
-
-      if (cpPrev) cpPrev.disabled = currentPage <= 1;
-      if (cpNext) cpNext.disabled = currentPage >= totalPages;
-    }
-
-    if (cpPrev) {
-      cpPrev.addEventListener('click', () => {
-        if (currentPage > 1) {
-          currentPage--;
-          const filtrados = filtrarCompetencias();
-          renderList(filtrados);
-        }
-      });
-    }
-
-    if (cpNext) {
-      cpNext.addEventListener('click', () => {
-        const filtrados = filtrarCompetencias();
-        const totalPages = Math.ceil(filtrados.length / itemsPerPage) || 1;
-        if (currentPage < totalPages) {
-          currentPage++;
-          renderList(filtrados);
-        }
-      });
     }
 
     // ===============================
@@ -584,7 +610,7 @@ document.addEventListener('DOMContentLoaded', () => {
           closeModal();
           t.ok(editingId ? 'Competencia actualizada' : 'Competencia creada');
           
-          // SOLO UNA LLAMADA - la más simple
+          // Resetear a primera página y recargar
           currentPage = 1;
           await loadCompetencies();
 
@@ -603,6 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // EVENTOS GLOBALES
     // ===============================
     window.addEventListener('excel-subido-ok', () => {
+      currentPage = 1;
       loadCompetencies();
     });
 
@@ -612,12 +639,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.addEventListener('competencias:changed', () => {
       console.log('Evento competencias:changed recibido - recargando');
+      currentPage = 1;
       loadCompetencies();
     });
 
     window.addEventListener('raes:changed', () => {
       console.log('Evento raes:changed recibido - recargando competencias');
       raesPorCompetencia = {};
+      currentPage = 1;
       loadCompetencies();
     });
 

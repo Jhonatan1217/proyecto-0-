@@ -55,10 +55,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // ===============================
     let editingId = null;
     let allPrograms = [];
+    let filteredPrograms = [];
     let allInstructores = [];
     let instructoresAsignados = [];
     let programaSeleccionadoId = null;
     let timeoutBusqueda = null;
+    
+    // ===============================
+    // VARIABLES DE PAGINACIÓN
+    // ===============================
+    let currentPage = 1;
+    const itemsPerPage = 5;
+    
+    // Elementos de paginación
+    const paginationContainer = document.getElementById('programsPagination');
+    const prevBtn = document.getElementById('pgPrev');
+    const nextBtn = document.getElementById('pgNext');
+    const pageInfo = document.getElementById('paginationInfo');
 
     // ===============================
     // TOASTS
@@ -455,8 +468,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="text-sm text-zinc-500 mb-2">Código: ${escapeHtml(programa.id_programa)}</div>
                     <div class="text-sm text-zinc-600 mb-2">Duración: ${formatHours(programa.duracion)}</div>
                     <div class="text-sm text-zinc-600 mb-3">Número de instructores: ${numInstructores}</div>
+
                     <div class="text-sm text-zinc-600">
-                        <button class="text-[#39a900] hover:text-[#2d8200] font-medium underline underline-offset-2 btn-ver-lista" data-id="${programa.id_programa}" data-nombre="${escapeHtml(programa.nombre_programa)}">
+                        <button class="text-[#39a900] hover:text-[#2d8200] font-medium underline underline-offset-2 btn-ver-lista"
+                            data-id="${programa.id_programa}"
+                            data-nombre="${escapeHtml(programa.nombre_programa)}">
                             Instructores asignados: ${numInstructores > 0 ? 'Ver lista' : 'Sin instructores'}
                         </button>
                     </div>
@@ -464,12 +480,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 <div class="flex items-start gap-2">
                     <button class="p-2 rounded-lg hover:bg-zinc-100 editar-programa"
-                        data-programa='${JSON.stringify(programa).replace(/'/g, '&apos;')}'>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
-                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M17 3l4 4-7 7H10v-4l7-7z"/>
-                            <path d="M3 21h18"/>
-                        </svg>
+                        data-programa='${encodeURIComponent(JSON.stringify(programa))}'>
+                        <img src="src/assets/img/pencil-line.svg" class="w-4 h-4" alt="Editar">
                     </button>
 
                     <label class="relative inline-flex items-center cursor-pointer">
@@ -487,16 +499,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 <button class="text-sm px-5 py-2.5 rounded-lg bg-[#0a3a57] text-white hover:bg-[#052433] transition asignar-instructor">
                     Agregar instructor(es)
                 </button>
-            </div> 
+            </div>
         `;
 
         card.querySelector('.editar-programa').addEventListener('click', e => {
             e.stopPropagation();
-            let programaData = JSON.parse(e.currentTarget.getAttribute('data-programa'));
+            const programaData = JSON.parse(decodeURIComponent(e.currentTarget.dataset.programa));
             openModalProgram(false, programaData);
         });
 
-        card.querySelector('.cambiar-estado').addEventListener('click', function (e) {
+        card.querySelector('.cambiar-estado').addEventListener('change', function (e) {
             e.stopPropagation();
             const checked = this.checked;
 
@@ -506,7 +518,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.checked = !checked;
                 } else {
                     showToast('success', checked ? 'Programa activado' : 'Programa inhabilitado');
-                    listarProgramas(); // Actualizar la vista
+                    listarProgramas();
                 }
             });
         });
@@ -518,27 +530,48 @@ document.addEventListener('DOMContentLoaded', function() {
 
         card.querySelector('.btn-ver-lista').addEventListener('click', e => {
             e.stopPropagation();
-            let id = e.currentTarget.getAttribute('data-id');
-            let nombre = e.currentTarget.getAttribute('data-nombre');
-            openModalVerLista(id, nombre);
+            openModalVerLista(
+                e.currentTarget.dataset.id,
+                e.currentTarget.dataset.nombre
+            );
         });
 
         return card;
     }
 
-    function renderizarTarjetas(programas) {
+    // ===============================
+    // FUNCIÓN DE RENDERIZADO CON PAGINACIÓN
+    // ===============================
+    function renderizarTarjetas(listaCompleta) {
+        if (!grid) return;
+
         grid.innerHTML = '';
-        
-        if (!programas || programas.length === 0) {
-            emptyBox.classList.remove('hidden');
+
+        if (!Array.isArray(listaCompleta) || listaCompleta.length === 0) {
+            emptyBox?.classList.remove('hidden');
+            if (paginationContainer) paginationContainer.classList.add('hidden');
             return;
         }
-        
-        emptyBox.classList.add('hidden');
-        
-        for (var i = 0; i < programas.length; i++) {
-            grid.appendChild(crearTarjeta(programas[i]));
-        }
+
+        emptyBox?.classList.add('hidden');
+
+        // Aplicar paginación
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const programasPaginados = listaCompleta.slice(start, end);
+
+        const fragment = document.createDocumentFragment();
+        programasPaginados.forEach(p => {
+            try {
+                fragment.appendChild(crearTarjeta(p));
+            } catch (error) {
+                console.error('Error creando tarjeta:', error);
+            }
+        });
+        grid.appendChild(fragment);
+
+        // Actualizar paginación
+        updatePagination(listaCompleta.length);
     }
 
     // ===============================
@@ -571,7 +604,52 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        renderizarTarjetas(filtrados);
+        filteredPrograms = filtrados;
+        currentPage = 1; // Resetear a primera página al filtrar
+        renderizarTarjetas(filteredPrograms);
+    }
+
+    // ===============================
+    // FUNCIÓN DE PAGINACIÓN
+    // ===============================
+    function updatePagination(totalItems) {
+        if (!pageInfo || !paginationContainer) return;
+
+        const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+
+        if (totalItems <= itemsPerPage) {
+            paginationContainer.classList.add('hidden');
+            return;
+        }
+
+        paginationContainer.classList.remove('hidden');
+        pageInfo.textContent = `Página ${currentPage} de ${totalPages} · ${totalItems} programas`;
+
+        if (prevBtn) prevBtn.disabled = currentPage <= 1;
+        if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+    }
+
+    // ===============================
+    // EVENTOS DE PAGINACIÓN
+    // ===============================
+    if (prevBtn) {
+        prevBtn.addEventListener('click', function() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderizarTarjetas(filteredPrograms.length ? filteredPrograms : allPrograms);
+            }
+        });
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', function() {
+            const listaActual = filteredPrograms.length ? filteredPrograms : allPrograms;
+            const totalPages = Math.ceil(listaActual.length / itemsPerPage) || 1;
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderizarTarjetas(listaActual);
+            }
+        });
     }
 
     // ===============================
@@ -642,53 +720,67 @@ document.addEventListener('DOMContentLoaded', function() {
     // ===============================
     // EVENTOS FILTROS
     // ===============================
-    programTypeFilter.addEventListener('change', aplicarFiltros);
-    programSearchInput.addEventListener('input', aplicarFiltros);
+    programTypeFilter.addEventListener('change', function() {
+        currentPage = 1;
+        aplicarFiltros();
+    });
+    
+    programSearchInput.addEventListener('input', function() {
+        currentPage = 1;
+        aplicarFiltros();
+    });
 
     // ===============================
     // EVENTO FORM PROGRAMA
     // ===============================
-    // ===============================
-// EVENTO FORM PROGRAMA
-// ===============================
-formProgram.addEventListener('submit', function(e) {
-    e.preventDefault();
+    formProgram.addEventListener('submit', function(e) {
+        e.preventDefault();
 
-    var id_programa = inpCode.value.trim();
-    var nombre_programa = inpName.value.trim();
-    var nivel_formacion = inpNivel.value;
-    var descripcion = inpDesc.value.trim();
-    var duracion = inpHours.value.trim();
-    var id_instructor = selectInstructor ? selectInstructor.value : '';
+        var id_programa = inpCode.value.trim();
+        var nombre_programa = inpName.value.trim();
+        var nivel_formacion = inpNivel.value;
+        var descripcion = inpDesc.value.trim();
+        var duracion = inpHours.value.trim();
+        var id_instructor = selectInstructor ? selectInstructor.value : '';
 
-    if (!id_programa || !nombre_programa) {
-        showToast('warning', 'Código y nombre son obligatorios');
-        return;
-    }
+        if (!id_programa || !nombre_programa) {
+            showToast('warning', 'Código y nombre son obligatorios');
+            return;
+        }
 
-    if (!nivel_formacion) {
-        showToast('warning', 'Debe seleccionar un tipo de programa');
-        return;
-    }
+        if (!nivel_formacion) {
+            showToast('warning', 'Debe seleccionar un tipo de programa');
+            return;
+        }
 
-    var datos = {
-        id_programa: parseInt(id_programa),
-        nombre_programa: nombre_programa,
-        nivel_formacion: nivel_formacion,
-        descripcion: descripcion,
-        duracion: duracion ? parseInt(duracion) : 0
-    };
+        var datos = {
+            id_programa: parseInt(id_programa),
+            nombre_programa: nombre_programa,
+            nivel_formacion: nivel_formacion,
+            descripcion: descripcion,
+            duracion: duracion ? parseInt(duracion) : 0
+        };
 
-    if (editingId) {
-        datos.id_programa = editingId;
-        datos.nuevo_id_programa = parseInt(id_programa);
-        
-        actualizarPrograma(datos, function(res) {
-            if (res && res.error) {
-                showToast('error', res.error);
-            } else {
-                if (id_instructor) {
-                    asignarInstructores(parseInt(id_programa), [parseInt(id_instructor)], function() {
+        if (editingId) {
+            datos.id_programa = editingId;
+            datos.nuevo_id_programa = parseInt(id_programa);
+            
+            actualizarPrograma(datos, function(res) {
+                if (res && res.error) {
+                    showToast('error', res.error);
+                } else {
+                    if (id_instructor) {
+                        asignarInstructores(parseInt(id_programa), [parseInt(id_instructor)], function() {
+                            closeModalProgram();
+                            showToast('success', 'Programa actualizado');
+                            
+                            window.dispatchEvent(new CustomEvent('programs:changed'));
+                            window.dispatchEvent(new CustomEvent('competencias:changed'));
+                            window.dispatchEvent(new CustomEvent('raes:changed'));
+                            
+                            listarProgramas();
+                        });
+                    } else {
                         closeModalProgram();
                         showToast('success', 'Programa actualizado');
                         
@@ -697,26 +789,26 @@ formProgram.addEventListener('submit', function(e) {
                         window.dispatchEvent(new CustomEvent('raes:changed'));
                         
                         listarProgramas();
-                    });
-                } else {
-                    closeModalProgram();
-                    showToast('success', 'Programa actualizado');
-                    
-                    window.dispatchEvent(new CustomEvent('programs:changed'));
-                    window.dispatchEvent(new CustomEvent('competencias:changed'));
-                    window.dispatchEvent(new CustomEvent('raes:changed'));
-                    
-                    listarProgramas();
+                    }
                 }
-            }
-        });
-    } else {
-        crearPrograma(datos, function(res) {
-            if (res && res.error) {
-                showToast('error', res.error);
-            } else {
-                if (id_instructor) {
-                    asignarInstructores(parseInt(id_programa), [parseInt(id_instructor)], function() {
+            });
+        } else {
+            crearPrograma(datos, function(res) {
+                if (res && res.error) {
+                    showToast('error', res.error);
+                } else {
+                    if (id_instructor) {
+                        asignarInstructores(parseInt(id_programa), [parseInt(id_instructor)], function() {
+                            closeModalProgram();
+                            showToast('success', 'Programa creado');
+                            
+                            window.dispatchEvent(new CustomEvent('programs:changed'));
+                            window.dispatchEvent(new CustomEvent('competencias:changed'));
+                            window.dispatchEvent(new CustomEvent('raes:changed'));
+                            
+                            listarProgramas();
+                        });
+                    } else {
                         closeModalProgram();
                         showToast('success', 'Programa creado');
                         
@@ -725,21 +817,11 @@ formProgram.addEventListener('submit', function(e) {
                         window.dispatchEvent(new CustomEvent('raes:changed'));
                         
                         listarProgramas();
-                    });
-                } else {
-                    closeModalProgram();
-                    showToast('success', 'Programa creado');
-                    
-                    window.dispatchEvent(new CustomEvent('programs:changed'));
-                    window.dispatchEvent(new CustomEvent('competencias:changed'));
-                    window.dispatchEvent(new CustomEvent('raes:changed'));
-                    
-                    listarProgramas();
+                    }
                 }
-            }
-        });
-    }
-});
+            });
+        }
+    });
 
     // ===============================
     // INICIO

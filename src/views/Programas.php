@@ -11,16 +11,7 @@
             <p class="text-sm text-zinc-500">Gestione los programas de formación disponibles</p>
         </div>
         
-        <div class="flex items-center gap-3">
-            <select id="programTypeFilter" class="w-48 border border-zinc-300 rounded-xl px-3 py-2 text-sm bg-white focus:border-[#0a3a57] focus:ring-1 focus:ring-[#0a3a57] transition">
-                <option value="all">Todos los tipos de programa</option>
-                <option value="tecnico">Técnico</option>
-                <option value="tecnologo">Tecnólogo</option>
-            </select>
-            
-            <input id="programSearchInput" type="text" placeholder="Buscar por nombre o código"
-                   class="w-72 border border-zinc-300 rounded-xl px-3 py-2 text-sm outline-none placeholder-zinc-400 focus:border-[#0a3a57] focus:ring-1 focus:ring-[#0a3a57] transition">
-            
+        <div class="flex items-center gap-3 ">
             <button id="btnNewProgram" class="rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 bg-[#0a3a57] text-white hover:bg-[#052433] transition-all whitespace-nowrap">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 5v14M5 12h14"/>
@@ -29,12 +20,23 @@
             </button>
         </div>
     </div>
+    <div class="flex flex-col w-min gap-3 sm:flex-row sm:flex-wrap md:flex-nowrap md:justify-end competencias-filtros-wrapper">
+        <select id="programTypeFilter" class="w-full sm:w-60 border border-zinc-300 rounded-xl px-3 py-2 text-sm select-nice">
+            <option value="all">Todos los tipos de programa</option>
+            <option value="tecnico">Técnico</option>
+            <option value="tecnologo">Tecnólogo</option>
+        </select>
+        
+        <input id="programSearchInput" type="text" placeholder="Buscar por nombre o código"
+         class="w-full sm:w-72 border border-zinc-300 rounded-xl px-3 py-2 text-sm outline-none placeholder-zinc-400">
+    </div>
+    
 
     <!-- Grid de Programas -->
     <div id="programsGrid" class="space-y-4"></div>
 
     <!-- Mensaje cuando no hay programas -->
-    <div id="programsEmpty" class="hidden rounded-2xl ring-1 ring-zinc-200 shadow-sm p-12 text-center text-zinc-500">
+    <div id="programsEmpty" class="hidden rounded-2xl ring-1 ring-zinc-200 shadow-sm py-12 text-center text-zinc-500">
         No hay programas registrados
     </div>
 </section>
