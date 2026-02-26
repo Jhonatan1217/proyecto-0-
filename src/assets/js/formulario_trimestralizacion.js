@@ -384,8 +384,6 @@ if (!window.TRIMESTRALIZACION_INIT) {
       });
     }
 
-    
-
     // ================= LÓGICA PRINCIPAL DEL FORM =================
     document.querySelectorAll(".trimestralizacion-form").forEach((form) => {
       form.addEventListener("submit", async (e) => {
@@ -457,5 +455,3 @@ if (!window.TRIMESTRALIZACION_INIT) {
     });
   });
 }
-
-
