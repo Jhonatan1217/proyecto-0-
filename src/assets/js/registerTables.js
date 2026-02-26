@@ -1,5 +1,5 @@
 // ===============================
-// REGISTER TABLES - 2025 FINAL (ÁREAS/ZONAS + EDICIÓN + TOASTS + PDF + ELIMINAR)
+// REGISTER TABLES - (ÁREAS/ZONAS + EDICIÓN + TOASTS + PDF + ELIMINAR)
 // ===============================
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -18,14 +18,44 @@ const Toast = Swal.mixin({
   color: "#000",
 });
 
+let horariosCache = [];
+
+function timeToMinutes(t) {
+  if (!t) return null;
+  const [h, m] = t.split(":").map(Number);
+  return Number.isFinite(h) ? h * 60 + (Number.isFinite(m) ? m : 0) : null;
+}
+
+function hasOverlap({ dia, inicio, fin, excludeId }) {
+  const start = timeToMinutes(inicio);
+  const end = timeToMinutes(fin);
+  if (start === null || end === null) return false;
+
+  return horariosCache.some((r) => {
+    if (!r || String(r.id_horario) === String(excludeId)) return false;
+    if (String(r.dia || "").toUpperCase() !== String(dia || "").toUpperCase())
+      return false;
+
+    const rStart = timeToMinutes(r.hora_inicio);
+    const rEnd = timeToMinutes(r.hora_fin);
+    if (rStart === null || rEnd === null) return false;
+
+    return start < rEnd && end > rStart;
+  });
+}
+
+
+
 // =======================
 // Mostrar/Ocultar tabla y botones
 // =======================
 function toggleTabla(mostrar = true) {
   const tabla = document.querySelector("#tabla-horarios");
   const botones = document.querySelector("#botones-principales");
+  const emptyState = document.querySelector("#empty-state");
   if (tabla) tabla.style.display = mostrar ? "" : "none";
   if (botones) botones.style.display = mostrar ? "flex" : "none";
+  if (emptyState) emptyState.style.display = mostrar ? "none" : "block";
 }
 
 // =======================
@@ -102,12 +132,10 @@ async function cargarAreasYZonas() {
         const dataZonas = await resZonas.json();
 
         if (dataZonas.status === "success" && Array.isArray(dataZonas.data)) {
-          // 🔥 SOLO ZONAS ACTIVAS EN ESTE ÁREA
+          //  SOLO ZONAS ACTIVAS EN ESTE ÁREA
           const zonasActivas = dataZonas.data.filter(
             (z) => String(z.estado) === "1"
           );
-
-          // 💡 AQUÍ ES DONDE SE CAMBIÓ:
           if (zonasActivas.length === 0) {
             // Dejamos el placeholder seleccionado, pero al desplegar se verá el mensaje
             selectZona.innerHTML = `
@@ -141,8 +169,9 @@ async function cargarAreasYZonas() {
 
     selectZona.addEventListener("change", (e) => {
       id_zona = e.target.value;
+      const id_area = selectArea.value;
       console.log("Zona seleccionada:", id_zona);
-      if (!id_zona) {
+      if (!id_zona || !id_area) {
         toggleTabla(false);
         return;
       }
@@ -193,7 +222,7 @@ async function cargarTrimestralizacion() {
     );
 
     if (!activos.length) {
-      tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500">No hay registros activos para esta zona y área.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500 text-center">No hay registros activos para esta zona y área.</td></tr>`;
       Toast.fire({ icon: "info", title: "Sin registros activos" });
       return;
     }
@@ -220,6 +249,8 @@ async function cargarTrimestralizacion() {
           nivel_ficha: r.nivel_ficha,
           nombre_instructor: r.nombre_instructor,
           tipo_instructor: r.tipo_instructor,
+          programa_formacion: r.programa_formacion,
+          nombre_programa: r.nombre_programa,
           id_competencia: r.id_competencia,
           nombre_competencia: r.nombre_competencia,
           raesArray: [],
@@ -235,6 +266,8 @@ async function cargarTrimestralizacion() {
     });
 
     const horariosAgrupados = Array.from(mapHorarios.values());
+
+    horariosCache = horariosAgrupados;
 
     horariosAgrupados.forEach((h) => {
       if (h.raesArray.length) {
@@ -259,9 +292,8 @@ async function cargarTrimestralizacion() {
     horas.forEach((hora, idx) => {
       const fila = document.createElement("tr");
       fila.className = idx % 2 === 0 ? "bg-gray-50" : "bg-white";
-      fila.innerHTML = `<td class="border border-gray-700 p-2 font-medium">${hora}:00-${
-        hora + 1
-      }:00</td>`;
+      fila.innerHTML = `<td class="border border-gray-300 p-3 font-bold text-gray-700 text-center bg-gray-100 whitespace-nowrap min-w-[110px] w-[110px]">
+      ${String(hora).padStart(2, "0")}:00 - ${String(hora + 1).padStart(2, "0")}:00 </td>`;
 
       dias.forEach((dia) => {
         const registros = horariosAgrupados.filter((r) => {
@@ -281,48 +313,72 @@ async function cargarTrimestralizacion() {
             : rStart + 1;
 
           if (hora === rStart) {
+            const duracionHoras = rEnd - rStart;
             contenido += `
-              <div class="registro border-gray-300 pb-1 mb-1"
+              <div class="registro border-l-4 border-l-green-600 bg-white rounded-md p-2 mb-2 shadow-sm"
                   data-id="${r.id_horario || ""}"
                   data-id-instructor="${r.id_instructor ?? ""}"
-                  data-id-competencia="${r.id_competencia ?? ""}">
-                <div><strong>Instructor:</strong> ${
-                  r.nombre_instructor ?? ""
-                } (${r.tipo_instructor ?? ""})</div>
-                <div><strong>Ficha:</strong> <span class="ficha">${
-                  r.numero_ficha ?? ""
-                }</span>
-                  (<span class="nivel_ficha">${(
-                    r.nivel_ficha ?? ""
-                  ).toString().toUpperCase()}</span>)
+                  data-instructor="${r.nombre_instructor ?? ""}"
+                  data-id-competencia="${r.id_competencia ?? ""}"
+                  data-competencia="${r.nombre_competencia ?? ""}"
+                  data-programa="${r.nombre_programa ?? ""}"
+                  data-ficha="${r.numero_ficha ?? ""}"
+                  data-nivel-ficha="${r.nivel_ficha ?? ""}"
+                  data-dia="${r.dia ?? ""}"
+                  data-hora-inicio="${r.hora_inicio ?? ""}"
+                  data-hora-fin="${r.hora_fin ?? ""}"
+                  data-hora-rango="${r.hora_inicio ?? ""} - ${r.hora_fin ?? ""}"
+                  data-raes='${JSON.stringify(r.raesArray)}' >
+                <div class="font-bold text-green-700 text-sm mb-1">Competencia: ${r.nombre_competencia ?? "Sin competencia"}</div>
+                <div class="flex items-start gap-1 text-xs text-gray-600 mb-1">
+                  <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                  </svg>
+                  <span>${r.nombre_instructor ?? ""}</span>
                 </div>
-                <div><strong>Competencia:</strong> 
-                  <span class="competencia">
-                    ${
-                      r.id_competencia ? r.id_competencia : ""
-                    } - ${
-              r.nombre_competencia ? r.nombre_competencia : "(Sin nombre)"
-            }
+                <div class="flex items-start gap-1 text-xs text-gray-600 mb-1">
+                  <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+                  </svg>
+                  <span class="ficha font-medium text-gray-700">
+                    ${r.numero_ficha ?? "—"}
                   </span>
-                </div>
 
-                <div><strong>RAE(s):</strong> ${r.raesHtml}</div>
+                </div>
+                <div class="flex items-start gap-1 text-xs text-gray-500">
+                  <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                  </svg>
+                  <span>${duracionHoras} hora${duracionHoras > 1 ? 's' : ''}</span>
+                </div>
               </div>`;
           } else if (hora > rStart && hora < rEnd) {
-            contenido += `<div class="mb-1 border-gray-200 pb-1">
-                <strong>Instructor:</strong> ${
-                  r.nombre_instructor ?? ""
-                } (${r.tipo_instructor ?? ""})
+            contenido += `<div class="border-l-4 border-l-green-600 bg-white rounded-md p-2 mb-2 shadow-sm">
+                <div class="flex items-start gap-1 text-xs text-gray-600">
+                  <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                  </svg>
+                  <span>${r.nombre_instructor ?? ""}</span>
+                </div>
+                <div class="flex items-start gap-1 text-xs text-gray-600 mt-1">
+                  <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+                  </svg>
+                  <span class="ficha font-medium text-gray-700">
+                    ${r.numero_ficha ?? "—"}
+                  </span>
+                </div>
               </div>`;
           }
         });
-
+        const isLibre = !contenido;
         fila.innerHTML += `
-          <td class="border border-gray-700 p-2 text-sm text-left leading-tight">
-            ${
-              contenido ||
-              '<span class="text-gray-400 italic">zona libre</span>'
-            }
+          <td class="border border-gray-300 p-2 text-sm text-center leading-tight align-top ${isLibre ? "zona-libre cursor-pointer hover:bg-[#00324D]": ""}"
+              data-dia="${dia}"
+              data-hora="${String(hora).padStart(2, "0")}: 00">
+              ${contenido || `<span class="text-gray-400 italic">Zona libre</span>`}
           </td>`;
       });
 
@@ -333,6 +389,10 @@ async function cargarTrimestralizacion() {
       icon: "success",
       title: "Trimestralización cargada correctamente",
     });
+    popupCeldas();
+    popupZonaLibre();
+
+
   } catch (error) {
     console.error("Error al cargar:", error);
     tbody.innerHTML = `<tr><td colspan="7" class="text-red-600 p-4">Error al conectar con el servidor.</td></tr>`;
@@ -348,6 +408,63 @@ async function cargarTrimestralizacion() {
 // =======================
 let listaInstructores = [];
 let listaCompetencias = [];
+let listaFichas = [];
+
+async function cargarFichas() {
+  try {
+    const res = await fetch(
+      `${BASE_URL}src/controllers/FichaController.php?accion=listar`
+    );
+    
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    
+    const data = await res.json();
+    console.log("Fichas recibidas de API:", data);
+
+    const array = Array.isArray(data)
+      ? data
+      : Array.isArray(data.data)
+      ? data.data
+      : [];
+
+    if (array.length > 0) {
+      // SOLO FICHAS ACTIVAS
+      listaFichas = array.filter((f) => String(f.estado) === "1");
+    }
+    
+    if (!listaFichas.length) {
+      console.warn("No hay fichas activas en API, extrayendo de datos cargados...");
+      extraerFichasDeHorarios();
+    }
+  } catch (error) {
+    console.error("Error cargando fichas del API:", error);
+    console.log("Extrayendo fichas de los horarios cargados...");
+    extraerFichasDeHorarios();
+  }
+}
+
+function extraerFichasDeHorarios() {
+  // Extrae fichas únicas de los horarios ya cargados
+  if (horariosCache && horariosCache.length > 0) {
+    const fichasSet = new Set();
+    horariosCache.forEach((h) => {
+      if (h.numero_ficha) {
+        fichasSet.add(JSON.stringify({
+          numero_ficha: h.numero_ficha,
+          nivel_ficha: h.nivel_ficha || "Sin nivel"
+        }));
+      }
+    });
+    
+    listaFichas = Array.from(fichasSet).map(f => JSON.parse(f));
+    console.log("Fichas extraídas de horarios:", listaFichas);
+  }
+  
+  if (!listaFichas.length) {
+    console.warn("No se encontraron fichas en los horarios");
+    listaFichas = [];
+  }
+}
 
 async function cargarCompetencias() {
   try {
@@ -364,7 +481,7 @@ async function cargarCompetencias() {
       ? data.data
       : [];
 
-    // 🔥 SOLO COMPETENCIAS ACTIVAS
+    // SOLO COMPETENCIAS ACTIVAS
     listaCompetencias = array.filter(
       (c) => String(c.estado) === "1"
     );
@@ -393,7 +510,7 @@ async function cargarInstructores() {
       ? data.data
       : [];
 
-    // 🔥 FILTRAR SOLO INSTRUCTORES ACTIVOS (estado = 1)
+    //FILTRAR SOLO INSTRUCTORES ACTIVOS (estado = 1)
     listaInstructores = instructoresArray.filter(
       (i) => String(i.estado) === "1"
     );
@@ -449,268 +566,8 @@ async function obtenerRoesPorCompetencia(id_competencia) {
   }
 }
 
-// =======================
-// MODO EDICIÓN CORREGIDO
-// =======================
-async function activarEdicion() {
-  try {
-    await cargarInstructores();
-    await cargarCompetencias();
-  } catch (err) {
-    console.error("Error al cargar instructores en activarEdicion:", err);
-  }
 
-  const registros = document.querySelectorAll("#tbody-horarios .registro");
-  if (!registros.length) {
-    Toast.fire({ icon: "warning", title: "No hay datos para editar" });
-    return;
-  }
 
-  const registrosRaePorHorario = {};
-  registros.forEach((reg) => {
-    const ul = reg.querySelector("ul");
-    const idHorario = reg.getAttribute("data-id");
-    if (ul && idHorario) {
-      registrosRaePorHorario[idHorario] = [
-        ...ul.querySelectorAll("li"),
-      ].map((li) => li.textContent.split("-")[0].trim());
-    }
-  });
-
-  for (const reg of registros) {
-    const ficha = reg.querySelector(".ficha")?.textContent.trim() || "";
-    const nivel_ficha =
-      reg.querySelector(".nivel_ficha")?.textContent.trim() || "";
-    const idInstructor = reg.getAttribute("data-id-instructor") || "";
-    const id_competencia = reg.getAttribute("data-id-competencia") || "";
-
-    reg.innerHTML = "";
-
-    const selInstructor = document.createElement("select");
-    selInstructor.className =
-      "instructor-select w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm";
-    selInstructor.innerHTML = `<option value="">Seleccione instructor</option>`;
-    listaInstructores.forEach((inst) => {
-      const opt = document.createElement("option");
-      opt.value = inst.id_instructor;
-      opt.textContent = `${inst.nombre_instructor} (${inst.tipo_instructor})`;
-      if (String(inst.id_instructor) === String(idInstructor))
-        opt.selected = true;
-      selInstructor.appendChild(opt);
-    });
-
-    const inputFicha = document.createElement("input");
-    inputFicha.type = "text";
-    inputFicha.value = ficha;
-    inputFicha.placeholder = "Número de ficha";
-    inputFicha.className =
-      "ficha-input block w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm";
-
-    const selectComp = document.createElement("select");
-    selectComp.className =
-      "competencia-select w-full mb-1 px-2 py-1 border border-gray-400 rounded text-sm";
-    selectComp.innerHTML = `<option value="">Seleccione competencia</option>`;
-    listaCompetencias.forEach((c) => {
-      const opt = document.createElement("option");
-      opt.value = c.id_competencia;
-      opt.textContent = `${c.id_competencia} - ${
-        c.nombre_competencia?.trim() ?? "(Sin nombre)"
-      }`;
-      if (String(c.id_competencia) === String(id_competencia))
-        opt.selected = true;
-      selectComp.appendChild(opt);
-    });
-
-    const contRAE = document.createElement("div");
-    contRAE.className = "rae-container mt-2 p-2 border rounded bg-gray-50";
-    const labelRae = document.createElement("div");
-    labelRae.textContent = "RAE(s):";
-    labelRae.className = "font-semibold mb-1 text-sm";
-    contRAE.appendChild(labelRae);
-
-    const renderRAEs = (idCompetencia, marcarOriginales = true) => {
-      contRAE
-        .querySelectorAll("div:not(:first-child)")
-        .forEach((d) => d.remove());
-      if (!idCompetencia) return;
-
-      obtenerRoesPorCompetencia(idCompetencia).then((raesBD) => {
-        const raesExistentes = marcarOriginales
-          ? registrosRaePorHorario[reg.dataset.id] || []
-          : [];
-        raesBD.forEach((rae) => {
-          const descripcion = (
-            rae.descripcion ?? rae.descripcion_rae ?? ""
-          ).trim();
-          const textoRae = `${rae.id_rae} - ${descripcion}`;
-          const div = document.createElement("div");
-          div.className = "flex items-center gap-2 mb-1";
-
-          const chk = document.createElement("input");
-          chk.type = "checkbox";
-          chk.dataset.idRae = rae.id_rae;
-          if (raesExistentes.includes(String(rae.id_rae))) chk.checked = true;
-
-          const lbl = document.createElement("label");
-          lbl.textContent = textoRae;
-          lbl.className = "text-sm";
-
-          div.appendChild(chk);
-          div.appendChild(lbl);
-          contRAE.appendChild(div);
-        });
-      });
-    };
-
-    renderRAEs(id_competencia);
-
-    selectComp.addEventListener("change", (e) => {
-      const nuevaCompId = e.target.value;
-      renderRAEs(nuevaCompId, false);
-    });
-
-    const nivelDiv = document.createElement("div");
-    nivelDiv.className = "text-xs text-gray-500 mt-1";
-    nivelDiv.textContent = `Nivel: ${nivel_ficha}`;
-
-    reg.appendChild(selInstructor);
-    reg.appendChild(inputFicha);
-    reg.appendChild(selectComp);
-    reg.appendChild(contRAE);
-    reg.appendChild(nivelDiv);
-  }
-
-  document.getElementById("botones-principales").style.display = "none";
-  mostrarBotonesEdicion();
-}
-
-function mostrarBotonesEdicion() {
-  if (document.getElementById("botones-edicion")) return;
-
-  const div = document.createElement("div");
-  div.id = "botones-edicion";
-  div.className = "mt-4 flex justify-center gap-4";
-
-  const guardar = document.createElement("button");
-  guardar.textContent = "Guardar cambios";
-  guardar.className =
-    "bg-[#39a900] text-white px-6 py-2 rounded-lg hover:bg-[#4ebe15] transition";
-  guardar.onclick = guardarCambios;
-
-  const cancelar = document.createElement("button");
-  cancelar.textContent = "Cancelar edición";
-  cancelar.className =
-    "bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition";
-  cancelar.onclick = cancelarEdicion;
-
-  div.appendChild(guardar);
-  div.appendChild(cancelar);
-  document.querySelector("main").appendChild(div);
-}
-
-// =======================
-// GUARDAR / CANCELAR EDICIÓN
-// =======================
-async function guardarCambios() {
-  const registros = document.querySelectorAll("#tbody-horarios .registro");
-
-  const filas = Array.from(registros).map((r) => {
-    const id_horario = r.getAttribute("data-id") || "";
-    const numero_ficha = r.querySelector(".ficha-input")?.value || "";
-
-    const selectComp = r.querySelector("select.competencia-select");
-    const id_competencia = selectComp?.value || "";
-
-    const competenciaObj = listaCompetencias.find(
-      (c) => String(c.id_competencia) === String(id_competencia)
-    );
-    const nombre_competencia = competenciaObj
-      ? `${competenciaObj.id_competencia} - ${
-          competenciaObj.nombre_competencia?.trim()
-        }`
-      : "";
-
-    const id_instructor =
-      r.querySelector("select.instructor-select")?.value || "";
-
-    const raes = [...r.querySelectorAll(".rae-container input[type=checkbox]")]
-      .filter((chk) => chk.checked)
-      .map((chk) => chk.dataset.idRae);
-
-    return {
-      id_horario,
-      numero_ficha,
-      id_competencia,
-      nombre_competencia,
-      id_instructor,
-      raes,
-    };
-  });
-
-  const filaSinRae = filas.find(
-    (f) => !Array.isArray(f.raes) || f.raes.length === 0
-  );
-  if (filaSinRae) {
-    Toast.fire({
-      icon: "warning",
-      title: `Debe seleccionar al menos 1 RAE para actualizar el horario `,
-    });
-    return;
-  }
-
-  try {
-    const res = await fetch(
-      `${BASE_URL}src/controllers/TrimestralizacionController.php?accion=actualizar&id_zona=${id_zona}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(filas),
-      }
-    );
-
-    const data = await res.json();
-    if (data && (data.success || data.status === "success")) {
-      Toast.fire({
-        icon: "success",
-        title: "Cambios guardados correctamente",
-      });
-      document.getElementById("botones-edicion")?.remove();
-      document.getElementById("botones-principales").style.display = "flex";
-      cargarTrimestralizacion();
-    } else {
-      console.error("guardarCambios respuesta inesperada:", data);
-      Toast.fire({ icon: "error", title: "Error al guardar cambios" });
-    }
-  } catch (err) {
-    console.error("guardarCambios error:", err);
-    Toast.fire({
-      icon: "error",
-      title: "Error de conexión al guardar",
-    });
-  }
-}
-
-function cancelarEdicion() {
-  Swal.fire({
-    title: "¿Deseas cancelar los cambios realizados?",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonText: "Sí, cancelar",
-    cancelButtonText: "No, continuar",
-    reverseButtons: true,
-    confirmButtonColor: "#39A900",
-    cancelButtonColor: "#E53935",
-  }).then((res) => {
-    if (res.isConfirmed) {
-      const be = document.getElementById("botones-edicion");
-      if (be) be.remove();
-      const bp = document.getElementById("botones-principales");
-      if (bp) bp.style.display = "flex";
-      cargarTrimestralizacion();
-      Toast.fire({ icon: "info", title: "Edición cancelada" });
-    }
-  });
-}
 
 // =======================
 // CARGAR ÁREAS Y ZONAS ACTIVAS PARA LOS FILTROS SUPERIORES
@@ -771,6 +628,232 @@ function cancelarEdicion() {
     console.error("❌ Error cargando áreas/zonas:", error);
   }
 })();
+
+
+
+// =======================
+// Funcion de editar
+// ======================
+
+async function editarTrimestralizacion (reg){
+  await cargarInstructores();
+  await cargarCompetencias();
+  await cargarFichas();
+
+  const dia = reg.getAttribute("data-dia") || "Sin día";
+  const horaInicio = reg.getAttribute("data-hora-inicio") || "";
+  const horaFin = reg.getAttribute("data-hora-fin") || "";
+  const ficha = reg.getAttribute("data-ficha") || "";
+  const idInstructorActual = reg.getAttribute("data-id-instructor") || "";
+  const idCompetenciaActual = reg.getAttribute("data-id-competencia") || "";
+  const raesActuales = JSON.parse(reg.getAttribute("data-raes") || "[]");
+  const idHorario = reg.getAttribute("data-id") || "";
+  const id_zona_val = document.getElementById("selectZona")?.value || id_zona;
+  const id_area_val = document.getElementById("selectArea")?.value;
+
+  const optionInstructors = listaInstructores.map(i =>
+  `<option value="${i.id_instructor}" ${String(i.id_instructor) === String(idInstructorActual) ? "selected" : ""}>
+    ${i.nombre_instructor} - ${i.tipo_instructor}
+  </option>`
+  ).join("");
+
+  const optionCompetencias = listaCompetencias.map(c =>
+  `<option value="${c.id_competencia}" ${String(c.id_competencia) === String(idCompetenciaActual) ? "selected" : ""}>
+    ${c.nombre_competencia}
+  </option>`
+  ).join("");
+
+  const optionFichas = listaFichas.map(f => {
+    const nivel = f.nivel_formacion || f.nivel_ficha || "Sin nivel";
+    return `<option value="${f.numero_ficha}" ${String(f.numero_ficha) === String(ficha) ? "selected" : ""}>
+      ${f.numero_ficha} - Nivel ${nivel}
+    </option>`;
+  }).join("");
+
+  const horas = Array.from({ length: 16 }, (_, i) => i + 6);
+  const horaOpcionesInicio = horas.map(h => `<option value="${String(h).padStart(2, "0")}:00" ${String(h).padStart(2, "0") + ":00" === horaInicio ? "selected" : ""}>${String(h).padStart(2, "0")}:00</option>`).join("");
+  const horaOpcionesFin = horas.map(h => `<option value="${String(h).padStart(2, "0")}:00" ${String(h).padStart(2, "0") + ":00" === horaFin ? "selected" : ""}>${String(h).padStart(2, "0")}:00</option>`).join("");
+
+  Swal.fire({
+    title: "✏️ Editar Horario",
+    html: `
+    <div class="bg-white p-2 rounded-lg">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+        <div>
+          <label class="block text-xs font-semibold text-[#00324D] mb-1">Día</label>
+          <select id="editDia" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324D] focus:border-transparent">
+            ${["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"].map(d => `<option value="${d}" ${d === dia ? "selected" : ""}>${d}</option>`).join("")}
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-[#00324D] mb-1">Ficha / Grupo</label>
+          <select id="editFicha" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324D] focus:border-transparent">
+            <option value="">Seleccione una ficha</option>
+            ${optionFichas}
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-[#00324D] mb-1">Hora Inicio</label>
+          <select id="editHoraInicio" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324D] focus:border-transparent">
+            <option value="">Seleccionar hora</option>
+            ${horaOpcionesInicio}
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-[#00324D] mb-1">Hora Fin</label>
+          <select id="editHoraFin" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324D] focus:border-transparent">
+            <option value="">Seleccionar hora</option>
+            ${horaOpcionesFin}
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-[#00324D] mb-1">Instructor</label>
+          <select id="editInstructor" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324D] focus:border-transparent">
+            <option value="">Seleccione un instructor</option>
+            ${optionInstructors}
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-[#00324D] mb-1">Competencia</label>
+          <select id="editCompetencia" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324D] focus:border-transparent">
+            <option value="">Seleccione una competencia</option>
+            ${optionCompetencias}
+          </select>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-xs font-semibold text-[#00324D] mb-1">RAEs</label>
+          <div id="editRAEs" class="max-h-48 overflow-auto border border-gray-300 p-3 rounded-md text-sm bg-gray-50"></div>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-xs font-semibold text-[#00324D] mb-1">Descripción (Opcional)</label>
+          <textarea id="editDescripcion" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324D] focus:border-transparent" placeholder="Notas adicionales del horario..."></textarea>
+        </div>
+      </div>
+    </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: "Guardar cambios",
+    cancelButtonText: "Cancelar",
+    didOpen: async () => {
+      await renderRAEsPopup(idCompetenciaActual, raesActuales);
+
+      document.getElementById("editCompetencia").addEventListener("change", (e) => {
+        renderRAEsPopup(e.target.value, []);
+      });
+    }, 
+    preConfirm: () => {
+      const dia = document.getElementById("editDia").value;
+      const horaInicio = document.getElementById("editHoraInicio").value;
+      const horaFin = document.getElementById("editHoraFin").value;
+      const ficha = document.getElementById("editFicha").value;
+      const idInstructor = document.getElementById("editInstructor").value;
+      const idCompetencia = document.getElementById("editCompetencia").value;
+
+      const raes = [...document.querySelectorAll("#editRAEs input:checked")].map(chk => chk.value);
+
+      if (!dia || !horaInicio || !horaFin || !ficha || !idInstructor || !idCompetencia || raes.length === 0) {
+        Swal.showValidationMessage("⚠️ Completa todos los campos y selecciona al menos un RA.");
+        return false;
+      }
+      if (timeToMinutes(horaFin) <= timeToMinutes(horaInicio)) {
+        Swal.showValidationMessage("⏰ Hora fin debe ser posterior a hora inicio.");
+        return false;
+      }
+      if (hasOverlap({ dia, inicio: horaInicio, fin: horaFin, excludeId: idHorario })) {
+        Swal.showValidationMessage("⚠️ Esta franja ya está ocupada en ese día.");
+        return false;
+      }
+      return {
+        id_horario: idHorario,
+        dia,
+        numero_ficha: ficha,
+        hora_inicio: horaInicio,
+        hora_fin: horaFin,
+        id_instructor: idInstructor,
+        id_competencia: idCompetencia,
+        raes: raes,
+        id_zona: id_zona_val,
+        id_area: id_area_val,
+        descripcion: document.getElementById("editDescripcion").value || ""
+      };
+    }
+}). then (async (res) => {
+  if(!res.isConfirmed) return;
+  
+  try{
+    // El backend espera un ARRAY de registros
+    const payload = [res.value];
+    console.log("Enviando payload:", JSON.stringify(payload, null, 2));
+    
+    const resUpdate = await fetch(`${BASE_URL}src/controllers/TrimestralizacionController.php?accion=actualizar`, {
+      method: "POST",
+      headers: {"Content-Type" : "application/json"},
+      body: JSON.stringify(payload)
+  });
+  
+  if (!resUpdate.ok) {
+    throw new Error(`HTTP error! status: ${resUpdate.status}`);
+  }
+  
+  const data = await resUpdate.json();
+  console.log("Respuesta del servidor:", data);
+  
+  // El backend retorna {success: true} o {success: false}
+  const esExito = data.success === true || data.success === "true" || data.status === "success";
+  
+  if (esExito) {
+    Toast.fire({
+      icon: "success",
+      title: "Horario actualizado correctamente"
+    });
+    cargarTrimestralizacion();
+  } else {
+    console.error("Error del servidor:", data);
+    Toast.fire({
+      icon: "error",
+      title: data.error || data.message || "Error al actualizar el horario"
+    });
+  }
+} catch (e) {
+  console.error("Error en actualización:", e);
+  Toast.fire({icon: "error", title: `Error: ${e.message}`});
+}
+});
+}
+
+
+
+async function renderRAEsPopup(idCompetencia, raesMarcados = []) {
+  const cont = document.getElementById("editRAEs");
+  if (!cont) return;
+  cont.innerHTML = "<p class='text-gray-400 italic'>Cargando RAEs...</p>";
+
+  if (!idCompetencia) {
+    cont.innerHTML = "<p class='text-gray-400 italic'>Seleccione una competencia</p>";
+    return;
+  }
+
+  const raes = await obtenerRoesPorCompetencia(idCompetencia);
+
+  cont.innerHTML = raes.map(rae => {
+    const desc = (rae.descripcion || rae.descripcion_rae || "").trim();
+    const checked = raesMarcados.includes(`${rae.id_rae} - ${desc}`) ? "checked" : "";
+    return `
+      <label class="flex items-center gap-2 mb-1">
+        <input type="checkbox" value="${rae.id_rae}" ${checked}>
+        ${rae.id_rae} - ${desc}
+      </label>
+    `;
+  }).join("");
+}
+
 
 // =======================
 // ELIMINAR TODO
@@ -906,10 +989,226 @@ async function descargarPDF() {
   pdf.save(`trimestralizacion_zona_${id_zona}.pdf`);
 }
 
+
+// =======================
+// ABRIR / CERRAR MODAL CREAR TRIMESTRALIZACIÓN
+// =======================
+
+function abrirModal() {
+  const modal = document.getElementById("modalCrearLanding");
+  if (!modal) {
+    console.error("❌ No existe #modalCrearLanding");
+    return;
+  }
+  modal.classList.remove("hidden");
+}
+
+function cerrarModalCrear() {
+  const modal = document.getElementById("modalCrearLanding");
+  if (!modal) return;
+  modal.classList.add("hidden");
+}
+
+// Botón principal "Nueva trimestralización"
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("btnAbrirModal");
+  const btnCerrar = document.getElementById("btnCerrarModal");
+  const backdrop = document.getElementById("modalBackdrop");
+
+  if (btn) {
+    btn.addEventListener("click", abrirModal);
+  }
+
+  if (btnCerrar) {
+    btnCerrar.addEventListener("click", cerrarModalCrear);
+  }
+
+  if (backdrop) {
+    backdrop.addEventListener("click", cerrarModalCrear);
+  }
+});
+
+
+function popupCeldas(){
+  document.querySelectorAll("#tbody-horarios .registro").forEach(reg => {
+    reg.classList.add("cursor-pointer", "hover:bg-green-50");
+    reg.addEventListener("click", () => {
+      console.log("DATASET DEL REGISTRO:", reg.dataset);
+        const competencia = reg.getAttribute("data-competencia") || "Sin competencia"
+        const ficha = reg.getAttribute("data-ficha") || "Sin ficha"
+        const programa = reg.getAttribute("data-programa") || "Sin programa"
+        const instructor = reg.getAttribute("data-instructor") || "Sin instructor"
+        const dia = reg.getAttribute("data-dia") || "Sin día"
+        const hora = reg.getAttribute("data-hora-rango") || reg.getAttribute("data-hora-inicio") || "Sin hora"
+        
+        let raes = [];
+        try {
+          const raesArr = JSON.parse(reg.getAttribute("data-raes") || "[]");
+          if (Array.isArray(raesArr) && raesArr.length) {
+            raes = raesArr.join(", ");
+        }
+      }
+        catch(e){
+          console.error("Error con las Raes:", e);
+
+        }
+        Swal.fire({
+          title: "",
+          showCloseButton: false,
+          showConfirmButton: false,
+          html: `
+              <div class="text-left" style="max-height: 420px; overflow-y: auto;">
+                <div class="mb-4 pb-2 flex items-center justify-between gap-3">
+                  <h2 class="text-xl font-bold text-[#00324D]">Datos de Trimestralización</h2>
+                  <button id="btnCerrarXPopup" type="button" class="text-gray-400 hover:text-gray-700 focus:outline-none text-2xl w-8 h-8 flex items-center justify-center leading-none">&times;</button>
+                </div>
+
+                <!-- Encabezado día / hora -->
+                <div class="mb-4 pb-2 border-b border-[#000]">
+                  <p class="text-sm text-gray-500">${dia} • ${hora}</p>
+                </div>
+
+                <!-- Ítems -->
+                <div class="space-y-3 text-sm">
+                  <div class="flex items-start gap-3">
+                    <svg class="w-4 h-4 mt-0.5 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                    </svg>
+                    <div>
+                      <p class="text-gray-400 text-xs">Instructor</p>
+                      <p class="text-gray-800 font-medium">${instructor}</p>
+                    </div>
+                  </div>
+
+                  <div class="flex items-start gap-3">
+                    <svg class="w-4 h-4 mt-0.5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                      <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+                    </svg>
+                    <div>
+                      <p class="text-gray-400 text-xs">Grupo</p>
+                      <p class="text-gray-800 font-medium">${ficha}</p>
+                    </div>
+                  </div>
+
+                  <div class="flex items-start gap-3">
+                    <svg class="w-4 h-4 mt-0.5 text-purple-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10 2L1 6l9 4 9-4-9-4z"/>
+                      <path d="M4 8v4c0 1.5 2.7 3 6 3s6-1.5 6-3V8l-6 2.7L4 8z"/>
+                    </svg>
+                    <div>
+                      <p class="text-gray-400 text-xs">Programa de Formación</p>
+                      <p class="text-gray-800 font-medium">${programa}</p>
+                    </div>
+                  </div>
+
+                  <div class="flex items-start gap-3">
+                    <svg class="w-4 h-4 mt-0.5 text-indigo-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H4z"/>
+                    </svg>
+                    <div>
+                      <p class="text-gray-400 text-xs">Competencia</p>
+                      <p class="text-gray-800 font-medium">${competencia}</p>
+                    </div>
+                  </div>
+
+                  <div class="flex items-start gap-3">
+                    <svg class="w-4 h-4 mt-0.5 text-yellow-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.536-10.95a1 1 0 10-1.414-1.414L9 8.757 7.879 7.636a1 1 0 10-1.414 1.414l1.828 1.829a1 1 0 001.414 0l3.829-3.829z" clip-rule="evenodd"/>
+                    </svg>
+                    <div>
+                      <p class="text-gray-400 text-xs">RAEs</p>
+                      <p class="text-gray-800 font-medium">${raes.replace(/\|/g, ", ")}</p>
+                    </div>
+                  </div>
+
+                  <div class="flex items-start gap-3">
+                    <svg class="w-4 h-4 mt-0.5 text-gray-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V9.414a2 2 0 00-.586-1.414l-5.414-5.414A2 2 0 0010.586 2H4z"/>
+                      <path d="M9 2v5a2 2 0 002 2h5"/>
+                    </svg>
+                    <div>
+                      <p class="text-gray-400 text-xs">Descripción de la jornada</p>
+                      <p class="text-gray-800 font-medium">Descripción de la jornada</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Botones -->
+              <div class="mt-6 flex justify-end gap-2">
+                <button id="btnEditarRegistro"
+                  class="bg-[#00324D] text-white text-sm px-4 py-2 rounded-lg hover:bg-[#002233] transition">
+                  Editar
+                </button>
+                <button id="btnCerrarPopup"
+                  class="bg-gray-200 text-gray-800 text-sm px-4 py-2 rounded-lg hover:bg-gray-300 transition">
+                  Aceptar
+                </button>
+              </div>
+            `,
+            showConfirmButton: false,
+            didOpen: () => {
+          document.getElementById("btnCerrarXPopup")?.addEventListener("click", () => {
+            Swal.close();
+          });
+
+          document.getElementById("btnCerrarPopup").addEventListener("click", () => {
+            Swal.close();
+          });
+        
+          document.getElementById("btnEditarRegistro").addEventListener("click", () => {
+            Swal.close();
+            editarTrimestralizacion(reg);
+          });
+        },
+      });
+    });
+  })
+}
+
+function popupZonaLibre(){
+  document.querySelectorAll("#tbody-horarios td.zona-libre").forEach(td => {
+    td.addEventListener("click", () => {
+      const dia = td.getAttribute("data-dia") || "Sin día";
+      const hora = td.getAttribute("data-hora") || "Sin hora";
+      Swal.fire({
+        title: "Zona libre",
+        html:`
+        <div class="mb-3 text-sm text-left space-y-2 text-gray-500 italic">
+          <p><strong>Día:</strong> ${dia}</p>
+          <p><strong>Hora:</strong> ${hora}</p>
+          <p>En esta franja no hay ninguna competencia programada.</p>
+          </div>  
+          <div class="mt-8 flex justify-end gap-3">
+            <button id="btnCerrarPopupZonaLibre" class="bg-[#00324D] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#002233] transition flex items-center justify-center w-full sm:w-auto">Cerrar</button>
+            <button id="btnAbrirModalZonaLibre" class="bg-[#00324D] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#002233] transition flex items-center justify-center w-full sm:w-auto">
+              Agregar Horario
+            </button>
+          </div>
+          `,
+          showConfirmButton: false,
+          didOpen: () => {
+            document.getElementById("btnCerrarPopupZonaLibre").addEventListener("click", () => {
+              Swal.close();
+            });
+            document.getElementById("btnAbrirModalZonaLibre").addEventListener("click", () => {
+              Swal.close();
+              abrirModal();
+            });
+          }
+      });
+    });
+  })
+}
+
 // =======================
 // INICIO
 // =======================
 document.addEventListener("DOMContentLoaded", () => {
+  cargarFichas();
+  cargarInstructores();
+  cargarCompetencias();
   cargarAreasYZonas();
   if (id_zona) {
     toggleTabla(true);

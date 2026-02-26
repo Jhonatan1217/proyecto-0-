@@ -76,6 +76,9 @@ case 'listar':
             h.id_rae AS raes_horario,
             f.numero_ficha,
             f.nivel_ficha,
+            p.id_programa,
+            p.nombre_programa,
+            i.id_instructor,
             i.nombre_instructor,
             i.tipo_instructor,
             c.id_competencia,
@@ -84,6 +87,7 @@ case 'listar':
             r.descripcion AS descripcion_rae
         FROM horarios h
         LEFT JOIN fichas f ON h.id_ficha = f.id_ficha
+        LEFT JOIN programas p ON h.id_programa = p.id_programa
         LEFT JOIN instructores i ON h.id_instructor = i.id_instructor
         LEFT JOIN competencias c ON h.id_competencia = c.id_competencia
         LEFT JOIN raes r ON FIND_IN_SET(r.id_rae, h.id_rae)
@@ -453,6 +457,24 @@ case 'listar':
                     ");
                     $stmtComp->execute([
                         ':id_competencia' => $r['id_competencia'],
+                        ':id_horario' => $r['id_horario']
+                    ]);
+                }
+
+                // Actualizar día y horas
+                if (!empty($r['dia']) || !empty($r['hora_inicio']) || !empty($r['hora_fin'])) {
+                    $stmtHoras = $conn->prepare("
+                        UPDATE horarios
+                        SET 
+                            dia = COALESCE(:dia, dia),
+                            hora_inicio = COALESCE(:hora_inicio, hora_inicio),
+                            hora_fin = COALESCE(:hora_fin, hora_fin)
+                        WHERE id_horario = :id_horario
+                    ");
+                    $stmtHoras->execute([
+                        ':dia' => $r['dia'] ?? null,
+                        ':hora_inicio' => $r['hora_inicio'] ?? null,
+                        ':hora_fin' => $r['hora_fin'] ?? null,
                         ':id_horario' => $r['id_horario']
                     ]);
                 }
