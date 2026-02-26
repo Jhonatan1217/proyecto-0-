@@ -94,6 +94,17 @@
         </button>
       </div>
 
+      <!-- Buscador -->
+    <div class="px-6 py-4 border-b flex justify-start">
+      <input
+        type="text"
+        id="buscadorArea"
+        placeholder="Buscar área por nombre..."
+        class="w-64 rounded-xl border border-gray-200 px-4 py-2.5 text-sm 
+              placeholder:text-gray-400 focus:outline-none focus:border-gray-300"
+      />
+    </div>
+
       <!-- Tabla -->
       <div class="overflow-x-auto">
         <!-- Wrapper con scroll vertical controlado por JS (igual a instructores) -->
@@ -141,7 +152,6 @@
                   </div>
                 </td>
               </tr>
-              <!-- /Ejemplo -->
             </tbody>
           </table>
         </div><!-- /areasWrapper -->

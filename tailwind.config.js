@@ -5,7 +5,10 @@ module.exports = {
     "./index.php",
     "./src/**/*.{html,js,php}",
     "./public/**/*.{html,js,php}",
-    "./src/views/**/*.{html,php}"
+    "./src/views/**/*.{html,php}",
+    "./*.php",
+    "./src/**/*.php",
+    "./src/**/*.js"
   ],
   theme: {
     extend: {},

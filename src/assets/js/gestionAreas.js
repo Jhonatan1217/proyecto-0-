@@ -52,18 +52,23 @@
   }
 
   async function apiPost(accion, payload) {
-    const url = `${API_URL}?accion=${encodeURIComponent(accion)}`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-        Accept: "application/json",
-      },
-      credentials: "same-origin",
-      body: JSON.stringify(payload),
-    });
-    return parseJsonOrThrow(res);
-  }
+  const url = `${API_URL}?accion=${encodeURIComponent(accion)}`;
+  console.log("Enviando POST a:", url, "Payload:", payload); // DEBUG
+  
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      Accept: "application/json",
+    },
+    credentials: "same-origin",
+    body: JSON.stringify(payload),
+  });
+  
+  const response = await parseJsonOrThrow(res);
+  console.log("Respuesta del servidor:", response); // DEBUG
+  return response;
+}
 
   /* =======================================================
      SCROLL DINÁMICO – MISMO COMPORTAMIENTO QUE INSTRUCTORES

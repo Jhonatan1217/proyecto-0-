@@ -1,4 +1,5 @@
 <?php
+
 // Cargar datos desde la base de datos para los selects de áreas, zonas, instructores, trimestres, programas y competencias
 require_once __DIR__ . '/../../config/database.php';
 
@@ -96,7 +97,7 @@ try {
   </h2>
 
   <!-- Contenedor principal de selects y botón -->
-  <div class="flex flex-col md:flex-row justify-between items-center w-full px-4 sm:px-8 lg:px-16 my-6 gap-4 md:gap-6">
+  <div class="flex flex-col md:flex-row justify-between items-center md:items-end w-full px-4 sm:px-8 lg:px-16 my-6 gap-4 md:gap-6">
     
     <div class="flex flex-col sm:flex-row gap-4 sm:gap-8 w-full md:w-auto">
 
@@ -178,11 +179,11 @@ try {
          w-full sm:w-60 lg:w-72 xl:w-80 2xl:w-96
          px-6 py-2.5
          rounded-xl
-         bg-[#00324D]
+         bg-[#00324d]
          text-white font-medium tracking-wider
          text-sm sm:text-base
          shadow-md hover:shadow-lg
-         hover:bg-[#004A70]
+         hover:bg-[#004a70]
          active:scale-[0.98]
          transition-all duration-200
          focus:outline-none focus:ring-2 focus:ring-[#00324d]/20">
