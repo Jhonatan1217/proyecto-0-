@@ -90,7 +90,7 @@
 <!-- ================= MODAL ================= -->
 
 <div id="modalGrupo"
-  class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center z-50">
+  class="hidden items-center justify-center z-50">
 
   <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl border border-gray-200 p-8 relative">
 

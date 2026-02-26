@@ -91,9 +91,11 @@ function togglerModal(show = true) {
     const modal = document.getElementById("modalGrupo");
     if (show) {
         modal.classList.remove("hidden");
+        modal.classList.add("flex");
         document.body.style.overflow = "hidden";
     } else {
         modal.classList.add("hidden");
+        modal.classList.remove("flex");
         document.body.style.overflow = "auto";
         document.getElementById("formGrupo").reset();
     }
