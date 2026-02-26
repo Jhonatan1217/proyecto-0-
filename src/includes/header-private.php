@@ -173,7 +173,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/users.svg" alt="Icono de Usuarios">
-        <a href="#">Usuarios</a>
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionUsuarios">Usuarios</a>
       </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">

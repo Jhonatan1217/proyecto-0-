@@ -65,9 +65,9 @@ function renderTabla(data) {
                 <td class="px-6 py-4">${g.modalidad}</td>
                 <td class="px-6 py-4">${g.nombre_lider ?? ''}</td>
                 <td class="px-6 py-4 text-right">
-                    <button onclick="eliminarGrupo(${g.id_ficha})"
+                    <button onclick="desactivarGrupo(${g.id_ficha})"
                         class="text-red-500 hover:text-red-700">
-                        Eliminar
+                        Desactivar
                     </button>
                 </td>
             </tr>
