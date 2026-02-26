@@ -1,659 +1,682 @@
 // src/assets/js/gestionCompetencias.js
-// Gestión exclusiva de Competencias
-document.addEventListener('DOMContentLoaded', () => {
-  (function () {
-    // ===============================
-    // CONFIG
-    // ===============================
-    const API = (window.API_COMPETENCIAS || (window.BASE_URL || '') + 'src/controllers/CompetenciaController.php').replace(/\/+$/, '');
-    const API_PROGRAMAS = (window.API_PROGRAMAS || (window.BASE_URL || '') + 'src/controllers/ProgramasController.php').replace(/\/+$/, '');
-    const API_RAES = (window.API_RAES || (window.BASE_URL || '') + 'src/controllers/RaeController.php').replace(/\/+$/, '');
+(function () {
+  // CONFIG: puntos finales y rutas usadas por el módulo
+  const BASE = (window.BASE_URL || '').replace(/\/+$/, '');
+  const API_COMP = (window.API_COMPETENCIAS || (BASE + 'src/controllers/CompetenciaController.php')).replace(/\/+$/, '');
+  const API_PROG = (window.API_PROGRAMAS     || (BASE + 'src/controllers/ProgramasController.php')).replace(/\/+$/, '');
+  const API_RAE  = (window.API_RAES          || (BASE + 'src/controllers/RaeController.php')).replace(/\/+$/, '');
 
-    // ===============================
-    // SELECTORES
-    // ===============================
-    const tabCompetencies = document.querySelector('[data-tab="competencies"]');
-    if (!tabCompetencies) {
-      console.log('Pestaña de competencias no encontrada');
-      return;
+  // Iconos
+  const ICON_DOWN   = `${BASE}src/assets/img/chevron-down.svg`;
+  const ICON_RIGHT  = `${BASE}src/assets/img/chevron-right.svg`;
+  const ICON_PENCIL = `${BASE}src/assets/img/pencil-line.svg`;
+  const ICON_PLUS   = `${BASE}src/assets/img/plus.svg`;
+  const ICON_LIST   = `${BASE}src/assets/img/list-checks.svg`;
+
+  const INITIAL_RAES_OPEN = false;
+
+  const tab = document.querySelector('[data-tab="competencies"]');
+  if (!tab) return;
+
+  // SELECTORES
+  const list          = document.getElementById('competenciesList');
+  const emptyBox      = document.getElementById('competenciesEmpty');
+  const btnNew        = document.getElementById('btnNewCompetency');
+  const filterProgram = document.getElementById('competencyProgramFilter');
+  const searchInput   = document.getElementById('competencySearch'); // ⭐ NUEVO: buscador por nombre/código
+
+  const modal     = document.getElementById('modalCompetency');
+  const backdrop  = document.getElementById('modalCompetencyBackdrop');
+  const form      = document.getElementById('formCompetencyNew');
+
+  // Inputs modal
+  const selProg   = document.getElementById('cp_program');
+  const inpCode   = document.getElementById('cp_code'); // id_competencia
+  const inpName   = document.getElementById('cp_name');
+  const inpDesc   = document.getElementById('cp_desc');
+
+  // Botón submit del formulario (para deshabilitarlo si hay duplicado)
+  const btnSubmit = form ? (form.querySelector('[type="submit"]') || form.querySelector('button[type="submit"]')) : null;
+
+  const modalCard = modal?.querySelector('.modal-card');
+  const titleComp = document.getElementById('titleCompetency');
+
+  // Toasts
+  const Toast = (window.Swal ? Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 2200,
+    timerProgressBar: true
+  }) : null);
+  const t = {
+    ok:   (m) => Toast && Toast.fire({ icon: 'success', title: m || 'Operación exitosa' }),
+    info: (m) => Toast && Toast.fire({ icon: 'info',    title: m || 'Información' }),
+    warn: (m) => Toast && Toast.fire({ icon: 'warning', title: m || 'Revisa los datos' }),
+    err:  (m) => Toast && Toast.fire({ icon: 'error',   title: m || 'Ocurrió un error' })
+  };
+
+  // ESTADO
+  let PROGRAMS = [];
+  let ITEMS = [];
+  let RAE_MAP = {};
+  let editingId = null;
+  let editingSnap = null;
+
+  // ====== NUEVO: soporte UI/validación de duplicados ======
+  let codeDupHelperEl = null; // pequeño texto de ayuda bajo el input
+  function ensureCodeHelper() {
+    if (!inpCode || codeDupHelperEl) return;
+    codeDupHelperEl = document.createElement('p');
+    codeDupHelperEl.className = 'mt-1 text-xs text-red-600 hidden';
+    codeDupHelperEl.textContent = 'Este código ya existe. Elige uno diferente.';
+    inpCode.parentElement?.appendChild(codeDupHelperEl);
+  }
+  function setSubmitDisabled(disabled) {
+    if (!btnSubmit) return;
+    btnSubmit.disabled = !!disabled;
+    if (disabled) {
+      btnSubmit.classList.add('opacity-60', 'pointer-events-none', 'cursor-not-allowed');
+    } else {
+      btnSubmit.classList.remove('opacity-60', 'pointer-events-none', 'cursor-not-allowed');
     }
-
-    const competenciesList = document.getElementById('competenciesList');
-    const competenciesEmpty = document.getElementById('competenciesEmpty');
-    const competencyProgramFilter = document.getElementById('competencyProgramFilter');
-    const competencySearch = document.getElementById('competencySearch');
-    const btnNewCompetency = document.getElementById('btnNewCompetency');
-
-    if (!competenciesList) {
-      console.error('No se encontró el elemento competenciesList');
-      return;
+  }
+  function setCodeDuplicateUI(isDup) {
+    ensureCodeHelper();
+    if (!inpCode) return;
+    if (isDup) {
+      inpCode.classList.add('ring-2', 'ring-red-500', 'focus:ring-red-500', 'bg-red-50');
+      codeDupHelperEl?.classList.remove('hidden');
+      setSubmitDisabled(true);
+    } else {
+      inpCode.classList.remove('ring-2', 'ring-red-500', 'focus:ring-red-500', 'bg-red-50');
+      codeDupHelperEl?.classList.add('hidden');
+      setSubmitDisabled(false);
     }
+  }
+  function norm(v) { return String(v ?? '').trim().toLowerCase(); }
+  function codeExists(code, excludeId = null) {
+    const codeN = norm(code);
+    return ITEMS.some(c => {
+      const sameCode = norm(c.code) === codeN;
+      if (!sameCode) return false;
+      // Excluir el propio registro cuando estamos editando
+      if (excludeId != null && String(c.id) === String(excludeId)) return false;
+      return true;
+    });
+  }
+  // ========================================================
 
-    const modal = document.getElementById('modalCompetency');
-    const backdrop = document.getElementById('modalCompetencyBackdrop');
-    const form = modal ? modal.querySelector('#formCompetencyNew') : null;
-    const inpProgram = modal ? modal.querySelector('#cp_program') : null;
-    const inpCode = modal ? modal.querySelector('#cp_code') : null;
-    const inpName = modal ? modal.querySelector('#cp_name') : null;
-    const btnClose = modal ? modal.querySelector('#btnCloseCompetency') : null;
-    const btnCancel = modal ? modal.querySelector('#btnCancelCompetency') : null;
-    const modalTitle = modal ? modal.querySelector('#titleCompetency') : null;
+  // UTILS
+  const e = (s) => String(s ?? '')
+    .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
+    .replaceAll('"','&quot;').replaceAll("'","&#039;");
+  const show = (el) => el?.classList.remove('hidden');
+  const hide = (el) => el?.classList.add('hidden');
 
-    let editingId = null;
-    let allCompetencies = [];
-    let programs = [];
-    let filteredCompetencies = [];
-    let raesPorCompetencia = {};
-    let currentPage = 1;
-    const itemsPerPage = 10;
+  const apiGet = async (url) => {
+    const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  };
+  const apiJson = async (url, data) => {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept':'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  };
 
-    // Elementos de paginación
-    const cpPrev = document.getElementById('cpPrev');
-    const cpNext = document.getElementById('cpNext');
-    const cpInfo = document.getElementById('cpInfo');
-    const paginationContainer = document.getElementById('competenciasPagination');
+  const mapCompetencia = (raw) => ({
+    id:          raw.id_competencia ?? raw.id ?? raw.codigo ?? null,
+    program_id:  raw.id_programa ?? raw.program_id ?? raw.programa_id ?? raw.programa ?? null,
+    code:        raw.codigo_competencia ?? raw.codigo ?? raw.code ?? String(raw.id_competencia ?? ''),
+    name:        raw.nombre_competencia ?? raw.nombre ?? raw.name ?? '',
+    desc:        raw.descripcion     ?? raw.description ?? raw.detalle ?? '',
+    estado:      typeof raw.estado !== 'undefined' ? Number(raw.estado) : 1,
+  });
 
-    const Toast = Swal.mixin({
-      toast: true,
-      position: 'top-end',
-      showConfirmButton: false,
-      timer: 2500,
-      timerProgressBar: true
+  const programNameById = (id) => {
+    const sid = String(id);
+    const p = PROGRAMS.find(p =>
+      String(p.id) === sid ||
+      String(p.id_programa) === sid ||
+      String(p.programa_id) === sid
+    );
+    return p?.nombre_programa || p?.name || p?.nombre || '—';
+  };
+
+  // CARGAS
+  async function loadPrograms({ preserveSelection = true } = {}) {
+    try {
+      const prevFilterValue = preserveSelection && filterProgram ? filterProgram.value : null;
+      const prevSelProg     = preserveSelection && selProg       ? selProg.value       : null;
+
+      const res = await apiGet(`${API_PROG}?accion=listar`);
+      PROGRAMS = Array.isArray(res) ? res : (res?.data || []);
+
+      if (filterProgram) filterProgram.querySelectorAll('option:not([value="all"])').forEach(o => o.remove());
+      if (selProg)       selProg.querySelectorAll('option:not([value=""])').forEach(o => o.remove());
+
+      PROGRAMS.forEach(p => {
+        const id   = String(p.id ?? p.id_programa ?? p.programa_id ?? '');
+        const name = p.nombre_programa ?? p.name ?? p.nombre ?? `Programa ${id}`;
+        if (filterProgram) {
+          const opt = document.createElement('option');
+          opt.value = id; opt.textContent = name;
+          filterProgram.appendChild(opt);
+        }
+        if (selProg) {
+          const opt = document.createElement('option');
+          opt.value = id; opt.textContent = name;
+          selProg.appendChild(opt);
+        }
+      });
+
+      if (preserveSelection && filterProgram) {
+        const exists = Array.from(filterProgram.options).some(o => o.value === prevFilterValue);
+        filterProgram.value = exists ? prevFilterValue : 'all';
+      }
+      if (preserveSelection && selProg) {
+        const exists = Array.from(selProg.options).some(o => o.value === prevSelProg);
+        selProg.value = exists ? prevSelProg : '';
+      }
+    } catch (err) {
+      console.error('[Competencias] loadPrograms:', err);
+      t.err('No se pudieron cargar los programas');
+    }
+  }
+
+  async function loadCompetencias() {
+    try {
+      const res = await apiGet(`${API_COMP}?accion=listar`);
+      const arr = Array.isArray(res) ? res : (res?.data || []);
+      ITEMS = arr.map(mapCompetencia);
+      renderList();
+    } catch (err) {
+      console.error('[Competencias] loadCompetencias]:', err);
+      ITEMS = [];
+      renderList();
+      t.err('No se pudieron cargar las competencias');
+    }
+  }
+
+  async function tryLoadRaeMap() {
+    try {
+      const res = await apiGet(`${API_RAE}?accion=listar`);
+      const arr = Array.isArray(res) ? res : (res?.data || []);
+      RAE_MAP = {};
+      arr.forEach(r => {
+        const idc = String(r.id_competencia ?? r.competencia_id ?? r.idCompetencia ?? '');
+        if (!idc) return;
+        const codigo = [
+          r.codigo_rae, r.codigoRAE, r.codigo, r.id_rae, r.idRAE, r.clave, r.ref
+        ].find(v => (v ?? '') !== '') ?? '';
+        const nombre = [
+          r.nombre_rae, r.nombreRAE, r.nombre, r.titulo, r.texto,
+          r.descripcion_rae, r.descripcionRAE, r.descripcion, r.detalle
+        ].find(v => (v ?? '') !== '') ?? '';
+        const cod = String(codigo ?? '').trim();
+        const nom = String(nombre ?? '').trim();
+        (RAE_MAP[idc] ||= []).push({
+          codigo: cod || '—',
+          nombre: nom || '—'
+        });
+      });
+      renderList();
+    } catch (_e) {
+      RAE_MAP = {};
+    }
+  }
+
+  // RENDER
+  function statusChip(estado) {
+    if (Number(estado) === 1) {
+      return `
+        <span
+          class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full"
+          style="background:#eaf7e6;border:1px solid rgba(57,169,0,.22);color:#39a900"
+        >Activo</span>`;
+    }
+    return `
+      <span
+        class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full"
+        style="background:#f3f4f6;border:1px solid #e5e7eb;color:#6b7280"
+      >Inhabilitado</span>`;
+  }
+
+  function raeCountPill(count) {
+    return `
+      <span class="inline-flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-zinc-100 text-zinc-700 ring-1 ring-zinc-200">
+        <img src="${ICON_LIST}" class="w-3.5 h-3.5" alt="" />
+        ${count} RAEs
+      </span>`;
+  }
+
+  function renderRaeItemsHtml(items) {
+    if (!items || !items.length) return '';
+    return items.map(it => `
+      <div class="rounded-xl bg-zinc-50 ring-1 ring-zinc-200 px-4 py-4">
+        <div class="flex items-center gap-4">
+          <span class="inline-flex items-center whitespace-nowrap rounded-full bg-zinc-100 ring-1 ring-zinc-300 px-3 py-1 text-xs font-semibold text-zinc-700">
+            ${e(it.codigo || '—')}
+          </span>
+          <p class="text-sm text-zinc-700 leading-relaxed">${e(it.nombre || '—')}</p>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderSwitchHtml(id, estado) {
+    return `
+      <label class="switch cursor-pointer" data-switch="${e(id)}" title="${estado ? 'Activo' : 'Inhabilitado'}" aria-label="Cambiar estado">
+        <input type="checkbox" ${estado ? 'checked' : ''} />
+        <span class="dot"></span>
+      </label>
+    `;
+  }
+
+  function paintSwitch(el) {
+    try {
+      const input = el.querySelector('input');
+      const setBg = () => { el.style.background = input.checked ? '#39a900' : '#e5e7eb'; };
+      setBg();
+      input.addEventListener('change', setBg);
+    } catch {}
+  }
+
+  function renderList() {
+    if (!list) return;
+
+    const pf = filterProgram?.value || 'all';
+    const isFiltering = !!filterProgram && pf !== 'all';
+
+    // ⭐ NUEVO: término de búsqueda (nombre / código)
+    const rawSearch = (searchInput?.value || '').trim().toLowerCase();
+    const hasSearch = rawSearch.length > 0;
+
+    const data = ITEMS.filter(c => {
+      // Filtro por programa (ya lo tenías)
+      if (isFiltering) {
+        if (!c.program_id) return false;
+        if (String(c.program_id) !== String(pf)) return false;
+      }
+
+      // Filtro por buscador (nombre / código)
+      if (hasSearch) {
+        const name = (c.name || '').toLowerCase();
+        const code = (c.code || '').toLowerCase();
+        if (!name.includes(rawSearch) && !code.includes(rawSearch)) {
+          return false;
+        }
+      }
+
+      return true;
     });
 
-    const t = {
-      ok: m => Toast.fire({ icon: 'success', title: m }),
-      warn: m => Toast.fire({ icon: 'warning', title: m }),
-      err: m => Toast.fire({ icon: 'error', title: m })
-    };
+    list.innerHTML = '';
 
-    // ===============================
-    // FUNCIONES API
-    // ===============================
-    async function apiListar() {
-      try {
-        const r = await fetch(`${API}?accion=listar`, {
-          credentials: 'same-origin',
-          headers: { 'Accept': 'application/json' }
-        });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const data = await r.json();
-        return data;
-      } catch (error) {
-        console.error('Error en apiListar:', error);
-        throw error;
-      }
-    }
-
-    async function apiListarProgramas() {
-      try {
-        const r = await fetch(`${API_PROGRAMAS}?accion=listar`, {
-          credentials: 'same-origin',
-          headers: { 'Accept': 'application/json' }
-        });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const data = await r.json();
-        return data;
-      } catch (error) {
-        console.error('Error cargando programas:', error);
-        return [];
-      }
-    }
-
-    async function apiListarRaesPorCompetencia(id_competencia) {
-      try {
-        const r = await fetch(`${API_RAES}?accion=porCompetencia&id_competencia=${encodeURIComponent(id_competencia)}`, {
-          credentials: 'same-origin',
-          headers: { 'Accept': 'application/json' }
-        });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const data = await r.json();
-        return Array.isArray(data) ? data : [];
-      } catch (error) {
-        console.error(`Error cargando RAEs para competencia ${id_competencia}:`, error);
-        return [];
-      }
-    }
-
-    async function apiCrear(payload) {
-      const r = await fetch(`${API}?accion=crear`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify(payload),
-      });
-      return r.json();
-    }
-
-    async function apiActualizar(payload) {
-      const r = await fetch(`${API}?accion=actualizar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify(payload),
-      });
-      return r.json();
-    }
-
-    async function apiCambiarEstado(id_competencia, estado) {
-      const payload = {
-        id_competencia: id_competencia,
-        estado: estado
-      };
-      const r = await fetch(`${API}?accion=inhabilitar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      return r.json();
-    }
-
-    // ===============================
-    // FUNCIONES AUXILIARES
-    // ===============================
-    function escapeHtml(s) {
-      if (s === null || s === undefined) return '';
-      const t = document.createElement('textarea');
-      t.textContent = String(s);
-      return t.innerHTML;
-    }
-
-    function renderSwitch(active, id_competencia) {
-      return `
-        <label class="switch relative inline-flex items-center cursor-pointer select-none">
-          <input type="checkbox" class="peer sr-only estado-switch" data-id="${id_competencia}" ${active ? 'checked' : ''} />
-          <span class="block w-11 h-6 rounded-full bg-zinc-300 peer-checked:bg-[#39A900] transition-colors"></span>
-          <span class="dot absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-transform peer-checked:translate-x-5"></span>
-        </label>
-      `;
-    }
-
-    function renderRaesList(raes, competenciaId) {
-      if (!raes || raes.length === 0) {
-        return `
-          <div class="text-sm text-zinc-500 italic py-3 px-3 bg-zinc-50 rounded-lg border border-zinc-200">
-            No hay RAEs asociados a esta competencia
-          </div>
-        `;
-      }
-
-      let html = '<div class="space-y-2 mt-3">';
-      raes.forEach(rae => {
-        html += `
-          <div class="flex items-start justify-between bg-white p-3 rounded-lg border border-zinc-200 hover:border-[#0a3a57] transition">
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="text-xs font-medium text-[#0a3a57] bg-[#39a900] bg-opacity-10 px-2 py-0.5 rounded-full">${escapeHtml(rae.id_rae || rae.codigo || '')}</span>
-                <span class="text-xs text-zinc-400">•</span>
-                <span class="text-sm text-zinc-700">${escapeHtml(rae.descripcion || '')}</span>
-              </div>
+    if (!ITEMS.length) {
+      if (emptyBox) {
+        show(emptyBox);
+        emptyBox.innerHTML = `
+          <div class="w-full rounded-2xl border border-zinc-200 bg-white">
+            <div class="flex flex-col items-center justify-center text-center py-16">
+              <p class="text-zinc-500 mb-5 text-sm sm:text-base">
+                No hay competencias registrados
+              </p>
+              <button id="btnFirstCompetency"
+                      class="flex items-center gap-2  bg-[#00324d] text-white px-4 py-2 rounded-xl font-medium text-sm">
+                <img src="${ICON_PLUS}" class="w-4 h-4" alt="simbolo de mas" />
+                Crear Primera Competencia
+              </button>
             </div>
-            <button class="p-1 hover:bg-zinc-100 rounded edit-rae-btn ml-2 flex-shrink-0" data-id="${escapeHtml(rae.id_rae)}" title="Editar RAE">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M17 3l4 4-7 7H10v-4l7-7z"/>
-                <path d="M3 21h18"/>
-              </svg>
-            </button>
           </div>
         `;
-      });
-      html += '</div>';
-
-      return html;
-    }
-
-    async function toggleRaes(competenciaId, button, container) {
-      if (container.style.display === 'none' || container.style.display === '') {
-        button.innerHTML = `
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="18 15 12 9 6 15"></polyline>
-          </svg>
-          Ocultar RAEs
-        `;
-
-        container.innerHTML = '<div class="text-sm text-zinc-500 py-4 text-center bg-zinc-50 rounded-lg border border-zinc-200">Cargando RAEs...</div>';
-        container.style.display = 'block';
-
-        if (!raesPorCompetencia[competenciaId]) {
-          raesPorCompetencia[competenciaId] = await apiListarRaesPorCompetencia(competenciaId);
-        }
-
-        container.innerHTML = renderRaesList(raesPorCompetencia[competenciaId], competenciaId);
-
-      } else {
-        const count = raesPorCompetencia[competenciaId]?.length || 0;
-        button.innerHTML = `
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
-          ${count} RAEs
-        `;
-        container.style.display = 'none';
+        document.getElementById('btnFirstCompetency')
+          ?.addEventListener('click', () => btnNew?.click());
       }
+      return;
     }
 
-    function openModal(isCreate = true, data = null) {
-      editingId = isCreate ? null : (data?.id_competencia ?? null);
-
-      if (inpProgram) {
-        inpProgram.innerHTML = '<option value="">Seleccione un programa</option>';
-        programs.forEach(p => {
-          const selected = (!isCreate && data?.id_programa == p.id_programa) ? 'selected' : '';
-          inpProgram.innerHTML += `<option value="${p.id_programa}" ${selected}>${escapeHtml(p.nombre_programa)}</option>`;
-        });
+    if (!data.length) {
+      if (emptyBox) {
+        show(emptyBox);
+        emptyBox.innerHTML = `
+          <div class="w-full rounded-2xl border border-zinc-200 bg-white">
+            <div class="flex items-center justify-center text-center py-16">
+              <p class="text-zinc-500 text-sm sm:text-base">
+                No hay competencias que coincidan con los criterios seleccionados.
+              </p>
+            </div>
+          </div>
+        `;
       }
-
-      if (inpCode) inpCode.value = isCreate ? '' : (data?.id_competencia ?? data?.codigo ?? '');
-      if (inpName) inpName.value = isCreate ? '' : (data?.nombre_competencia ?? data?.nombre ?? '');
-
-      if (modalTitle) modalTitle.textContent = isCreate ? 'Nueva Competencia' : 'Editar Competencia';
-
-      modal?.classList.remove('hidden');
-      backdrop?.classList.remove('hidden');
+      return;
     }
 
-    function closeModal() {
-      modal?.classList.add('hidden');
-      backdrop?.classList.add('hidden');
-      if (form) form.reset();
-      editingId = null;
+    if (emptyBox) {
+      emptyBox.innerHTML = '';
+      hide(emptyBox);
     }
 
-    function filtrarCompetencias() {
-      if (!allCompetencies.length) return [];
-
-      const programa = competencyProgramFilter?.value || 'all';
-      const busqueda = competencySearch?.value.toLowerCase() || '';
-
-      filteredCompetencies = allCompetencies.filter(c => {
-        if (programa !== 'all') {
-          const programaId = parseInt(programa);
-          const compProgramaId = parseInt(c.id_programa);
-          if (compProgramaId !== programaId) return false;
-        }
-
-        if (busqueda) {
-          const nombre = (c.nombre_competencia || c.nombre || '').toLowerCase();
-          const codigo = (c.id_competencia || c.codigo || '').toLowerCase();
-          return nombre.includes(busqueda) || codigo.includes(busqueda);
-        }
-
-        return true;
-      });
-
-      return filteredCompetencies;
-    }
-
-    function getProgramaNombre(id_programa) {
-      if (!id_programa) return 'Programa de Formación';
-      const programa = programs.find(p => parseInt(p.id_programa) === parseInt(id_programa));
-      return programa ? programa.nombre_programa : 'Programa de Formación';
-    }
-
-    // ===============================
-    // TARJETA DE COMPETENCIA
-    // ===============================
-    function createCard(c) {
-      const activo = String(c.estado) === '1' || String(c.estado).toLowerCase() === 'true' || c.estado === true;
-      const programaNombre = getProgramaNombre(c.id_programa);
-      const nombreCompetencia = c.nombre_competencia || c.nombre || 'Sin nombre';
-      const codigoCompetencia = c.id_competencia || c.codigo || 'Sin código';
-
-      const raesCount = raesPorCompetencia[c.id_competencia]?.length || 0;
-
+    data.forEach(c => {
+      const raes = RAE_MAP[String(c.id)] || [];
+      const isOpen = INITIAL_RAES_OPEN;
       const card = document.createElement('div');
-      card.className = 'bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm hover:shadow transition';
-      card.setAttribute('data-id', c.id_competencia);
+      card.className = 'rounded-2xl ring-1 ring-zinc-200 shadow-sm bg-white overflow-hidden';
+
+      const raeTarget = `rae-${e(c.id)}`;
+      const iconSrc  = isOpen ? ICON_DOWN : ICON_RIGHT;
 
       card.innerHTML = `
-        <div class="flex items-start justify-between gap-4">
-          <div class="flex-1">
-            <div class="mb-3">
-              <h3 class="text-xl font-semibold text-zinc-800 mb-1">${escapeHtml(nombreCompetencia)}</h3>
-              <div class="flex items-center gap-2 text-sm text-zinc-600 flex-wrap">
-                <span>Código: ${escapeHtml(codigoCompetencia)}</span>
-                <span class="text-zinc-300">|</span>
-                <span>${escapeHtml(programaNombre)}</span>
-                <span class="text-zinc-300">|</span>
-                <span class="flex items-center gap-1">
-                  <span class="w-2 h-2 rounded-full ${activo ? 'bg-[#39A900]' : 'bg-zinc-400'}"></span>
-                  ${activo ? 'Activo' : 'Inactivo'}
-                </span>
-              </div>
-            </div>
-            
-            <div class="flex items-center justify-between mt-2">
-              <button class="flex items-center gap-2 text-sm text-[#0a3a57] hover:text-[#052433] font-medium toggle-raes-btn">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-                ${raesCount} RAEs
-              </button>
+        <div class="p-5">
+          <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
               <div class="flex items-center gap-2">
-                <button class="p-2 hover:bg-zinc-100 rounded-lg edit-btn" title="Editar">
-                  <img src="src/assets/img/pencil-line.svg" alt="Editar" class="w-4 h-4">
+                <button class="btn-collapse inline-flex items-center justify-center p-1 text-zinc-700 hover:text-zinc-900"
+                        data-target="${raeTarget}" aria-expanded="${isOpen}" title="${isOpen ? 'Ocultar RAEs' : 'Mostrar RAEs'}">
+                  <img src="${iconSrc}" alt="toggle" class="w-4 h-4 transition-transform duration-200" />
                 </button>
-                ${renderSwitch(activo, c.id_competencia)}
+                <h3 class="text-2xl font-bold tracking-tight text-zinc-900">${e(c.name || '(Sin nombre)')}</h3>
               </div>
+
+              <p class="text-sm text-zinc-500 mt-2 flex items-center gap-2 flex-wrap">
+                <span><span class="opacity-80">Código:</span> <span class="font-semibold">${e(c.code || '—')}</span></span>
+                <span class="text-zinc-300">•</span>
+                <span class="inline-flex items-center rounded-full bg-zinc-100 text-zinc-600 px-3 py-1 text-xs font-medium">
+                  ${e(programNameById(c.program_id) || '—')}
+                </span>
+                <span class="text-zinc-300">•</span>
+                ${statusChip(c.estado)}
+              </p>
+
+              ${c.desc ? `<p class="text-sm text-zinc-700 mt-3">${e(c.desc)}</p>` : ''}
+
+              <div class="mt-4">${raeCountPill(raes.length)}</div>
             </div>
-              
-            
-            <div class="raes-container mt-3" style="display: none;"></div>
+
+            <div class="shrink-0 flex items-center gap-3">
+              <button class="btn-edit inline-flex items-center justify-center p-2 text-zinc-600 hover:text-zinc-900" data-id="${e(c.id)}" title="Editar">
+                <img src="${ICON_PENCIL}" class="w-5 h-5" alt="Editar" />
+              </button>
+              ${renderSwitchHtml(c.id, !!c.estado)}
+            </div>
+          </div>
+        </div>
+
+        <div class="border-t border-zinc-200 px-5 py-4 ${isOpen ? '' : 'hidden'}" id="${raeTarget}" role="region" aria-label="RAEs">
+          <div class="text-sm font-semibold text-zinc-900 mb-3">Resultados de Aprendizaje Esperados (RAE)</div>
+          <div class="grid gap-3">
+            ${renderRaeItemsHtml( (RAE_MAP[String(c.id)] || []) )}
           </div>
         </div>
       `;
 
-      const editBtn = card.querySelector('.edit-btn');
-      editBtn?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openModal(false, c);
-      });
+      list.appendChild(card);
+    });
 
-      const sw = card.querySelector('.estado-switch');
-      sw?.addEventListener('change', async (e) => {
-        e.stopPropagation();
-        const checked = sw.checked;
-        const nuevoEstado = checked ? 1 : 0;
-
+    list.querySelectorAll('.btn-edit').forEach(b => b.addEventListener('click', onEditClick));
+    list.querySelectorAll('.switch').forEach(sw => {
+      paintSwitch(sw);
+      const input = sw.querySelector('input');
+      const id = sw.getAttribute('data-switch');
+      input.addEventListener('change', async () => {
+        const next = input.checked ? 1 : 0;
         try {
-          const res = await apiCambiarEstado(c.id_competencia, nuevoEstado);
-          if (res?.error) {
-            t.err(res.error);
-            sw.checked = !checked;
-          } else {
-            t.ok(checked ? 'Competencia activada' : 'Competencia inhabilitada');
-            await loadCompetencies();
-          }
-        } catch (error) {
-          console.error('Error cambiando estado:', error);
-          t.err('No se pudo cambiar el estado.');
-          sw.checked = !checked;
+          const res = await apiJson(`${API_COMP}?accion=inhabilitar`, { id_competencia: id, estado: next });
+          if (res?.error) throw new Error(res.error);
+          t.ok('Estado actualizado');
+          await loadCompetencias();
+          await tryLoadRaeMap();
+        } catch (err) {
+          console.error('[Competencias] cambiar estado:', err);
+          input.checked = !input.checked;
+          paintSwitch(sw);
+          t.err('No fue posible cambiar el estado');
         }
       });
+    });
+    list.querySelectorAll('.btn-collapse').forEach(b => b.addEventListener('click', onCollapseClick));
+  }
 
-      const toggleBtn = card.querySelector('.toggle-raes-btn');
-      const raesContainer = card.querySelector('.raes-container');
+  // EVENTS
+  btnNew?.addEventListener('click', () => {
+    editingId = null;
+    editingSnap = null;
+    form?.reset();
 
-      toggleBtn?.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        await toggleRaes(c.id_competencia, toggleBtn, raesContainer);
-      });
+    if (titleComp) titleComp.textContent = 'Nueva Competencia';
 
-      return card;
+    if (inpCode) {
+      inpCode.removeAttribute('readonly');
+      inpCode.classList.remove('bg-zinc-50');
+      inpCode.value = '';
+      setCodeDuplicateUI(false); // limpiar estado duplicado
+    }
+    if (selProg) selProg.value = '';
+    if (inpName) inpName.value = '';
+    if (inpDesc) inpDesc.value = '';
+
+    openModal(true);
+  });
+
+  document.getElementById('btnCloseCompetency')?.addEventListener('click', closeModal);
+  document.getElementById('btnCancelCompetency')?.addEventListener('click', closeModal);
+  backdrop?.addEventListener('click', (e) => { if (e.target === backdrop) closeModal(); });
+
+  filterProgram?.addEventListener('change', renderList);
+
+  // ⭐ NUEVO: evento del buscador (filtra por nombre/código)
+  searchInput?.addEventListener('input', () => {
+    renderList();
+  });
+
+  function onCollapseClick(e) {
+    const btn = e.currentTarget;
+    const targetId = btn.getAttribute('data-target');
+    const panel = document.getElementById(targetId);
+    if (!panel) return;
+
+    const expanded = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', String(!expanded));
+    panel.classList.toggle('hidden', expanded);
+
+    const img = btn.querySelector('img');
+    if (img) img.src = expanded ? ICON_RIGHT : ICON_DOWN;
+    btn.title = expanded ? 'Mostrar RAEs' : 'Ocultar RAEs';
+  }
+
+  function openModal(withAnim = false) {
+    show(backdrop); show(modal);
+    if (!editingId) form?.reset();
+
+    if (withAnim) {
+      backdrop.classList.add('animate-backdrop');
+      modalCard?.classList.add('animate-modal');
+      const clean = () => {
+        backdrop.classList.remove('animate-backdrop');
+        modalCard?.classList.remove('animate-modal');
+        modalCard?.removeEventListener('animationend', clean);
+      };
+      modalCard?.addEventListener('animationend', clean);
+    }
+  }
+
+  function closeModal() {
+    hide(backdrop); hide(modal);
+    form?.reset();
+    editingId = null;
+    editingSnap = null;
+    if (inpCode) {
+      inpCode.removeAttribute('readonly');
+      inpCode.classList.remove('bg-zinc-50');
+      setCodeDuplicateUI(false);
+    }
+  }
+
+  async function onEditClick(e) {
+    const id = e.currentTarget.getAttribute('data-id');
+    let item = ITEMS.find(x => String(x.id) === String(id));
+    if (!item || !item.name || !item.program_id) {
+      try {
+        const raw =
+          await apiGet(`${API_COMP}?accion=obtener&id=${encodeURIComponent(id)}`)
+            .catch(() => apiGet(`${API_COMP}?accion=obtener&id_competencia=${encodeURIComponent(id)}`));
+        if (raw && typeof raw === 'object') {
+          item = mapCompetencia(Array.isArray(raw) ? raw[0] : raw);
+        }
+      } catch (_) {}
+    }
+    if (!item) { t.err('No fue posible cargar la competencia'); return; }
+
+    editingId = item.id;
+    editingSnap = {
+      program_id: String(item.program_id ?? ''),
+      code: String(item.code ?? ''),
+      name: String(item.name ?? ''),
+      desc: String(item.desc ?? '')
+    };
+
+    if (selProg) {
+      const target = String(item.program_id ?? '');
+      const exists = Array.from(selProg.options).some(o => String(o.value) === target);
+      selProg.value = exists ? target : '';
     }
 
-    // ===============================
-    // FUNCIÓN DE RENDERIZADO CON PAGINACIÓN
-    // ===============================
-    async function renderList(list) {
-      if (!competenciesList) return;
+    if (inpCode) {
+      inpCode.value = item.code || '';
+      inpCode.removeAttribute('readonly');
+      inpCode.classList.remove('bg-zinc-50');
+      // Al abrir en edición, marcar duplicado si cambia el código respecto al original:
+      setCodeDuplicateUI(false);
+    }
+    if (inpName) inpName.value = item.name || '';
+    if (inpDesc) inpDesc.value = item.desc || '';
 
-      // Limpiar el contenedor y el objeto de RAEs
-      competenciesList.innerHTML = '';
-      
-      // IMPORTANTE: Limpiar RAEs de la página anterior
-      raesPorCompetencia = {};
+    if (titleComp) titleComp.textContent = 'Editar Competencia';
 
-      if (!Array.isArray(list) || list.length === 0) {
-        if (competenciesEmpty) {
-          competenciesEmpty.classList.remove('hidden');
-          competenciesEmpty.innerHTML = `
-            <div class="py-12 text-center text-zinc-500">
-              No hay competencias que coincidan con el filtro seleccionado.
-            </div>
-          `;
-        }
-        if (paginationContainer) paginationContainer.classList.add('hidden');
-        return;
-      }
+    openModal(true);
+  }
 
-      if (competenciesEmpty) {
-        competenciesEmpty.classList.add('hidden');
-      }
+  // ====== NUEVO: validación en vivo de código duplicado ======
+  let codeCheckTimer = null;
+  inpCode?.addEventListener('input', () => {
+    clearTimeout(codeCheckTimer);
+    const val = (inpCode.value || '').trim();
+    // pequeño debounce para no recalcular en cada tecla
+    codeCheckTimer = setTimeout(() => {
+      const isDup = val ? codeExists(val, editingId) : false;
+      setCodeDuplicateUI(isDup);
+    }, 120);
+  });
+  inpCode?.addEventListener('blur', () => {
+    const val = (inpCode.value || '').trim();
+    const isDup = val ? codeExists(val, editingId) : false;
+    setCodeDuplicateUI(isDup);
+  });
+  // ===========================================================
 
-      // Aplicar paginación
-      const start = (currentPage - 1) * itemsPerPage;
-      const end = start + itemsPerPage;
-      const paginatedList = list.slice(start, end);
+  // GUARDAR
+  form?.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
 
-      // Mostrar indicador de carga
-      competenciesList.innerHTML = '<div class="text-center py-8 text-zinc-500">Cargando RAEs...</div>';
+    const isEditing  = !!editingId;
+    const newCode    = (inpCode?.value || '').trim();
+    const payload = {
+      id_competencia: isEditing ? String(editingId) : newCode,
+      codigo_competencia: newCode,
+      nombre_competencia: (inpName?.value || '').trim(),
+      descripcion: (inpDesc?.value || '').trim(),
+      id_programa: (selProg?.value || '').trim() || null
+    };
 
-      // Cargar RAEs para las competencias de esta página
-      for (const c of paginatedList) {
-        try {
-          const raes = await apiListarRaesPorCompetencia(c.id_competencia);
-          raesPorCompetencia[c.id_competencia] = raes;
-        } catch (error) {
-          console.error(`Error cargando RAEs para competencia ${c.id_competencia}:`, error);
-          raesPorCompetencia[c.id_competencia] = [];
-        }
-      }
+    // Validación mínima
+    if (!payload.codigo_competencia && !payload.nombre_competencia && !payload.descripcion && !payload.id_programa) {
+      t.warn('Todos los campos son obligatorios'); return;
+    }
+    if (!payload.nombre_competencia) { t.warn('El nombre es obligatorio'); return; }
+    if (!isEditing && !payload.codigo_competencia) { t.warn('El código es obligatorio'); return; }
+    if (!isEditing && !payload.id_programa) { t.warn('Seleccione un programa'); return; }
+  
 
-      // Limpiar el indicador de carga
-      competenciesList.innerHTML = '';
+    // ====== NUEVO: validación de duplicado al enviar ======
+    const dupNow = newCode ? codeExists(newCode, isEditing ? editingId : null) : false;
+    if (dupNow) {
+      setCodeDuplicateUI(true);
+      t.err('El código ya existe. Por favor, ingresa uno diferente.');
+      return;
+    }
+    // =====================================================
 
-      // Renderizar las tarjetas
-      const frag = document.createDocumentFragment();
-      paginatedList.forEach(c => {
-        try {
-          frag.appendChild(createCard(c));
-        } catch (error) {
-          console.error('Error creando tarjeta:', error);
-        }
-      });
-      
-      competenciesList.appendChild(frag);
-      updatePagination(list.length);
+    if (isEditing && editingSnap) {
+      const changed =
+        String(payload.codigo_competencia) !== editingSnap.code ||
+        String(payload.id_programa ?? '')  !== editingSnap.program_id ||
+        String(payload.nombre_competencia) !== editingSnap.name ||
+        String(payload.descripcion)        !== editingSnap.desc;
+
+      if (!changed) { t.info('No has realizado cambios aun'); return; }
     }
 
-    // ===============================
-    // FUNCIÓN DE PAGINACIÓN
-    // ===============================
-    function updatePagination(totalItems) {
-      if (!cpInfo || !paginationContainer) return;
-
-      const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-
-      if (totalItems <= itemsPerPage) {
-        paginationContainer.classList.add('hidden');
-        return;
+    try {
+      if (isEditing) {
+        payload.nuevo_id_competencia = newCode;
+        const res = await apiJson(`${API_COMP}?accion=actualizar`, payload);
+        if (res?.error) throw new Error(res.error);
+        t.ok('Competencia actualizada');
+      } else {
+        const res = await apiJson(`${API_COMP}?accion=crear`, payload);
+        if (res?.error) throw new Error(res.error);
+        t.ok('Competencia creada');
       }
-
-      paginationContainer.classList.remove('hidden');
-      cpInfo.textContent = `Página ${currentPage} de ${totalPages} · ${totalItems} items`;
-
-      if (cpPrev) cpPrev.disabled = currentPage <= 1;
-      if (cpNext) cpNext.disabled = currentPage >= totalPages;
-    }
-
-    // ===============================
-    // EVENTOS DE PAGINACIÓN - CORREGIDOS
-    // ===============================
-    // ===============================
-// EVENTOS DE PAGINACIÓN - CORREGIDOS
-// ===============================
-if (cpPrev) {
-  cpPrev.addEventListener('click', () => {
-    if (currentPage > 1) {
-      currentPage--;
-      // Usar filteredCompetencies directamente sin llamar a filtrarCompetencias()
-      renderList(filteredCompetencies);
+      closeModal();
+      await loadCompetencias();
+      await tryLoadRaeMap();
+    } catch (err) {
+      console.error('[Competencias] guardar:', err);
+      t.err('No fue posible guardar');
     }
   });
-}
 
-if (cpNext) {
-  cpNext.addEventListener('click', () => {
-    const totalPages = Math.ceil(filteredCompetencies.length / itemsPerPage) || 1;
-    if (currentPage < totalPages) {
-      currentPage++;
-      // Usar filteredCompetencies directamente sin llamar a filtrarCompetencias()
-      renderList(filteredCompetencies);
-    }
+  // ESCUCHAR cambios externos
+  window.addEventListener('raes:changed', async (_ev) => {
+    await tryLoadRaeMap();
+    renderList();
   });
-}
 
-    // ===============================
-    // CARGA DE DATOS
-    // ===============================
-    async function loadPrograms() {
-      try {
-        const data = await apiListarProgramas();
-        programs = Array.isArray(data) ? data : [];
+  function isModalOpen() {
+    return modal && !modal.classList.contains('hidden') && !backdrop?.classList.contains('hidden');
+  }
 
-        if (competencyProgramFilter) {
-          competencyProgramFilter.innerHTML = '<option value="all">Todos los programas</option>';
-          programs.forEach(p => {
-            competencyProgramFilter.innerHTML += `<option value="${p.id_programa}">${escapeHtml(p.nombre_programa)}</option>`;
-          });
-        }
+  window.addEventListener('programs:changed', async (ev) => {
+    const type = ev?.detail?.type || '';
+    const prog = ev?.detail?.program || {};
+    const pid  = String(prog.id_programa ?? prog.id ?? '');
 
-        if (inpProgram) {
-          inpProgram.innerHTML = '<option value="">Seleccione un programa</option>';
-          programs.forEach(p => {
-            inpProgram.innerHTML += `<option value="${p.id_programa}">${escapeHtml(p.nombre_programa)}</option>`;
-          });
-        }
-      } catch (e) {
-        console.error('Error cargando programas:', e);
-      }
+    await loadPrograms({ preserveSelection: true });
+
+    if (type === 'create' && isModalOpen() && !editingId && pid && selProg) {
+      const has = Array.from(selProg.options).some(o => String(o.value) === pid);
+      if (has) selProg.value = pid;
     }
 
-    async function loadCompetencies() {
-      try {
-        if (competenciesList) {
-          competenciesList.innerHTML = '<div class="text-center py-8 text-zinc-500">Cargando competencias...</div>';
-        }
+    renderList();
+  });
 
-        const data = await apiListar();
-        allCompetencies = Array.isArray(data) ? data : [];
+  // 🔁 NUEVO: cuando se suba el Excel, recargar programas + competencias + RAEs sin recargar página
+  window.addEventListener('excel-subido-ok', async () => {
+    await loadPrograms({ preserveSelection: true });
+    await loadCompetencias();
+    await tryLoadRaeMap();
+  });
 
-        const filtrados = filtrarCompetencias();
-        await renderList(filtrados);
-
-      } catch (error) {
-        console.error('Error en loadCompetencies:', error);
-        if (competenciesEmpty) {
-          competenciesEmpty.classList.remove('hidden');
-          competenciesEmpty.innerHTML = '<div class="py-12 text-center text-red-600">Error al cargar competencias.</div>';
-        }
-      }
-    }
-
-    // ===============================
-    // EVENTOS
-    // ===============================
-    if (btnNewCompetency) {
-      btnNewCompetency.addEventListener('click', () => openModal(true));
-    }
-
-    if (btnClose) {
-      btnClose.addEventListener('click', closeModal);
-    }
-
-    if (btnCancel) {
-      btnCancel.addEventListener('click', (e) => {
-        e.preventDefault();
-        closeModal();
-      });
-    }
-
-    if (competencyProgramFilter) {
-      competencyProgramFilter.addEventListener('change', () => {
-        currentPage = 1;
-        const filtrados = filtrarCompetencias();
-        renderList(filtrados);
-      });
-    }
-
-    if (competencySearch) {
-      competencySearch.addEventListener('input', () => {
-        currentPage = 1;
-        const filtrados = filtrarCompetencias();
-        renderList(filtrados);
-      });
-    }
-
-    if (form) {
-      form.addEventListener('submit', async e => {
-        e.preventDefault();
-
-        const id_programa = inpProgram?.value;
-        const id_competencia = (inpCode?.value || '').trim();
-        const nombre_competencia = (inpName?.value || '').trim();
-
-        if (!id_programa) return t.warn('Seleccione un programa');
-        if (!id_competencia) return t.warn('El código es obligatorio');
-        if (!nombre_competencia) return t.warn('El nombre es obligatorio');
-
-        const payload = {
-          id_competencia: id_competencia,
-          id_programa: id_programa,
-          nombre_competencia: nombre_competencia
-        };
-
-        try {
-          let res;
-          if (editingId) {
-            payload.id_competencia = editingId;
-            payload.nuevo_id_competencia = id_competencia;
-            res = await apiActualizar(payload);
-          } else {
-            res = await apiCrear(payload);
-          }
-
-          if (res?.error) {
-            return t.err(res.error);
-          }
-
-          closeModal();
-          t.ok(editingId ? 'Competencia actualizada' : 'Competencia creada');
-          
-          // Resetear a primera página y recargar
-          currentPage = 1;
-          await loadCompetencies();
-
-        } catch (error) {
-          console.error('Error guardando competencia:', error);
-          t.err('Error al guardar');
-        }
-      });
-    }
-
-    if (backdrop) {
-      backdrop.addEventListener('click', closeModal);
-    }
-
-    // ===============================
-    // EVENTOS GLOBALES
-    // ===============================
-    window.addEventListener('excel-subido-ok', () => {
-      currentPage = 1;
-      loadCompetencies();
-    });
-
-    window.addEventListener('programs:changed', () => {
-      loadPrograms();
-    });
-
-    window.addEventListener('competencias:changed', () => {
-      console.log('Evento competencias:changed recibido - recargando');
-      currentPage = 1;
-      loadCompetencies();
-    });
-
-    window.addEventListener('raes:changed', () => {
-      console.log('Evento raes:changed recibido - recargando competencias');
-      raesPorCompetencia = {};
-      currentPage = 1;
-      loadCompetencies();
-    });
-
-    // ===============================
-    // INICIO
-    // ===============================
-    Promise.all([loadPrograms(), loadCompetencies()]);
-
+  // INIT
+  (async function init(){
+    await loadPrograms({ preserveSelection: true });
+    await loadCompetencias();
+    await tryLoadRaeMap();
   })();
-});
+})();

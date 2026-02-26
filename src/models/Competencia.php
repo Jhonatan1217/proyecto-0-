@@ -11,10 +11,7 @@ class Competencia {
     // Funcion para listar todas las competencias
     public function listar() {
         try {
-            $sql = "SELECT c.*, p.nombre_programa 
-                    FROM {$this->table} c
-                    LEFT JOIN programas p ON c.id_programa = p.id_programa
-                    ORDER BY c.nombre_competencia ASC";
+            $sql = "SELECT * FROM {$this->table}";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -26,10 +23,7 @@ class Competencia {
     // Funcion para obtener una competencia por su ID
     public function obtenerPorId($id_competencia) {
         try {
-            $sql = "SELECT c.*, p.nombre_programa 
-                    FROM {$this->table} c
-                    LEFT JOIN programas p ON c.id_programa = p.id_programa
-                    WHERE c.id_competencia = :id_competencia";
+            $sql = "SELECT * FROM {$this->table} WHERE id_competencia = :id_competencia";
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':id_competencia', $id_competencia);
             $stmt->execute();
@@ -50,51 +44,29 @@ class Competencia {
             $stmt->bindValue(':id_programa', $id_programa);
             $stmt->bindValue(':nombre_competencia', $nombre_competencia);
             $stmt->execute();
-            return ['ok' => true, 'id_competencia' => $id_competencia, 'success' => 'Competencia creada exitosamente.'];
+            return ['ok' => true, 'id_competencia' => $id_competencia];
         } catch (PDOException $e) {
-            if ($e->errorInfo[1] == 1062) {
-                return ['error' => 'Ya existe una competencia con ese código.'];
-            }
             return ['error' => $e->getMessage()];
         }
     }
 
-    // Actualizar competencia (permite cambiar código)
-    public function actualizar($id_competencia_actual, $nuevo_id_competencia, $nombre_competencia, $id_programa) {
+    // Actualizar (permite opcionalmente cambiar id_programa)
+    public function actualizar($id_competencia, $nombre_competencia, $id_programa = null) {
         try {
-            $this->conn->beginTransaction();
-            
-            // Verificar si el nuevo código ya existe (solo si cambió)
-            if ($nuevo_id_competencia != $id_competencia_actual) {
-                $check = $this->conn->prepare("SELECT 1 FROM {$this->table} WHERE id_competencia = ?");
-                $check->execute([$nuevo_id_competencia]);
-                if ($check->fetchColumn()) {
-                    $this->conn->rollBack();
-                    return ["error" => "Ya existe una competencia con el nuevo código."];
-                }
+            $sets = ["nombre_competencia = :nombre_competencia"];
+            if ($id_programa !== null && $id_programa !== '') {
+                $sets[] = "id_programa = :id_programa";
             }
-            
-            $sql = "UPDATE {$this->table} 
-                    SET id_competencia = :nuevo_id,
-                        nombre_competencia = :nombre_competencia,
-                        id_programa = :id_programa
-                    WHERE id_competencia = :id_actual";
+            $sql = "UPDATE {$this->table} SET " . implode(', ', $sets) . " WHERE id_competencia = :id_competencia";
             $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':id_actual', $id_competencia_actual);
-            $stmt->bindParam(':nuevo_id', $nuevo_id_competencia);
+            $stmt->bindParam(':id_competencia', $id_competencia);
             $stmt->bindParam(':nombre_competencia', $nombre_competencia);
-            $stmt->bindParam(':id_programa', $id_programa);
+            if (strpos($sql, 'id_programa = :id_programa') !== false) {
+                $stmt->bindParam(':id_programa', $id_programa);
+            }
             $stmt->execute();
-            
-            $this->conn->commit();
-            return ['ok' => true, 'success' => 'Competencia actualizada correctamente.', 'id_competencia' => $nuevo_id_competencia];
+            return ["mensaje" => "Competencia actualizada correctamente."];
         } catch (PDOException $e) {
-            if ($this->conn->inTransaction()) {
-                $this->conn->rollBack();
-            }
-            if ($e->errorInfo[1] == 1062) {
-                return ["error" => "Ya existe una competencia con ese código."];
-            }
             return ["error" => $e->getMessage()];
         }
     }
@@ -106,7 +78,7 @@ class Competencia {
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':id_competencia', $id_competencia);
             $stmt->execute();
-            return ["success" => "Competencia eliminada exitosamente."];
+            return ["mensaje" => "Competencia eliminada exitosamente."];
         } catch (PDOException $e) {
             return ["error" => $e->getMessage()];
         }
@@ -116,15 +88,14 @@ class Competencia {
     public function cambiarEstado($id_competencia, $nuevoEstado) {
         try {
             if ($nuevoEstado != 0 && $nuevoEstado != 1) {
-                return ["error" => "El estado debe ser 1 (activo) o 0 (inactivo)."];
+                throw new Exception("El estado debe ser 1 (activo) o 0 (inactivo).");
             }
             $sql = "UPDATE {$this->table} SET estado = :estado WHERE id_competencia = :id_competencia";
             $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':estado', $nuevoEstado, PDO::PARAM_INT);
+            $stmt->bindParam(':estado', $nuevoEstado);
             $stmt->bindParam(':id_competencia', $id_competencia);
             $stmt->execute();
-            $mensaje = $nuevoEstado == 1 ? "Competencia activada correctamente." : "Competencia inhabilitada correctamente.";
-            return ["success" => $mensaje];
+            return ["mensaje" => "Estado de competencia actualizado correctamente."];
         } catch (PDOException $e) {
             return ["error" => $e->getMessage()];
         }
@@ -133,11 +104,7 @@ class Competencia {
     // Funcion para listar las competencias activas
     public function listarActivas() {
         try {
-            $sql = "SELECT c.*, p.nombre_programa 
-                    FROM {$this->table} c
-                    LEFT JOIN programas p ON c.id_programa = p.id_programa
-                    WHERE c.estado = 1
-                    ORDER BY c.nombre_competencia ASC";
+            $sql = "SELECT * FROM {$this->table} WHERE estado = 1";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);

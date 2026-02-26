@@ -6,11 +6,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const chevron = document.getElementById("chevronIcon");
   const container = document.getElementById("userDropdownContainer");
 
-<<<<<<< HEAD:src/includes/header.php
-  <!-- Fuente -->
-  <link rel="stylesheet" href="<?= BASE_URL ?>public/css/fonts.css">
-</head>
-=======
   btn.addEventListener("click", function (e) {
     e.stopPropagation();
     menu.classList.toggle("hidden");
@@ -57,7 +52,6 @@ document.addEventListener("DOMContentLoaded", function () {
       border-radius: 4px;
     }
   </style>
->>>>>>> bb6242926c655bf511d9923b149d0de4cba14a2b:src/includes/header-private.php
 
 <!-- Header -->
 <header class="flex items-center justify-between px-6 py-4 border-b shadow-sm bg-white">
@@ -145,17 +139,12 @@ document.addEventListener("DOMContentLoaded", function () {
     <!-- Botón imagen menú -->
     <img src="<?= BASE_URL ?>src/assets/img/menu.svg" alt="Menú" id="menu-hamburguesa" class="h-8 w-8 cursor-pointer" />
 
-<<<<<<< HEAD:src/includes/header.php
-  <!-- Menú lateral -->
-  <nav id="menu-lateral" class="fixed top-0 right-0 h-full w-80 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out z-50 pointer-events-none">
-=======
   </div>
 
 </header>
 
 <!-- Menú lateral -->
   <nav id="menu-lateral" class="fixed top-0 right-0 h-full w-80 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out z-50 pointer-events-none overflow-y-auto">
->>>>>>> bb6242926c655bf511d9923b149d0de4cba14a2b:src/includes/header-private.php
     <div class="flex justify-between items-center p-4 border-b border-gray-400 mx-4">
       <h2 class="font-semibold text-gray-800 text-xl">Menú de navegación</h2>
       <button id="cerrar-menu" class="text-gray-600 text-2xl hover:text-black">×</button>
@@ -163,20 +152,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
     <ul class="p-4 space-y-4 text-gray-700">
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/house.svg" alt="Icono de Inicio">
-        <a href="<?= BASE_URL ?>index.php">Inicio</a>
+        <img src="<?= BASE_URL ?>src/assets/img/calendar-days.svg" alt="Icono de Horarios">
+        <a href="<?= BASE_URL ?>index.php?page=src/views/register_tables">Horarios</a>
       </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/layout-grid.svg" alt="Icono de Áreas">
+        <img src="<?= BASE_URL ?>src/assets/img/map-pin.svg" alt="Icono de Áreas">
         <a href="<?= BASE_URL ?>index.php?page=src/views/gestionAreas">Áreas</a>
       </li>
-
+      
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/map-pin.svg" alt="Icono de Zonas">
+        <img src="<?= BASE_URL ?>src/assets/img/house-plus.svg" alt="Icono de Zonas">
         <a href="<?= BASE_URL ?>index.php?page=src/views/gestionZonas">Zonas</a>
       </li>
-
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/layers.svg" alt="Icono de Trimestres">
@@ -184,15 +172,11 @@ document.addEventListener("DOMContentLoaded", function () {
       </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/users.svg" alt="Icono de Instructores">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionInstructores">Instructores</a>
+        <img src="<?= BASE_URL ?>src/assets/img/users.svg" alt="Icono de Usuarios">
+        <a href="#">Usuarios</a>
       </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-<<<<<<< HEAD:src/includes/header.php
-        <img src="<?= BASE_URL ?>src/assets/img/book-open.svg" alt="Icono de Competencias">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/academicos">Competencias</a>
-=======
         <img src="<?= BASE_URL ?>src/assets/img/folder-minus.svg" alt="Icono de Grupos">
         <a href="<?= BASE_URL ?>index.php?page=src/views/gestionGrupos">Grupos</a>
       </li>
@@ -227,12 +211,11 @@ document.addEventListener("DOMContentLoaded", function () {
             <a href="#">RAE</a>
           </li>
         </ul>
->>>>>>> bb6242926c655bf511d9923b149d0de4cba14a2b:src/includes/header-private.php
       </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/calendar-days.svg" alt="Icono de Horarios">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/register_tables">Horarios</a>
+        <img src="<?= BASE_URL ?>src/assets/img/clipboard-list.svg" alt="Icono de Solicitudes">
+        <a href="#">Solicitudes</a>
       </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">

@@ -1,4 +1,5 @@
 <?php
+
 // Cargar datos desde la base de datos para los selects de áreas, zonas, instructores, trimestres, programas y competencias
 require_once __DIR__ . '/../../config/database.php';
 
