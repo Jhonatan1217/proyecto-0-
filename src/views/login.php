@@ -111,7 +111,7 @@
                 </div>
 
                 <div class="flex justify-end">
-                    <a href="#"
+                    <a href="src/views/restablecerContrasenia.php"
                     class="text-sm text-gray-500 hover:text-green-700 transition">
                         ¿Olvidaste la contraseña?
                     </a>

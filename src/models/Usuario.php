@@ -62,6 +62,20 @@ class Usuario
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    // Buscar usuario por correo 
+    public function obtenerPorCorreo($correo) {
+        $sql = "SELECT id_usuario, nombre_completo, correo_electronico, estado 
+                FROM {$this->table} 
+                WHERE correo_electronico = :correo 
+                LIMIT 1";
+        
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(":correo", $correo);
+        $stmt->execute();
+        
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
     /* ============================================
        ACTUALIZAR
     ============================================ */
@@ -78,6 +92,19 @@ class Usuario
         $stmt->bindParam(":nombre", $nombre);
         $stmt->bindParam(":correo", $correo);
 
+        return $stmt->execute();
+    }
+
+    // Actualizar contraseña 
+    public function actualizarPassword($id_usuario, $password_hash) {
+        $sql = "UPDATE {$this->table} 
+                SET password_hash = :password 
+                WHERE id_usuario = :id";
+        
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(":password", $password_hash);
+        $stmt->bindParam(":id", $id_usuario);
+        
         return $stmt->execute();
     }
 
