@@ -85,7 +85,7 @@ class Zona {
                         a.nombre_area, 
                         z.estado
                     FROM {$this->table} z
-                    LEFT JOIN areas a ON z.id_area = a.id_area
+                    LEFT JOIN area a ON z.id_area = a.id_area
                     ORDER BY z.id_zona ASC, a.nombre_area ASC";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute();
