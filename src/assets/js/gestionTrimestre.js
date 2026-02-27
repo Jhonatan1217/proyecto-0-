@@ -216,6 +216,10 @@ function agregarEventosTabla() {
     }
   });
 
+/* ================================ 
+   TOGGLE ESTADO
+================================= */
+
   document.querySelectorAll(".toggleEstado").forEach(chk => {
     chk.addEventListener("change", async (e) => {
       const numero = e.currentTarget.dataset.numero;
