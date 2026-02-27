@@ -147,7 +147,24 @@ try {
                 exit;
             }
 
- 
+            // Validar que el número de la ficha no exista ya
+            $existeFicha = $ficha->existeNumeroFicha($numero_ficha);
+            if ($existeFicha) {
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Ya existe una ficha con ese número'
+                ]);
+                exit;
+            }
+            
+            // Validar que el número de ficha tenga máximo 10 dígitos
+            if (!preg_match('/^\d{1,10}$/', $numero_ficha)) {
+                echo json_encode([
+                    "error" => "El número de ficha debe tener máximo 10 dígitos"
+                ]);
+                exit;
+            }
+                
             $id_creado = $ficha->crear($numero_ficha, $jornada, $modalidad, $id_lider_grupo);
             
             echo json_encode([

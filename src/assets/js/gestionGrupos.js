@@ -26,7 +26,7 @@ async function cargarSelectores() {
     lideres = response.data.lideres;
 
     console.log("Líderes recibidos:", lideres);
-
+    
     const selectPrograma = document.getElementById("selectProgramaModal");
     const selectLider = document.getElementById("selectLiderModal");
     const filtroPrograma = document.getElementById("filtroPrograma");
@@ -42,6 +42,7 @@ async function cargarSelectores() {
         selectLider?.appendChild(opt);
     });
 }
+
 /* =========================
    LISTAR GRUPOS
 ========================= */
@@ -114,18 +115,37 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("btnCerrarModal")?.addEventListener("click", () => togglerModal(false));
     document.getElementById("btnCancelar")?.addEventListener("click", () => togglerModal(false));
 
+    const inputNumero = document.getElementById("inputNumeroFicha");
+    const errorText = document.getElementById("errorNumeroFicha");
+
+    inputNumero?.addEventListener("input", () => {
+        inputNumero.classList.remove("border-red-500", "focus:ring-red-200");
+        inputNumero.classList.add("border-gray-300");
+        errorText.classList.add("hidden");
+    });
+
     document.getElementById("formGrupo")?.addEventListener("submit", async (e) => {
         e.preventDefault();
 
         const data = Object.fromEntries(new FormData(e.target).entries());
-
         const response = await apiRequest("crear", "POST", data);
 
         if (response.status === "success") {
             togglerModal(false);
             cargarGrupos();
         } else {
-            alert(response.message);
+
+            if (response.message.includes("Ya existe una ficha")) {
+
+                inputNumero.classList.remove("border-gray-300");
+                inputNumero.classList.add("border-red-500", "focus:ring-red-200");
+
+                errorText.textContent = response.message;
+                errorText.classList.remove("hidden");
+
+            } else {
+                alert(response.message);
+            }
         }
     });
 });
