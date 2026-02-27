@@ -51,27 +51,12 @@
   const inCode    = document.getElementById('rae_code');     // aquí va id_rae
   const inDesc    = document.getElementById('rae_desc');
   const selComp   = document.getElementById('rae_competency');
+  const selProgInForm = document.getElementById('rae_program');
 
   // Título del modal (no tocamos tu HTML; intentamos encontrarlo)
   const titleRae = document.getElementById('titleRae')
                  || modal?.querySelector('[data-title]')
                  || modal?.querySelector('h2, h3, [role="heading"]');
-
-  // ==== Inyectar select de Programas en el modal (sin tocar HTML base) ====
-  let selProgInForm = null;
-  (function injectProgramSelectInModal(){
-    if (!form) return;
-    const firstGroup = form.querySelector('div'); // insertar antes del campo "Competencia"
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = `
-      <label class="block text-sm font-medium mb-1">Programa *</label>
-      <select id="rae_program" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm bg-white">
-        <option value="">Seleccione un programa</option>
-      </select>
-    `;
-    form.insertBefore(wrapper, firstGroup);
-    selProgInForm = wrapper.querySelector('#rae_program');
-  })();
 
   // ==== Helpers / Estado ====
   const q = p => new URLSearchParams(p).toString();
@@ -149,24 +134,36 @@
     }
   }
 
-  // ==== Cargar Competencias por programa (para filtro y modal) ====
-  async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
-    if (targetSelect === selCompFilter && (!programId || programId === 'all')) {
-      targetSelect.innerHTML = `<option value="all">Todas las competencias</option>`;
-      return;
-    }
-    if (!programId || programId === 'all') {
-      targetSelect.innerHTML = `<option value="">Seleccione una competencia</option>`;
-      return;
-    }
+// ==== Cargar Competencias por programa (para filtro y modal) ====
+async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
 
-    const data  = await fetchJSON(`${API_RAES}?accion=competenciasPorPrograma&${q({id_programa: programId})}`);
+  // ================================
+  // CASO 1: Es el filtro y no hay programa
+  // ================================
+  if (targetSelect === selCompFilter && (!programId || programId === 'all')) {
+    targetSelect.innerHTML = `<option value="all">Todas las competencias</option>`;
+    targetSelect.disabled = false; // el filtro nunca se bloquea
+    return;
+  }
+
+  // ================================
+  // CASO 2: No hay programa seleccionado (modal)
+  // ================================
+  if (!programId || programId === 'all') {
+    targetSelect.innerHTML = `<option value="">Seleccione una competencia</option>`;
+    targetSelect.disabled = true; // 🔴 se bloquea hasta que elijan programa
+    return;
+  }
+
+  try {
+    const data  = await fetchJSON(`${API_RAES}?accion=competenciasPorPrograma&${q({ id_programa: programId })}`);
     const comps = Array.isArray(data) ? data : (data.data || []);
 
     const current = targetSelect.value || '';
+
     targetSelect.innerHTML = targetSelect === selCompFilter
-      ? `<option value=\"all\">Todas las competencias</option>`
-      : `<option value=\"\">Seleccione una competencia</option>`;
+      ? `<option value="all">Todas las competencias</option>`
+      : `<option value="">Seleccione una competencia</option>`;
 
     for (const c of comps) {
       const opt = document.createElement('option');
@@ -176,9 +173,20 @@
         : `${c.id_competencia} – ${c.nombre_competencia}`;
       targetSelect.appendChild(opt);
     }
+
+    // HABILITAR porque ya cargó competencias
+    targetSelect.disabled = false;
+
+    // Mantener valor si aún existe
     const exists = Array.from(targetSelect.options).some(o => o.value === current);
     if (exists) targetSelect.value = current;
+
+  } catch (err) {
+    console.error('[RAEs] Error cargando competencias:', err);
+    targetSelect.innerHTML = `<option value="">Error cargando competencias</option>`;
+    targetSelect.disabled = true;
   }
+}
 
   // Badge de estado para cada RAE
   function statusChipRAE(estado) {

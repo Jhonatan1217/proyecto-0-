@@ -4,7 +4,7 @@
   define('BASE_URL', $base);
 } ?>
 
-<div class="max-w-7xl mx-auto px-4 py-10">
+<div class="max-w-6xl mx-auto px-4 py-10">
 
   <h1 class="text-4xl font-extrabold tracking-tight mb-2 text-[#39A900]">
     Gestión de Grupos
@@ -48,7 +48,7 @@
         </div>
 
         <!-- Buscador -->
-        <div class="relative flex-1">
+        <div class="relative w-full md:w-64">
           <input type="text" id="buscadorGrupo"
             placeholder="Buscar grupo..."
             class="w-full rounded-full border border-gray-300 bg-white
@@ -90,9 +90,11 @@
 <!-- ================= MODAL ================= -->
 
 <div id="modalGrupo"
-  class="hidden items-center justify-center z-50">
+  class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
 
-  <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl border border-gray-200 p-8 relative">
+  <!-- Caja Modal -->
+  <div class="bg-white w-full max-w-xl rounded-2xl shadow-xl border border-gray-200
+              px-8 py-10 relative">
 
     <!-- Botón cerrar -->
     <button id="btnCerrarModal"
@@ -100,30 +102,33 @@
       ✕
     </button>
 
-    <h2 class="text-2xl font-bold text-[#39A900] mb-6">Nuevo Grupo</h2>
+    <h2 class="text-2xl font-bold text-[#39A900] mb-8 text-left">
+      Nuevo Grupo
+    </h2>
 
-    <form id="formGrupo" class="space-y-5">
+    <form id="formGrupo" class="space-y-6">
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div class="flex flex-col gap-6">
 
         <!-- Número -->
         <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-1">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
             Número de Ficha
           </label>
           <input type="number" name="numero_ficha" required
-            class="w-full border border-gray-300 rounded-xl px-4 py-2.5
+            placeholder="Ingrese el número de grupo"
+            class="w-full border border-gray-300 rounded-xl px-4 py-3
                    focus:ring-2 focus:ring-[#39A900]/20
                    focus:border-[#39A900] outline-none transition">
         </div>
 
         <!-- Programa -->
         <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-1">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
             Programa
           </label>
           <select name="id_programa" id="selectProgramaModal" required
-            class="w-full border border-gray-300 rounded-xl px-4 py-2.5
+            class="w-full border border-gray-300 rounded-xl px-4 py-3
                    focus:ring-2 focus:ring-[#39A900]/20
                    focus:border-[#39A900] outline-none transition">
             <option value="">Seleccione un programa</option>
@@ -132,41 +137,41 @@
 
         <!-- Jornada -->
         <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-1">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
             Jornada
           </label>
           <select name="jornada" required
-            class="w-full border border-gray-300 rounded-xl px-4 py-2.5
+            class="w-full border border-gray-300 rounded-xl px-4 py-3
                    focus:ring-2 focus:ring-[#39A900]/20
                    focus:border-[#39A900] outline-none transition">
-            <option value="Diurna">Diurna</option>
-            <option value="Nocturna">Nocturna</option>
-            <option value="Mixta">Mixta</option>
+            <option value="DIURNA">Diurna</option>
+            <option value="NOCTURNA">Nocturna</option>
+            <option value="MIXTA">Mixta</option>
           </select>
         </div>
 
         <!-- Modalidad -->
         <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-1">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
             Modalidad
           </label>
           <select name="modalidad" required
-            class="w-full border border-gray-300 rounded-xl px-4 py-2.5
+            class="w-full border border-gray-300 rounded-xl px-4 py-3
                    focus:ring-2 focus:ring-[#39A900]/20
                    focus:border-[#39A900] outline-none transition">
-            <option value="Presencial">Presencial</option>
-            <option value="Virtual">Virtual</option>
-            <option value="A Distancia">A Distancia</option>
+            <option value="PRESENCIAL">Presencial</option>
+            <option value="VIRTUAL">Virtual</option>
+            <option value="A DISTANCIA">A Distancia</option>
           </select>
         </div>
 
         <!-- Líder -->
         <div class="md:col-span-2">
-          <label class="block text-sm font-semibold text-gray-700 mb-1">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
             Líder de Grupo
           </label>
           <select name="id_lider_grupo" id="selectLiderModal" required
-            class="w-full border border-gray-300 rounded-xl px-4 py-2.5
+            class="w-full border border-gray-300 rounded-xl px-4 py-3
                    focus:ring-2 focus:ring-[#39A900]/20
                    focus:border-[#39A900] outline-none transition">
             <option value="">Seleccione líder</option>
@@ -176,16 +181,16 @@
       </div>
 
       <!-- Botones -->
-      <div class="flex justify-end gap-3 pt-6">
+      <div class="flex justify-end gap-4 pt-6">
 
         <button type="button" id="btnCancelar"
-          class="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-600
+          class="px-6 py-3 rounded-xl border border-gray-300 text-gray-600
                  hover:bg-gray-50 transition">
           Cancelar
         </button>
 
         <button type="submit"
-          class="px-6 py-2.5 rounded-xl bg-[#0a3a57] text-white
+          class="px-6 py-3 rounded-xl bg-[#0a3a57] text-white
                  hover:bg-[#00304D] transition shadow-sm">
           Guardar Grupo
         </button>

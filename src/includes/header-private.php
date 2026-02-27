@@ -173,7 +173,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/users.svg" alt="Icono de Usuarios">
-        <a href="#">Usuarios</a>
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionUsuarios">Usuarios</a>
       </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
@@ -196,19 +196,19 @@ document.addEventListener("DOMContentLoaded", function () {
         <ul class="pl-12 mt-2 space-y-2 hidden" id="academicos-submenu">
           <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
             <img src="<?= BASE_URL ?>src/assets/img/upload.svg" alt="Icono de Carga Excel" class="w-5 h-5">
-            <a href="#">Carga Excel</a>
+            <a href="<?= BASE_URL ?>index.php?page=academicos&tab=upload">Carga Excel</a>
           </li>
           <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
             <img src="<?= BASE_URL ?>src/assets/img/graduation-cap.svg" alt="Icono de Programas" class="w-5 h-5">
-            <a href="#">Programas</a>
+            <a href="<?= BASE_URL ?>index.php?page=academicos&tab=programs">Programas</a>
           </li>
           <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
             <img src="<?= BASE_URL ?>src/assets/img/book.svg" alt="Icono de Competencias" class="w-5 h-5">
-            <a href="<?= BASE_URL ?>index.php?page=src/views/gestionCompetencias">Competencias</a>
+            <a href="<?= BASE_URL ?>index.php?page=academicos&tab=competencies">Competencias</a>
           </li>
           <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
             <img src="<?= BASE_URL ?>src/assets/img/target.svg" alt="Icono de RAE" class="w-5 h-5">
-            <a href="#">RAE</a>
+            <a href="<?= BASE_URL ?>index.php?page=academicos&tab=raes">RAE</a>
           </li>
         </ul>
       </li>

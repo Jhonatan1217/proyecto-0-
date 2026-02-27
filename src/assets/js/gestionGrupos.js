@@ -25,6 +25,8 @@ async function cargarSelectores() {
     programas = response.data.programas;
     lideres = response.data.lideres;
 
+    console.log("Líderes recibidos:", lideres);
+
     const selectPrograma = document.getElementById("selectProgramaModal");
     const selectLider = document.getElementById("selectLiderModal");
     const filtroPrograma = document.getElementById("filtroPrograma");
@@ -36,11 +38,10 @@ async function cargarSelectores() {
     });
 
     lideres.forEach(l => {
-        const opt = new Option(l.nombre, l.id_usuario);
+        const opt = new Option(l.nombre_instructor, l.id_instructor);
         selectLider?.appendChild(opt);
     });
 }
-
 /* =========================
    LISTAR GRUPOS
 ========================= */
@@ -65,9 +66,9 @@ function renderTabla(data) {
                 <td class="px-6 py-4">${g.modalidad}</td>
                 <td class="px-6 py-4">${g.nombre_lider ?? ''}</td>
                 <td class="px-6 py-4 text-right">
-                    <button onclick="eliminarGrupo(${g.id_ficha})"
+                    <button onclick="desactivarGrupo(${g.id_ficha})"
                         class="text-red-500 hover:text-red-700">
-                        Eliminar
+                        Desactivar
                     </button>
                 </td>
             </tr>
