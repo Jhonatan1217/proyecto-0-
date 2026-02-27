@@ -144,9 +144,9 @@
             class="w-full border border-gray-300 rounded-xl px-4 py-3
                    focus:ring-2 focus:ring-[#39A900]/20
                    focus:border-[#39A900] outline-none transition">
-            <option value="Diurna">Diurna</option>
-            <option value="Nocturna">Nocturna</option>
-            <option value="Mixta">Mixta</option>
+            <option value="DIURNA">Diurna</option>
+            <option value="NOCTURNA">Nocturna</option>
+            <option value="MIXTA">Mixta</option>
           </select>
         </div>
 
@@ -159,9 +159,9 @@
             class="w-full border border-gray-300 rounded-xl px-4 py-3
                    focus:ring-2 focus:ring-[#39A900]/20
                    focus:border-[#39A900] outline-none transition">
-            <option value="Presencial">Presencial</option>
-            <option value="Virtual">Virtual</option>
-            <option value="A Distancia">A Distancia</option>
+            <option value="PRESENCIAL">Presencial</option>
+            <option value="VIRTUAL">Virtual</option>
+            <option value="A DISTANCIA">A Distancia</option>
           </select>
         </div>
 
