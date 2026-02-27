@@ -147,7 +147,16 @@ try {
                 exit;
             }
 
- 
+            // Validar que el número de la ficha no exista ya
+            $existeFicha = $ficha->existeNumeroFicha($numero_ficha);
+            if ($existeFicha) {
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Ya existe una ficha con ese número'
+                ]);
+                exit;
+            }
+                
             $id_creado = $ficha->crear($numero_ficha, $jornada, $modalidad, $id_lider_grupo);
             
             echo json_encode([
