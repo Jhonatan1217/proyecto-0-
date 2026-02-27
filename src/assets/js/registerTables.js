@@ -4,6 +4,7 @@
 
 const urlParams = new URLSearchParams(window.location.search);
 let id_zona = urlParams.get("id_zona");
+const API_BASE = ((window && window.BASE_URL) || "").replace(/\/+$/, "/");
 
 // =======================
 // CONFIG TOAST (SweetAlert2)
@@ -74,7 +75,7 @@ async function cargarAreasYZonas() {
 
   try {
     // Cargar ÁREAS
-    const resAreas = await fetch(`${BASE_URL}src/controllers/AreaController.php?accion=listar`);
+    const resAreas = await fetch(`${API_BASE}src/controllers/AreaController.php?accion=listar`);
     const dataAreas = await resAreas.json();
 
     if (dataAreas.status === "success" && Array.isArray(dataAreas.data)) {
@@ -126,41 +127,57 @@ async function cargarAreasYZonas() {
       selectZona.disabled = false;
 
       try {
-        const resZonas = await fetch(
-          `${BASE_URL}src/controllers/ZonaController.php?accion=listarPorArea&id_area=${id_area}`
+        let zonasArea = [];
+
+        const resZonasArea = await fetch(
+          `${API_BASE}src/controllers/ZonaController.php?accion=listarPorArea&id_area=${id_area}`
         );
-        const dataZonas = await resZonas.json();
 
-        if (dataZonas.status === "success" && Array.isArray(dataZonas.data)) {
-          //  SOLO ZONAS ACTIVAS EN ESTE ÁREA
-          const zonasActivas = dataZonas.data.filter(
-            (z) => String(z.estado) === "1"
-          );
-          if (zonasActivas.length === 0) {
-            // Dejamos el placeholder seleccionado, pero al desplegar se verá el mensaje
-            selectZona.innerHTML = `
-              <option value="" hidden selected>SELECCIONE LA ZONA</option>
-              <option value="" disabled>NO HAY ZONAS DISPONIBLES</option>
-            `;
-            Toast.fire({
-              icon: "info",
-              title: "No hay zonas activas en esta área",
-            });
-            return;
+        if (resZonasArea.ok) {
+          const dataZonasArea = await resZonasArea.json();
+          if (dataZonasArea.status === "success" && Array.isArray(dataZonasArea.data)) {
+            zonasArea = dataZonasArea.data;
           }
-
-          zonasActivas.forEach((z) => {
-            const opt = document.createElement("option");
-            opt.value = z.id_zona;
-            opt.textContent = `Zona ${z.id_zona}`;
-            selectZona.appendChild(opt);
-          });
-
-          Toast.fire({
-            icon: "success",
-            title: "Zonas activas cargadas correctamente",
-          });
         }
+
+        if (!zonasArea.length) {
+          const resZonasAll = await fetch(`${API_BASE}src/controllers/ZonaController.php?accion=listar`);
+          if (resZonasAll.ok) {
+            const dataZonasAll = await resZonasAll.json();
+            const arrayZonas = Array.isArray(dataZonasAll?.data) ? dataZonasAll.data : [];
+            zonasArea = arrayZonas.filter(
+              (z) => String(z.id_area ?? "").trim() === String(id_area).trim()
+            );
+          }
+        }
+
+        // SOLO ZONAS ACTIVAS EN ESTE ÁREA
+        const zonasActivas = zonasArea.filter((z) => String(z.estado) === "1");
+
+        if (!zonasActivas.length) {
+          // Dejamos el placeholder seleccionado, pero al desplegar se verá el mensaje
+          selectZona.innerHTML = `
+            <option value="" hidden selected>SELECCIONE LA ZONA</option>
+            <option value="" disabled>NO HAY ZONAS DISPONIBLES</option>
+          `;
+          Toast.fire({
+            icon: "info",
+            title: "No hay zonas activas en esta área",
+          });
+          return;
+        }
+
+        zonasActivas.forEach((z) => {
+          const opt = document.createElement("option");
+          opt.value = z.id_zona;
+          opt.textContent = `Zona ${z.id_zona}`;
+          selectZona.appendChild(opt);
+        });
+
+        Toast.fire({
+          icon: "success",
+          title: "Zonas activas cargadas correctamente",
+        });
       } catch (err) {
         console.error("Error al cargar zonas:", err);
         Toast.fire({ icon: "error", title: "Error al cargar zonas" });
@@ -206,7 +223,7 @@ async function cargarTrimestralizacion() {
 
   try {
     const res = await fetch(
-      `${BASE_URL}src/controllers/TrimestralizacionController.php?accion=listar&id_zona=${id_zona}&id_area=${id_area}`
+      `${API_BASE}src/controllers/TrimestralizacionController.php?accion=listar&id_zona=${id_zona}&id_area=${id_area}`
     );
     const data = await res.json();
     console.log("Datos recibidos del servidor:", data);
@@ -413,7 +430,7 @@ let listaFichas = [];
 async function cargarFichas() {
   try {
     const res = await fetch(
-      `${BASE_URL}src/controllers/FichaController.php?accion=listar`
+      `${API_BASE}src/controllers/FichaController.php?accion=listar`
     );
     
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -469,7 +486,7 @@ function extraerFichasDeHorarios() {
 async function cargarCompetencias() {
   try {
     const res = await fetch(
-      `${BASE_URL}src/controllers/CompetenciaController.php?accion=listar`
+      `${API_BASE}src/controllers/CompetenciaController.php?accion=listar`
     );
     const data = await res.json();
 
@@ -497,23 +514,42 @@ async function cargarCompetencias() {
 
 async function cargarInstructores() {
   try {
-    const res = await fetch(
-      `${BASE_URL}src/controllers/InstructorController.php?accion=listar`
+    let instructoresArray = [];
+
+    const resInstructor = await fetch(
+      `${API_BASE}src/controllers/InstructorController.php?accion=listar`
     );
-    const data = await res.json();
 
-    console.log("Respuesta del servidor (Instructores):", data);
+    if (resInstructor.ok) {
+      const data = await resInstructor.json();
+      console.log("Respuesta del servidor (Instructores):", data);
+      instructoresArray = Array.isArray(data)
+        ? data
+        : Array.isArray(data.data)
+        ? data.data
+        : [];
+    } else {
+      const resUsuarios = await fetch(
+        `${API_BASE}src/controllers/UsuarioController.php?accion=listar&cargo=INSTRUCTOR`
+      );
+      const dataUsuarios = await resUsuarios.json();
+      console.log("Respuesta fallback (Usuarios como instructores):", dataUsuarios);
+      const usuariosArray = Array.isArray(dataUsuarios)
+        ? dataUsuarios
+        : Array.isArray(dataUsuarios.data)
+        ? dataUsuarios.data
+        : [];
 
-    const instructoresArray = Array.isArray(data)
-      ? data
-      : Array.isArray(data.data)
-      ? data.data
-      : [];
+      instructoresArray = usuariosArray.map((u) => ({
+        id_instructor: u.id_instructor ?? u.id_usuario,
+        nombre_instructor: u.nombre_instructor ?? u.nombre_completo ?? "",
+        tipo_instructor: u.tipo_instructor ?? u.tipo_contrato ?? "",
+        estado: u.estado ?? 1,
+      }));
+    }
 
-    //FILTRAR SOLO INSTRUCTORES ACTIVOS (estado = 1)
-    listaInstructores = instructoresArray.filter(
-      (i) => String(i.estado) === "1"
-    );
+    // FILTRAR SOLO INSTRUCTORES ACTIVOS (estado = 1)
+    listaInstructores = instructoresArray.filter((i) => String(i.estado) === "1");
 
     if (listaInstructores.length > 0) {
       llenarSelectInstructores(listaInstructores);
@@ -552,7 +588,7 @@ function llenarSelectInstructores(instructores) {
 async function obtenerRoesPorCompetencia(id_competencia) {
   try {
     const res = await fetch(
-      `${BASE_URL}src/controllers/RaeController.php?accion=porCompetencia&id_competencia=${id_competencia}`
+      `${API_BASE}src/controllers/RaeController.php?accion=porCompetencia&id_competencia=${id_competencia}`
     );
     const data = await res.json();
 
@@ -792,7 +828,7 @@ async function editarTrimestralizacion (reg){
     const payload = [res.value];
     console.log("Enviando payload:", JSON.stringify(payload, null, 2));
     
-    const resUpdate = await fetch(`${BASE_URL}src/controllers/TrimestralizacionController.php?accion=actualizar`, {
+    const resUpdate = await fetch(`${API_BASE}src/controllers/TrimestralizacionController.php?accion=actualizar`, {
       method: "POST",
       headers: {"Content-Type" : "application/json"},
       body: JSON.stringify(payload)
@@ -873,7 +909,7 @@ async function confirmarEliminar() {
 
   try {
     const res = await fetch(
-      `${BASE_URL}src/controllers/TrimestralizacionController.php?accion=eliminar&id_zona=${id_zona}&id_area=${id_area}`
+      `${API_BASE}src/controllers/TrimestralizacionController.php?accion=eliminar&id_zona=${id_zona}&id_area=${id_area}`
     );
     const data = await res.json();
 
@@ -1215,7 +1251,8 @@ document.addEventListener("DOMContentLoaded", () => {
     cargarTrimestralizacion();
   } else toggleTabla(false);
 
-  document
-    .getElementById("btn-actualizar")
-    ?.addEventListener("click", activarEdicion);
+  const btnActualizar = document.getElementById("btn-actualizar");
+  if (btnActualizar && typeof activarEdicion === "function") {
+    btnActualizar.addEventListener("click", activarEdicion);
+  }
 });

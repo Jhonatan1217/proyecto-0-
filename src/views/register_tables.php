@@ -1,6 +1,5 @@
 <?php
 
-// Cargar datos desde la base de datos para los selects de áreas, zonas, instructores, trimestres, programas y competencias
 require_once __DIR__ . '/../../config/database.php';
 
 $areas        = [];
@@ -10,51 +9,92 @@ $trimestres   = [];
 $programas    = [];
 $competencias = [];
 
-try {
-    if (isset($conn)) {
-        // Áreas
-        $s = $conn->prepare("SELECT id_area, nombre_area FROM areas WHERE estado = 1 ORDER BY nombre_area ASC");
-        $s->execute();
-        $areas = $s->fetchAll(PDO::FETCH_ASSOC);
-
-        // Zonas
-        $s = $conn->prepare("SELECT id_zona, id_area FROM zonas WHERE estado = 1 ORDER BY id_zona ASC");
-        $s->execute();
-        $zonas = $s->fetchAll(PDO::FETCH_ASSOC);
-
-        // Instructores
-        $s = $conn->prepare("SELECT nombre_instructor, tipo_instructor FROM instructores WHERE estado = 1 ORDER BY nombre_instructor ASC");
-        $s->execute();
-        $instructores = $s->fetchAll(PDO::FETCH_ASSOC);
-
-        // Trimestres (solo activos)
-        $s = $conn->prepare("SELECT numero_trimestre, estado FROM trimestre WHERE estado = 1 ORDER BY numero_trimestre ASC");
-        $s->execute();
-        $trimestres = $s->fetchAll(PDO::FETCH_ASSOC);
-
-        // Programas de formación
-        $s = $conn->prepare("
-            SELECT id_programa, nombre_programa
-            FROM programas
-            WHERE estado = 1
-            ORDER BY nombre_programa ASC
-        ");
-        $s->execute();
-        $programas = $s->fetchAll(PDO::FETCH_ASSOC);
-
-        // Competencias (SIN descripcion, solo lo que existe en la tabla)
-        $s = $conn->prepare("
-            SELECT id_competencia, nombre_competencia, id_programa
-            FROM competencias
-            WHERE estado = 1
-            ORDER BY nombre_competencia ASC
-        ");
-        $s->execute();
-        $competencias = $s->fetchAll(PDO::FETCH_ASSOC);
+if (isset($conn)) {
+  try {
+    $s = $conn->prepare("SELECT id_area, nombre_area FROM areas WHERE estado = 1 ORDER BY nombre_area ASC");
+    $s->execute();
+    $areas = $s->fetchAll(PDO::FETCH_ASSOC);
+  } catch (PDOException $e) {
+    try {
+      $s = $conn->prepare("SELECT id_area, nombre_area FROM area WHERE estado = 1 ORDER BY nombre_area ASC");
+      $s->execute();
+      $areas = $s->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e2) {
+      $areas = [];
     }
-} catch (PDOException $e) {
-    // No interrumpo la vista si falla la carga, se muestran los selects vacíos
+  }
+
+  try {
+    $s = $conn->prepare("SELECT id_zona, id_area FROM zonas WHERE estado = 1 ORDER BY id_zona ASC");
+    $s->execute();
+    $zonas = $s->fetchAll(PDO::FETCH_ASSOC);
+  } catch (PDOException $e) {
+    $zonas = [];
+  }
+
+  try {
+    $s = $conn->prepare("SELECT id_instructor, nombre_instructor, tipo_instructor FROM instructores WHERE estado = 1 ORDER BY nombre_instructor ASC");
+    $s->execute();
+    $instructores = $s->fetchAll(PDO::FETCH_ASSOC);
+  } catch (PDOException $e) {
+    try {
+      $s = $conn->prepare("SELECT id_usuario AS id_instructor, nombre_completo AS nombre_instructor, tipo_instructor FROM usuarios WHERE cargo = 'INSTRUCTOR' AND estado = 1 ORDER BY nombre_completo ASC");
+      $s->execute();
+      $instructores = $s->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e2) {
+      $instructores = [];
+    }
+  }
+
+  try {
+    $s = $conn->prepare("SELECT numero_trimestre FROM trimestre WHERE estado = 1 ORDER BY numero_trimestre ASC");
+    $s->execute();
+    $trimestres = $s->fetchAll(PDO::FETCH_ASSOC);
+  } catch (PDOException $e) {
+    try {
+      $s = $conn->prepare("SELECT numero_trimestre FROM trimestres WHERE estado = 1 ORDER BY numero_trimestre ASC");
+      $s->execute();
+      $trimestres = $s->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e2) {
+      $trimestres = [];
+    }
+  }
+
+  try {
+    $s = $conn->prepare("SELECT id_programa, nombre_programa FROM programas WHERE estado = 1 ORDER BY nombre_programa ASC");
+    $s->execute();
+    $programas = $s->fetchAll(PDO::FETCH_ASSOC);
+  } catch (PDOException $e) {
+    $programas = [];
+  }
+  if (empty($programas)) {
+    try {
+      $s = $conn->prepare("SELECT id_programa, nombre_programa FROM programas ORDER BY nombre_programa ASC");
+      $s->execute();
+      $programas = $s->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+      $programas = [];
+    }
+  }
+
+  try {
+    $s = $conn->prepare("SELECT id_competencia, nombre_competencia, id_programa FROM competencias WHERE estado = 1 ORDER BY nombre_competencia ASC");
+    $s->execute();
+    $competencias = $s->fetchAll(PDO::FETCH_ASSOC);
+  } catch (PDOException $e) {
+    $competencias = [];
+  }
+  if (empty($competencias)) {
+    try {
+      $s = $conn->prepare("SELECT id_competencia, nombre_competencia, id_programa FROM competencias ORDER BY nombre_competencia ASC");
+      $s->execute();
+      $competencias = $s->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+      $competencias = [];
+    }
+  }
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -63,25 +103,17 @@ try {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proyecto 0 - Visualización de registro de tablas</title>
 
-  <!-- Tailwind CSS compilado -->
   <link rel="stylesheet" href="<?= BASE_URL ?>public/css/output.css">
-
-  <!-- Fuente Work Sans + estilos del formulario (igual que landing) -->
   <link rel="stylesheet" href="<?= BASE_URL ?>public/css/fonts.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/formulario_crear_trimestralizacion.css">
-
-  <!-- Estilos propios de la vista de tablas -->
   <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/register_tables.css">
-
-  <!-- SweetAlert2 (usado por el formulario y por otros flujos) -->
   <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
 
-  <!-- Layout del formulario del modal: siempre 1 columna -->
   <style>
-    #modalCard .form-grid {
-      display: flex;
-      flex-direction: column;
-    }
+  #modalCard .form-grid {
+    display: flex;
+    flex-direction: column;
+  }
   </style>
 </head>
 
@@ -360,7 +392,7 @@ try {
                   class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
                   <option value="">Seleccione el instructor</option>
                   <?php foreach ($instructores as $ins): ?>
-                    <option value="<?= htmlspecialchars($ins['nombre_instructor']) ?>" data-tipo="<?= htmlspecialchars($ins['tipo_instructor']) ?>">
+                    <option value="<?= htmlspecialchars($ins['id_instructor'] ?? '') ?>" data-tipo="<?= htmlspecialchars($ins['tipo_instructor'] ?? '') ?>">
                       <?= htmlspecialchars($ins['nombre_instructor']) ?> <?= isset($ins['tipo_instructor']) ? "— " . htmlspecialchars($ins['tipo_instructor']) : "" ?>
                     </option>
                   <?php endforeach; ?>
@@ -745,6 +777,46 @@ try {
     <!-- Filtrar competencias según programa (igual lógica que la landing, sin descripcion) -->
     <script>
       (function () {
+        const base = (window.BASE_URL || "").replace(/\/+$/, "/");
+
+        async function cargarProgramasFallback() {
+          const selProg = document.getElementById('id_programa_select');
+          if (!selProg) return;
+
+          const yaTieneProgramas = Array.from(selProg.options).some((opt) => {
+            if (!opt.value) return false;
+            return !String(opt.textContent || '').toLowerCase().includes('no se encontraron');
+          });
+
+          if (yaTieneProgramas) return;
+
+          try {
+            const res = await fetch(base + 'src/controllers/ProgramasController.php?accion=listar');
+            if (!res.ok) return;
+            const data = await res.json();
+            const arr = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
+            if (!arr.length) return;
+
+            const activos = arr.filter((p) => p && (String(p.estado) === '1' || p.estado === 1 || typeof p.estado === 'undefined'));
+            const lista = activos.length ? activos : arr;
+
+            selProg.innerHTML = '<option value="">Ingrese el programa de formación</option>';
+            lista.forEach((p) => {
+              const id = p.id_programa ?? '';
+              const nombre = p.nombre_programa ?? '';
+              if (!id || !nombre) return;
+              const opt = document.createElement('option');
+              opt.value = String(id);
+              opt.textContent = String(nombre);
+              selProg.appendChild(opt);
+            });
+          } catch (e) {
+            console.warn('No se pudieron cargar programas (fallback):', e);
+          }
+        }
+
+        document.addEventListener('DOMContentLoaded', cargarProgramasFallback);
+
         const selProg = document.getElementById('id_programa_select');
         const selComp = document.getElementById('id_competencia');
         if (!selProg || !selComp) return;
