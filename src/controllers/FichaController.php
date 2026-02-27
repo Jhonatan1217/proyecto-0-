@@ -156,6 +156,14 @@ try {
                 ]);
                 exit;
             }
+            
+            // Validar que el número de ficha tenga máximo 10 dígitos
+            if (!preg_match('/^\d{1,10}$/', $numero_ficha)) {
+                echo json_encode([
+                    "error" => "El número de ficha debe tener máximo 10 dígitos"
+                ]);
+                exit;
+            }
                 
             $id_creado = $ficha->crear($numero_ficha, $jornada, $modalidad, $id_lider_grupo);
             

@@ -87,7 +87,7 @@
   </div>
 </div>
 
-<!-- ================= MODAL ================= -->
+<!-- ================= MODAL CREAR GRUPO================= -->
 
 <div id="modalGrupo"
   class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
@@ -113,14 +113,20 @@
         <!-- Número -->
         <div>
           <label class="block text-sm font-semibold text-gray-700 mb-2">
-            Número de Ficha
+            Número de Grupo
           </label>
-          <input type="number" name="numero_ficha" required
-            placeholder="Ingrese el número de grupo"
-            class="w-full border border-gray-300 rounded-xl px-4 py-3
-                   focus:ring-2 focus:ring-[#39A900]/20
-                   focus:border-[#39A900] outline-none transition">
-        </div>
+          <input type="number" 
+                name="numero_ficha"
+                id="inputNumeroFicha"
+                maxlength="10"
+                pattern="\d{1,10}"  
+                required
+                placeholder="Ingrese el número de grupo"
+                class="w-full border border-gray-300 rounded-xl px-4 py-3
+                      focus:ring-2 focus:ring-[#39A900]/20
+                      focus:border-[#39A900] outline-none transition">
+          <p id="errorNumeroFicha" class="text-red-500 text-sm mt-1 hidden"></p>
+        </div>  
 
         <!-- Programa -->
         <div>
