@@ -103,7 +103,7 @@
   </div>
 </div>
 
-<!-- ================= MODAL ================= -->
+<!-- ================= MODAL NUEVO USUARIO================= -->
 
 <div id="modalNuevoUsuario"
   class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
@@ -182,7 +182,7 @@
           <label class="block text-sm font-semibold text-gray-700 mb-2">
             Cargo
           </label>
-          <select name="carg" id="selectCargoModal" required
+          <select name="cargo" id="selectCargoModal" required
             class="w-full border border-gray-300 rounded-xl px-4 py-3
                    focus:ring-2 focus:ring-[#39A900]/20
                    focus:border-[#39A900] outline-none transition">
@@ -331,7 +331,7 @@
           <label class="block text-sm font-semibold text-gray-700 mb-2">
             Cargo
           </label>
-          <select name="carg" id="selectCargoModal" required
+          <select name="cargo" id="selectCargoModal" required
             class="w-full border border-gray-300 rounded-xl px-4 py-3
                    focus:ring-2 focus:ring-[#39A900]/20
                    focus:border-[#39A900] outline-none transition">
@@ -402,8 +402,77 @@
   </div>
 </div>
 
+<!-- ================= MODAL VER USUARIO ================= -->
+ <div id="modalVerUsuario" 
+     class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
+    
+    <div class="bg-white w-full max-w-xl rounded-2xl shadow-xl border border-gray-200 px-8 py-10 relative">
+        
+        <button onclick="cerrarModal('modalVerUsuario')" 
+                class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-lg">
+            ✕
+        </button>
+
+        <h2 class="text-2xl font-bold text-[#0a3a57] mb-8 border-b pb-4">
+            Detalles del Usuario
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <div>
+                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Nombre Completo</label>
+                <p id="verNombre" class="text-gray-800 font-medium mt-1">Cargando...</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Documento</label>
+                <p class="text-gray-800 mt-1">
+                    <span id="verTipoDoc"></span>: <span id="verNumDoc"></span>
+                </p>
+            </div>
+
+            <div class="md:col-span-2">
+                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Correo Electrónico</label>
+                <p id="verCorreo" class="text-gray-800 mt-1">Cargando...</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Cargo</label>
+                <span id="verCargo" class="inline-block px-3 py-1 rounded-full text-sm font-semibold mt-2 bg-blue-100 text-blue-700">
+                    Cargando...
+                </span>
+            </div>
+
+            <div id="verGrupoInstructor" class="md:col-span-2 grid-cols-2 gap-6 pt-4 border-t border-gray-100 hidden">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Tipo de Instructor</label>
+                    <p id="verTipoIns" class="text-gray-800 mt-1">Cargando...</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Tipo de Contrato</label>
+                    <p id="verContrato" class="text-gray-800 mt-1">Cargando...</p>
+                </div>
+            </div>
+
+            <div id="verGrupoCoordinador" class="md:col-span-2 pt-4 border-t border-gray-100 hidden">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Área a Cargo</label>
+                    <p id="verArea" class="text-gray-800 mt-1">Cargando...</p>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="flex justify-end mt-10">
+            <button onclick="cerrarModal('modalVerUsuario')" 
+                    class="px-8 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition font-semibold">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>  
 
 <script>
-window.API_USUARIO = "<?= BASE_URL ?>src/controllers/usuarioController.php";
+window.API_USUARIO = "<?= BASE_URL ?>src/controllers/UsuarioController.php";
 </script>
 <script src="<?= BASE_URL ?>src/assets/js/gestionUsuarios.js"></script>
