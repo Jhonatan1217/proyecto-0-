@@ -118,8 +118,8 @@
           <input type="number" 
                 name="numero_ficha"
                 id="inputNumeroFicha"
-                maxlength="10"
-                pattern="\d{1,10}"  
+                max="999999999"
+                min = "1"
                 required
                 placeholder="Ingrese el número de grupo"
                 class="w-full border border-gray-300 rounded-xl px-4 py-3
