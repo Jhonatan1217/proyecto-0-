@@ -1,0 +1,6 @@
+.img-left-focus {
+    width: 100%;
+    height: 50rem;
+    object-fit: cover;
+    object-position: left center; /* 👈 clave */
+}

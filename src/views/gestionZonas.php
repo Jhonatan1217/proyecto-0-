@@ -355,8 +355,13 @@
           if (jsonZonas.status === "success" && Array.isArray(jsonZonas.data) && 
               jsonAreas.status === "success" && Array.isArray(jsonAreas.data)) {
             
-            const areasConZonas = new Set(jsonZonas.data.map(z => z.id_area).filter(id => id));
-            const areasFiltradas = jsonAreas.data.filter(area => areasConZonas.has(area.id_area));
+            const areasConZonas = new Set(
+              jsonZonas.data.map(z => String(z.id_area)).filter(id => id)
+            );
+
+            const areasFiltradas = jsonAreas.data.filter(area =>
+              areasConZonas.has(String(area.id_area))
+            );
             
             filtroArea.innerHTML = `<option value="todas">Todas las áreas</option>`;
             
@@ -367,7 +372,7 @@
                 if (!areasUnicas.has(nombreArea)) {
                   areasUnicas.add(nombreArea);
                   const option = document.createElement("option");
-                  option.value = nombreArea;
+                  option.value = area.id_area;
                   option.textContent = nombreArea;
                   filtroArea.appendChild(option);
                 }
@@ -475,48 +480,46 @@
       function aplicarFiltrosCombinados() {
         const filtroArea = document.getElementById('filtroArea');
         const buscador = document.getElementById('buscadorZonas');
-        
-        if (!filtroArea && !buscador) return;
-        
-        const areaSeleccionada = filtroArea ? filtroArea.value : 'todas';
-        const terminoBusqueda = buscador ? buscador.value.toLowerCase().trim() : '';
+
+        const areaSeleccionada = filtroArea?.value || 'todas';
+        const terminoBusqueda = buscador?.value.toLowerCase().trim() || '';
         const filas = document.querySelectorAll('#tablaInstructores tbody tr');
         let filasVisibles = 0;
-        
-        const filaNoResultadosExistente = document.getElementById('fila-no-resultados');
-        if (filaNoResultadosExistente) filaNoResultadosExistente.remove();
-        
+
+        document.getElementById('fila-no-resultados')?.remove();
+
         filas.forEach(fila => {
-          if (fila.children.length === 1 && fila.children[0].colSpan === 3) return;
-          
+          if (fila.children.length === 1) return;
+
           const numeroZona = fila.children[0]?.textContent.toLowerCase() || '';
           const areaSpan = fila.querySelector('td:nth-child(2) span');
           const areaTexto = areaSpan ? areaSpan.textContent : '';
-          
-          const areaTextoNormalizado = normalizarTexto(areaTexto);
-          const areaSeleccionadaNormalizado = areaSeleccionada !== 'todas' ? normalizarTexto(areaSeleccionada) : 'todas';
-          const coincideArea = areaSeleccionada === 'todas' || areaTextoNormalizado === areaSeleccionadaNormalizado;
-          const coincideBusqueda = terminoBusqueda === '' || numeroZona.includes(terminoBusqueda) || areaTextoNormalizado.includes(terminoBusqueda);
-          
+          const areaFila = fila.dataset.idArea;
+
+          const coincideArea =
+            areaSeleccionada === 'todas' ||
+            String(areaFila) === String(areaSeleccionada);
+
+          const coincideBusqueda =
+            terminoBusqueda === '' ||
+            numeroZona.includes(terminoBusqueda) ||
+            normalizarTexto(areaTexto).includes(terminoBusqueda);
+
           const mostrar = coincideArea && coincideBusqueda;
           fila.style.display = mostrar ? '' : 'none';
+
           if (mostrar) filasVisibles++;
         });
 
         if (filasVisibles === 0) {
           const tbody = document.querySelector('#tablaInstructores tbody');
-          const nuevaFila = document.createElement('tr');
-          nuevaFila.id = 'fila-no-resultados';
-          let mensaje = 'No se encontraron zonas';
-          if (terminoBusqueda && areaSeleccionada !== 'todas') {
-            mensaje = `No se encontraron zonas que coincidan con "${terminoBusqueda}" en el área ${areaSeleccionada}`;
-          } else if (terminoBusqueda) {
-            mensaje = `No se encontraron zonas que coincidan con "${terminoBusqueda}"`;
-          } else if (areaSeleccionada !== 'todas') {
-            mensaje = `No se encontraron zonas en el área ${areaSeleccionada}`;
-          }
-          nuevaFila.innerHTML = `<td colspan="3" class="text-center p-4 text-gray-500">${mensaje}</td>`;
-          tbody.appendChild(nuevaFila);
+          const fila = document.createElement('tr');
+          fila.id = 'fila-no-resultados';
+          fila.innerHTML = `
+            <td colspan="3" class="text-center p-4 text-gray-500">
+              No se encontraron zonas
+            </td>`;
+          tbody.appendChild(fila);
         }
       }
 
@@ -712,9 +715,10 @@
       // =======================
       async function inicializar() {
         await Promise.all([
+          cargarZonas(),
           cargarAreasParaFiltro(),
-          cargarAreasParaModal(),
-          cargarZonas()
+          cargarAreasParaModal()
+          
         ]);
         inicializarFiltros();
         ajustarAltoTablaZonas();

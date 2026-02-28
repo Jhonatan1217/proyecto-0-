@@ -42,6 +42,21 @@ class Ficha {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    // Función para verificar si ya existe una ficha con el mismo número
+    public function existeNumeroFicha($numero_ficha) {
+    $sql = "SELECT COUNT(*) as total 
+            FROM fichas 
+            WHERE numero_ficha = :numero_ficha";
+
+    $stmt = $this->conn->prepare($sql);
+    $stmt->bindParam(':numero_ficha', $numero_ficha);
+    $stmt->execute();
+
+    $res = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    return $res['total'] > 0;
+}
+
     // Función para obtener programas de formación activos
     public function obtenerProgramas() {
         $sql = "SELECT id_programa, nombre_programa, nivel_formacion 
