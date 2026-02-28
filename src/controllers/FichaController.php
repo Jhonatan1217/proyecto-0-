@@ -129,11 +129,11 @@ try {
             }
 
             // Validar modalidad
-            $modalidades_validas = ['PRESENCIAL', 'VIRTUAL'];
+            $modalidades_validas = ['PRESENCIAL', 'VIRTUAL', 'A DISTANCIA'];
             if (!in_array($modalidad, $modalidades_validas)) {
                 echo json_encode([
                     'status' => 'error',
-                    'message' => 'Modalidad no válida. Debe ser: PRESENCIAL o VIRTUAL'
+                    'message' => 'Modalidad no válida. Debe ser: PRESENCIAL, VIRTUAL o A DISTANCIA'
                 ]);
                 exit;
             }
