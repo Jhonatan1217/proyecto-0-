@@ -57,7 +57,7 @@
                    focus:ring-2 focus:ring-[#39A900]/20
                    focus:border-[#39A900] outline-none transition">
             <option value="">Todos los roles</option>
-            <option value="Instructor">Gestor de horario</option>>
+            <option value="Instructor">Gestor de horario</option>
           </select>
           <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
             fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -182,16 +182,17 @@
           <label class="block text-sm font-semibold text-gray-700 mb-2">
             Cargo
           </label>
-          <select name="cargo" id="selectCargoModal" required
-            class="w-full border border-gray-300 rounded-xl px-4 py-3
-                   focus:ring-2 focus:ring-[#39A900]/20
-                   focus:border-[#39A900] outline-none transition">
+          <select name="cargo" 
+                  class="selectCargoModal w-full border border-gray-300 rounded-xl px-4 py-3
+                  focus:ring-2 focus:ring-[#39A900]/20
+                  focus:border-[#39A900] outline-none transition"
+                  required>
             <option value="Instructor">Instructor</option>
             <option value="Coordinador">Coordinador</option>
           </select>
         </div>
 
-        <div id="grupoInstructor" class="space-y-6">
+        <div class="grupoInstructor space-y-6">
           <!-- Tipo de instructor -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
@@ -221,7 +222,7 @@
         </div>
 
         <!-- Área del coordinador -->
-        <div id="grupoCoordinador" class="hidden">
+        <div class="grupoCoordinador hidden">
           <label class="block text-sm font-semibold text-gray-700 mb-2">
             Área del coordinador
           </label>
@@ -236,7 +237,7 @@
       <!-- Botones -->
       <div class="flex justify-end gap-4 pt-6">
 
-        <button type="button" id="btnCancelar"
+        <button type="button" id="btnCancelarNuevo"
           class="px-6 py-3 rounded-xl border border-gray-300 text-gray-600
                  hover:bg-gray-50 transition">
           Cancelar
@@ -331,16 +332,17 @@
           <label class="block text-sm font-semibold text-gray-700 mb-2">
             Cargo
           </label>
-          <select name="cargo" id="selectCargoModal" required
-            class="w-full border border-gray-300 rounded-xl px-4 py-3
-                   focus:ring-2 focus:ring-[#39A900]/20
-                   focus:border-[#39A900] outline-none transition">
+          <select name="cargo" 
+                  class="selectCargoModal w-full border border-gray-300 rounded-xl px-4 py-3
+                  focus:ring-2 focus:ring-[#39A900]/20
+                  focus:border-[#39A900] outline-none transition"
+                  required>
             <option value="Instructor">Instructor</option>
             <option value="Coordinador">Coordinador</option>
           </select>
         </div>
 
-        <div id="grupoInstructor" class="space-y-6">
+        <div class="grupoInstructor space-y-6">
           <!-- Tipo de instructor -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
@@ -370,7 +372,7 @@
         </div>
 
         <!-- Área del coordinador -->
-        <div id="grupoCoordinador" class="hidden">
+        <div class="grupoCoordinador hidden">
           <label class="block text-sm font-semibold text-gray-700 mb-2">
             Área del coordinador
           </label>
@@ -385,7 +387,7 @@
         <!-- Botones -->
       <div class="flex justify-end gap-4 pt-6">
 
-        <button type="button" id="btnCancelar"
+        <button type="button" id="btnCancelarEditar"
           class="px-6 py-3 rounded-xl border border-gray-300 text-gray-600
                  hover:bg-gray-50 transition">
           Cancelar
@@ -464,10 +466,10 @@
         </div>
 
         <div class="flex justify-end mt-10">
-            <button onclick="cerrarModal('modalVerUsuario')" 
-                    class="px-8 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition font-semibold">
-                Cerrar
-            </button>
+            <button id="btnCerrarVerUsuario">
+                <span class="px-6 py-3 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
+                    Cerrar
+                </span>
         </div>
     </div>
 </div>  

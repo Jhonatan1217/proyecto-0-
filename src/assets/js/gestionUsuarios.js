@@ -1,11 +1,11 @@
 /* ==========================================================================
-   GESTIÓN DE USUARIOS - JS (Versión Final Adaptada a la Vista)
+   GESTIÓN DE USUARIOS - JS (Versión Ultra-Estable)
    ========================================================================== */
 
 const API = window.API_USUARIO;
 
 /**
- * Petición centralizada al controlador
+ * Petición centralizada
  */
 async function apiRequest(accion, method = "GET", body = null) {
     const url = `${API}?accion=${accion}`;
@@ -19,56 +19,54 @@ async function apiRequest(accion, method = "GET", body = null) {
         const res = await fetch(url, config);
         return await res.json();
     } catch (error) {
-        console.error("Error en la petición:", error);
-        return { success: false, error: "Error de conexión con el servidor" };
+        console.error("Error:", error);
+        return { success: false, error: "Error de conexión" };
     }
 }
 
 /* =============================================
-   1. CONTROL DE MODALES
+   1. CONTROL DE MODALES (MEJORADO)
    ============================================= */
-
 function abrirModal(id) {
+    // Cerramos cualquier modal que pudiera estar abierto por error
+    document.querySelectorAll('.fixed.inset-0').forEach(m => {
+        m.classList.add('hidden');
+        m.classList.remove('flex');
+        m.style.zIndex = "50";
+    });
+
     const modal = document.getElementById(id);
-    if (modal) {
-        modal.classList.replace('hidden', 'flex');
-    }
+    if (!modal) return;
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    modal.style.zIndex = "60"; // Forzamos que esté arriba
 }
 
 function cerrarModal(id) {
     const modal = document.getElementById(id);
-    if (modal) {
-        modal.classList.replace('flex', 'hidden');
-    }
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
 }
 
-/**
- * Muestra/Oculta campos según si es Instructor o Coordinador
- */
 function alternarCamposCargo(cargo, contenedorModal) {
-    // Buscamos los grupos dentro del modal específico (Crear o Editar)
-    const grupoIns = contenedorModal.querySelector('#grupoInstructor');
-    const grupoCoor = contenedorModal.querySelector('#grupoCoordinador');
+    if (!contenedorModal) return;
+    const grupoIns = contenedorModal.querySelector('.grupoInstructor');
+    const grupoCoor = contenedorModal.querySelector('.grupoCoordinador');
     
     if (cargo === 'Instructor') {
         grupoIns?.classList.remove('hidden');
         grupoCoor?.classList.add('hidden');
-        // Activar requeridos para instructor
-        grupoIns?.querySelectorAll('select').forEach(s => s.required = true);
-        grupoCoor?.querySelectorAll('input').forEach(i => i.required = false);
-    } else if (cargo === 'Coordinador') {
+    } else {
         grupoIns?.classList.add('hidden');
         grupoCoor?.classList.remove('hidden');
-        // Activar requeridos para coordinador
-        grupoIns?.querySelectorAll('select').forEach(s => s.required = false);
-        grupoCoor?.querySelectorAll('input').forEach(i => i.required = true);
     }
 }
 
 /* =============================================
-   2. RENDERIZADO Y FILTROS
+   2. RENDERIZADO (ICONOS Y SWITCH)
    ============================================= */
-
 async function cargarUsuarios() {
     const res = await apiRequest("listar");
     if (Array.isArray(res)) {
@@ -79,121 +77,130 @@ async function cargarUsuarios() {
 function renderTabla(data) {
     const tbody = document.getElementById("tbodyUsuarios");
     if (!tbody) return;
-    tbody.innerHTML = "";
-    
+
+    let filas = "";
     data.forEach(u => {
-        tbody.innerHTML += `
-            <tr class="hover:bg-gray-50 border-b border-gray-100">
+        filas += `
+            <tr class="hover:bg-gray-50 border-b border-gray-100 transition-colors">
                 <td class="px-6 py-4 font-medium text-gray-700">${u.numero_documento}</td>
                 <td class="px-6 py-4">${u.nombre_completo}</td>
                 <td class="px-6 py-4 text-gray-500">${u.correo_electronico}</td>
-                <td class="px-6 py-4 text-right flex items-center justify-end gap-3">
-                    <button onclick="verUsuarioDetalles(${u.id_usuario})" class="text-[#0a3a57] hover:underline font-medium">Ver</button>
-                    <button onclick="prepararEdicion(${u.id_usuario})" class="text-blue-600 hover:underline font-medium">Editar</button>
-                    <button onclick="toggleEstado(${u.id_usuario}, ${u.estado})" 
-                            class="${u.estado == 1 ? 'text-red-600' : 'text-green-600'} hover:underline font-medium">
-                        ${u.estado == 1 ? 'Inhabilitar' : 'Activar'}
-                    </button>
+                <td class="px-6 py-4 text-right">
+                    <div class="flex items-center justify-end gap-2">
+                        <button class="btn-ver p-2 text-gray-400 hover:text-[#0a3a57] rounded-full hover:bg-gray-100" data-id="${u.id_usuario}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        </button>
+                        <button class="btn-editar p-2 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50" data-id="${u.id_usuario}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        </button>
+                        <label class="relative inline-flex items-center cursor-pointer ml-2">
+                            <input type="checkbox" class="sr-only peer btn-estado" data-id="${u.id_usuario}" data-estado="${u.estado}" ${u.estado == 1 ? 'checked' : ''}>
+                            <div class="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:bg-[#39A900] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div>
+                        </label>
+                    </div>
                 </td>
             </tr>`;
     });
+    tbody.innerHTML = filas;
 }
 
 /* =============================================
-   3. INICIALIZACIÓN DE EVENTOS (DOM CONTENT LOADED)
+   3. INICIALIZACIÓN (ELIMINACIÓN DE BUGS)
    ============================================= */
 
 document.addEventListener('DOMContentLoaded', () => {
     cargarUsuarios();
 
-    // --- Abrir Modal Nuevo Usuario ---
-    document.getElementById('btnAbrirModalUsuario')?.addEventListener('click', () => {
+    // DELEGACIÓN DE EVENTOS EN EL BODY PARA MÁXIMA COMPATIBILIDAD
+    document.body.addEventListener("click", (e) => {
+        const btnVer = e.target.closest(".btn-ver");
+        const btnEditar = e.target.closest(".btn-editar");
+        const btnEstado = e.target.closest(".btn-estado");
+
+        if (btnVer) {
+            e.preventDefault();
+            verUsuarioDetalles(btnVer.dataset.id);
+        } else if (btnEditar) {
+            e.preventDefault();
+            prepararEdicion(btnEditar.dataset.id);
+        } else if (btnEstado) {
+            // No prevenimos default para dejar que el checkbox cambie visualmente
+            toggleEstado(btnEstado.dataset.id, btnEstado.dataset.estado);
+        }
+    });
+
+    // Abrir Modal Nuevo
+    document.getElementById('btnAbrirModalUsuario')?.addEventListener('click', (e) => {
+        e.preventDefault();
         const modal = document.getElementById('modalNuevoUsuario');
         modal.querySelector('form').reset();
-        alternarCamposCargo('Instructor', modal); // Default
+        alternarCamposCargo('Instructor', modal);
         abrirModal('modalNuevoUsuario');
     });
 
-    // --- Detectar cambio de cargo en modales ---
-    document.querySelectorAll('#selectCargoModal').forEach(select => {
-        select.addEventListener('change', (e) => {
-            const modalContenedor = e.target.closest('.fixed');
-            alternarCamposCargo(e.target.value, modalContenedor);
-        });
+    // Cierre de modales (delegado para botones X y Cancelar)
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('#btnCerrarModal, #btnCerrarModalEditar, #btnCancelarNuevo, #btnCancelarEditar, #btnCerrarVerUsuario')) {
+            const modal = e.target.closest('.fixed.inset-0');
+            if (modal) cerrarModal(modal.id);
+        }
     });
 
-    // --- Cierre de Modales (Botones X y Cancelar) ---
-    document.querySelectorAll('#btnCerrarModal, #btnCerrarModalEditar, #btnCancelar').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const modal = btn.closest('.fixed');
-            cerrarModal(modal.id);
-        });
+    // Cambio de cargo
+    document.addEventListener('change', (e) => {
+        if (e.target.classList.contains('selectCargoModal')) {
+            alternarCamposCargo(e.target.value, e.target.closest('.fixed'));
+        }
     });
 
-    // --- Envío Formulario Crear ---
+    // Formulario Crear
     document.getElementById('formUsuario')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const datos = Object.fromEntries(new FormData(e.target));
-        
-        // Adaptación para el Controller PHP
-        datos.password = datos.numero_documento; // Contraseña = Documento
-        // El controller espera 'id_area' pero tú usas 'area_coordinador', 
-        // si tu modelo no usa ID sino texto, envíalo tal cual.
-
+        datos.password = datos.numero_documento;
         const res = await apiRequest("crear", "POST", datos);
         if (res.success) {
-            alert("Usuario guardado. Contraseña: " + datos.password);
             cerrarModal('modalNuevoUsuario');
             cargarUsuarios();
-            e.target.reset();
         } else {
-            alert("Error: " + (res.error || "No se pudo guardar"));
+            alert(res.error || "Error al guardar");
         }
     });
 
-    // --- Envío Formulario Editar ---
+    // Formulario Editar
     document.getElementById('formEditarUsuario')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const datos = Object.fromEntries(new FormData(e.target));
-        
         const res = await apiRequest("actualizar", "POST", datos);
         if (res.success) {
-            alert("Usuario actualizado correctamente");
             cerrarModal('modalEditarUsuario');
             cargarUsuarios();
         } else {
-            alert("Error: " + (res.error || "No se pudo actualizar"));
+            alert(res.error || "Error al actualizar");
         }
-    });
-
-    // --- Filtros (Opcional, si el controlador los soporta) ---
-    document.getElementById('filtroCargos')?.addEventListener('change', async (e) => {
-        const cargo = e.target.value;
-        const res = await apiRequest(`listar${cargo ? '&cargo=' + cargo.toUpperCase() : ''}`);
-        renderTabla(res);
     });
 });
 
 /* =============================================
-   4. FUNCIONES GLOBALES (ACCIONES DE TABLA)
+   4. LOGICA DE CARGA DE DATOS
    ============================================= */
 
 async function prepararEdicion(id) {
     const u = await apiRequest(`listar&id=${id}`);
     if (u && !u.error) {
-        const modal = document.getElementById('modalEditarUsuario');
         const form = document.getElementById('formEditarUsuario');
+        const modal = document.getElementById('modalEditarUsuario');
 
-        // Llenar campos
-        form.querySelector('[name="nombre_completo"]').value = u.nombre_completo;
-        form.querySelector('[name="tipo_documento"]').value = u.tipo_documento;
-        form.querySelector('[name="numero_documento"]').value = u.numero_documento;
-        form.querySelector('[name="correo_electronico"]').value = u.correo_electronico;
-        form.querySelector('[name="cargo"]').value = u.cargo;
+        // Poblar campos
+        form.querySelector('[name="nombre_completo"]').value = u.nombre_completo || '';
+        form.querySelector('[name="tipo_documento"]').value = u.tipo_documento || '';
+        form.querySelector('[name="numero_documento"]').value = u.numero_documento || '';
+        form.querySelector('[name="correo_electronico"]').value = u.correo_electronico || '';
+        form.querySelector('[name="cargo"]').value = u.cargo || '';
 
-        // Si no tienes el input hidden de id_usuario en el HTML, lo creamos
+        // ID invisible
         let hiddenId = form.querySelector('[name="id_usuario"]');
-        if(!hiddenId){
+        if(!hiddenId) {
             hiddenId = document.createElement('input');
             hiddenId.type = 'hidden';
             hiddenId.name = 'id_usuario';
@@ -206,6 +213,9 @@ async function prepararEdicion(id) {
         if (u.cargo === 'Instructor') {
             form.querySelector('[name="modalidad"]').value = u.tipo_instructor || 'Técnico';
             form.querySelector('[name="tipo_contrato"]').value = u.tipo_contrato || 'Contratista';
+        } else {
+            const inputArea = form.querySelector('[name="area_coordinador"]');
+            if(inputArea) inputArea.value = u.area_coordinador || '';
         }
 
         abrirModal('modalEditarUsuario');
@@ -230,7 +240,7 @@ async function verUsuarioDetalles(id) {
             document.getElementById('verTipoIns').textContent = u.tipo_instructor || 'N/A';
             document.getElementById('verContrato').textContent = u.tipo_contrato || 'N/A';
         } else {
-            gIns.classList.replace('grid', 'hidden');
+            gIns.classList.add('hidden');
             gCoor.classList.remove('hidden');
             document.getElementById('verArea').textContent = u.area_coordinador || 'No asignada';
         }
@@ -239,11 +249,14 @@ async function verUsuarioDetalles(id) {
 }
 
 async function toggleEstado(id, estadoActual) {
-    const nuevoEstado = estadoActual == 1 ? 0 : 1;
-    const res = await apiRequest('cambiarEstado', 'POST', { id_usuario: id, estado: nuevoEstado });
-    if (res.success) {
-        cargarUsuarios();
-    } else {
+    const nuevoEstado = parseInt(estadoActual) === 1 ? 0 : 1;
+    const res = await apiRequest('cambiarEstado', 'POST', {
+        id_usuario: id,
+        estado: nuevoEstado
+    });
+
+    if (!res.success) {
         alert("Error al cambiar estado");
     }
+    cargarUsuarios(); // Recarga para sincronizar datos y visuales
 }
