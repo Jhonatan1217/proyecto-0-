@@ -1,4 +1,4 @@
-/* ==========================================================================
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        /* ==========================================================================
    GESTIÓN DE USUARIOS - JS (Versión Ultra-Estable)
    ========================================================================== */
 
@@ -25,22 +25,23 @@ async function apiRequest(accion, method = "GET", body = null) {
 }
 
 /* =============================================
-   1. CONTROL DE MODALES (MEJORADO)
+   1. CONTROL DE MODALES
    ============================================= */
+
 function abrirModal(id) {
-    // Cerramos cualquier modal que pudiera estar abierto por error
-    document.querySelectorAll('.fixed.inset-0').forEach(m => {
-        m.classList.add('hidden');
-        m.classList.remove('flex');
-        m.style.zIndex = "50";
-    });
-
     const modal = document.getElementById(id);
-    if (!modal) return;
-
+    if (!modal) {
+        console.warn("No se encontró el modal con id:", id);
+        return;
+    }
+    // Cerrar todos los modales antes de abrir uno para evitar superposición
+    cerrarModal('modalNuevoUsuario');
+    cerrarModal('modalEditarUsuario');
+    cerrarModal('modalVerUsuario');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
-    modal.style.zIndex = "60"; // Forzamos que esté arriba
+    modal.style.display = "flex";
+    modal.style.zIndex = "60";
 }
 
 function cerrarModal(id) {
@@ -48,6 +49,8 @@ function cerrarModal(id) {
     if (!modal) return;
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    modal.style.display = "none";
+    modal.style.zIndex = "50";
 }
 
 function alternarCamposCargo(cargo, contenedorModal) {
@@ -86,12 +89,12 @@ function renderTabla(data) {
                 <td class="px-6 py-4">${u.nombre_completo}</td>
                 <td class="px-6 py-4 text-gray-500">${u.correo_electronico}</td>
                 <td class="px-6 py-4 text-right">
-                    <div class="flex items-center justify-end gap-2">
-                        <button class="btn-ver p-2 text-gray-400 hover:text-[#0a3a57] rounded-full hover:bg-gray-100" data-id="${u.id_usuario}">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    <div class="flex items-center justify-end gap-2 shrink-0">
+                        <button type="button" class="btn-editar p-2 border rounded-xl text-gray-500 hover:text-[#39A900] hover:bg-gray-50 transition shrink-0" data-id="${u.id_usuario}" title="Editar usuario">
+                            <img class="w-5 h-5 pointer-events-none" src="${window.ICON_EDIT_USUARIO}" alt="Editar" />
                         </button>
-                        <button class="btn-editar p-2 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50" data-id="${u.id_usuario}">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        <button type="button" class="btn-ver p-2 text-gray-400 hover:text-[#0a3a57] rounded-full hover:bg-gray-100 shrink-0" data-id="${u.id_usuario}" title="Ver usuario">
+                            <img class="w-5 h-5 pointer-events-none" src="${window.ICON_VER_USUARIO || ''}" alt="Ver" />
                         </button>
                         <label class="relative inline-flex items-center cursor-pointer select-none ml-2">
                             <input 
@@ -119,6 +122,22 @@ function renderTabla(data) {
             </tr>`;
     });
     tbody.innerHTML = filas;
+
+    // Bindings directos para Ver y Editar (por si la delegación en body falla)
+    tbody.querySelectorAll(".btn-editar").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            const id = btn.getAttribute("data-id");
+            if (id) prepararEdicion(id);
+        });
+    });
+    tbody.querySelectorAll(".btn-ver").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            const id = btn.getAttribute("data-id");
+            if (id) verUsuarioDetalles(id);
+        });
+    });
 }
 
 /* =============================================
@@ -128,18 +147,30 @@ function renderTabla(data) {
 document.addEventListener('DOMContentLoaded', () => {
     cargarUsuarios();
 
+    // Captura temprana para Ver (por si algo intercepta el clic)
+    document.addEventListener("click", (e) => {
+        const btn = e.target.closest(".btn-ver");
+        if (btn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const id = btn.getAttribute("data-id");
+            if (id) verUsuarioDetalles(id);
+            return;
+        }
+    }, true);
+
     // DELEGACIÓN DE EVENTOS EN EL BODY PARA MÁXIMA COMPATIBILIDAD
     document.body.addEventListener("click", (e) => {
-        const btnVer = e.target.closest(".btn-ver");
         const btnEditar = e.target.closest(".btn-editar");
+        const btnVer = e.target.closest(".btn-ver");
         const btnEstado = e.target.closest(".btn-estado");
 
-        if (btnVer) {
-            e.preventDefault();
-            verUsuarioDetalles(btnVer.dataset.id);
-        } else if (btnEditar) {
+        if (btnEditar) {
             e.preventDefault();
             prepararEdicion(btnEditar.dataset.id);
+        } else if (btnVer) {
+            e.preventDefault();
+            verUsuarioDetalles(btnVer.dataset.id);
         } else if (btnEstado) {
             // No prevenimos default para dejar que el checkbox cambie visualmente
             toggleEstado(btnEstado.dataset.id, btnEstado.dataset.estado);
@@ -150,8 +181,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btnAbrirModalUsuario')?.addEventListener('click', (e) => {
         e.preventDefault();
         const modal = document.getElementById('modalNuevoUsuario');
+        if (!modal) return;
         modal.querySelector('form').reset();
         alternarCamposCargo('Instructor', modal);
+        // Cerrar otros modales por seguridad
+        cerrarModal('modalEditarUsuario');
+        cerrarModal('modalVerUsuario');
         abrirModal('modalNuevoUsuario');
     });
 
@@ -203,65 +238,94 @@ document.addEventListener('DOMContentLoaded', () => {
    ============================================= */
 
 async function prepararEdicion(id) {
-    const u = await apiRequest(`listar&id=${id}`);
-    if (u && !u.error) {
-        const form = document.getElementById('formEditarUsuario');
-        const modal = document.getElementById('modalEditarUsuario');
+    try {
+        const u = await apiRequest(`listar&id=${id}`);
+        if (u && !u.error) {
+            const form = document.getElementById('formEditarUsuario');
+            const modal = document.getElementById('modalEditarUsuario');
 
-        // Poblar campos
-        form.querySelector('[name="nombre_completo"]').value = u.nombre_completo || '';
-        form.querySelector('[name="tipo_documento"]').value = u.tipo_documento || '';
-        form.querySelector('[name="numero_documento"]').value = u.numero_documento || '';
-        form.querySelector('[name="correo_electronico"]').value = u.correo_electronico || '';
-        form.querySelector('[name="cargo"]').value = u.cargo || '';
+            if (!form || !modal) {
+                console.warn("No se encontró el formulario o el modal de edición.");
+                return;
+            }
 
-        // ID invisible
-        let hiddenId = form.querySelector('[name="id_usuario"]');
-        if(!hiddenId) {
-            hiddenId = document.createElement('input');
-            hiddenId.type = 'hidden';
-            hiddenId.name = 'id_usuario';
-            form.appendChild(hiddenId);
-        }
-        hiddenId.value = u.id_usuario;
+            // Poblar campos
+            form.querySelector('[name="nombre_completo"]').value = u.nombre_completo || '';
+            form.querySelector('[name="tipo_documento"]').value = u.tipo_documento || '';
+            form.querySelector('[name="numero_documento"]').value = u.numero_documento || '';
+            form.querySelector('[name="correo_electronico"]').value = u.correo_electronico || '';
+            form.querySelector('[name="cargo"]').value = u.cargo || '';
 
-        alternarCamposCargo(u.cargo, modal);
-        
-        if (u.cargo === 'Instructor') {
-            form.querySelector('[name="modalidad"]').value = u.tipo_instructor || 'Técnico';
-            form.querySelector('[name="tipo_contrato"]').value = u.tipo_contrato || 'Contratista';
+            // ID invisible
+            let hiddenId = form.querySelector('[name="id_usuario"]');
+            if(!hiddenId) {
+                hiddenId = document.createElement('input');
+                hiddenId.type = 'hidden';
+                hiddenId.name = 'id_usuario';
+                form.appendChild(hiddenId);
+            }
+            hiddenId.value = u.id_usuario;
+
+            alternarCamposCargo(u.cargo, modal);
+            
+            if (u.cargo === 'Instructor') {
+                const selModalidad = form.querySelector('[name="modalidad"]');
+                const selContrato = form.querySelector('[name="tipo_contrato"]');
+                if (selModalidad) selModalidad.value = u.tipo_instructor || 'Técnico';
+                if (selContrato) selContrato.value = u.tipo_contrato || 'Contratista';
+            } else {
+                const inputArea = form.querySelector('[name="area_coordinador"]');
+                if (inputArea) inputArea.value = u.nombre_area || u.area_coordinador || '';
+            }
+
+            abrirModal('modalEditarUsuario');
         } else {
-            const inputArea = form.querySelector('[name="area_coordinador"]');
-            if(inputArea) inputArea.value = u.area_coordinador || '';
+            alert(u?.error || "No se pudo cargar la información del usuario para editar.");
         }
-
-        abrirModal('modalEditarUsuario');
+    } catch (e) {
+        console.error("Error al preparar edición:", e);
+        alert("Ocurrió un error al preparar la edición del usuario.");
     }
 }
 
 async function verUsuarioDetalles(id) {
-    const u = await apiRequest(`listar&id=${id}`);
-    if (u && !u.error) {
-        document.getElementById('verNombre').textContent = u.nombre_completo;
-        document.getElementById('verTipoDoc').textContent = u.tipo_documento;
-        document.getElementById('verNumDoc').textContent = u.numero_documento;
-        document.getElementById('verCorreo').textContent = u.correo_electronico;
-        document.getElementById('verCargo').textContent = u.cargo;
+    try {
+        const res = await apiRequest(`listar&id=${id}`);
+        const u = Array.isArray(res) ? res[0] : res;
+        if (u && !u.error) {
+            const modal = document.getElementById('modalVerUsuario');
+            if (!modal) {
+                console.warn("No se encontró el modal de ver usuario.");
+                return;
+            }
 
-        const gIns = document.getElementById('verGrupoInstructor');
-        const gCoor = document.getElementById('verGrupoCoordinador');
+            const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val ?? ''; };
+            set('verNombre', u.nombre_completo);
+            set('verTipoDoc', u.tipo_documento);
+            set('verNumDoc', u.numero_documento);
+            set('verCorreo', u.correo_electronico);
+            set('verCargo', u.cargo);
 
-        if (u.cargo === 'Instructor') {
-            gIns.classList.replace('hidden', 'grid');
-            gCoor.classList.add('hidden');
-            document.getElementById('verTipoIns').textContent = u.tipo_instructor || 'N/A';
-            document.getElementById('verContrato').textContent = u.tipo_contrato || 'N/A';
+            const gIns = document.getElementById('verGrupoInstructor');
+            const gCoor = document.getElementById('verGrupoCoordinador');
+            if (String(u.cargo || '').toLowerCase() === 'instructor') {
+                if (gIns) { gIns.classList.remove('hidden'); gIns.classList.add('grid'); }
+                if (gCoor) gCoor.classList.add('hidden');
+                set('verTipoIns', u.tipo_instructor || 'N/A');
+                set('verContrato', u.tipo_contrato || 'N/A');
+            } else {
+                if (gIns) gIns.classList.add('hidden');
+                if (gCoor) gCoor.classList.remove('hidden');
+                set('verArea', u.nombre_area || u.area_coordinador || 'No asignada');
+            }
+
+            abrirModal('modalVerUsuario');
         } else {
-            gIns.classList.add('hidden');
-            gCoor.classList.remove('hidden');
-            document.getElementById('verArea').textContent = u.area_coordinador || 'No asignada';
+            alert(u?.error || "No se pudo cargar la información del usuario para ver.");
         }
-        abrirModal('modalVerUsuario');
+    } catch (e) {
+        console.error("Error al ver usuario:", e);
+        alert("Ocurrió un error al cargar los detalles del usuario.");
     }
 }
 

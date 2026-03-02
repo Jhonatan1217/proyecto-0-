@@ -103,13 +103,13 @@
   </div>
 </div>
 
-<!-- ================= MODAL NUEVO USUARIO================= -->
-
+<!-- ================= MODALES USUARIOS ================= -->
+<div id="contenedorModalesUsuarios">
 <div id="modalNuevoUsuario"
   class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
 
   <!-- Caja Modal -->
-  <div class="bg-white w-full max-w-xl rounded-2xl shadow-xl border border-gray-200
+  <div class="bg-white w-full max-w-xl max-h-[80vh] overflow-y-auto rounded-2xl shadow-xl border border-gray-200
               px-8 py-10 relative">
 
     <!-- Botón cerrar -->
@@ -152,7 +152,7 @@
               <option value="Cédula de Extranjería">Cédula de Extranjería</option>
               <option value="Pasaporte">Pasaporte</option>
             </select>
-            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+            <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
               <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
@@ -170,7 +170,7 @@
             class="w-full border border-gray-300 rounded-xl px-4 py-3
                    focus:ring-2 focus:ring-[#39A900]/20
                    focus:border-[#39A900] outline-none transition">
-        </div>
+        </div>                                                                                    
 
         <!-- Correo -->
         <div>
@@ -198,7 +198,7 @@
               <option value="Instructor">Instructor</option>
               <option value="Coordinador">Coordinador</option>
             </select>
-            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+            <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
               <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
@@ -220,7 +220,7 @@
                 <option value="Técnico">Técnico</option>
                 <option value="Transversal">Transversal</option>
               </select>
-              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+              <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
@@ -240,7 +240,7 @@
                 <option value="Planta">Planta</option>
                 <option value="Contratista">Contratista</option>
               </select>
-              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+              <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
@@ -282,13 +282,13 @@
     </form>
   </div>
 </div>
-
+</div>
 <!-- ================= MODAL EDITAR USUARIO ================= -->
 <div id="modalEditarUsuario"
   class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
 
   <!-- Caja Modal -->
-  <div class="bg-white w-full max-w-xl rounded-2xl shadow-xl border border-gray-200
+  <div class="bg-white w-full max-w-xl max-h-[80vh] overflow-y-auto rounded-2xl shadow-xl border border-gray-200
               px-8 py-10 relative">
 
     <!-- Botón cerrar -->
@@ -331,7 +331,7 @@
               <option value="Cédula de Extranjería">Cédula de Extranjería</option>
               <option value="Pasaporte">Pasaporte</option>
             </select>
-            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+            <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
               <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
@@ -376,7 +376,7 @@
               <option value="Instructor">Instructor</option>
               <option value="Coordinador">Coordinador</option>
             </select>
-            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+            <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
               <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
@@ -398,7 +398,7 @@
                 <option value="Técnico">Técnico</option>
                 <option value="Transversal">Transversal</option>
               </select>
-              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+              <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
@@ -418,7 +418,7 @@
                 <option value="Planta">Planta</option>
                 <option value="Contratista">Contratista</option>
               </select>
-              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+              <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
@@ -464,7 +464,7 @@
  <div id="modalVerUsuario" 
      class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
     
-    <div class="bg-white w-full max-w-xl rounded-2xl shadow-xl border border-gray-200 px-8 py-10 relative">
+    <div class="bg-white w-full max-w-xl max-h-[80vh] overflow-y-auto rounded-2xl shadow-xl border border-gray-200 px-8 py-10 relative">
         
         <button onclick="cerrarModal('modalVerUsuario')" 
                 class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-lg">
@@ -532,5 +532,7 @@
 
 <script>
 window.API_USUARIO = "<?= BASE_URL ?>src/controllers/UsuarioController.php";
+window.ICON_EDIT_USUARIO = "<?= BASE_URL ?>src/assets/img/pencil.svg";
+window.ICON_VER_USUARIO = "<?= BASE_URL ?>src/assets/img/eye.svg";
 </script>
 <script src="<?= BASE_URL ?>src/assets/js/gestionUsuarios.js"></script>
