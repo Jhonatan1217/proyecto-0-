@@ -48,6 +48,19 @@ function limpiarErrores(formOrContainer) {
     if (errGeneral) { errGeneral.classList.add('hidden'); errGeneral.textContent = ''; }
 }
 
+function setSelectValue(select, val) {
+    if (!select || val == null || val === '') return;
+    const v = String(val).trim();
+    if (!v) return;
+    const opts = [...select.options];
+    const exact = opts.find(o => o.value === v);
+    if (exact) { select.value = v; return; }
+    const ci = opts.find(o => o.value.toLowerCase() === v.toLowerCase());
+    if (ci) { select.value = ci.value; return; }
+    const partial = opts.find(o => o.value.toLowerCase().includes(v.toLowerCase()) || v.toLowerCase().includes(o.value.toLowerCase()));
+    if (partial) { select.value = partial.value; return; }
+}
+
 function campoDesdeError(msg) {
     if (!msg || typeof msg !== 'string') return null;
     const m = msg.toLowerCase();
@@ -151,7 +164,7 @@ function alternarCamposCargo(cargo, contenedorModal) {
     const tipoContrato = contenedorModal.querySelector('[name="tipo_contrato"]');
     const areaCoord = contenedorModal.querySelector('[name="area_coordinador"]');
 
-    if (cargo === 'Instructor') {
+    if (String(cargo || '').toLowerCase().includes('instructor')) {
         grupoIns?.classList.remove('hidden');
         grupoCoor?.classList.add('hidden');
         if (modalidad) modalidad.required = true;
@@ -291,6 +304,15 @@ document.addEventListener('DOMContentLoaded', () => {
         limpiarErrores(form);
         const datos = Object.fromEntries(new FormData(form));
         datos.password = datos.numero_documento;
+        if (datos.modalidad) { datos.tipo_instructor = datos.modalidad; delete datos.modalidad; }
+        if (String(datos.cargo || '').toLowerCase().includes('coordinador')) {
+            datos.tipo_instructor = null;
+            datos.tipo_contrato = null;
+            const idArea = form.querySelector('[name="id_area"]')?.value;
+            datos.id_area = idArea ? parseInt(idArea, 10) : null;
+        } else {
+            datos.id_area = null;
+        }
         const res = await apiRequest("crear", "POST", datos);
         if (res.success) {
             cerrarModal('modalNuevoUsuario');
@@ -307,6 +329,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!validarFormulario(form)) return;
         limpiarErrores(form);
         const datos = Object.fromEntries(new FormData(form));
+        datos.tipo_documento = datos.tipo_documento || form.querySelector('[name="tipo_documento"]')?.value || '';
+        if (datos.modalidad) { datos.tipo_instructor = datos.modalidad; delete datos.modalidad; }
+        if (String(datos.cargo || '').toLowerCase().includes('coordinador')) {
+            datos.tipo_instructor = null;
+            datos.tipo_contrato = null;
+        } else {
+            datos.area_coordinador = '';
+        }
         const res = await apiRequest("actualizar", "POST", datos);
         if (res.success) {
             cerrarModal('modalEditarUsuario');
@@ -335,10 +365,10 @@ async function prepararEdicion(id) {
 
             // Poblar campos
             form.querySelector('[name="nombre_completo"]').value = u.nombre_completo || '';
-            form.querySelector('[name="tipo_documento"]').value = u.tipo_documento || '';
+            setSelectValue(form.querySelector('[name="tipo_documento"]'), u.tipo_documento);
             form.querySelector('[name="numero_documento"]').value = u.numero_documento || '';
             form.querySelector('[name="correo_electronico"]').value = u.correo_electronico || '';
-            form.querySelector('[name="cargo"]').value = u.cargo || '';
+            setSelectValue(form.querySelector('[name="cargo"]'), u.cargo);
 
             // ID invisible
             let hiddenId = form.querySelector('[name="id_usuario"]');
@@ -353,14 +383,13 @@ async function prepararEdicion(id) {
             alternarCamposCargo(u.cargo, modal);
             limpiarErrores(form);
             
-            if (u.cargo === 'Instructor') {
+            if (String(u.cargo || '').toLowerCase().includes('instructor')) {
                 const selModalidad = form.querySelector('[name="modalidad"]');
                 const selContrato = form.querySelector('[name="tipo_contrato"]');
-                if (selModalidad) selModalidad.value = u.tipo_instructor || 'Técnico';
-                if (selContrato) selContrato.value = u.tipo_contrato || 'Contratista';
+                setSelectValue(selModalidad, u.tipo_instructor || 'Técnico');
+                setSelectValue(selContrato, u.tipo_contrato || 'Contratista');
             } else {
-                const inputArea = form.querySelector('[name="area_coordinador"]');
-                if (inputArea) inputArea.value = u.nombre_area || u.area_coordinador || '';
+                setSelectValue(form.querySelector('[name="id_area"]'), u.id_area || u.idArea);
             }
 
             abrirModal('modalEditarUsuario');
@@ -381,8 +410,7 @@ async function verUsuarioDetalles(id) {
     }
 
     limpiarErrores(document.getElementById('modalVerUsuario'));
-    const idsCampos = ['verNombre', 'verTipoDoc', 'verNumDoc', 'verCorreo', 'verCargo', 'verTipoIns', 'verContrato', 'verArea'];
-    idsCampos.forEach(idEl => {
+    ['verNombre', 'verAvatar', 'verCargo', 'verEstado', 'verTipoDoc', 'verNumDoc', 'verCorreo', 'verTipoIns', 'verContrato', 'verArea', 'verProgramas'].forEach(idEl => {
         const el = document.getElementById(idEl);
         if (el) el.textContent = 'Cargando...';
     });
@@ -400,21 +428,54 @@ async function verUsuarioDetalles(id) {
 
         const set = (idEl, val) => {
             const el = document.getElementById(idEl);
-            if (el) el.textContent = val ?? '';
+            if (el) el.textContent = (val != null && val !== '') ? String(val) : '—';
         };
-        set('verNombre', u.nombre_completo);
-        set('verTipoDoc', u.tipo_documento);
-        set('verNumDoc', u.numero_documento);
-        set('verCorreo', u.correo_electronico);
-        set('verCargo', u.cargo);
+        const nombre = u.nombre_completo || '';
+        set('verNombre', nombre);
+        const avatar = document.getElementById('verAvatar');
+        if (avatar) avatar.textContent = nombre ? nombre.trim().split(/\s+/).map(s => s[0]).slice(0, 2).join('').toUpperCase() || '—' : '—';
+        set('verCargo', u.cargo || '—');
+        const esActivo = (u.estado == 1 || u.estado === '1');
+        set('verEstado', esActivo ? 'Activo' : 'Inactivo');
+        const estadoEl = document.getElementById('verEstado');
+        if (estadoEl) {
+            estadoEl.classList.remove('bg-[#39A900]/20', 'text-[#39A900]', 'bg-gray-200', 'text-gray-600');
+            if (esActivo) {
+                estadoEl.classList.add('bg-[#39A900]/20', 'text-[#39A900]');
+            } else {
+                estadoEl.classList.add('bg-gray-200', 'text-gray-600');
+            }
+        }
+        const td = u.tipo_documento ?? u.tipoDocumento ?? '';
+        const ti = u.tipo_instructor ?? u.modalidad ?? u.tipoInstructor ?? '';
+        const tc = u.tipo_contrato ?? u.tipoContrato ?? '';
+        set('verTipoDoc', td);
+        set('verNumDoc', u.numero_documento ?? '');
+        set('verCorreo', u.correo_electronico ?? '');
 
         alternarCamposCargo(u.cargo, modal);
 
-        if (String(u.cargo || '').toLowerCase() === 'instructor') {
-            set('verTipoIns', u.tipo_instructor || 'N/A');
-            set('verContrato', u.tipo_contrato || 'N/A');
+        if (String(u.cargo || '').toLowerCase().includes('instructor')) {
+            set('verTipoIns', ti);
+            set('verContrato', tc);
         } else {
             set('verArea', u.nombre_area || u.area_coordinador || 'No asignada');
+        }
+
+        const progEl = document.getElementById('verProgramas');
+        if (progEl) {
+            progEl.innerHTML = '';
+            const programas = u.programas || u.programas_vinculados || [];
+            if (Array.isArray(programas) && programas.length > 0) {
+                programas.forEach(p => {
+                    const span = document.createElement('span');
+                    span.className = 'block';
+                    span.textContent = typeof p === 'string' ? p : (p.nombre_programa || p.nombre || '—');
+                    progEl.appendChild(span);
+                });
+            } else {
+                progEl.textContent = 'No hay programas vinculados';
+            }
         }
     } catch (e) {
         console.error("Error al ver usuario:", e);

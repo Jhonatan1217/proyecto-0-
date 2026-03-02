@@ -266,7 +266,6 @@
             class="w-full border border-gray-300 rounded-xl px-4 py-3
                    focus:ring-2 focus:ring-[#39A900]/20
                    focus:border-[#39A900] outline-none transition">
-          </input>
         </div>
 
       <!-- Botones -->
@@ -449,10 +448,9 @@
             class="w-full border border-gray-300 rounded-xl px-4 py-3
                    focus:ring-2 focus:ring-[#39A900]/20
                    focus:border-[#39A900] outline-none transition">
-          </input>
         </div>
 
-        <!-- Botones -->
+      <!-- Botones -->
       <div class="flex justify-end gap-4 pt-6">
 
         <button type="button" id="btnCancelarEditar"
@@ -473,66 +471,73 @@
 </div>
 
 <!-- ================= MODAL VER USUARIO ================= -->
- <div id="modalVerUsuario" 
-     class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
+<div id="modalVerUsuario" 
+    class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
     
-    <div class="bg-white w-full max-w-xl max-h-[80vh] overflow-y-auto rounded-2xl shadow-xl border border-gray-200 px-8 py-10 relative">
+    <div class="bg-white w-full max-w-xl max-h-[85vh] overflow-y-auto rounded-2xl shadow-xl border border-gray-200 px-8 py-10 relative">
         
         <button onclick="cerrarModal('modalVerUsuario')" 
                 class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-lg">
             ✕
         </button>
 
-        <h2 class="text-2xl font-bold text-[#0a3a57] mb-8 border-b pb-4">
+        <h2 class="text-2xl font-bold text-[#0a3a57] mb-6">
             Detalles del Usuario
         </h2>
 
         <div id="errorModalVerUsuario" class="hidden text-red-600 text-sm p-3 bg-red-50 rounded-lg mb-4"></div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Nombre Completo</label>
-                <p id="verNombre" class="text-gray-800 font-medium mt-1">Cargando...</p>
+        <!-- Avatar + Nombre + Tags (Rol, Estado) - Diseño alineado -->
+        <div class="flex items-start gap-4 mb-8 pb-6 border-b border-gray-200">
+            <div class="w-16 h-16 rounded-full flex items-center justify-center shrink-0 text-2xl font-semibold text-gray-500 bg-[#D9D9D9]" id="verAvatar">
+                —
             </div>
-
-            <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Documento</label>
-                <p class="text-gray-800 mt-1">
-                    <span id="verTipoDoc"></span>: <span id="verNumDoc"></span>
-                </p>
-            </div>
-
-            <div class="md:col-span-2">
-                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Correo Electrónico</label>
-                <p id="verCorreo" class="text-gray-800 mt-1">Cargando...</p>
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Cargo</label>
-                <span id="verCargo" class="inline-block px-3 py-1 rounded-full text-sm font-semibold mt-2 bg-blue-100 text-blue-700">
-                    Cargando...
-                </span>
-            </div>
-
-            <div id="verGrupoInstructor" class="grupoInstructor md:col-span-2 grid-cols-2 gap-6 pt-4 border-t border-gray-100 hidden">
-                <div>
-                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Tipo de Instructor</label>
-                    <p id="verTipoIns" class="text-gray-800 mt-1">Cargando...</p>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Tipo de Contrato</label>
-                    <p id="verContrato" class="text-gray-800 mt-1">Cargando...</p>
+            <div class="flex-1 min-w-0 flex flex-col gap-2">
+                <p id="verNombre" class="text-gray-900 font-bold text-lg leading-tight">Cargando...</p>
+                <div class="flex flex-wrap gap-2 items-center">
+                    <span id="verCargo" class="inline-block px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-700/35 text-blue-900">Cargo</span>
+                    <span id="verEstado" class="inline-block px-3 py-1.5 rounded-full text-xs font-semibold bg-[#39A900]/20 text-[#39A900]">Estado</span>
                 </div>
             </div>
+        </div>
 
-            <div id="verGrupoCoordinador" class="grupoCoordinador md:col-span-2 pt-4 border-t border-gray-100 hidden">
+        <!-- Atributos -->
+        <div class="space-y-5">
+            <div>
+                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Tipo de documento</label>
+                <p id="verTipoDoc" class="text-gray-800 mt-1">—</p>
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Número documento</label>
+                <p id="verNumDoc" class="text-gray-800 mt-1">—</p>
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Correo electrónico</label>
+                <p id="verCorreo" class="text-gray-800 mt-1">—</p>
+            </div>
+
+            <div id="verGrupoInstructor" class="grupoInstructor space-y-5 pt-4 border-t border-gray-100 hidden">
                 <div>
-                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Área a Cargo</label>
-                    <p id="verArea" class="text-gray-800 mt-1">Cargando...</p>
+                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Tipo instructor</label>
+                    <p id="verTipoIns" class="text-gray-800 mt-1">—</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Tipo de contrato</label>
+                    <p id="verContrato" class="text-gray-800 mt-1">—</p>
                 </div>
             </div>
 
+            <div id="verGrupoCoordinador" class="grupoCoordinador pt-4 border-t border-gray-100 hidden">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Área coordinador</label>
+                    <p id="verArea" class="text-gray-800 mt-1">—</p>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-gray-100">
+                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Programas de Formación Vínculados</label>
+                <div id="verProgramas" class="text-gray-800 mt-1 space-y-1">—</div>
+            </div>
         </div>
 
         <div class="flex justify-end mt-10">
