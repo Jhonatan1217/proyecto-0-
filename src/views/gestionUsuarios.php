@@ -501,7 +501,7 @@
                 </span>
             </div>
 
-            <div id="verGrupoInstructor" class="md:col-span-2 grid-cols-2 gap-6 pt-4 border-t border-gray-100 hidden">
+            <div id="verGrupoInstructor" class="grupoInstructor md:col-span-2 grid-cols-2 gap-6 pt-4 border-t border-gray-100 hidden">
                 <div>
                     <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Tipo de Instructor</label>
                     <p id="verTipoIns" class="text-gray-800 mt-1">Cargando...</p>
@@ -512,7 +512,7 @@
                 </div>
             </div>
 
-            <div id="verGrupoCoordinador" class="md:col-span-2 pt-4 border-t border-gray-100 hidden">
+            <div id="verGrupoCoordinador" class="grupoCoordinador md:col-span-2 pt-4 border-t border-gray-100 hidden">
                 <div>
                     <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Área a Cargo</label>
                     <p id="verArea" class="text-gray-800 mt-1">Cargando...</p>
@@ -522,10 +522,10 @@
         </div>
 
         <div class="flex justify-end mt-10">
-            <button id="btnCerrarVerUsuario">
-                <span class="px-6 py-3 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
-                    Cerrar
-                </span>
+            <button type="button" id="btnCerrarVerUsuario"
+                class="px-6 py-3 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
+                Cerrar
+            </button>
         </div>
     </div>
 </div>  

@@ -1,4 +1,4 @@
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        /* ==========================================================================
+/* ==========================================================================
    GESTIÓN DE USUARIOS - JS (Versión Ultra-Estable)
    ========================================================================== */
 
@@ -8,12 +8,17 @@ const API = window.API_USUARIO;
  * Petición centralizada
  */
 async function apiRequest(accion, method = "GET", body = null) {
-    const url = `${API}?accion=${accion}`;
+    let url = `${API}?accion=${accion}`;
     const config = {
         method,
         headers: { "Content-Type": "application/json" }
     };
-    if (body) config.body = JSON.stringify(body);
+    if (body && method === "GET") {
+        const params = new URLSearchParams(body);
+        url += "&" + params.toString();
+    } else if (body) {
+        config.body = JSON.stringify(body);
+    }
 
     try {
         const res = await fetch(url, config);
@@ -34,10 +39,14 @@ function abrirModal(id) {
         console.warn("No se encontró el modal con id:", id);
         return;
     }
+    const parent = modal.parentElement;
     // Cerrar todos los modales antes de abrir uno para evitar superposición
     cerrarModal('modalNuevoUsuario');
     cerrarModal('modalEditarUsuario');
     cerrarModal('modalVerUsuario');
+    if (parent && getComputedStyle(parent).display === 'none') {
+        document.body.appendChild(modal);
+    }
     modal.classList.remove('hidden');
     modal.classList.add('flex');
     modal.style.display = "flex";
@@ -122,22 +131,6 @@ function renderTabla(data) {
             </tr>`;
     });
     tbody.innerHTML = filas;
-
-    // Bindings directos para Ver y Editar (por si la delegación en body falla)
-    tbody.querySelectorAll(".btn-editar").forEach((btn) => {
-        btn.addEventListener("click", (e) => {
-            e.preventDefault();
-            const id = btn.getAttribute("data-id");
-            if (id) prepararEdicion(id);
-        });
-    });
-    tbody.querySelectorAll(".btn-ver").forEach((btn) => {
-        btn.addEventListener("click", (e) => {
-            e.preventDefault();
-            const id = btn.getAttribute("data-id");
-            if (id) verUsuarioDetalles(id);
-        });
-    });
 }
 
 /* =============================================
@@ -147,32 +140,24 @@ function renderTabla(data) {
 document.addEventListener('DOMContentLoaded', () => {
     cargarUsuarios();
 
-    // Captura temprana para Ver (por si algo intercepta el clic)
-    document.addEventListener("click", (e) => {
-        const btn = e.target.closest(".btn-ver");
-        if (btn) {
+    // Única delegación de eventos en body para .btn-editar, .btn-ver y .btn-estado
+    document.body.addEventListener("click", (e) => {
+        const btnVer = e.target.closest(".btn-ver");
+        if (btnVer) {
             e.preventDefault();
-            e.stopPropagation();
-            const id = btn.getAttribute("data-id");
+            const id = btnVer.dataset.id;
             if (id) verUsuarioDetalles(id);
             return;
         }
-    }, true);
-
-    // DELEGACIÓN DE EVENTOS EN EL BODY PARA MÁXIMA COMPATIBILIDAD
-    document.body.addEventListener("click", (e) => {
         const btnEditar = e.target.closest(".btn-editar");
-        const btnVer = e.target.closest(".btn-ver");
-        const btnEstado = e.target.closest(".btn-estado");
-
         if (btnEditar) {
             e.preventDefault();
-            prepararEdicion(btnEditar.dataset.id);
-        } else if (btnVer) {
-            e.preventDefault();
-            verUsuarioDetalles(btnVer.dataset.id);
-        } else if (btnEstado) {
-            // No prevenimos default para dejar que el checkbox cambie visualmente
+            const id = btnEditar.dataset.id;
+            if (id) prepararEdicion(id);
+            return;
+        }
+        const btnEstado = e.target.closest(".btn-estado");
+        if (btnEstado) {
             toggleEstado(btnEstado.dataset.id, btnEstado.dataset.estado);
         }
     });
@@ -197,6 +182,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (modal) cerrarModal(modal.id);
         }
     });
+
+    document.getElementById('btnCerrarVerUsuario')?.addEventListener('click', () => cerrarModal('modalVerUsuario'));
 
     // Cambio de cargo
     document.addEventListener('change', (e) => {
@@ -289,43 +276,52 @@ async function prepararEdicion(id) {
 }
 
 async function verUsuarioDetalles(id) {
+    const modal = document.getElementById('modalVerUsuario');
+    if (!modal) {
+        console.warn("No se encontró el modal de ver usuario.");
+        return;
+    }
+
+    const idsCampos = ['verNombre', 'verTipoDoc', 'verNumDoc', 'verCorreo', 'verCargo', 'verTipoIns', 'verContrato', 'verArea'];
+    idsCampos.forEach(idEl => {
+        const el = document.getElementById(idEl);
+        if (el) el.textContent = 'Cargando...';
+    });
+
+    abrirModal('modalVerUsuario');
+
     try {
-        const res = await apiRequest(`listar&id=${id}`);
+        const res = await apiRequest("obtener", "GET", { id: id });
         const u = Array.isArray(res) ? res[0] : res;
-        if (u && !u.error) {
-            const modal = document.getElementById('modalVerUsuario');
-            if (!modal) {
-                console.warn("No se encontró el modal de ver usuario.");
-                return;
-            }
 
-            const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val ?? ''; };
-            set('verNombre', u.nombre_completo);
-            set('verTipoDoc', u.tipo_documento);
-            set('verNumDoc', u.numero_documento);
-            set('verCorreo', u.correo_electronico);
-            set('verCargo', u.cargo);
+        if (!u || u.error) {
+            alert(res?.error || "No se pudo cargar la información del usuario.");
+            cerrarModal('modalVerUsuario');
+            return;
+        }
 
-            const gIns = document.getElementById('verGrupoInstructor');
-            const gCoor = document.getElementById('verGrupoCoordinador');
-            if (String(u.cargo || '').toLowerCase() === 'instructor') {
-                if (gIns) { gIns.classList.remove('hidden'); gIns.classList.add('grid'); }
-                if (gCoor) gCoor.classList.add('hidden');
-                set('verTipoIns', u.tipo_instructor || 'N/A');
-                set('verContrato', u.tipo_contrato || 'N/A');
-            } else {
-                if (gIns) gIns.classList.add('hidden');
-                if (gCoor) gCoor.classList.remove('hidden');
-                set('verArea', u.nombre_area || u.area_coordinador || 'No asignada');
-            }
+        const set = (idEl, val) => {
+            const el = document.getElementById(idEl);
+            if (el) el.textContent = val ?? '';
+        };
+        set('verNombre', u.nombre_completo);
+        set('verTipoDoc', u.tipo_documento);
+        set('verNumDoc', u.numero_documento);
+        set('verCorreo', u.correo_electronico);
+        set('verCargo', u.cargo);
 
-            abrirModal('modalVerUsuario');
+        alternarCamposCargo(u.cargo, modal);
+
+        if (String(u.cargo || '').toLowerCase() === 'instructor') {
+            set('verTipoIns', u.tipo_instructor || 'N/A');
+            set('verContrato', u.tipo_contrato || 'N/A');
         } else {
-            alert(u?.error || "No se pudo cargar la información del usuario para ver.");
+            set('verArea', u.nombre_area || u.area_coordinador || 'No asignada');
         }
     } catch (e) {
         console.error("Error al ver usuario:", e);
         alert("Ocurrió un error al cargar los detalles del usuario.");
+        cerrarModal('modalVerUsuario');
     }
 }
 

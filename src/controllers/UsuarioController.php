@@ -31,6 +31,16 @@ try {
         // ============================================================
         // LISTAR USUARIOS CON FILTROS
         // ============================================================
+        case 'obtener':
+            $id = intval(inreq('id'));
+            if (!$id) {
+                echo json_encode(['error' => 'ID no proporcionado']);
+                break;
+            }
+            $data = $usuarioModel->obtenerPorId($id);
+            echo json_encode($data ?: ['error' => 'Usuario no encontrado']);
+            break;
+
         case 'listar':
             // Si se pide un ID específico
             if (isset($_GET['id'])) {
