@@ -84,6 +84,8 @@
       </div>
     </div>
 
+    <div id="errorTablaUsuarios" class="hidden text-red-600 text-sm p-3 bg-red-50 rounded-lg mx-6 mb-4"></div>
+
     <!-- Tabla -->
     <div class="overflow-x-auto">
       <table class="w-full text-left">
@@ -122,7 +124,9 @@
       Nuevo Usuario
     </h2>
 
-    <form id="formUsuario" class="space-y-6">
+    <form id="formUsuario" class="space-y-6" novalidate>
+
+      <div id="errorFormUsuario" class="hidden text-red-600 text-sm p-3 bg-red-50 rounded-lg mb-4"></div>
 
       <div class="flex flex-col gap-6">
 
@@ -136,6 +140,7 @@
             class="w-full border border-gray-300 rounded-xl px-4 py-3
                    focus:ring-2 focus:ring-[#39A900]/20
                    focus:border-[#39A900] outline-none transition">
+          <span class="error-input hidden text-red-600 text-xs mt-1" data-field="nombre_completo"></span>
         </div>
 
         <!--  Tipo de documento -->
@@ -165,11 +170,12 @@
           <label class="block text-sm font-semibold text-gray-700 mb-2">
             Número de Documento
           </label>
-          <input type="number" name="numero_documento" required
-            placeholder="Ingrese el número de documento"
+          <input type="number" name="numero_documento" required min="1" max="999999999"
+            placeholder="Ingrese el número de documento (máx. 9 dígitos)"
             class="w-full border border-gray-300 rounded-xl px-4 py-3
                    focus:ring-2 focus:ring-[#39A900]/20
                    focus:border-[#39A900] outline-none transition">
+          <span class="error-input hidden text-red-600 text-xs mt-1" data-field="numero_documento"></span>
         </div>                                                                                    
 
         <!-- Correo -->
@@ -182,6 +188,7 @@
             class="w-full border border-gray-300 rounded-xl px-4 py-3
                    focus:ring-2 focus:ring-[#39A900]/20
                    focus:border-[#39A900] outline-none transition">
+          <span class="error-input hidden text-red-600 text-xs mt-1" data-field="correo_electronico"></span>
         </div>
 
         <!-- Cargo -->
@@ -301,7 +308,9 @@
       Editar Usuario
     </h2>
 
-    <form id="formEditarUsuario" class="space-y-6">
+    <form id="formEditarUsuario" class="space-y-6" novalidate>
+
+      <div id="errorFormEditarUsuario" class="hidden text-red-600 text-sm p-3 bg-red-50 rounded-lg mb-4"></div>
 
       <div class="flex flex-col gap-6">
 
@@ -315,6 +324,7 @@
             class="w-full border border-gray-300 rounded-xl px-4 py-3
                    focus:ring-2 focus:ring-[#39A900]/20
                    focus:border-[#39A900] outline-none transition">
+          <span class="error-input hidden text-red-600 text-xs mt-1" data-field="nombre_completo"></span>
         </div>
 
         <!--  Tipo de documento -->
@@ -344,11 +354,12 @@
           <label class="block text-sm font-semibold text-gray-700 mb-2">
             Número de Documento
           </label>
-          <input type="number" name="numero_documento" required
-            placeholder="Ingrese el número de documento"
+          <input type="number" name="numero_documento" required min="1" max="999999999"
+            placeholder="Ingrese el número de documento (máx. 9 dígitos)"
             class="w-full border border-gray-300 rounded-xl px-4 py-3
                    focus:ring-2 focus:ring-[#39A900]/20
                    focus:border-[#39A900] outline-none transition">
+          <span class="error-input hidden text-red-600 text-xs mt-1" data-field="numero_documento"></span>
         </div>
         <!-- Correo -->
         <div>
@@ -360,6 +371,7 @@
             class="w-full border border-gray-300 rounded-xl px-4 py-3
                    focus:ring-2 focus:ring-[#39A900]/20
                    focus:border-[#39A900] outline-none transition">
+          <span class="error-input hidden text-red-600 text-xs mt-1" data-field="correo_electronico"></span>
         </div>
 
           <!-- Cargo -->
@@ -474,6 +486,8 @@
         <h2 class="text-2xl font-bold text-[#0a3a57] mb-8 border-b pb-4">
             Detalles del Usuario
         </h2>
+
+        <div id="errorModalVerUsuario" class="hidden text-red-600 text-sm p-3 bg-red-50 rounded-lg mb-4"></div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             

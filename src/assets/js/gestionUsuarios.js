@@ -4,6 +4,87 @@
 
 const API = window.API_USUARIO;
 
+function mostrarError(formOrContainer, mensaje, campo) {
+    const cont = typeof formOrContainer === 'string' ? document.getElementById(formOrContainer) : formOrContainer;
+    if (!cont) return;
+    if (cont.id && cont.id.startsWith('error') && !cont.querySelector('form')) {
+        cont.textContent = mensaje;
+        cont.classList.remove('hidden');
+        return;
+    }
+    const errGeneral = cont.querySelector('[id^="errorForm"], [id^="errorModal"], [id^="errorTabla"]');
+    const errCampo = campo && cont.querySelector(`.error-input[data-field="${campo}"]`);
+    cont.querySelectorAll('.error-input').forEach(el => { el.classList.add('hidden'); el.textContent = ''; });
+    if (errGeneral) {
+        errGeneral.classList.add('hidden');
+        errGeneral.textContent = '';
+    }
+    if (errCampo) {
+        errCampo.textContent = mensaje;
+        errCampo.classList.remove('hidden');
+        const input = cont.querySelector(`[name="${campo}"]`);
+        if (input) {
+            input.classList.add('border-red-500');
+            input.focus();
+            input.addEventListener('input', () => { input.classList.remove('border-red-500'); errCampo.classList.add('hidden'); }, { once: true });
+        }
+    } else if (errGeneral) {
+        errGeneral.textContent = mensaje;
+        errGeneral.classList.remove('hidden');
+    }
+}
+
+function limpiarErrores(formOrContainer) {
+    const cont = typeof formOrContainer === 'string' ? document.getElementById(formOrContainer) : formOrContainer;
+    if (!cont) return;
+    if (cont.id && cont.id.startsWith('error') && !cont.querySelector('form')) {
+        cont.classList.add('hidden');
+        cont.textContent = '';
+        return;
+    }
+    cont.querySelectorAll('.error-input').forEach(el => { el.classList.add('hidden'); el.textContent = ''; });
+    cont.querySelectorAll('.border-red-500').forEach(el => el.classList.remove('border-red-500'));
+    const errGeneral = cont.querySelector('[id^="errorForm"], [id^="errorModal"], [id^="errorTabla"]');
+    if (errGeneral) { errGeneral.classList.add('hidden'); errGeneral.textContent = ''; }
+}
+
+function campoDesdeError(msg) {
+    if (!msg || typeof msg !== 'string') return null;
+    const m = msg.toLowerCase();
+    if (m.includes('documento')) return 'numero_documento';
+    if (m.includes('correo')) return 'correo_electronico';
+    if (m.includes('nombre')) return 'nombre_completo';
+    return null;
+}
+
+function validarFormulario(form) {
+    limpiarErrores(form);
+    const required = form.querySelectorAll('[required]');
+    const visible = [...required].filter(el => {
+        const parent = el.closest('.grupoInstructor, .grupoCoordinador');
+        return !parent || !parent.classList.contains('hidden');
+    });
+    for (const el of visible) {
+        const val = (el.value || '').trim();
+        if (!val) {
+            const field = el.getAttribute('name');
+            const label = el.closest('div')?.querySelector('label')?.textContent?.trim() || field;
+            mostrarError(form, `El campo "${label}" es obligatorio.`, field);
+            el.focus();
+            return false;
+        }
+        if (el.name === 'numero_documento') {
+            const num = parseInt(val, 10);
+            if (isNaN(num) || num < 1 || num > 999999999) {
+                mostrarError(form, 'El número de documento debe tener máximo 9 dígitos.', 'numero_documento');
+                el.focus();
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 /**
  * Petición centralizada
  */
@@ -66,13 +147,22 @@ function alternarCamposCargo(cargo, contenedorModal) {
     if (!contenedorModal) return;
     const grupoIns = contenedorModal.querySelector('.grupoInstructor');
     const grupoCoor = contenedorModal.querySelector('.grupoCoordinador');
-    
+    const modalidad = contenedorModal.querySelector('[name="modalidad"]');
+    const tipoContrato = contenedorModal.querySelector('[name="tipo_contrato"]');
+    const areaCoord = contenedorModal.querySelector('[name="area_coordinador"]');
+
     if (cargo === 'Instructor') {
         grupoIns?.classList.remove('hidden');
         grupoCoor?.classList.add('hidden');
+        if (modalidad) modalidad.required = true;
+        if (tipoContrato) tipoContrato.required = true;
+        if (areaCoord) areaCoord.required = false;
     } else {
         grupoIns?.classList.add('hidden');
         grupoCoor?.classList.remove('hidden');
+        if (modalidad) modalidad.required = false;
+        if (tipoContrato) tipoContrato.required = false;
+        if (areaCoord) areaCoord.required = true;
     }
 }
 
@@ -167,11 +257,12 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const modal = document.getElementById('modalNuevoUsuario');
         if (!modal) return;
-        modal.querySelector('form').reset();
+        const form = modal.querySelector('form');
+        if (form) { form.reset(); limpiarErrores(form); }
         alternarCamposCargo('Instructor', modal);
-        // Cerrar otros modales por seguridad
         cerrarModal('modalEditarUsuario');
         cerrarModal('modalVerUsuario');
+        limpiarErrores('errorTablaUsuarios');
         abrirModal('modalNuevoUsuario');
     });
 
@@ -195,27 +286,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // Formulario Crear
     document.getElementById('formUsuario')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const datos = Object.fromEntries(new FormData(e.target));
+        const form = e.target;
+        if (!validarFormulario(form)) return;
+        limpiarErrores(form);
+        const datos = Object.fromEntries(new FormData(form));
         datos.password = datos.numero_documento;
         const res = await apiRequest("crear", "POST", datos);
         if (res.success) {
             cerrarModal('modalNuevoUsuario');
             cargarUsuarios();
         } else {
-            alert(res.error || "Error al guardar");
+            mostrarError(form, res.error || "Error al guardar", campoDesdeError(res.error));
         }
     });
 
     // Formulario Editar
     document.getElementById('formEditarUsuario')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const datos = Object.fromEntries(new FormData(e.target));
+        const form = e.target;
+        if (!validarFormulario(form)) return;
+        limpiarErrores(form);
+        const datos = Object.fromEntries(new FormData(form));
         const res = await apiRequest("actualizar", "POST", datos);
         if (res.success) {
             cerrarModal('modalEditarUsuario');
             cargarUsuarios();
         } else {
-            alert(res.error || "Error al actualizar");
+            mostrarError(form, res.error || "Error al actualizar", campoDesdeError(res.error));
         }
     });
 });
@@ -254,6 +351,7 @@ async function prepararEdicion(id) {
             hiddenId.value = u.id_usuario;
 
             alternarCamposCargo(u.cargo, modal);
+            limpiarErrores(form);
             
             if (u.cargo === 'Instructor') {
                 const selModalidad = form.querySelector('[name="modalidad"]');
@@ -267,11 +365,11 @@ async function prepararEdicion(id) {
 
             abrirModal('modalEditarUsuario');
         } else {
-            alert(u?.error || "No se pudo cargar la información del usuario para editar.");
+            mostrarError('errorTablaUsuarios', u?.error || "No se pudo cargar la información del usuario.", null);
         }
     } catch (e) {
         console.error("Error al preparar edición:", e);
-        alert("Ocurrió un error al preparar la edición del usuario.");
+        mostrarError('errorTablaUsuarios', "Ocurrió un error al preparar la edición del usuario.", null);
     }
 }
 
@@ -282,6 +380,7 @@ async function verUsuarioDetalles(id) {
         return;
     }
 
+    limpiarErrores(document.getElementById('modalVerUsuario'));
     const idsCampos = ['verNombre', 'verTipoDoc', 'verNumDoc', 'verCorreo', 'verCargo', 'verTipoIns', 'verContrato', 'verArea'];
     idsCampos.forEach(idEl => {
         const el = document.getElementById(idEl);
@@ -295,8 +394,7 @@ async function verUsuarioDetalles(id) {
         const u = Array.isArray(res) ? res[0] : res;
 
         if (!u || u.error) {
-            alert(res?.error || "No se pudo cargar la información del usuario.");
-            cerrarModal('modalVerUsuario');
+            mostrarError('modalVerUsuario', res?.error || "No se pudo cargar la información del usuario.", null);
             return;
         }
 
@@ -320,12 +418,12 @@ async function verUsuarioDetalles(id) {
         }
     } catch (e) {
         console.error("Error al ver usuario:", e);
-        alert("Ocurrió un error al cargar los detalles del usuario.");
-        cerrarModal('modalVerUsuario');
+        mostrarError('modalVerUsuario', "Ocurrió un error al cargar los detalles del usuario.", null);
     }
 }
 
 async function toggleEstado(id, estadoActual) {
+    limpiarErrores('errorTablaUsuarios');
     const nuevoEstado = parseInt(estadoActual) === 1 ? 0 : 1;
     const res = await apiRequest('cambiarEstado', 'POST', {
         id_usuario: id,
@@ -333,7 +431,7 @@ async function toggleEstado(id, estadoActual) {
     });
 
     if (!res.success) {
-        alert("Error al cambiar estado");
+        mostrarError('errorTablaUsuarios', res.error || "Error al cambiar estado", null);
     }
     cargarUsuarios(); // Recarga para sincronizar datos y visuales
 }

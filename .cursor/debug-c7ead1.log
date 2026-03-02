@@ -18,3 +18,4 @@
 {"sessionId":"c7ead1","location":"gestionUsuarios.js:modalCheck","message":"modal exists?","data":{"modalExists":true,"modalId":"modalVerUsuario"},"timestamp":1772486167360,"hypothesisId":"H3"}
 {"sessionId":"c7ead1","location":"gestionUsuarios.js:abrirModal","message":"before apply","data":{"id":"modalVerUsuario","parentTag":"BODY","parentDisplay":"flex"},"timestamp":1772486167360,"hypothesisId":"H5"}
 {"sessionId":"c7ead1","location":"gestionUsuarios.js:apiResponse","message":"obtener response","data":{"hasError":false,"isArray":false,"keys":["id_usuario","nombre_completo","tipo_documento","numero_documento","correo_electronico"]},"timestamp":1772486167371,"hypothesisId":"H4"}
+{"sessionId":"c7ead1","location":"gestionUsuarios.js:abrirModal","message":"before apply","data":{"id":"modalNuevoUsuario","parentTag":"DIV","parentDisplay":"block"},"timestamp":1772486401275,"hypothesisId":"H5"}
