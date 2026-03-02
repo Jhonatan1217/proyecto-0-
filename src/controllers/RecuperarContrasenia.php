@@ -9,12 +9,30 @@ require_once __DIR__ . '/../../vendor/autoload.php'; // Para PHPMailer
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
-use PHPMailer\PHPMailer\SMTP;
 
 $usuarioModel = new Usuario($conn);
 $tokenModel = new TokenRecuperacion($conn);
 
 $accion = $_GET['accion'] ?? '';
+
+/* ================= BASE_URL AUTO ================= */
+if (!defined('BASE_URL')) {
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        ? 'https://'
+        : 'http://';
+
+    $host = $_SERVER['HTTP_HOST'];
+
+    $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
+    $project = preg_replace('#/src/.*$#', '', $scriptDir);
+
+    define('BASE_URL', $protocol . $host . $project . '/');
+}
+
+function redirectTo(string $url) { 
+    header("Location: $url"); 
+    exit; 
+}
 
 switch ($accion) {
     
@@ -24,80 +42,58 @@ switch ($accion) {
     case 'solicitar':
         
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        header("Location: ../../index.php?page=restablecerContrasenia");
-        exit;
+            redirectTo(BASE_URL . "src/views/restablecerContrasenia.php");
         }
         
         $correo = trim($_POST['correo'] ?? '');
         
         if (empty($correo)) {
             $_SESSION['error_recuperacion'] = "El correo es obligatorio";
-            header("Location: ../../index.php?page=restablecerContrasenia");
-            exit;
+            redirectTo(BASE_URL . "src/views/restablecerContrasenia.php");
         }
         
-        // Buscar usuario por correo
+        if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+            $_SESSION['error_recuperacion'] = "Ingresa un correo electrónico válido";
+            redirectTo(BASE_URL . "src/views/restablecerContrasenia.php");
+        }
+        
+        // Buscar usuario por correo (usa correo_electronico en la BD)
         $usuario = $usuarioModel->obtenerPorCorreo($correo);
         
-        // Siempre mostrar mismo mensaje por seguridad (no revelar si existe o no)
-        $mensaje = "Si el correo existe en nuestro sistema, recibirás instrucciones para restablecer tu contraseña.";
+        // Por seguridad, no revelamos si el correo existe o no
+        if (!$usuario) {
+            $_SESSION['success_recuperacion'] = "Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.";
+            redirectTo(BASE_URL . "src/views/restablecerContrasenia.php");
+        }
         
-        if ($usuario && $usuario['estado'] == 1) { // Usuario activo
-            
-            // Generar token
-            $token = $tokenModel->generarToken($usuario['id_usuario']);
-            
-            if ($token) {
-                // Enviar correo
-                if (enviarCorreoRecuperacion($usuario['correo_electronico'], $usuario['nombre_completo'], $token)) {
-                    $_SESSION['success_recuperacion'] = $mensaje;
-                } else {
-                    error_log("Error al enviar correo a: " . $usuario['correo_electronico']);
-                    $_SESSION['error_recuperacion'] = "Error al enviar el correo. Por favor intenta más tarde.";
-                }
-            } else {
-                error_log("Error al generar token para usuario: " . $usuario['id_usuario']);
-                $_SESSION['error_recuperacion'] = "Error al procesar la solicitud. Por favor intenta más tarde.";
-            }
+        // Verificar que el usuario esté activo (estado = 1)
+        if ($usuario['estado'] != 1) {
+            $_SESSION['error_recuperacion'] = "Tu cuenta está inactiva. Contacta al administrador.";
+            redirectTo(BASE_URL . "src/views/restablecerContrasenia.php");
+        }
+        
+        // Generar token (el modelo usa tipo 'RECUPERACION')
+        $token = $tokenModel->generarToken($usuario['id_usuario']);
+        
+        if (!$token) {
+            error_log("Error al generar token para usuario: " . $usuario['id_usuario']);
+            $_SESSION['error_recuperacion'] = "Error al procesar la solicitud. Por favor intenta más tarde.";
+            redirectTo(BASE_URL . "src/views/restablecerContrasenia.php");
+        }
+        
+        // Construir el enlace de recuperación - DIRECTO A cambiarContrasenia.php
+        $resetLink = BASE_URL . "src/views/cambiarContrasenia.php?token=" . urlencode($token);
+        
+        // Enviar correo (usa correo_electronico)
+        if (enviarCorreoRecuperacion($usuario['correo_electronico'], $usuario['nombre_completo'], $resetLink)) {
+            $_SESSION['success_recuperacion'] = "Hemos enviado un enlace para restablecer tu contraseña. Por favor revisa tu bandeja de entrada.";
         } else {
-            // Usuario no existe o está inactivo - mismo mensaje por seguridad
-            $_SESSION['success_recuperacion'] = $mensaje;
+            error_log("Error al enviar correo a: " . $usuario['correo_electronico']);
+            $_SESSION['error_recuperacion'] = "Error al enviar el correo. Por favor intenta más tarde.";
         }
         
-        header("Location: ../../index.php?page=restablecerContrasenia");
-        exit;
-    
-    
-    /* ======================================
-       VERIFICAR TOKEN Y MOSTRAR FORMULARIO
-    ====================================== */
-    case 'verificar':
-        
-        $token = $_GET['token'] ?? '';
-        
-        if (empty($token)) {
-            header("Location: ../../index.php?page=restablecerContrasenia");
-            exit;
-        }
-        
-        // Verificar token
-        $tokenData = $tokenModel->verificarToken($token);
-        
-        if (!$tokenData) {
-            $_SESSION['error_recuperacion'] = "El enlace no es válido o ha expirado";
-            header("Location: ../../index.php?page=restablecerContrasenia");
-            exit;
-        }
-        
-        // Guardar token en sesión para el siguiente paso
-        $_SESSION['reset_token'] = $token;
-        $_SESSION['reset_usuario_id'] = $tokenData['id_usuario'];
-        $_SESSION['reset_correo'] = $tokenData['correo_electronico'];
-        
-        // Redirigir al formulario de cambio de contraseña
-        header("Location: ../../index.php?page=cambiarContrasenia");
-        exit;
-    
+        redirectTo(BASE_URL . "src/views/restablecerContrasenia.php");
+        break;
     
     /* ======================================
        CAMBIAR CONTRASEÑA
@@ -105,15 +101,29 @@ switch ($accion) {
     case 'cambiar':
         
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header("Location: ../../index.php?page=restablecerContrasenia");
-            exit;
+            redirectTo(BASE_URL . "src/views/restablecerContrasenia.php");
         }
         
-        // Verificar que tenga token válido en sesión
-        if (!isset($_SESSION['reset_token']) || !isset($_SESSION['reset_usuario_id'])) {
-            $_SESSION['error_recuperacion'] = "Sesión de recuperación no válida";
-            header("Location: ../../index.php?page=restablecerContrasenia");
-            exit;
+        // El token viene del campo hidden en el formulario
+        $token = $_POST['token'] ?? '';
+        
+        if (empty($token)) {
+            $_SESSION['error_recuperacion'] = "Token no proporcionado";
+            redirectTo(BASE_URL . "src/views/restablecerContrasenia.php");
+        }
+        
+        // Verificar token (el modelo busca tipo 'RECUPERACION' y no usado)
+        $tokenData = $tokenModel->verificarToken($token);
+        
+        if (!$tokenData) {
+            $_SESSION['error_recuperacion'] = "El enlace no es válido o ha expirado";
+            redirectTo(BASE_URL . "src/views/restablecerContrasenia.php");
+        }
+        
+        // Verificar que el usuario esté activo
+        if ($tokenData['estado'] != 1) {
+            $_SESSION['error_recuperacion'] = "Tu cuenta está inactiva. Contacta al administrador.";
+            redirectTo(BASE_URL . "src/views/restablecerContrasenia.php");
         }
         
         $password = $_POST['password'] ?? '';
@@ -122,70 +132,62 @@ switch ($accion) {
         // Validaciones
         if (strlen($password) < 8) {
             $_SESSION['error_password'] = "La contraseña debe tener al menos 8 caracteres";
-            header("Location: ../../index.php?page=cambiarContrasenia");
-            exit;
+            redirectTo(BASE_URL . "src/views/cambiarContrasenia.php?token=" . urlencode($token));
         }
         
         if ($password !== $confirmar) {
             $_SESSION['error_password'] = "Las contraseñas no coinciden";
-            header("Location: ../../index.php?page=cambiarContrasenia");
-            exit;
+            redirectTo(BASE_URL . "src/views/cambiarContrasenia.php?token=" . urlencode($token));
         }
         
-        // Verificar que el token sigue siendo válido
-        $tokenData = $tokenModel->verificarToken($_SESSION['reset_token']);
-        
-        if (!$tokenData || $tokenData['id_usuario'] != $_SESSION['reset_usuario_id']) {
-            $_SESSION['error_recuperacion'] = "El enlace ha expirado o ya fue utilizado";
-            unset($_SESSION['reset_token'], $_SESSION['reset_usuario_id'], $_SESSION['reset_correo']);
-            header("Location: ../../index.php?page=restablecerContrasenia");
-            exit;
-        }
-        
-        // Cambiar contraseña
+        // Hashear la nueva contraseña
         $password_hash = password_hash($password, PASSWORD_DEFAULT);
         
-        if ($usuarioModel->actualizarPassword($_SESSION['reset_usuario_id'], $password_hash)) {
+        // Actualizar contraseña usando el modelo (actualiza password_hash)
+        $actualizado = $usuarioModel->actualizarPassword($tokenData['id_usuario'], $password_hash);
+        
+        if ($actualizado) {
             
             // Marcar token como usado
-            $tokenModel->marcarComoUsado($_SESSION['reset_token']);
+            $tokenModel->marcarComoUsado($token);
             
             // Enviar correo de confirmación
-            if (isset($_SESSION['reset_correo'])) {
-                enviarCorreoConfirmacion($_SESSION['reset_correo'], $tokenData['nombre_completo'] ?? 'Usuario');
-            }
+            enviarCorreoConfirmacion(
+                $tokenData['correo_electronico'], 
+                $tokenData['nombre_completo'] ?? 'Usuario'
+            );
             
             // Limpiar sesión
-            unset($_SESSION['reset_token'], $_SESSION['reset_usuario_id'], $_SESSION['reset_correo']);
+            unset($_SESSION['reset_token'], $_SESSION['reset_usuario_id'], 
+                  $_SESSION['reset_correo'], $_SESSION['reset_nombre']);
             
             $_SESSION['success_recuperacion'] = "Contraseña actualizada correctamente. Ya puedes iniciar sesión.";
-            header("Location: ../../index.php?page=login");
-            exit;
+            redirectTo(BASE_URL . "src/views/login.php");
             
         } else {
-            $_SESSION['error_password'] = "Error al actualizar la contraseña";
-            header("Location: ../../index.php?page=cambiarContrasenia");
-            exit;
+            error_log("Error al actualizar contraseña para usuario: " . $tokenData['id_usuario']);
+            $_SESSION['error_password'] = "Error al actualizar la contraseña. Intenta nuevamente.";
+            redirectTo(BASE_URL . "src/views/cambiarContrasenia.php?token=" . urlencode($token));
         }
-    
+        break;
     
     default:
-        header("Location: ../../index.php?page=restablecerContrasenia");
-        exit;
+        redirectTo(BASE_URL . "src/views/restablecerContrasenia.php");
+        break;
 }
 
 /* ======================================
    FUNCIONES DE CORREO
 ====================================== */
 
-function enviarCorreoRecuperacion($correo, $nombre, $token) {
+function enviarCorreoRecuperacion($correo, $nombre, $resetLink) {
     $config = require __DIR__ . '/../../config/mail.php';
     
     $mail = new PHPMailer(true);
     
     try {
         // Configuración del servidor
-        $mail->SMTPDebug = 0; // 0 para producción, 2 para debug
+        $mail->SMTPDebug = 0;
         $mail->isSMTP();
         $mail->Host       = $config['host'];
         $mail->SMTPAuth   = true;
@@ -201,11 +203,7 @@ function enviarCorreoRecuperacion($correo, $nombre, $token) {
         // Contenido
         $mail->isHTML(true);
         $mail->CharSet = 'UTF-8';
-        $mail->Subject = 'Recuperación de contraseña';
-        
-        // Obtener la ruta base del proyecto automáticamente
-        $base_url = 'http://localhost/ProyectoZ';
-        $reset_link = $base_url . '/index.php?page=restablecerContrasenia&accion=verificar&token=' . $token;
+        $mail->Subject = 'Recuperación de contraseña - SENLOCK';
         
         // Cuerpo del mensaje HTML
         $mail->Body = "
@@ -232,13 +230,13 @@ function enviarCorreoRecuperacion($correo, $nombre, $token) {
         </head>
         <body>
             <div class='container'>
-                <h2>Hola, $nombre</h2>
+                <h2>Hola, " . htmlspecialchars($nombre) . "</h2>
                 <p>Has solicitado restablecer tu contraseña. Haz clic en el siguiente botón para continuar:</p>
                 <p style='text-align: center;'>
-                    <a href='$reset_link' class='button'>Restablecer contraseña</a>
+                    <a href='" . htmlspecialchars($resetLink) . "' class='button'>Restablecer contraseña</a>
                 </p>
                 <p>Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
-                <p>$reset_link</p>
+                <p>" . htmlspecialchars($resetLink) . "</p>
                 <p>Este enlace expirará en 30 minutos.</p>
                 <p>Si no solicitaste este cambio, ignora este correo.</p>
                 <div class='footer'>
@@ -250,7 +248,7 @@ function enviarCorreoRecuperacion($correo, $nombre, $token) {
         ";
         
         // Versión texto plano
-        $mail->AltBody = "Hola $nombre,\n\nHas solicitado restablecer tu contraseña. Copia y pega este enlace en tu navegador:\n\n$reset_link\n\nEste enlace expirará en 30 minutos.\n\nSi no solicitaste este cambio, ignora este correo.";
+        $mail->AltBody = "Hola " . $nombre . ",\n\nHas solicitado restablecer tu contraseña. Copia y pega este enlace en tu navegador:\n\n" . $resetLink . "\n\nEste enlace expirará en 30 minutos.\n\nSi no solicitaste este cambio, ignora este correo.";
         
         $mail->send();
         return true;
@@ -280,23 +278,28 @@ function enviarCorreoConfirmacion($correo, $nombre) {
         
         $mail->isHTML(true);
         $mail->CharSet = 'UTF-8';
-        $mail->Subject = 'Contraseña actualizada';
+        $mail->Subject = 'Contraseña actualizada - SENLOCK';
         
-        $login_link = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . '/index.php?page=login';
+        // Construir enlace de login
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+        $host = $_SERVER['HTTP_HOST'];
+        $login_link = $protocol . $host . "/ProyectoZ/proyecto-z/src/views/login.php";
         
         $mail->Body = "
         <html>
         <body>
-            <h2>Hola, $nombre</h2>
+            <h2>Hola, " . htmlspecialchars($nombre) . "</h2>
             <p>Tu contraseña ha sido actualizada exitosamente.</p>
             <p>Puedes iniciar sesión con tu nueva contraseña:</p>
             <p style='text-align: center;'>
-                <a href='$login_link' style='background-color: #39A900; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;'>Iniciar sesión</a>
+                <a href='" . htmlspecialchars($login_link) . "' style='background-color: #39A900; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;'>Iniciar sesión</a>
             </p>
             <p>Si no realizaste este cambio, contacta al administrador inmediatamente.</p>
         </body>
         </html>
         ";
+        
+        $mail->AltBody = "Hola " . $nombre . ",\n\nTu contraseña ha sido actualizada exitosamente.\n\nPuedes iniciar sesión en: " . $login_link . "\n\nSi no realizaste este cambio, contacta al administrador inmediatamente.";
         
         $mail->send();
         return true;

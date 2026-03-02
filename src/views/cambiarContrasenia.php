@@ -4,10 +4,18 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Verificar que tenga token en sesión
-if (!isset($_SESSION['reset_token']) || !isset($_SESSION['reset_usuario_id'])) {
-    header("Location: index.php?page=restablecerContrasenia");
+// Obtener token de la URL (prioridad) o de sesión
+$token = $_GET['token'] ?? $_SESSION['reset_token'] ?? '';
+
+// Verificar que tenga token
+if (empty($token)) {
+    header("Location: restablecerContrasenia.php?error=token");
     exit;
+}
+
+// Guardar token en sesión si viene por URL
+if (isset($_GET['token']) && !isset($_SESSION['reset_token'])) {
+    $_SESSION['reset_token'] = $token;
 }
 
 $error = $_SESSION['error_password'] ?? '';
@@ -31,12 +39,7 @@ unset($_SESSION['error_password']);
     <div class="w-full max-w-md">
         <!-- Tarjeta de cambio de contraseña -->
         <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl p-8">
-            <div class="mb-8">
-                <h1 class="text-3xl text-center font-bold text-[#39A900] mb-6">Nueva Contraseña</h1>
-                <p class="text-gray-600 mb-8">
-                    Establece una nueva contraseña para tu cuenta. Asegúrate de que sea segura y fácil de recordar.
-                </p>
-            </div>
+            <h1 class="text-3xl text-center font-bold text-[#39A900] mb-6">Restablecer Contraseña</h1>
 
             <!-- Mensajes de error -->
             <?php if ($error): ?>
@@ -56,10 +59,13 @@ unset($_SESSION['error_password']);
 
             <!-- Formulario -->
             <form method="POST" action="../controllers/RecuperarContrasenia.php?accion=cambiar" class="space-y-6">
+                <!-- Token oculto -->
+                <input type="hidden" name="token" value="<?= htmlspecialchars($token) ?>">
+                
                 <!-- Nueva contraseña -->
                 <div>
                     <label for="password" class="block text-sm font-bold text-black mb-2">
-                        Nueva Contraseña
+                        Contraseña nueva
                     </label>
                     <input 
                         type="password" 
@@ -70,15 +76,12 @@ unset($_SESSION['error_password']);
                         minlength="8"
                         required
                     >
-                    <p class="mt-2 text-sm text-gray-500">
-                        Mínimo 8 caracteres
-                    </p>
                 </div>
 
                 <!-- Confirmar contraseña -->
                 <div>
                     <label for="confirmar_password" class="block text-sm font-bold text-black mb-2">
-                        Confirmar Contraseña
+                        Confirmar contraseña
                     </label>
                     <input 
                         type="password" 
@@ -91,36 +94,11 @@ unset($_SESSION['error_password']);
                     >
                 </div>
 
-                <!-- Requisitos de contraseña -->
-                <div class="bg-gray-50 p-4 rounded-xl">
-                    <p class="text-xs font-semibold text-gray-700 mb-2">Tu contraseña debe tener:</p>
-                    <ul class="text-xs text-gray-600 space-y-1">
-                        <li class="flex items-center">
-                            <svg class="h-4 w-4 text-[#39A900] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                            Mínimo 8 caracteres
-                        </li>
-                        <li class="flex items-center">
-                            <svg class="h-4 w-4 text-[#39A900] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                            Al menos una mayúscula (recomendado)
-                        </li>
-                        <li class="flex items-center">
-                            <svg class="h-4 w-4 text-[#39A900] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                            Al menos un número (recomendado)
-                        </li>
-                    </ul>
-                </div>
-
                 <!-- Botones de acción -->
                 <div class="flex gap-6 pt-4 justify-center">
                     <button 
                         type="button" 
-                        onclick="window.location.href='index.php?page=restablecerContrasenia'"
+                        onclick="window.location.href='restablecerContrasenia.php'"
                         class="px-6 py-2.5 text-sm border-2 border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
                     >
                         Cancelar
@@ -129,7 +107,7 @@ unset($_SESSION['error_password']);
                         type="submit" 
                         class="px-6 py-2.5 text-sm bg-[#007831] text-white font-medium rounded-lg hover:bg-[#39A900] hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 focus:ring-4 focus:ring-[#39A900] focus:ring-opacity-50"
                     >
-                        Cambiar Contraseña
+                        Aceptar
                     </button>
                 </div>
             </form>
