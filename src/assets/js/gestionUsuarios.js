@@ -93,9 +93,26 @@ function renderTabla(data) {
                         <button class="btn-editar p-2 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50" data-id="${u.id_usuario}">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                         </button>
-                        <label class="relative inline-flex items-center cursor-pointer ml-2">
-                            <input type="checkbox" class="sr-only peer btn-estado" data-id="${u.id_usuario}" data-estado="${u.estado}" ${u.estado == 1 ? 'checked' : ''}>
-                            <div class="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:bg-[#39A900] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div>
+                        <label class="relative inline-flex items-center cursor-pointer select-none ml-2">
+                            <input 
+                                type="checkbox" 
+                                class="sr-only peer btn-estado" 
+                                data-id="${u.id_usuario}" 
+                                data-estado="${u.estado}" 
+                                ${u.estado == 1 ? 'checked' : ''}
+                                aria-checked="${u.estado == 1 ? 'true' : 'false'}"
+                                aria-label="Cambiar estado de ${u.nombre_completo}"
+                            >
+                            <div
+                                class="w-11 h-6 rounded-full bg-gray-200 transition
+                                       peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-[#39A900]/60
+                                       peer-checked:bg-[#39A900] peer-disabled:opacity-60">
+                            </div>
+                            <div
+                                class="absolute left-0.5 top-0.5 w-5 h-5 rounded-full bg-white shadow
+                                       transition-transform duration-200 ease-out
+                                       peer-checked:translate-x-5">
+                            </div>
                         </label>
                     </div>
                 </td>

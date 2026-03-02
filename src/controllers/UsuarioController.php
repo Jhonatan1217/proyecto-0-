@@ -106,6 +106,15 @@ try {
                 exit;
             }
 
+            // Obtener estado actual para no perderlo si no viene en la petición
+            $usuarioActual = $usuarioModel->obtenerPorId($id_usuario);
+            if (!$usuarioActual) {
+                echo json_encode(['error' => 'Usuario no encontrado']);
+                exit;
+            }
+
+            $estadoRequest = inreq('estado');
+
             $datos = [
                 'nombre_completo'   => trim((string) inreq('nombre_completo')),
                 'tipo_documento'    => trim((string) inreq('tipo_documento')),
@@ -115,7 +124,7 @@ try {
                 'id_area'           => inreq('id_area') ? intval(inreq('id_area')) : null,
                 'tipo_instructor'   => inreq('tipo_instructor') ? trim((string) inreq('tipo_instructor')) : null,
                 'tipo_contrato'     => trim((string) inreq('tipo_contrato')),
-                'estado'            => intval(inreq('estado'))
+                'estado'            => $estadoRequest !== null ? intval($estadoRequest) : (int)($usuarioActual['estado'] ?? 1),
             ];
 
             // Contraseña nueva (si se envió)

@@ -143,14 +143,21 @@
           <label class="block text-sm font-semibold text-gray-700 mb-2">
             Tipo de documento
           </label>
-          <select name="tipo_documento" required
-            class="w-full border border-gray-300 rounded-xl px-4 py-3
-                   focus:ring-2 focus:ring-[#39A900]/20
-                   focus:border-[#39A900] outline-none transition">
-            <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>  
-            <option value="Cédula de Extranjería">Cédula de Extranjería</option>
-            <option value="Pasaporte">Pasaporte</option>
-          </select>
+          <div class="relative">
+            <select name="tipo_documento" required
+              class="w-full border border-gray-300 rounded-xl px-4 py-3 pr-10
+                     focus:ring-2 focus:ring-[#39A900]/20
+                     focus:border-[#39A900] outline-none transition appearance-none">
+              <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>  
+              <option value="Cédula de Extranjería">Cédula de Extranjería</option>
+              <option value="Pasaporte">Pasaporte</option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
         </div>
 
         <!-- Número -->
@@ -182,14 +189,21 @@
           <label class="block text-sm font-semibold text-gray-700 mb-2">
             Cargo
           </label>
-          <select name="cargo" 
-                  class="selectCargoModal w-full border border-gray-300 rounded-xl px-4 py-3
-                  focus:ring-2 focus:ring-[#39A900]/20
-                  focus:border-[#39A900] outline-none transition"
-                  required>
-            <option value="Instructor">Instructor</option>
-            <option value="Coordinador">Coordinador</option>
-          </select>
+          <div class="relative">
+            <select name="cargo" 
+                    class="selectCargoModal w-full border border-gray-300 rounded-xl px-4 py-3 pr-10
+                    focus:ring-2 focus:ring-[#39A900]/20
+                    focus:border-[#39A900] outline-none transition appearance-none"
+                    required>
+              <option value="Instructor">Instructor</option>
+              <option value="Coordinador">Coordinador</option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
         </div>
 
         <div class="grupoInstructor space-y-6">
@@ -198,26 +212,40 @@
             <label class="block text-sm font-semibold text-gray-700 mb-2">
               Tipo de instructor
             </label>
-            <select name="modalidad" required
-              class="w-full border border-gray-300 rounded-xl px-4 py-3
-                    focus:ring-2 focus:ring-[#39A900]/20
-                    focus:border-[#39A900] outline-none transition">
-              <option value="Técnico">Técnico</option>
-              <option value="Transversal">Transversal</option>
-            </select>
+            <div class="relative">
+              <select name="modalidad" required
+                class="w-full border border-gray-300 rounded-xl px-4 py-3 pr-10
+                      focus:ring-2 focus:ring-[#39A900]/20
+                      focus:border-[#39A900] outline-none transition appearance-none">
+                <option value="Técnico">Técnico</option>
+                <option value="Transversal">Transversal</option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
           </div>
           <!-- Tipo de contrato -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
               Tipo de contrato
             </label>
-            <select name="tipo_contrato" required
-              class="w-full border border-gray-300 rounded-xl px-4 py-3
-                    focus:ring-2 focus:ring-[#39A900]/20
-                    focus:border-[#39A900] outline-none transition">
-              <option value="Planta">Planta</option>
-              <option value="Contratista">Contratista</option>
-            </select>
+            <div class="relative">
+              <select name="tipo_contrato" required
+                class="w-full border border-gray-300 rounded-xl px-4 py-3 pr-10
+                      focus:ring-2 focus:ring-[#39A900]/20
+                      focus:border-[#39A900] outline-none transition appearance-none">
+                <option value="Planta">Planta</option>
+                <option value="Contratista">Contratista</option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -294,14 +322,21 @@
           <label class="block text-sm font-semibold text-gray-700 mb-2">
             Tipo de documento
           </label>
-          <select name="tipo_documento" required
-            class="w-full border border-gray-300 rounded-xl px-4 py-3
-                   focus:ring-2 focus:ring-[#39A900]/20
-                   focus:border-[#39A900] outline-none transition">
-            <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>  
-            <option value="Cédula de Extranjería">Cédula de Extranjería</option>
-            <option value="Pasaporte">Pasaporte</option>
-          </select>
+          <div class="relative">
+            <select name="tipo_documento" required
+              class="w-full border border-gray-300 rounded-xl px-4 py-3 pr-10
+                     focus:ring-2 focus:ring-[#39A900]/20
+                     focus:border-[#39A900] outline-none transition appearance-none">
+              <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>  
+              <option value="Cédula de Extranjería">Cédula de Extranjería</option>
+              <option value="Pasaporte">Pasaporte</option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
         </div>
 
         <!-- Número -->
@@ -332,14 +367,21 @@
           <label class="block text-sm font-semibold text-gray-700 mb-2">
             Cargo
           </label>
-          <select name="cargo" 
-                  class="selectCargoModal w-full border border-gray-300 rounded-xl px-4 py-3
-                  focus:ring-2 focus:ring-[#39A900]/20
-                  focus:border-[#39A900] outline-none transition"
-                  required>
-            <option value="Instructor">Instructor</option>
-            <option value="Coordinador">Coordinador</option>
-          </select>
+          <div class="relative">
+            <select name="cargo" 
+                    class="selectCargoModal w-full border border-gray-300 rounded-xl px-4 py-3 pr-10
+                    focus:ring-2 focus:ring-[#39A900]/20
+                    focus:border-[#39A900] outline-none transition appearance-none"
+                    required>
+              <option value="Instructor">Instructor</option>
+              <option value="Coordinador">Coordinador</option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
         </div>
 
         <div class="grupoInstructor space-y-6">
@@ -348,26 +390,40 @@
             <label class="block text-sm font-semibold text-gray-700 mb-2">
               Tipo de instructor
             </label>
-            <select name="modalidad" required
-              class="w-full border border-gray-300 rounded-xl px-4 py-3
-                    focus:ring-2 focus:ring-[#39A900]/20
-                    focus:border-[#39A900] outline-none transition">
-              <option value="Técnico">Técnico</option>
-              <option value="Transversal">Transversal</option>
-            </select>
+            <div class="relative">
+              <select name="modalidad" required
+                class="w-full border border-gray-300 rounded-xl px-4 py-3 pr-10
+                      focus:ring-2 focus:ring-[#39A900]/20
+                      focus:border-[#39A900] outline-none transition appearance-none">
+                <option value="Técnico">Técnico</option>
+                <option value="Transversal">Transversal</option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
           </div>
           <!-- Tipo de contrato -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
               Tipo de contrato
             </label>
-            <select name="tipo_contrato" required
-              class="w-full border border-gray-300 rounded-xl px-4 py-3
-                    focus:ring-2 focus:ring-[#39A900]/20
-                    focus:border-[#39A900] outline-none transition">
-              <option value="Planta">Planta</option>
-              <option value="Contratista">Contratista</option>
-            </select>
+            <div class="relative">
+              <select name="tipo_contrato" required
+                class="w-full border border-gray-300 rounded-xl px-4 py-3 pr-10
+                      focus:ring-2 focus:ring-[#39A900]/20
+                      focus:border-[#39A900] outline-none transition appearance-none">
+                <option value="Planta">Planta</option>
+                <option value="Contratista">Contratista</option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
 
