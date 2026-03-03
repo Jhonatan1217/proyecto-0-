@@ -3,6 +3,141 @@
   $base = '/senlock/';
   define('BASE_URL', $base);
 } ?>
+<style>
+/* ===== MODALES ENTERPRISE (Nuevo/Editar Usuario) ===== */
+.modal-usuario-overlay {
+  backdrop-filter: blur(4px);
+  background: rgba(0,0,0,0.35);
+}
+.modal-usuario-box {
+  max-height: calc(100vh - 3rem);
+  margin: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+  border: 1px solid rgba(229,231,235,0.8);
+}
+.modal-usuario-header {
+  flex-shrink: 0;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+}
+.modal-usuario-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.25rem;
+  min-height: 0;
+}
+.modal-usuario-footer {
+  flex-shrink: 0;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid #e5e7eb;
+  background: #fff;
+}
+.input-enterprise {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  padding: 0.75rem 1rem;
+  color: #1f2937;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.input-enterprise::placeholder { color: #9ca3af; }
+.input-enterprise:hover { border-color: #9ca3af; }
+.input-enterprise:focus {
+  outline: none;
+  border-color: #39A900;
+  box-shadow: 0 0 0 3px rgba(57,169,0,0.2);
+}
+.input-enterprise:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.btn-modal-secondary {
+  padding: 0.625rem 1.25rem;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  font-weight: 500;
+  color: #374151;
+  background: #fff;
+  transition: all 0.15s;
+}
+.btn-modal-secondary:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+.btn-modal-secondary:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(156,163,175,0.5);
+}
+.btn-modal-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-modal-primary {
+  padding: 0.625rem 1.25rem;
+  border-radius: 12px;
+  font-weight: 500;
+  color: #fff;
+  background: #0a3a57;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  transition: all 0.15s;
+}
+.btn-modal-primary:hover { background: #00304D; }
+.btn-modal-primary:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(10,58,87,0.4);
+}
+.btn-modal-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-modal-primary:active, .btn-modal-secondary:active { transform: scale(0.98); }
+.label-enterprise {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.375rem;
+}
+
+/* Panel desplegable personalizado */
+.custom-select-dropdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  margin-top: 8px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
+  background: white;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.custom-select-dropdown.dropdown-up {
+  top: auto;
+  bottom: 100%;
+  margin-top: 0;
+  margin-bottom: 8px;
+  box-shadow: 0 -10px 25px -5px rgba(0,0,0,0.1), 0 -8px 10px -6px rgba(0,0,0,0.05);
+}
+.custom-select-dropdown .custom-option {
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.custom-select-dropdown .custom-option:hover {
+  background: #f3f4f6;
+}
+.custom-select-dropdown .custom-option.selected {
+  background: rgba(57, 169, 0, 0.1);
+  color: #0a3a57;
+}
+.custom-select-wrapper {
+  position: relative;
+  width: 100%;
+}
+.custom-select-wrapper .select-usuario {
+  cursor: pointer;
+}
+</style>
 
 <div class="max-w-6xl mx-auto px-4 py-10">
 
@@ -34,10 +169,10 @@
         <!-- Select cargos-->
         <div class="relative w-full md:w-64">
           <select id="filtroCargos"
-            class="w-full appearance-none rounded-full border border-gray-300 bg-white
-                   px-4 py-2.5 pr-10 text-sm
-                   focus:ring-2 focus:ring-[#39A900]/20
-                   focus:border-[#39A900] outline-none transition">
+            class="select-usuario w-full appearance-none rounded-xl border border-gray-300 bg-white
+                   px-4 py-2.5 pr-10 text-sm text-gray-700
+                   focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] outline-none transition
+                   hover:border-gray-400">
             <option value="">Todos los cargos</option>
             <option value="Instructor">Instructor</option>
             <option value="Coordinador">Coordinador</option>
@@ -52,12 +187,12 @@
         <!-- Select roles -->
         <div class="relative w-full md:w-64">
           <select id="filtroRoles"
-            class="w-full appearance-none rounded-full border border-gray-300 bg-white
-                   px-4 py-2.5 pr-10 text-sm
-                   focus:ring-2 focus:ring-[#39A900]/20
-                   focus:border-[#39A900] outline-none transition">
+            class="select-usuario w-full appearance-none rounded-xl border border-gray-300 bg-white
+                   px-4 py-2.5 pr-10 text-sm text-gray-700
+                   focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] outline-none transition
+                   hover:border-gray-400">
             <option value="">Todos los roles</option>
-            <option value="Instructor">Gestor de horario</option>>
+            <option value="Instructor">Gestor de horario</option>
           </select>
           <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
             fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,6 +219,8 @@
       </div>
     </div>
 
+    <div id="errorTablaUsuarios" class="hidden text-red-600 text-sm p-3 bg-red-50 rounded-lg mx-6 mb-4"></div>
+
     <!-- Tabla -->
     <div class="overflow-x-auto">
       <table class="w-full text-left">
@@ -103,369 +240,344 @@
   </div>
 </div>
 
-<!-- ================= MODAL NUEVO USUARIO================= -->
+<!-- ================= MODALES USUARIOS ================= -->
+<div id="contenedorModalesUsuarios">
+<!-- Modal Nuevo Usuario -->
+<div id="modalNuevoUsuario" role="dialog" aria-labelledby="modalNuevoUsuarioTitle" aria-modal="true"
+  class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 modal-usuario-overlay hidden">
 
-<div id="modalNuevoUsuario"
-  class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
+  <div class="modal-usuario-box bg-white w-full max-w-xl rounded-2xl flex flex-col overflow-hidden">
 
-  <!-- Caja Modal -->
-  <div class="bg-white w-full max-w-xl rounded-2xl shadow-xl border border-gray-200
-              px-8 py-10 relative">
+    <header class="modal-usuario-header flex items-center justify-between">
+      <h2 id="modalNuevoUsuarioTitle" class="text-xl font-bold text-[#39A900] tracking-tight">
+        Nuevo Usuario
+      </h2>
+      <button type="button" id="btnCerrarModal" aria-label="Cerrar"
+        class="p-2 -m-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </header>
 
-    <!-- Botón cerrar -->
-    <button id="btnCerrarModal"
-      class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-lg">
-      ✕
-    </button>
+    <form id="formUsuario" class="flex flex-col flex-1 min-h-0" novalidate>
+      <div id="errorFormUsuario" class="hidden mx-6 mt-4 p-3 text-sm text-red-700 bg-red-50 rounded-xl border border-red-100"></div>
 
-    <h2 class="text-2xl font-bold text-[#39A900] mb-8 text-left">
-      Nuevo Usuario
-    </h2>
-
-    <form id="formUsuario" class="space-y-6">
-
-      <div class="flex flex-col gap-6">
-
-        <!-- Nombre Completo -->
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-2">
-            Nombre Completo
-          </label>
-          <input type="text" name="nombre_completo" required
-            placeholder="Ingrese el nombre completo"
-            class="w-full border border-gray-300 rounded-xl px-4 py-3
-                   focus:ring-2 focus:ring-[#39A900]/20
-                   focus:border-[#39A900] outline-none transition">
-        </div>
-
-        <!--  Tipo de documento -->
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-2">
-            Tipo de documento
-          </label>
-          <select name="tipo_documento" required
-            class="w-full border border-gray-300 rounded-xl px-4 py-3
-                   focus:ring-2 focus:ring-[#39A900]/20
-                   focus:border-[#39A900] outline-none transition">
-            <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>  
-            <option value="Cédula de Extranjería">Cédula de Extranjería</option>
-            <option value="Pasaporte">Pasaporte</option>
-          </select>
-        </div>
-
-        <!-- Número -->
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-2">
-            Número de Documento
-          </label>
-          <input type="number" name="numero_documento" required
-            placeholder="Ingrese el número de documento"
-            class="w-full border border-gray-300 rounded-xl px-4 py-3
-                   focus:ring-2 focus:ring-[#39A900]/20
-                   focus:border-[#39A900] outline-none transition">
-        </div>
-
-        <!-- Correo -->
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-2">
-            Correo electrónico
-          </label>
-          <input type="email" name="correo_electronico" required
-            placeholder="Ingrese el correo electrónico"
-            class="w-full border border-gray-300 rounded-xl px-4 py-3
-                   focus:ring-2 focus:ring-[#39A900]/20
-                   focus:border-[#39A900] outline-none transition">
-        </div>
-
-        <!-- Cargo -->
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-2">
-            Cargo
-          </label>
-          <select name="cargo" id="selectCargoModal" required
-            class="w-full border border-gray-300 rounded-xl px-4 py-3
-                   focus:ring-2 focus:ring-[#39A900]/20
-                   focus:border-[#39A900] outline-none transition">
-            <option value="Instructor">Instructor</option>
-            <option value="Coordinador">Coordinador</option>
-          </select>
-        </div>
-
-        <div id="grupoInstructor" class="space-y-6">
-          <!-- Tipo de instructor -->
+      <div class="modal-usuario-body flex-1">
+        <div class="space-y-5">
           <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">
-              Tipo de instructor
-            </label>
-            <select name="modalidad" required
-              class="w-full border border-gray-300 rounded-xl px-4 py-3
-                    focus:ring-2 focus:ring-[#39A900]/20
-                    focus:border-[#39A900] outline-none transition">
-              <option value="Técnico">Técnico</option>
-              <option value="Transversal">Transversal</option>
-            </select>
+            <label for="nombre_completo_nuevo" class="label-enterprise">Nombre completo</label>
+            <input type="text" id="nombre_completo_nuevo" name="nombre_completo" required
+              placeholder="Ingrese el nombre completo" class="input-enterprise">
+            <span class="error-input hidden block mt-1 text-xs text-red-600" data-field="nombre_completo"></span>
           </div>
-          <!-- Tipo de contrato -->
+
           <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">
-              Tipo de contrato
-            </label>
-            <select name="tipo_contrato" required
-              class="w-full border border-gray-300 rounded-xl px-4 py-3
-                    focus:ring-2 focus:ring-[#39A900]/20
-                    focus:border-[#39A900] outline-none transition">
-              <option value="Planta">Planta</option>
-              <option value="Contratista">Contratista</option>
-            </select>
+            <label for="tipo_documento_nuevo" class="label-enterprise">Tipo de documento</label>
+            <div class="relative">
+              <select id="tipo_documento_nuevo" name="tipo_documento" required
+                class="select-usuario input-enterprise pr-10 appearance-none cursor-pointer">
+                <option value="" disabled selected>Seleccione tipo de documento</option>
+                <option value="CC">Cédula de Ciudadanía</option>
+                <option value="CE">Cédula de Extranjería</option>
+                <option value="PASAPORTE">Pasaporte</option>
+              </select>
+              <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label for="numero_documento_nuevo" class="label-enterprise">Número de documento</label>
+            <input type="number" id="numero_documento_nuevo" name="numero_documento" required min="1" max="999999999999" data-max-digits="12"
+              placeholder="Máx. 12 dígitos" class="input-enterprise">
+            <span class="error-input hidden block mt-1 text-xs text-red-600" data-field="numero_documento"></span>
+          </div>
+
+          <div>
+            <label for="correo_nuevo" class="label-enterprise">Correo electrónico</label>
+            <input type="email" id="correo_nuevo" name="correo_electronico" required
+              placeholder="correo@ejemplo.com" class="input-enterprise">
+            <span class="error-input hidden block mt-1 text-xs text-red-600" data-field="correo_electronico"></span>
+          </div>
+
+          <div>
+            <label for="cargo_nuevo" class="label-enterprise">Cargo</label>
+            <div class="relative">
+              <select id="cargo_nuevo" name="cargo" class="selectCargoModal select-usuario input-enterprise pr-10 appearance-none cursor-pointer" required>
+                <option value="" disabled selected>Seleccione cargo</option>
+                <option value="Instructor">Instructor</option>
+                <option value="Coordinador">Coordinador</option>
+              </select>
+              <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="grupoInstructor hidden space-y-5 pt-4 border-t border-gray-100">
+            <div>
+              <label for="modalidad_nuevo" class="label-enterprise">Tipo de instructor</label>
+              <div class="relative">
+                <select id="modalidad_nuevo" name="modalidad" required
+                  class="select-usuario input-enterprise pr-10 appearance-none cursor-pointer">
+                  <option value="" disabled selected>Seleccione tipo de instructor</option>
+                  <option value="Técnico">Técnico</option>
+                  <option value="Transversal">Transversal</option>
+                </select>
+                <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label for="tipo_contrato_nuevo" class="label-enterprise">Tipo de contrato</label>
+              <div class="relative">
+                <select id="tipo_contrato_nuevo" name="tipo_contrato" required
+                  class="select-usuario input-enterprise pr-10 appearance-none cursor-pointer">
+                  <option value="" disabled selected>Seleccione tipo de contrato</option>
+                  <option value="Planta">Planta</option>
+                  <option value="Contratista">Contratista</option>
+                </select>
+                <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grupoCoordinador hidden pt-4 border-t border-gray-100">
+            <label for="area_nuevo" class="label-enterprise">Área del coordinador</label>
+            <input type="text" id="area_nuevo" name="area_coordinador" required
+              placeholder="Ingrese el área" class="input-enterprise">
           </div>
         </div>
-
-        <!-- Área del coordinador -->
-        <div id="grupoCoordinador" class="hidden">
-          <label class="block text-sm font-semibold text-gray-700 mb-2">
-            Área del coordinador
-          </label>
-          <input type="text" name="area_coordinador" required
-            placeholder="Ingrese el área del coordinador"
-            class="w-full border border-gray-300 rounded-xl px-4 py-3
-                   focus:ring-2 focus:ring-[#39A900]/20
-                   focus:border-[#39A900] outline-none transition">
-          </input>
-        </div>
-
-      <!-- Botones -->
-      <div class="flex justify-end gap-4 pt-6">
-
-        <button type="button" id="btnCancelar"
-          class="px-6 py-3 rounded-xl border border-gray-300 text-gray-600
-                 hover:bg-gray-50 transition">
-          Cancelar
-        </button>
-
-        <button type="submit"
-          class="px-6 py-3 rounded-xl bg-[#0a3a57] text-white
-                 hover:bg-[#00304D] transition shadow-sm">
-          Guardar Usuario
-        </button>
-
       </div>
 
+      <footer class="modal-usuario-footer flex justify-end gap-3">
+        <button type="button" id="btnCancelarNuevo" class="btn-modal-secondary">
+          Cancelar
+        </button>
+        <button type="submit" class="btn-modal-primary">
+          Guardar Usuario
+        </button>
+      </footer>
     </form>
   </div>
 </div>
+<!-- Modal Editar Usuario -->
+<div id="modalEditarUsuario" role="dialog" aria-labelledby="modalEditarUsuarioTitle" aria-modal="true"
+  class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 modal-usuario-overlay hidden">
 
-<!-- ================= MODAL EDITAR USUARIO ================= -->
-<div id="modalEditarUsuario"
-  class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
+  <div class="modal-usuario-box bg-white w-full max-w-xl rounded-2xl flex flex-col overflow-hidden">
 
-  <!-- Caja Modal -->
-  <div class="bg-white w-full max-w-xl rounded-2xl shadow-xl border border-gray-200
-              px-8 py-10 relative">
+    <header class="modal-usuario-header flex items-center justify-between">
+      <h2 id="modalEditarUsuarioTitle" class="text-xl font-bold text-[#39A900] tracking-tight">
+        Editar Usuario
+      </h2>
+      <button type="button" id="btnCerrarModalEditar" aria-label="Cerrar"
+        class="p-2 -m-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </header>
 
-    <!-- Botón cerrar -->
-    <button id="btnCerrarModalEditar"
-      class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-lg">
-      ✕
-    </button>
+    <form id="formEditarUsuario" class="flex flex-col flex-1 min-h-0" novalidate>
+      <div id="errorFormEditarUsuario" class="hidden mx-6 mt-4 p-3 text-sm text-red-700 bg-red-50 rounded-xl border border-red-100"></div>
 
-    <h2 class="text-2xl font-bold text-[#39A900] mb-8 text-left">
-      Editar Usuario
-    </h2>
-
-    <form id="formEditarUsuario" class="space-y-6">
-
-      <div class="flex flex-col gap-6">
-
-        <!-- Nombre Completo -->
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-2">
-            Nombre Completo
-          </label>
-          <input type="text" name="nombre_completo" required
-            placeholder="Ingrese el nombre completo"
-            class="w-full border border-gray-300 rounded-xl px-4 py-3
-                   focus:ring-2 focus:ring-[#39A900]/20
-                   focus:border-[#39A900] outline-none transition">
-        </div>
-
-        <!--  Tipo de documento -->
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-2">
-            Tipo de documento
-          </label>
-          <select name="tipo_documento" required
-            class="w-full border border-gray-300 rounded-xl px-4 py-3
-                   focus:ring-2 focus:ring-[#39A900]/20
-                   focus:border-[#39A900] outline-none transition">
-            <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>  
-            <option value="Cédula de Extranjería">Cédula de Extranjería</option>
-            <option value="Pasaporte">Pasaporte</option>
-          </select>
-        </div>
-
-        <!-- Número -->
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-2">
-            Número de Documento
-          </label>
-          <input type="number" name="numero_documento" required
-            placeholder="Ingrese el número de documento"
-            class="w-full border border-gray-300 rounded-xl px-4 py-3
-                   focus:ring-2 focus:ring-[#39A900]/20
-                   focus:border-[#39A900] outline-none transition">
-        </div>
-        <!-- Correo -->
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-2">
-            Correo electrónico
-          </label>
-          <input type="email" name="correo_electronico" required
-            placeholder="Ingrese el correo electrónico"
-            class="w-full border border-gray-300 rounded-xl px-4 py-3
-                   focus:ring-2 focus:ring-[#39A900]/20
-                   focus:border-[#39A900] outline-none transition">
-        </div>
-
-          <!-- Cargo -->
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-2">
-            Cargo
-          </label>
-          <select name="cargo" id="selectCargoModal" required
-            class="w-full border border-gray-300 rounded-xl px-4 py-3
-                   focus:ring-2 focus:ring-[#39A900]/20
-                   focus:border-[#39A900] outline-none transition">
-            <option value="Instructor">Instructor</option>
-            <option value="Coordinador">Coordinador</option>
-          </select>
-        </div>
-
-        <div id="grupoInstructor" class="space-y-6">
-          <!-- Tipo de instructor -->
+      <div class="modal-usuario-body flex-1">
+        <div class="space-y-5">
           <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">
-              Tipo de instructor
-            </label>
-            <select name="modalidad" required
-              class="w-full border border-gray-300 rounded-xl px-4 py-3
-                    focus:ring-2 focus:ring-[#39A900]/20
-                    focus:border-[#39A900] outline-none transition">
-              <option value="Técnico">Técnico</option>
-              <option value="Transversal">Transversal</option>
-            </select>
+            <label for="nombre_completo_editar" class="label-enterprise">Nombre completo</label>
+            <input type="text" id="nombre_completo_editar" name="nombre_completo" required
+              placeholder="Ingrese el nombre completo" class="input-enterprise">
+            <span class="error-input hidden block mt-1 text-xs text-red-600" data-field="nombre_completo"></span>
           </div>
-          <!-- Tipo de contrato -->
+
           <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">
-              Tipo de contrato
-            </label>
-            <select name="tipo_contrato" required
-              class="w-full border border-gray-300 rounded-xl px-4 py-3
-                    focus:ring-2 focus:ring-[#39A900]/20
-                    focus:border-[#39A900] outline-none transition">
-              <option value="Planta">Planta</option>
-              <option value="Contratista">Contratista</option>
-            </select>
+            <label for="tipo_documento_editar" class="label-enterprise">Tipo de documento</label>
+            <div class="relative">
+              <select id="tipo_documento_editar" name="tipo_documento" required
+                class="select-usuario input-enterprise pr-10 appearance-none cursor-pointer">
+                <option value="" disabled selected>Seleccione tipo de documento</option>
+                <option value="CC">Cédula de Ciudadanía</option>
+                <option value="CE">Cédula de Extranjería</option>
+                <option value="PASAPORTE">Pasaporte</option>
+              </select>
+              <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label for="numero_documento_editar" class="label-enterprise">Número de documento</label>
+            <input type="number" id="numero_documento_editar" name="numero_documento" required min="1" max="999999999999"
+              placeholder="Máx. 12 dígitos" class="input-enterprise">
+            <span class="error-input hidden block mt-1 text-xs text-red-600" data-field="numero_documento"></span>
+          </div>
+
+          <div>
+            <label for="correo_editar" class="label-enterprise">Correo electrónico</label>
+            <input type="email" id="correo_editar" name="correo_electronico" required
+              placeholder="correo@ejemplo.com" class="input-enterprise">
+            <span class="error-input hidden block mt-1 text-xs text-red-600" data-field="correo_electronico"></span>
+          </div>
+
+          <div>
+            <label for="cargo_editar" class="label-enterprise">Cargo</label>
+            <div class="relative">
+              <select id="cargo_editar" name="cargo" class="selectCargoModal select-usuario input-enterprise pr-10 appearance-none cursor-pointer" required>
+                <option value="" disabled selected>Seleccione cargo</option>
+                <option value="Instructor">Instructor</option>
+                <option value="Coordinador">Coordinador</option>
+              </select>
+              <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="grupoInstructor hidden space-y-5 pt-4 border-t border-gray-100">
+            <div>
+              <label for="modalidad_editar" class="label-enterprise">Tipo de instructor</label>
+              <div class="relative">
+                <select id="modalidad_editar" name="modalidad" required
+                  class="select-usuario input-enterprise pr-10 appearance-none cursor-pointer">
+                  <option value="" disabled selected>Seleccione tipo de instructor</option>
+                  <option value="Técnico">Técnico</option>
+                  <option value="Transversal">Transversal</option>
+                </select>
+                <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label for="tipo_contrato_editar" class="label-enterprise">Tipo de contrato</label>
+              <div class="relative">
+                <select id="tipo_contrato_editar" name="tipo_contrato" required
+                  class="select-usuario input-enterprise pr-10 appearance-none cursor-pointer">
+                  <option value="" disabled selected>Seleccione tipo de contrato</option>
+                  <option value="Planta">Planta</option>
+                  <option value="Contratista">Contratista</option>
+                </select>
+                <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grupoCoordinador hidden pt-4 border-t border-gray-100">
+            <label for="area_editar" class="label-enterprise">Área del coordinador</label>
+            <input type="text" id="area_editar" name="area_coordinador" required
+              placeholder="Ingrese el área" class="input-enterprise">
           </div>
         </div>
+      </div>
 
-        <!-- Área del coordinador -->
-        <div id="grupoCoordinador" class="hidden">
-          <label class="block text-sm font-semibold text-gray-700 mb-2">
-            Área del coordinador
-          </label>
-          <input type="text" name="area_coordinador" required
-            placeholder="Ingrese el área del coordinador"
-            class="w-full border border-gray-300 rounded-xl px-4 py-3
-                   focus:ring-2 focus:ring-[#39A900]/20
-                   focus:border-[#39A900] outline-none transition">
-          </input>
-        </div>
-
-        <!-- Botones -->
-      <div class="flex justify-end gap-4 pt-6">
-
-        <button type="button" id="btnCancelar"
-          class="px-6 py-3 rounded-xl border border-gray-300 text-gray-600
-                 hover:bg-gray-50 transition">
+      <footer class="modal-usuario-footer flex justify-end gap-3">
+        <button type="button" id="btnCancelarEditar" class="btn-modal-secondary">
           Cancelar
         </button>
-
-        <button type="submit"
-          class="px-6 py-3 rounded-xl bg-[#0a3a57] text-white
-                 hover:bg-[#00304D] transition shadow-sm">
-          Guardar Usuario
+        <button type="submit" class="btn-modal-primary">
+          Guardar cambios
         </button>
-
-      </div>
+      </footer>
     </form>
   </div>
 </div>
 
 <!-- ================= MODAL VER USUARIO ================= -->
- <div id="modalVerUsuario" 
-     class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
+<div id="modalVerUsuario" 
+    class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
     
-    <div class="bg-white w-full max-w-xl rounded-2xl shadow-xl border border-gray-200 px-8 py-10 relative">
+    <div class="bg-white w-full max-w-xl max-h-[85vh] overflow-y-auto rounded-2xl shadow-xl border border-gray-200 px-8 py-10 relative">
         
         <button onclick="cerrarModal('modalVerUsuario')" 
                 class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-lg">
             ✕
         </button>
 
-        <h2 class="text-2xl font-bold text-[#0a3a57] mb-8 border-b pb-4">
+        <h2 class="text-2xl font-bold text-[#0a3a57] mb-6">
             Detalles del Usuario
         </h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Nombre Completo</label>
-                <p id="verNombre" class="text-gray-800 font-medium mt-1">Cargando...</p>
-            </div>
+        <div id="errorModalVerUsuario" class="hidden text-red-600 text-sm p-3 bg-red-50 rounded-lg mb-4"></div>
 
-            <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Documento</label>
-                <p class="text-gray-800 mt-1">
-                    <span id="verTipoDoc"></span>: <span id="verNumDoc"></span>
-                </p>
-            </div>
-
-            <div class="md:col-span-2">
-                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Correo Electrónico</label>
-                <p id="verCorreo" class="text-gray-800 mt-1">Cargando...</p>
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Cargo</label>
-                <span id="verCargo" class="inline-block px-3 py-1 rounded-full text-sm font-semibold mt-2 bg-blue-100 text-blue-700">
-                    Cargando...
-                </span>
-            </div>
-
-            <div id="verGrupoInstructor" class="md:col-span-2 grid-cols-2 gap-6 pt-4 border-t border-gray-100 hidden">
-                <div>
-                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Tipo de Instructor</label>
-                    <p id="verTipoIns" class="text-gray-800 mt-1">Cargando...</p>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Tipo de Contrato</label>
-                    <p id="verContrato" class="text-gray-800 mt-1">Cargando...</p>
+        <!-- Avatar + Nombre + Tags (Rol, Estado) - Diseño alineado -->
+        <div class="flex items-start gap-4 mb-8 pb-6 border-b border-gray-200">
+            <div class="w-16 h-16 rounded-full flex items-center justify-center shrink-0 text-2xl font-semibold text-gray-500" id="verAvatar" style="background-color:#BFBFBF">—</div>
+            <div class="flex-1 min-w-0 flex flex-col gap-2">
+                <p id="verNombre" class="text-gray-900 font-bold text-lg leading-tight">Cargando...</p>
+                <div class="flex flex-wrap gap-2 items-center">
+                    <span id="verCargo" class="inline-block px-3 py-1.5 rounded-full text-xs font-semibold" style="background-color:#A8D4BA;color:#3F6278">Cargo</span>
+                    <span id="verEstado" class="inline-block px-3 py-1.5 rounded-full text-xs font-semibold" style="background-color:#C5E7B5;color:#39A900">Estado</span>
                 </div>
             </div>
+        </div>
 
-            <div id="verGrupoCoordinador" class="md:col-span-2 pt-4 border-t border-gray-100 hidden">
+        <!-- Atributos -->
+        <div class="space-y-5">
+            <div>
+                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Tipo de documento</label>
+                <p id="verTipoDoc" class="text-gray-800 mt-1">—</p>
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Número documento</label>
+                <p id="verNumDoc" class="text-gray-800 mt-1">—</p>
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Correo electrónico</label>
+                <p id="verCorreo" class="text-gray-800 mt-1">—</p>
+            </div>
+
+            <div id="verGrupoInstructor" class="grupoInstructor space-y-5 pt-4 border-t border-gray-100 hidden">
                 <div>
-                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Área a Cargo</label>
-                    <p id="verArea" class="text-gray-800 mt-1">Cargando...</p>
+                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Tipo instructor</label>
+                    <p id="verTipoIns" class="text-gray-800 mt-1">—</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Tipo de contrato</label>
+                    <p id="verContrato" class="text-gray-800 mt-1">—</p>
                 </div>
             </div>
 
+            <div id="verGrupoCoordinador" class="grupoCoordinador pt-4 border-t border-gray-100 hidden">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Área coordinador</label>
+                    <p id="verArea" class="text-gray-800 mt-1">—</p>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-gray-100">
+                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Programas de Formación Vínculados</label>
+                <div id="verProgramas" class="text-gray-800 mt-1 space-y-1">—</div>
+            </div>
         </div>
 
         <div class="flex justify-end mt-10">
-            <button onclick="cerrarModal('modalVerUsuario')" 
-                    class="px-8 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition font-semibold">
+            <button type="button" id="btnCerrarVerUsuario"
+                class="px-6 py-3 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
                 Cerrar
             </button>
         </div>
@@ -474,5 +586,7 @@
 
 <script>
 window.API_USUARIO = "<?= BASE_URL ?>src/controllers/UsuarioController.php";
+window.ICON_EDIT_USUARIO = "<?= BASE_URL ?>src/assets/img/pencil.svg";
+window.ICON_VER_USUARIO = "<?= BASE_URL ?>src/assets/img/eye.svg";
 </script>
 <script src="<?= BASE_URL ?>src/assets/js/gestionUsuarios.js"></script>
