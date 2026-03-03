@@ -4,6 +4,15 @@
 
 const API = window.API_USUARIO;
 
+// Mapeo tipo_documento (DB: CC, CE, TI, PASAPORTE) <-> etiqueta legible
+const TIPO_DOC_LABELS = {
+    'CC': 'Cédula de Ciudadanía',
+    'CE': 'Cédula de Extranjería',
+    'PASAPORTE': 'Pasaporte'
+};
+const TIPO_DOC_FROM_LABEL = {};
+Object.keys(TIPO_DOC_LABELS).forEach(k => { TIPO_DOC_FROM_LABEL[TIPO_DOC_LABELS[k].toLowerCase()] = k; });
+
 function mostrarError(formOrContainer, mensaje, campo) {
     const cont = typeof formOrContainer === 'string' ? document.getElementById(formOrContainer) : formOrContainer;
     if (!cont) return;
@@ -54,11 +63,11 @@ function setSelectValue(select, val) {
     if (!v) return;
     const opts = [...select.options];
     const exact = opts.find(o => o.value === v);
-    if (exact) { select.value = v; return; }
+    if (exact) { select.value = v; select.dispatchEvent(new Event('change', { bubbles: true })); return; }
     const ci = opts.find(o => o.value.toLowerCase() === v.toLowerCase());
-    if (ci) { select.value = ci.value; return; }
+    if (ci) { select.value = ci.value; select.dispatchEvent(new Event('change', { bubbles: true })); return; }
     const partial = opts.find(o => o.value.toLowerCase().includes(v.toLowerCase()) || v.toLowerCase().includes(o.value.toLowerCase()));
-    if (partial) { select.value = partial.value; return; }
+    if (partial) { select.value = partial.value; select.dispatchEvent(new Event('change', { bubbles: true })); return; }
 }
 
 function campoDesdeError(msg) {
@@ -88,8 +97,8 @@ function validarFormulario(form) {
         }
         if (el.name === 'numero_documento') {
             const num = parseInt(val, 10);
-            if (isNaN(num) || num < 1 || num > 999999999) {
-                mostrarError(form, 'El número de documento debe tener máximo 9 dígitos.', 'numero_documento');
+            if (isNaN(num) || num < 1 || num > 999999999999) {
+                mostrarError(form, 'El número de documento debe tener máximo 12 dígitos.', 'numero_documento');
                 el.focus();
                 return false;
             }
@@ -164,18 +173,26 @@ function alternarCamposCargo(cargo, contenedorModal) {
     const tipoContrato = contenedorModal.querySelector('[name="tipo_contrato"]');
     const areaCoord = contenedorModal.querySelector('[name="area_coordinador"]');
 
-    if (String(cargo || '').toLowerCase().includes('instructor')) {
+    const cargoStr = String(cargo || '').trim().toLowerCase();
+
+    if (cargoStr.includes('instructor')) {
         grupoIns?.classList.remove('hidden');
         grupoCoor?.classList.add('hidden');
-        if (modalidad) modalidad.required = true;
-        if (tipoContrato) tipoContrato.required = true;
-        if (areaCoord) areaCoord.required = false;
-    } else {
+        if (modalidad) { modalidad.required = true; }
+        if (tipoContrato) { tipoContrato.required = true; }
+        if (areaCoord) { areaCoord.required = false; areaCoord.value = ''; }
+    } else if (cargoStr.includes('coordinador')) {
         grupoIns?.classList.add('hidden');
         grupoCoor?.classList.remove('hidden');
-        if (modalidad) modalidad.required = false;
-        if (tipoContrato) tipoContrato.required = false;
-        if (areaCoord) areaCoord.required = true;
+        if (modalidad) { modalidad.required = false; modalidad.value = ''; modalidad.dispatchEvent(new Event('change', { bubbles: true })); }
+        if (tipoContrato) { tipoContrato.required = false; tipoContrato.value = ''; tipoContrato.dispatchEvent(new Event('change', { bubbles: true })); }
+        if (areaCoord) { areaCoord.required = true; }
+    } else {
+        grupoIns?.classList.add('hidden');
+        grupoCoor?.classList.add('hidden');
+        if (modalidad) { modalidad.required = false; modalidad.value = ''; modalidad.dispatchEvent(new Event('change', { bubbles: true })); }
+        if (tipoContrato) { tipoContrato.required = false; tipoContrato.value = ''; tipoContrato.dispatchEvent(new Event('change', { bubbles: true })); }
+        if (areaCoord) { areaCoord.required = false; areaCoord.value = ''; }
     }
 }
 
@@ -240,8 +257,102 @@ function renderTabla(data) {
    3. INICIALIZACIÓN (ELIMINACIÓN DE BUGS)
    ============================================= */
 
+function enhanceSelectsWithCustomDropdown() {
+    document.querySelectorAll('.select-usuario').forEach(select => {
+        if (select.dataset.customDropdown) return;
+        select.dataset.customDropdown = '1';
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'custom-select-wrapper';
+        select.parentNode.insertBefore(wrapper, select);
+        wrapper.appendChild(select);
+        const arrowSib = wrapper.nextElementSibling;
+        if (arrowSib && (arrowSib.classList?.contains('pointer-events-none') || arrowSib.matches?.('svg.absolute'))) arrowSib.style.display = 'none';
+
+        const trigger = document.createElement('div');
+        trigger.className = 'custom-select-trigger ' + (select.classList.contains('py-2.5') ? 'py-2.5 text-sm' : 'py-3') + ' w-full border border-gray-300 rounded-xl px-4 pr-10 bg-white text-gray-700 flex items-center justify-between cursor-pointer hover:border-gray-400 focus-within:ring-2 focus-within:ring-[#39A900]/20 focus-within:border-[#39A900]';
+        trigger.setAttribute('tabindex', '0');
+        trigger.setAttribute('aria-haspopup', 'listbox');
+
+        const dropdown = document.createElement('div');
+        dropdown.className = 'custom-select-dropdown hidden';
+        dropdown.setAttribute('role', 'listbox');
+
+        const updateTrigger = () => {
+            const opt = select.options[select.selectedIndex];
+            span.textContent = opt ? opt.textContent : '';
+        };
+
+        const span = document.createElement('span');
+        span.className = 'truncate';
+        trigger.appendChild(span);
+        const arrow = document.createElement('span');
+        arrow.className = 'shrink-0 text-gray-400';
+        arrow.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>';
+        trigger.appendChild(arrow);
+
+        [...select.options].forEach((opt, i) => {
+            const div = document.createElement('div');
+            div.className = 'custom-option' + (opt.value === select.value ? ' selected' : '');
+            div.textContent = opt.textContent;
+            div.dataset.value = opt.value;
+            div.dataset.index = String(i);
+            div.setAttribute('role', 'option');
+            div.addEventListener('click', (e) => {
+                e.stopPropagation();
+                select.value = opt.value;
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+                dropdown.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+                div.classList.add('selected');
+                updateTrigger();
+                dropdown.classList.add('hidden');
+            });
+            dropdown.appendChild(div);
+        });
+
+        updateTrigger();
+
+        select.classList.add('sr-only', 'absolute', 'inset-0', 'w-full', 'h-full', 'opacity-0', 'pointer-events-none');
+        wrapper.appendChild(trigger);
+        wrapper.appendChild(dropdown);
+
+        trigger.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const open = !dropdown.classList.contains('hidden');
+            document.querySelectorAll('.custom-select-dropdown').forEach(d => d.classList.add('hidden'));
+            if (!open) {
+                const rect = wrapper.getBoundingClientRect();
+                const dropdownMaxH = 220;
+                const margin = 12;
+                const modal = wrapper.closest('.modal-usuario-box');
+                const spaceBelow = modal
+                    ? (modal.getBoundingClientRect().bottom - rect.bottom)
+                    : (window.innerHeight - rect.bottom);
+                const needsUp = spaceBelow < dropdownMaxH + margin;
+                dropdown.classList.toggle('dropdown-up', needsUp);
+                dropdown.classList.remove('hidden');
+            } else {
+                dropdown.classList.remove('dropdown-up');
+            }
+        });
+
+        select.addEventListener('change', () => {
+            updateTrigger();
+            dropdown.querySelectorAll('.custom-option').forEach(o => {
+                o.classList.toggle('selected', o.dataset.value === select.value);
+            });
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!wrapper.contains(e.target)) dropdown.classList.add('hidden');
+        }, true);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     cargarUsuarios();
+    enhanceSelectsWithCustomDropdown();
 
     // Única delegación de eventos en body para .btn-editar, .btn-ver y .btn-estado
     document.body.addEventListener("click", (e) => {
@@ -265,14 +376,35 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Limitar número de documento a 12 dígitos (modales Crear y Editar)
+    const limitarNumDoc = (e) => {
+        const inp = e.target;
+        const val = inp.value.replace(/\D/g, '');
+        if (val.length > 12) inp.value = val.slice(0, 12);
+    };
+    document.querySelector('#modalNuevoUsuario [name="numero_documento"]')?.addEventListener('input', limitarNumDoc);
+    document.querySelector('#modalEditarUsuario [name="numero_documento"]')?.addEventListener('input', limitarNumDoc);
+
+    // Sincroniza los custom dropdowns tras form.reset() (el reset no dispara change)
+    function syncCustomSelectsAfterReset(form) {
+        if (!form) return;
+        form.querySelectorAll('.select-usuario').forEach(sel => {
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    }
+
     // Abrir Modal Nuevo
     document.getElementById('btnAbrirModalUsuario')?.addEventListener('click', (e) => {
         e.preventDefault();
         const modal = document.getElementById('modalNuevoUsuario');
         if (!modal) return;
         const form = modal.querySelector('form');
-        if (form) { form.reset(); limpiarErrores(form); }
-        alternarCamposCargo('Instructor', modal);
+        if (form) {
+            form.reset();
+            syncCustomSelectsAfterReset(form);
+            limpiarErrores(form);
+        }
+        alternarCamposCargo('', modal);
         cerrarModal('modalEditarUsuario');
         cerrarModal('modalVerUsuario');
         limpiarErrores('errorTablaUsuarios');
@@ -365,7 +497,9 @@ async function prepararEdicion(id) {
 
             // Poblar campos
             form.querySelector('[name="nombre_completo"]').value = u.nombre_completo || '';
-            setSelectValue(form.querySelector('[name="tipo_documento"]'), u.tipo_documento);
+            const tdVal = (u.tipo_documento || '').toString().trim();
+            const tdForSelect = /^(CC|CE|PASAPORTE)$/i.test(tdVal) ? tdVal.toUpperCase() : (TIPO_DOC_FROM_LABEL[tdVal.toLowerCase()] || tdVal || 'CC');
+            setSelectValue(form.querySelector('[name="tipo_documento"]'), tdForSelect);
             form.querySelector('[name="numero_documento"]').value = u.numero_documento || '';
             form.querySelector('[name="correo_electronico"]').value = u.correo_electronico || '';
             setSelectValue(form.querySelector('[name="cargo"]'), u.cargo);
@@ -389,7 +523,8 @@ async function prepararEdicion(id) {
                 setSelectValue(selModalidad, u.tipo_instructor || 'Técnico');
                 setSelectValue(selContrato, u.tipo_contrato || 'Contratista');
             } else {
-                setSelectValue(form.querySelector('[name="id_area"]'), u.id_area || u.idArea);
+                const inputArea = form.querySelector('[name="area_coordinador"]');
+                if (inputArea) inputArea.value = u.nombre_area || u.area_coordinador || '';
             }
 
             abrirModal('modalEditarUsuario');
@@ -439,14 +574,18 @@ async function verUsuarioDetalles(id) {
         set('verEstado', esActivo ? 'Activo' : 'Inactivo');
         const estadoEl = document.getElementById('verEstado');
         if (estadoEl) {
-            estadoEl.classList.remove('bg-[#39A900]/20', 'text-[#39A900]', 'bg-gray-200', 'text-gray-600');
+            estadoEl.removeAttribute('style');
+            estadoEl.className = 'inline-block px-3 py-1.5 rounded-full text-xs font-semibold';
             if (esActivo) {
-                estadoEl.classList.add('bg-[#39A900]/20', 'text-[#39A900]');
+                estadoEl.style.backgroundColor = '#C5E7B5';
+                estadoEl.style.color = '#39A900';
             } else {
-                estadoEl.classList.add('bg-gray-200', 'text-gray-600');
+                estadoEl.style.backgroundColor = '#E5E7EB';
+                estadoEl.style.color = '#4B5563';
             }
         }
-        const td = u.tipo_documento ?? u.tipoDocumento ?? '';
+        const tdRaw = (u.tipo_documento ?? u.tipoDocumento ?? u.tipo_doc ?? '').toString().trim();
+        const td = TIPO_DOC_LABELS[tdRaw.toUpperCase()] || TIPO_DOC_LABELS[(TIPO_DOC_FROM_LABEL[tdRaw.toLowerCase()] || '').toUpperCase()] || (tdRaw || '—');
         const ti = u.tipo_instructor ?? u.modalidad ?? u.tipoInstructor ?? '';
         const tc = u.tipo_contrato ?? u.tipoContrato ?? '';
         set('verTipoDoc', td);

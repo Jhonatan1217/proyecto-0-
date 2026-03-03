@@ -14,6 +14,15 @@ require_once __DIR__ . '/../models/Usuario.php'; // Ajusta la ruta a tu modelo
 $__RAW = file_get_contents('php://input');
 $__JSON = json_decode($__RAW, true);
 
+/** Valores válidos para tipo_documento (enum en DB) */
+$TIPO_DOC_VALIDOS = ['CC', 'CE', 'PASAPORTE'];
+
+function normalizarTipoDocumento($val) {
+    global $TIPO_DOC_VALIDOS;
+    $v = strtoupper(trim((string) $val));
+    return in_array($v, $TIPO_DOC_VALIDOS) ? $v : 'CC';
+}
+
 /**
  * Resuelve el nombre del área a id_area. Si no existe, la crea.
  * @return int|null id_area o null si nombre vacío
@@ -54,6 +63,12 @@ try {
                 break;
             }
             $data = $usuarioModel->obtenerPorId($id);
+            if ($data) {
+                // Asegurar que tipo_documento esté presente (por si la columna tiene otro nombre o es null)
+                if (!isset($data['tipo_documento']) || $data['tipo_documento'] === null) {
+                    $data['tipo_documento'] = $data['tipoDocumento'] ?? '';
+                }
+            }
             echo json_encode($data ?: ['error' => 'Usuario no encontrado']);
             break;
 
@@ -62,6 +77,9 @@ try {
             if (isset($_GET['id'])) {
                 $id = intval($_GET['id']);
                 $data = $usuarioModel->obtenerPorId($id);
+                if ($data && (!isset($data['tipo_documento']) || $data['tipo_documento'] === null)) {
+                    $data['tipo_documento'] = $data['tipoDocumento'] ?? '';
+                }
                 echo json_encode($data ?: ['error' => 'Usuario no encontrado']);
                 break;
             }
@@ -99,7 +117,7 @@ try {
             }
             $datos = [
                 'nombre_completo'   => trim((string) inreq('nombre_completo')),
-                'tipo_documento'    => trim((string) inreq('tipo_documento')),
+                'tipo_documento'    => normalizarTipoDocumento(inreq('tipo_documento')),
                 'numero_documento'  => trim((string) inreq('numero_documento')),
                 'correo_electronico' => trim((string) inreq('correo_electronico')),
                 'cargo'             => $cargo,
@@ -155,7 +173,7 @@ try {
 
             $datos = [
                 'nombre_completo'   => trim((string) inreq('nombre_completo')),
-                'tipo_documento'    => trim((string) inreq('tipo_documento')),
+                'tipo_documento'    => normalizarTipoDocumento(inreq('tipo_documento')),
                 'numero_documento'  => trim((string) inreq('numero_documento')),
                 'correo_electronico' => trim((string) inreq('correo_electronico')),
                 'cargo'             => $cargo,
