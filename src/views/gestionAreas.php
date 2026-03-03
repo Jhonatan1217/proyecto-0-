@@ -152,7 +152,6 @@
                   </div>
                 </td>
               </tr>
-              <!-- /Ejemplo -->
             </tbody>
           </table>
         </div><!-- /areasWrapper -->

@@ -52,18 +52,23 @@
   }
 
   async function apiPost(accion, payload) {
-    const url = `${API_URL}?accion=${encodeURIComponent(accion)}`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-        Accept: "application/json",
-      },
-      credentials: "same-origin",
-      body: JSON.stringify(payload),
-    });
-    return parseJsonOrThrow(res);
-  }
+  const url = `${API_URL}?accion=${encodeURIComponent(accion)}`;
+  console.log("Enviando POST a:", url, "Payload:", payload); // DEBUG
+  
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      Accept: "application/json",
+    },
+    credentials: "same-origin",
+    body: JSON.stringify(payload),
+  });
+  
+  const response = await parseJsonOrThrow(res);
+  console.log("Respuesta del servidor:", response); // DEBUG
+  return response;
+}
 
   /* =======================================================
      SCROLL DINÁMICO – MISMO COMPORTAMIENTO QUE INSTRUCTORES
@@ -391,24 +396,3 @@
     cargarAreas();
   });
 })();
-
-document.addEventListener("DOMContentLoaded", function () {
-  const buscador = document.getElementById("buscadorArea");
-  const tabla = document.getElementById("tablaAreas");
-  const filas = tabla.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
-
-  buscador.addEventListener("keyup", function () {
-    const filtro = buscador.value.toLowerCase();
-
-    for (let i = 0; i < filas.length; i++) {
-      const celdaNombre = filas[i].getElementsByTagName("td")[0];
-      
-      if (celdaNombre) {
-        const texto = celdaNombre.textContent || celdaNombre.innerText;
-        filas[i].style.display = texto.toLowerCase().includes(filtro)
-          ? ""
-          : "none";
-      }
-    }
-  });
-});

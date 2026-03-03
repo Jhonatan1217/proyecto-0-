@@ -66,11 +66,13 @@ function renderTabla(data) {
                 <td class="px-6 py-4">${g.jornada}</td>
                 <td class="px-6 py-4">${g.modalidad}</td>
                 <td class="px-6 py-4">${g.nombre_lider ?? ''}</td>
-                <td class="px-6 py-4 text-right">
-                    <button onclick="desactivarGrupo(${g.id_ficha})"
-                        class="text-red-500 hover:text-red-700">
-                        Desactivar
-                    </button>
+                <td>
+                    <label class="switch">
+                        <input type="checkbox" 
+                            <?= $grupo['estado'] ? 'checked' : '' ?>
+                            onchange="cambiarEstado(<?= $grupo['id_grupo'] ?>)">
+                        <span class="slider"></span>
+                    </label>
                 </td>
             </tr>
         `;
@@ -101,7 +103,19 @@ function togglerModal(show = true) {
         document.body.style.overflow = "auto";
         document.getElementById("formGrupo").reset();
     }
+    const input = document.getElementById("inputNumeroFicha");
+
+    input.addEventListener("input", function () {
+        // Elimina todo lo que no sea número
+        this.value = this.value.replace(/\D/g, '');
+
+        // Limita a 10 caracteres
+        if (this.value.length > 9) {
+            this.value = this.value.slice(0, 9);
+        }   
+    });
 }
+
 
 /* =========================
    INIT
