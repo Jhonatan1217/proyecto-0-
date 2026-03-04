@@ -266,8 +266,26 @@ function alternarCamposCargo(cargo, contenedorModal) {
 /* =============================================
    2. RENDERIZADO (ICONOS Y SWITCH)
    ============================================= */
+function getFiltrosUsuarios() {
+    const filtroCargos = document.getElementById('filtroCargos');
+    const filtroRoles = document.getElementById('filtroRoles');
+    const buscador = document.getElementById('buscadorUsuario');
+    const cargo = (filtroCargos?.value || '').trim();
+    const esInstructor = /instructor/i.test(cargo);
+    return {
+        cargo,
+        id_rol_funcional: esInstructor && filtroRoles?.value ? filtroRoles.value : '',
+        buscar: (buscador?.value || '').trim()
+    };
+}
+
 async function cargarUsuarios() {
-    const res = await apiRequest("listar");
+    const filtros = getFiltrosUsuarios();
+    const params = {};
+    if (filtros.cargo) params.cargo = filtros.cargo;
+    if (filtros.id_rol_funcional) params.id_rol_funcional = filtros.id_rol_funcional;
+    if (filtros.buscar) params.buscar = filtros.buscar;
+    const res = await apiRequest("listar", "GET", Object.keys(params).length ? params : null);
     if (Array.isArray(res)) {
         renderTabla(res);
     }
@@ -282,7 +300,8 @@ function renderTabla(data) {
         filas += `
             <tr class="hover:bg-gray-50 border-b border-gray-100 transition-colors">
                 <td class="px-6 py-4 font-medium text-gray-700">${u.numero_documento}</td>
-                <td class="px-6 py-4">${u.nombre_completo}</td>
+                <td class="px-6 py-4"><span class="cell-nombre-wrap">${u.nombre_completo || ''}</span></td>
+                <td class="px-6 py-4 text-gray-600">${u.cargo || '—'}</td>
                 <td class="px-6 py-4 text-gray-500">${u.correo_electronico}</td>
                 <td class="px-6 py-4 text-right">
                     <div class="flex items-center justify-end gap-2 shrink-0">
@@ -327,6 +346,7 @@ function renderTabla(data) {
 function enhanceSelectsWithCustomDropdown() {
     document.querySelectorAll('.select-usuario').forEach(select => {
         if (select.dataset.customDropdown) return;
+        if (select.id === 'filtroCargos' || select.id === 'filtroRoles') return;
         select.dataset.customDropdown = '1';
 
         const wrapper = document.createElement('div');
@@ -417,9 +437,65 @@ function enhanceSelectsWithCustomDropdown() {
     });
 }
 
+function aplicarEstadoFiltroRoles() {
+    const filtroCargos = document.getElementById('filtroCargos');
+    const filtroRoles = document.getElementById('filtroRoles');
+    if (!filtroRoles) return;
+    const esInstructor = /instructor/i.test((filtroCargos?.value || '').trim());
+    filtroRoles.disabled = !esInstructor;
+    if (!esInstructor) filtroRoles.value = '';
+}
+
+async function cargarRolesDisponibles() {
+    try {
+        const roles = await apiRequest("rolesDisponibles");
+        if (!Array.isArray(roles)) return;
+        const sel = document.getElementById('filtroRoles');
+        if (!sel) return;
+        const valorActual = sel.value;
+        sel.innerHTML = '<option value="">Todos los roles</option>';
+        roles.forEach(r => {
+            const opt = document.createElement('option');
+            opt.value = r.id_rol;
+            opt.textContent = r.nombre_rol || r.nombreRol || ('Rol ' + r.id_rol);
+            sel.appendChild(opt);
+        });
+        if (valorActual) sel.value = valorActual;
+        aplicarEstadoFiltroRoles();
+    } catch (e) {
+        console.warn('No se pudieron cargar roles para el filtro:', e);
+    }
+}
+
+function debounce(fn, ms) {
+    let t;
+    return function (...args) {
+        clearTimeout(t);
+        t = setTimeout(() => fn.apply(this, args), ms);
+    };
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    aplicarEstadoFiltroRoles();
     cargarUsuarios();
+    cargarRolesDisponibles();
     enhanceSelectsWithCustomDropdown();
+
+    const filtroCargos = document.getElementById('filtroCargos');
+    const filtroRoles = document.getElementById('filtroRoles');
+    const buscadorUsuario = document.getElementById('buscadorUsuario');
+    if (filtroCargos) {
+        filtroCargos.addEventListener('change', () => {
+            aplicarEstadoFiltroRoles();
+            cargarUsuarios();
+        });
+    }
+    if (filtroRoles) {
+        filtroRoles.addEventListener('change', () => cargarUsuarios());
+    }
+    if (buscadorUsuario) {
+        buscadorUsuario.addEventListener('input', debounce(() => cargarUsuarios(), 300));
+    }
 
     // Única delegación de eventos en body para .btn-editar, .btn-ver y .btn-estado
     document.body.addEventListener("click", (e) => {

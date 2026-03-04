@@ -84,24 +84,14 @@ try {
                 break;
             }
 
-            // Filtrar por cargo principal
-            $cargo = inreq('cargo'); // 'COORDINADOR' o 'INSTRUCTOR'
-            if ($cargo) {
-                $usuarios = $usuarioModel->listarPorCargo($cargo);
-                echo json_encode($usuarios);
-                break;
-            }
-
-            // Filtrar por rol funcional
+            $cargo = trim((string) inreq('cargo'));
+            $buscar = trim((string) inreq('buscar'));
             $id_rol_funcional = inreq('id_rol_funcional');
-            if ($id_rol_funcional) {
-                $usuarios = $usuarioModel->listarPorRolFuncional($id_rol_funcional);
-                echo json_encode($usuarios);
-                break;
+            // Rol solo aplica cuando el cargo es Instructor
+            if (stripos($cargo, 'instructor') === false) {
+                $id_rol_funcional = null;
             }
-
-            // Listar todos
-            $usuarios = $usuarioModel->listar();
+            $usuarios = $usuarioModel->listarConFiltros($cargo, $id_rol_funcional, $buscar);
             echo json_encode($usuarios);
             break;
 

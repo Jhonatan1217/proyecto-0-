@@ -174,6 +174,13 @@ select.input-enterprise {
   padding: 0.5rem 0.75rem;
   vertical-align: middle;
 }
+.table-grupos tbody tr {
+  height: 71px;
+}
+.table-grupos tbody td {
+  height: 71px;
+  box-sizing: border-box;
+}
 .table-grupos .col-numero,
 .table-grupos .col-programa,
 .table-grupos .col-nivel,
@@ -198,9 +205,11 @@ select.input-enterprise {
 .table-grupos td.col-acciones { min-width: 8rem; }
 .table-grupos .col-nivel,
 .table-grupos .col-jornada,
-.table-grupos .col-modalidad,
-.table-grupos .col-lider {
+.table-grupos .col-modalidad {
   white-space: nowrap;
+}
+.table-grupos td.col-lider {
+  white-space: normal;
 }
 .cell-programa-wrap {
   display: -webkit-box;
@@ -213,7 +222,16 @@ select.input-enterprise {
   word-wrap: break-word;
   overflow-wrap: break-word;
   max-width: 100%;
-  min-height: 4.05em;
+}
+/* Líder: máximo 2 líneas cuando el nombre es largo */
+.cell-lider-wrap {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  word-break: break-word;
+  white-space: normal;
 }
 /* Nivel en mayúscula sostenida */
 .cell-nivel-tag { text-transform: uppercase; }

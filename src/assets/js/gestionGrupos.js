@@ -124,7 +124,7 @@ function renderTabla(data) {
             <td class="col-nivel"><span class="cell-nivel cell-nivel-tag tag-pill">${nivel || '—'}</span></td>
             <td class="col-jornada"><span class="cell-jornada tag-pill">${jornada || '—'}</span></td>
             <td class="col-modalidad"><span class="cell-modalidad tag-pill">${modalidad || '—'}</span></td>
-            <td class="col-lider"><span class="cell-lider tag-pill">${lider || '—'}</span></td>
+            <td class="col-lider"><span class="cell-lider cell-lider-wrap tag-pill">${lider || '—'}</span></td>
             <td class="col-acciones text-right">
                 <div class="flex justify-end items-center gap-3 acciones-grupo">
                     <button type="button" class="btn-editar-grupo p-2 border rounded-lg hover:bg-gray-50 transition text-gray-600 hover:text-[#39A900]" title="Editar">

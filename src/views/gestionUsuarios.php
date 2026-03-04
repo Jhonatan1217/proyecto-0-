@@ -138,6 +138,15 @@
   cursor: pointer;
 }
 
+/* Filtro roles desactivado cuando no se ha seleccionado Instructor */
+#filtroRoles:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  border-color: #e5e7eb;
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
 /* Estilo mejorado para mensajes de error en modales */
 .alert-error {
   display: flex;
@@ -155,6 +164,15 @@
 /* Asegurar que el contenedor se oculte cuando tiene la clase hidden (evita conflicto con display: flex) */
 .alert-error.hidden {
   display: none !important;
+}
+/* Nombre completo en tabla: máximo 2 líneas */
+.cell-nombre-wrap {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  word-break: break-word;
+  line-clamp: 2;
 }
 .alert-error svg {
   flex-shrink: 0;
@@ -215,7 +233,6 @@
                    focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] outline-none transition
                    hover:border-gray-400">
             <option value="">Todos los roles</option>
-            <option value="Instructor">Gestor de horario</option>
           </select>
           <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
             fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -256,6 +273,7 @@
           <tr>
             <th class="px-6 py-3 font-medium">Número de Documento</th>
             <th class="px-6 py-3 font-medium">Nombre Completo</th>
+            <th class="px-6 py-3 font-medium">Cargo</th>
             <th class="px-6 py-3 font-medium">Correo electrónico</th>
             <th class="px-6 py-3 font-medium text-right">Acciones</th>
           </tr>
@@ -326,7 +344,7 @@
           <div>
             <label for="numero_documento_nuevo" class="label-enterprise">Número de documento</label>
             <input type="number" id="numero_documento_nuevo" name="numero_documento" required min="1" max="999999999999" data-max-digits="12"
-              placeholder="Máx. 12 dígitos" class="input-enterprise">
+              placeholder="Ingrese el número de documento" class="input-enterprise">
             <span class="error-input hidden block mt-1 text-xs text-red-600" data-field="numero_documento"></span>
           </div>
 
