@@ -13,11 +13,33 @@ const TIPO_DOC_LABELS = {
 const TIPO_DOC_FROM_LABEL = {};
 Object.keys(TIPO_DOC_LABELS).forEach(k => { TIPO_DOC_FROM_LABEL[TIPO_DOC_LABELS[k].toLowerCase()] = k; });
 
+const CAMPO_LABELS = {
+    nombre_completo: 'Nombre completo',
+    tipo_documento: 'Tipo de documento',
+    numero_documento: 'Número de documento',
+    correo_electronico: 'Correo electrónico',
+    cargo: 'Cargo',
+    modalidad: 'Tipo de instructor',
+    tipo_contrato: 'Tipo de contrato',
+    area_coordinador: 'Área del coordinador'
+};
+
+function mensajeErrorAmigable(mensaje, campo) {
+    if (!mensaje) return mensaje;
+    const label = CAMPO_LABELS[campo] || campo;
+    return String(mensaje)
+        .replace(/^El campo "([^"]+)" es obligatorio\.?$/i, `Por favor seleccione o complete: ${label}`)
+        .replace(/"([^"]+)" (es obligatorio\.?)/gi, (_, f) => `${CAMPO_LABELS[f] || f} es requerido`);
+}
+
 function mostrarError(formOrContainer, mensaje, campo) {
     const cont = typeof formOrContainer === 'string' ? document.getElementById(formOrContainer) : formOrContainer;
     if (!cont) return;
+    const mensajeFinal = mensajeErrorAmigable(mensaje, campo) || mensaje;
     if (cont.id && cont.id.startsWith('error') && !cont.querySelector('form')) {
-        cont.textContent = mensaje;
+        const span = cont.querySelector('.alert-error-text');
+        if (span) span.textContent = mensajeFinal;
+        else cont.textContent = mensajeFinal;
         cont.classList.remove('hidden');
         return;
     }
@@ -26,10 +48,12 @@ function mostrarError(formOrContainer, mensaje, campo) {
     cont.querySelectorAll('.error-input').forEach(el => { el.classList.add('hidden'); el.textContent = ''; });
     if (errGeneral) {
         errGeneral.classList.add('hidden');
-        errGeneral.textContent = '';
+        const span = errGeneral.querySelector('.alert-error-text');
+        if (span) span.textContent = '';
+        else errGeneral.textContent = '';
     }
     if (errCampo) {
-        errCampo.textContent = mensaje;
+        errCampo.textContent = mensajeFinal;
         errCampo.classList.remove('hidden');
         const input = cont.querySelector(`[name="${campo}"]`);
         if (input) {
@@ -38,7 +62,9 @@ function mostrarError(formOrContainer, mensaje, campo) {
             input.addEventListener('input', () => { input.classList.remove('border-red-500'); errCampo.classList.add('hidden'); }, { once: true });
         }
     } else if (errGeneral) {
-        errGeneral.textContent = mensaje;
+        const span = errGeneral.querySelector('.alert-error-text');
+        if (span) span.textContent = mensajeFinal;
+        else errGeneral.textContent = mensajeFinal;
         errGeneral.classList.remove('hidden');
     }
 }
@@ -54,7 +80,12 @@ function limpiarErrores(formOrContainer) {
     cont.querySelectorAll('.error-input').forEach(el => { el.classList.add('hidden'); el.textContent = ''; });
     cont.querySelectorAll('.border-red-500').forEach(el => el.classList.remove('border-red-500'));
     const errGeneral = cont.querySelector('[id^="errorForm"], [id^="errorModal"], [id^="errorTabla"]');
-    if (errGeneral) { errGeneral.classList.add('hidden'); errGeneral.textContent = ''; }
+    if (errGeneral) {
+        errGeneral.classList.add('hidden');
+        const span = errGeneral.querySelector('.alert-error-text');
+        if (span) span.textContent = '';
+        else errGeneral.textContent = '';
+    }
 }
 
 function setSelectValue(select, val) {
@@ -73,9 +104,14 @@ function setSelectValue(select, val) {
 function campoDesdeError(msg) {
     if (!msg || typeof msg !== 'string') return null;
     const m = msg.toLowerCase();
-    if (m.includes('documento')) return 'numero_documento';
+    if (m.includes('número') || (m.includes('numero') && m.includes('documento'))) return 'numero_documento';
+    if (m.includes('tipo') && m.includes('documento')) return 'tipo_documento';
     if (m.includes('correo')) return 'correo_electronico';
     if (m.includes('nombre')) return 'nombre_completo';
+    if (m.includes('modalidad') || m.includes('tipo de instructor')) return 'modalidad';
+    if (m.includes('tipo de contrato') || m.includes('contrato')) return 'tipo_contrato';
+    if (m.includes('área') || (m.includes('area') && m.includes('coordinador'))) return 'area_coordinador';
+    if (m.includes('cargo')) return 'cargo';
     return null;
 }
 
@@ -90,8 +126,8 @@ function validarFormulario(form) {
         const val = (el.value || '').trim();
         if (!val) {
             const field = el.getAttribute('name');
-            const label = el.closest('div')?.querySelector('label')?.textContent?.trim() || field;
-            mostrarError(form, `El campo "${label}" es obligatorio.`, field);
+            const label = el.closest('div')?.querySelector('label')?.textContent?.trim() || CAMPO_LABELS[field] || field;
+            mostrarError(form, `Por favor, complete o seleccione: ${label}`, field);
             el.focus();
             return false;
         }

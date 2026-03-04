@@ -137,6 +137,25 @@
 .custom-select-wrapper .select-usuario {
   cursor: pointer;
 }
+
+/* Estilo mejorado para mensajes de error en modales */
+.alert-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.08);
+}
+.alert-error svg {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
 </style>
 
 <div class="max-w-6xl mx-auto px-4 py-10">
@@ -219,7 +238,12 @@
       </div>
     </div>
 
-    <div id="errorTablaUsuarios" class="hidden text-red-600 text-sm p-3 bg-red-50 rounded-lg mx-6 mb-4"></div>
+    <div id="errorTablaUsuarios" class="hidden alert-error mx-6 mb-4" role="alert">
+      <svg class="w-5 h-5 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+      </svg>
+      <span class="alert-error-text"></span>
+    </div>
 
     <!-- Tabla -->
     <div class="overflow-x-auto">
@@ -261,7 +285,12 @@
     </header>
 
     <form id="formUsuario" class="flex flex-col flex-1 min-h-0" novalidate>
-      <div id="errorFormUsuario" class="hidden mx-6 mt-4 p-3 text-sm text-red-700 bg-red-50 rounded-xl border border-red-100"></div>
+      <div id="errorFormUsuario" class="hidden alert-error mx-6 mt-4" role="alert">
+        <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+        </svg>
+        <span class="alert-error-text"></span>
+      </div>
 
       <div class="modal-usuario-body flex-1">
         <div class="space-y-5">
@@ -393,7 +422,12 @@
     </header>
 
     <form id="formEditarUsuario" class="flex flex-col flex-1 min-h-0" novalidate>
-      <div id="errorFormEditarUsuario" class="hidden mx-6 mt-4 p-3 text-sm text-red-700 bg-red-50 rounded-xl border border-red-100"></div>
+      <div id="errorFormEditarUsuario" class="hidden alert-error mx-6 mt-4" role="alert">
+        <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+        </svg>
+        <span class="alert-error-text"></span>
+      </div>
 
       <div class="modal-usuario-body flex-1">
         <div class="space-y-5">
@@ -522,7 +556,12 @@
             Detalles del Usuario
         </h2>
 
-        <div id="errorModalVerUsuario" class="hidden text-red-600 text-sm p-3 bg-red-50 rounded-lg mb-4"></div>
+        <div id="errorModalVerUsuario" class="hidden alert-error mb-4" role="alert">
+          <svg class="w-5 h-5 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+          </svg>
+          <span class="alert-error-text"></span>
+        </div>
 
         <!-- Avatar + Nombre + Tags (Rol, Estado) - Diseño alineado -->
         <div class="flex items-start gap-4 mb-8 pb-6 border-b border-gray-200">
