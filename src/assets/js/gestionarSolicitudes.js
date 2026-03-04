@@ -1,3 +1,10 @@
+const API_URL = 'src/controllers/SolicitudController.php';
+
+let todasLasSolicitudes = [];
+let solicitudActualId = null;
+let solicitudActualTipo = null;
+let solicitudActualData = null;
+
 document.addEventListener("DOMContentLoaded", () => {
     // Elementos del DOM
     const botones = document.querySelectorAll(".filter-btn");
@@ -8,8 +15,24 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Variables de estado
     let estadoActivo = "Todas";
-    let todasLasSolicitudes = [];
     let solicitudesFiltradas = [];
+
+    // Configurar event listeners de los modales
+    document.getElementById("btnAprobar")?.addEventListener("click", () => {
+        abrirModalConfirmar();
+    });
+
+    document.getElementById("btnDevolver")?.addEventListener("click", () => {
+        abrirModalDevolver();
+    });
+
+    document.getElementById("btnConfirmarAprobar")?.addEventListener("click", () => {
+        aprobarSolicitud();
+    });
+
+    document.getElementById("btnConfirmarDevolver")?.addEventListener("click", () => {
+        devolverSolicitud();
+    });
 
     // ================================
     // CARGAR DATOS DESDE EL BACKEND
@@ -18,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             mostrarLoading(true);
             
-            let url = window.API_URL;
+            let url = API_URL;
             
             // Determinar qué endpoint llamar según el estado activo
             switch(estadoActivo) {
@@ -65,10 +88,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const textoBusqueda = buscador.value.toLowerCase();
         
         solicitudesFiltradas = todasLasSolicitudes.filter(solicitud => {
-            // Si no hay texto de búsqueda, mostrar todas
             if (!textoBusqueda) return true;
             
-            // Buscar en los campos relevantes
             const coincideEnCampos = 
                 (solicitud.codigo_solicitud && solicitud.codigo_solicitud.toLowerCase().includes(textoBusqueda)) ||
                 (solicitud.nombre_instructor && solicitud.nombre_instructor.toLowerCase().includes(textoBusqueda)) ||
@@ -101,10 +122,8 @@ document.addEventListener("DOMContentLoaded", () => {
         let html = "";
         
         solicitudesFiltradas.forEach(sol => {
-            // Formatear fecha
             const fecha = sol.fecha_solicitud ? new Date(sol.fecha_solicitud).toLocaleDateString('es-CO') : 'N/A';
             
-            // Determinar color del badge según estado
             let badgeColor = "";
             let estadoTexto = sol.estado || "PENDIENTE";
             
@@ -222,8 +241,6 @@ document.addEventListener("DOMContentLoaded", () => {
         btn.addEventListener("click", async () => {
             estadoActivo = btn.dataset.estado;
             activarBoton(estadoActivo);
-            
-            // Recargar datos según el nuevo estado
             await cargarSolicitudes();
         });
     });
@@ -238,10 +255,384 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ================================
-// FUNCIÓN GLOBAL PARA VER DETALLES
+// FUNCIÓN PARA VER DETALLES
 // ================================
 function verSolicitud(id) {
-    console.log("Ver solicitud:", id);
-    // Aquí puedes redirigir a una página de detalle o abrir un modal
-    window.location.href = `detalleSolicitud.php?id=${id}`;
+    const solicitud = todasLasSolicitudes.find(s => s.id_solicitud == id);
+
+    if (!solicitud) {
+        console.error("Solicitud no encontrada");
+        return;
+    }
+
+    // Guardar datos actuales
+    solicitudActualId = id;
+    solicitudActualTipo = solicitud.tipo_solicitud ? solicitud.tipo_solicitud.toLowerCase() : "";
+
+    // Inicializar variables para los detalles
+    let nombreAnterior = "", nombreNuevo = "";
+    let docAnterior = "", docNuevo = "";
+    let horarioAnterior = "", horarioNuevo = "";
+
+    // Procesar los detalles si existen
+    if (solicitud.detalles && solicitud.detalles.length > 0) {
+        solicitud.detalles.forEach(detalle => {
+            const campo = detalle.campo_modificado ? detalle.campo_modificado.toLowerCase() : "";
+            
+            if (campo.includes("nombre") || campo.includes("nombres")) {
+                nombreAnterior = detalle.valor_anterior || "";
+                nombreNuevo = detalle.valor_nuevo || "";
+            }
+            else if (campo.includes("documento") || campo.includes("doc")) {
+                docAnterior = detalle.valor_anterior || "";
+                docNuevo = detalle.valor_nuevo || "";
+            }
+            else if (campo.includes("horario")) {
+                horarioAnterior = detalle.valor_anterior || "";
+                horarioNuevo = detalle.valor_nuevo || "";
+            }
+        });
+    }
+
+    // Mapear datos al formato que usa el modal
+    const dataModal = {
+        id: solicitud.id_solicitud,
+        codigo: solicitud.codigo_solicitud || solicitud.id_solicitud,
+        solicitante: solicitud.nombre_instructor || "N/A",
+        programa: solicitud.programa || "N/A",
+        fecha: solicitud.fecha_solicitud,
+        estado: solicitud.estado,
+        tipo: solicitudActualTipo,
+        motivoDevolucion: solicitud.observacion_respuesta || "",
+        nombreAnterior: nombreAnterior,
+        nombreNuevo: nombreNuevo,
+        docAnterior: docAnterior,
+        docNuevo: docNuevo,
+        horarioAnterior: horarioAnterior,
+        horarioNuevo: horarioNuevo
+    };
+
+    console.log("📦 DATOS MAPEADOS:", dataModal);
+    solicitudActualData = dataModal;
+
+    abrirModal(dataModal);
+}
+
+// ================================
+// ABRIR MODAL PRINCIPAL
+// ================================
+function abrirModal(data) {
+    console.log("Abriendo modal con:", data);
+
+    const modal = document.getElementById("modalDetalle");
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+
+    // Datos básicos
+    document.getElementById("modalCodigo").textContent = data.codigo || "";
+    document.getElementById("modalSolicitante").textContent = data.solicitante || "";
+    document.getElementById("modalPrograma").textContent = data.programa || "";
+    document.getElementById("modalFecha").textContent = data.fecha || "";
+
+    // Guardar ID de la solicitud actual para usarlo en los botones
+    modal.dataset.solicitudId = data.id;
+
+    // Estado con colores
+    const estado = document.getElementById("modalEstado");
+    estado.textContent = data.estado || "";
+
+    if (data.estado === "PENDIENTE") {
+        estado.className = "px-3 py-1 rounded-full text-sm font-medium";
+        estado.style.cssText = 'background-color: #fef3c7 !important; color: #92400e !important;';
+    } else if (data.estado === "APROBADO") {
+        estado.className = "px-3 py-1 rounded-full text-sm font-medium";
+        estado.style.cssText = 'background-color: #C5E7B5 !important; color: #166534 !important;';
+    } else if (data.estado === "DEVUELTO") {
+        estado.className = "px-3 py-1 rounded-full text-sm font-medium";
+        estado.style.cssText = 'background-color: #ffe4e6 !important; color: #9b1c1c !important;';
+    } else {
+        estado.className = "px-3 py-1 rounded-full text-sm font-medium";
+        estado.style.cssText = 'background-color: #f3f4f6 !important; color: #1f2937 !important;';
+    }
+
+    // Mostrar/ocultar motivo de devolución según el estado
+    const motivoDiv = document.getElementById("motivoDevolucion");
+    const motivoTexto = document.getElementById("textoMotivoDevolucion");
+    
+    if (data.estado === "DEVUELTO" && data.motivoDevolucion) {
+        motivoDiv.classList.remove("hidden");
+        motivoTexto.textContent = data.motivoDevolucion;
+    } else {
+        motivoDiv.classList.add("hidden");
+    }
+
+    // Mostrar/ocultar botones de acción según el estado
+    const botonesDiv = document.getElementById("botonesAccion");
+    if (data.estado === "PENDIENTE") {
+        botonesDiv.classList.remove("hidden");
+    } else {
+        botonesDiv.classList.add("hidden");
+    }
+
+    // Contenido dinámico
+    const contenedor = document.getElementById("modalContenido");
+
+     if (data.tipo === "datos") {
+        contenedor.innerHTML = `
+            <div class="bg-gray-50 rounded-xl p-6 mt-6" style="border: 1px solid #d1d5db !important;">
+                <!-- Borde forzado con estilo inline -->
+
+                <div class="flex items-center gap-2 mb-4 text-[#39A900] font-semibold">
+                    <i data-lucide="user" class="w-5 h-5"></i>
+                    Cambio de datos personales
+                </div>
+
+                <div class="space-y-6 text-sm">
+                    <!-- Nombre -->
+                    <div>
+                        <p class="text-gray-500 mb-2">Nombre, apellido, etc</p>
+                        <div class="flex items-center gap-4 flex-wrap">
+                            <div class="bg-white rounded px-4 py-2 text-gray-700 min-w-[180px]" style="border: 1px solid #d1d5db !important;">
+                                ${data.nombreAnterior || "<span class='text-gray-400'>No especificado</span>"}
+                            </div>
+
+                            <span class="text-gray-400 font-semibold">→</span>
+
+                            <div class="bg-green-50 rounded px-4 py-2 text-green-800 min-w-[180px]" style="border: 1px solid #10b981 !important;">
+                                ${data.nombreNuevo || "<span class='text-gray-400'>No especificado</span>"}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Documento -->
+                    <div>
+                        <p class="text-gray-500 mb-2">Documento</p>
+                        <div class="flex items-center gap-4 flex-wrap">
+                            <div class="bg-white rounded px-4 py-2 text-gray-700 min-w-[180px]" style="border: 1px solid #d1d5db !important;">
+                                ${data.docAnterior || "<span class='text-gray-400'>No especificado</span>"}
+                            </div>
+
+                            <span class="text-gray-400 font-semibold">→</span>
+
+                            <div class="bg-green-50 rounded px-4 py-2 text-green-800 min-w-[180px]" style="border: 1px solid #10b981 !important;">
+                                ${data.docNuevo || "<span class='text-gray-400'>No especificado</span>"}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        lucide.createIcons();
+
+    } else if (data.tipo === "horario") {
+        contenedor.innerHTML = `
+            <div class="bg-gray-50 rounded-xl p-6 mt-6 border border-gray-200">
+
+                <div class="flex items-center gap-2 mb-4 text-[#39A900] font-semibold">
+                    <i data-lucide="clock" class="w-5 h-5"></i>
+                    Cambio de horario
+                </div>
+
+                <div class="flex items-center justify-between gap-3 flex-wrap">
+
+                    <div class="bg-white rounded-lg px-4 py-2 text-gray-700 min-w-[180px] border border-gray-300">
+                        ${data.horarioAnterior || "<span class='text-gray-400'>No especificado</span>"}
+                    </div>
+
+                    <span class="text-gray-400 font-semibold">→</span>
+
+                    <div class="bg-green-100 rounded-lg px-4 py-2 text-green-800 min-w-[180px] border border-green-300 font-medium">
+                        ${data.horarioNuevo || "<span class='text-gray-400'>No especificado</span>"}
+                    </div>
+
+                </div>
+            </div>
+        `;
+        lucide.createIcons();
+
+    } else {
+        contenedor.innerHTML = `<p class="text-gray-500 p-4">No hay información adicional para este tipo de solicitud</p>`;
+    }
+}
+
+// ================================
+// FUNCIONES PARA MODALES DE CONFIRMACIÓN
+// ================================
+function abrirModalConfirmar() {
+
+    if (!solicitudActualData) return;
+
+    const data = solicitudActualData;
+
+    // Datos básicos
+    document.getElementById("modalCodigoConfirmacion").textContent = data.codigo;
+    document.getElementById("modalSolicitanteConfirmacion").textContent = data.solicitante;
+
+    const contenedor = document.getElementById("contenidoConfirmacion");
+
+    // Render dinámico según tipo
+    if (data.tipo === "datos") {
+
+        contenedor.innerHTML = `
+            <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+
+                <div class="flex items-center gap-2 mb-4 text-gray-700 font-medium">
+                    <i data-lucide="user" class="w-5 h-5 text-green-600"></i>
+                    Cambio de datos
+                </div>
+
+                <div class="flex items-center justify-between gap-3 flex-wrap">
+
+                    <div class="bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-700 min-w-[150px]">
+                        ${data.nombreAnterior || "No especificado"}
+                    </div>
+
+                    <span class="text-gray-400 font-semibold">→</span>
+
+                    <div class="bg-green-100 border border-green-400 rounded-lg px-4 py-2 text-sm text-green-800 font-medium min-w-[150px]">
+                        ${data.nombreNuevo || "No especificado"}
+                    </div>
+
+                </div>
+            </div>
+        `;
+
+    } else if (data.tipo === "horario") {
+
+        contenedor.innerHTML = `
+            <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+
+                <div class="flex items-center gap-2 mb-4 text-gray-700 font-medium">
+                    <i data-lucide="clock" class="w-5 h-5 text-green-600"></i>
+                    Cambio de horario
+                </div>
+
+                <div class="flex items-center justify-between gap-3 flex-wrap">
+
+                    <div class="bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-700 min-w-[150px]">
+                        ${data.horarioAnterior || "No especificado"}
+                    </div>
+
+                    <span class="text-gray-400 font-semibold">→</span>
+
+                    <div class="bg-green-100 border border-green-400 rounded-lg px-4 py-2 text-sm text-green-800 font-medium min-w-[150px]">
+                        ${data.horarioNuevo || "No especificado"}
+                    </div>
+
+                </div>
+            </div>
+        `;
+    }
+
+    document.getElementById("modalConfirmarAprobacion").classList.remove("hidden");
+    document.getElementById("modalConfirmarAprobacion").classList.add("flex");
+
+    lucide.createIcons();
+}
+
+function cerrarModalConfirmar() {
+    document.getElementById("modalConfirmarAprobacion").classList.add("hidden");
+    document.getElementById("modalConfirmarAprobacion").classList.remove("flex");
+}
+
+function abrirModalDevolver() {
+    document.getElementById("modalDevolverMotivo").classList.remove("hidden");
+    document.getElementById("modalDevolverMotivo").classList.add("flex");
+    document.getElementById("motivoDevolucionInput").value = "";
+}
+
+function cerrarModalDevolver() {
+    document.getElementById("modalDevolverMotivo").classList.add("hidden");
+    document.getElementById("modalDevolverMotivo").classList.remove("flex");
+}
+
+// ================================
+// FUNCIONES PARA APROBAR/DEVOLVER
+// ================================
+async function aprobarSolicitud() {
+    if (!solicitudActualId) return;
+
+    try {
+        const response = await fetch(`${API_URL}?accion=responder`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                id_solicitud: solicitudActualId,
+                estado: 'APROBADO',
+                observacion_respuesta: '',
+                id_coordinador_aprobador: 1 // Reemplazar con el ID del coordinador actual
+            })
+        });
+
+        const resultado = await response.json();
+        
+        if (resultado.status === 'success') {
+            alert('✅ Solicitud aprobada correctamente');
+            cerrarModalConfirmar();
+            cerrarModal();
+            // Recargar la lista
+            location.reload(); // Recarga simple, o puedes llamar a cargarSolicitudes()
+        } else {
+            alert('❌ Error al aprobar: ' + resultado.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error de conexión');
+    }
+}
+
+async function devolverSolicitud() {
+    if (!solicitudActualId) return;
+
+    const motivo = document.getElementById("motivoDevolucionInput").value.trim();
+    
+    if (!motivo) {
+        alert('⚠️ Debes ingresar un motivo de devolución');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}?accion=responder`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                id_solicitud: solicitudActualId,
+                estado: 'DEVUELTO',
+                observacion_respuesta: motivo,
+                id_coordinador_aprobador: 1 // Reemplazar con el ID del coordinador actual
+            })
+        });
+
+        const resultado = await response.json();
+        
+        if (resultado.status === 'success') {
+            alert('✅ Solicitud devuelta correctamente');
+            cerrarModalDevolver();
+            cerrarModal();
+            // Recargar la lista
+            location.reload(); // Recarga simple, o puedes llamar a cargarSolicitudes()
+        } else {
+            alert('❌ Error al devolver: ' + resultado.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error de conexión');
+    }
+}
+
+// ================================
+// CERRAR MODAL PRINCIPAL
+// ================================
+function cerrarModal() {
+    const modal = document.getElementById("modalDetalle");
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+    
+    // Limpiar datos
+    solicitudActualId = null;
+    solicitudActualTipo = null;
 }
