@@ -152,6 +152,10 @@
   line-height: 1.5;
   box-shadow: 0 2px 8px rgba(220, 38, 38, 0.08);
 }
+/* Asegurar que el contenedor se oculte cuando tiene la clase hidden (evita conflicto con display: flex) */
+.alert-error.hidden {
+  display: none !important;
+}
 .alert-error svg {
   flex-shrink: 0;
   margin-top: 0.125rem;

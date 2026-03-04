@@ -22,6 +22,11 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 <style>
+    /* Toasts justo debajo del header, sin tocarlo; por debajo de sidebar y widget de usuario (z-50) */
+    .swal2-container.swal2-top-end {
+      top: 5rem !important;
+      z-index: 40 !important;
+    }
     .rotate-180 {
       transform: rotate(180deg);
     }
