@@ -3,6 +3,22 @@ let grupos = [];
 let programas = [];
 let lideres = [];
 
+function toast(msg, type = "success") {
+    if (window.Swal) {
+        Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: type,
+            title: msg,
+            showConfirmButton: false,
+            timer: 2200,
+            timerProgressBar: true,
+        });
+    } else {
+        alert((type === "error" ? "❌ " : type === "warning" ? "⚠ " : "✅ ") + msg);
+    }
+}
+
 async function apiRequest(accion, method = "GET", body = null, queryParams = null) {
     const config = {
         method,
@@ -108,7 +124,7 @@ function renderTabla(data) {
             <td class="col-nivel"><span class="cell-nivel cell-nivel-tag tag-pill">${nivel || '—'}</span></td>
             <td class="col-jornada"><span class="cell-jornada tag-pill">${jornada || '—'}</span></td>
             <td class="col-modalidad"><span class="cell-modalidad tag-pill">${modalidad || '—'}</span></td>
-            <td class="col-lider"><span class="cell-lider tag-pill">${lider || '—'}</span></td>
+            <td class="col-lider"><span class="cell-lider cell-lider-wrap tag-pill">${lider || '—'}</span></td>
             <td class="col-acciones text-right">
                 <div class="flex justify-end items-center gap-3 acciones-grupo">
                     <button type="button" class="btn-editar-grupo p-2 border rounded-lg hover:bg-gray-50 transition text-gray-600 hover:text-[#39A900]" title="Editar">
@@ -142,11 +158,16 @@ function bindEventosTabla() {
             const nuevoEstado = e.target.checked ? 1 : 0;
             try {
                 const res = await apiRequest("cambiarEstado", "POST", { id_ficha: id, estado: nuevoEstado });
-                if (res.status === "success") cargarGrupos();
-                else if (res.message) alert(res.message);
+                if (res.status === "success") {
+                    toast(nuevoEstado === 1 ? "Grupo activado correctamente" : "Grupo desactivado correctamente");
+                    cargarGrupos();
+                } else {
+                    if (res.message) toast(res.message, "error");
+                    e.target.checked = !e.target.checked;
+                }
             } catch (err) {
                 e.target.checked = !e.target.checked;
-                alert("Error al cambiar estado");
+                toast("Error al cambiar estado", "error");
             }
         });
     });
@@ -409,6 +430,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         if (response.status === "success") {
             togglerModal(false);
+            toast("Grupo creado correctamente");
             cargarGrupos();
         } else {
 

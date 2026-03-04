@@ -24,6 +24,22 @@ const CAMPO_LABELS = {
     area_coordinador: 'Área del coordinador'
 };
 
+function toast(msg, type = "success") {
+    if (window.Swal) {
+        Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: type,
+            title: msg,
+            showConfirmButton: false,
+            timer: 2200,
+            timerProgressBar: true,
+        });
+    } else {
+        alert((type === "error" ? "❌ " : type === "warning" ? "⚠ " : "✅ ") + msg);
+    }
+}
+
 function mensajeErrorAmigable(mensaje, campo) {
     if (!mensaje) return mensaje;
     const label = CAMPO_LABELS[campo] || campo;
@@ -86,6 +102,21 @@ function limpiarErrores(formOrContainer) {
         if (span) span.textContent = '';
         else errGeneral.textContent = '';
     }
+}
+
+/** Devuelve el value exacto de una opción del select que coincida con val (para mostrar el que ya tenía el usuario). */
+function normalizarOpcionSelect(select, val) {
+    if (!select || val == null || val === '') return '';
+    const v = String(val).trim();
+    if (!v) return '';
+    const opts = [...select.options].filter(o => o.value !== '');
+    const exact = opts.find(o => o.value === v);
+    if (exact) return exact.value;
+    const ci = opts.find(o => o.value.toLowerCase() === v.toLowerCase());
+    if (ci) return ci.value;
+    const partial = opts.find(o => o.value.toLowerCase().includes(v.toLowerCase()) || v.toLowerCase().includes(o.value.toLowerCase()));
+    if (partial) return partial.value;
+    return opts[0] ? opts[0].value : v;
 }
 
 function setSelectValue(select, val) {
@@ -235,8 +266,26 @@ function alternarCamposCargo(cargo, contenedorModal) {
 /* =============================================
    2. RENDERIZADO (ICONOS Y SWITCH)
    ============================================= */
+function getFiltrosUsuarios() {
+    const filtroCargos = document.getElementById('filtroCargos');
+    const filtroRoles = document.getElementById('filtroRoles');
+    const buscador = document.getElementById('buscadorUsuario');
+    const cargo = (filtroCargos?.value || '').trim();
+    const esInstructor = /instructor/i.test(cargo);
+    return {
+        cargo,
+        id_rol_funcional: esInstructor && filtroRoles?.value ? filtroRoles.value : '',
+        buscar: (buscador?.value || '').trim()
+    };
+}
+
 async function cargarUsuarios() {
-    const res = await apiRequest("listar");
+    const filtros = getFiltrosUsuarios();
+    const params = {};
+    if (filtros.cargo) params.cargo = filtros.cargo;
+    if (filtros.id_rol_funcional) params.id_rol_funcional = filtros.id_rol_funcional;
+    if (filtros.buscar) params.buscar = filtros.buscar;
+    const res = await apiRequest("listar", "GET", Object.keys(params).length ? params : null);
     if (Array.isArray(res)) {
         renderTabla(res);
     }
@@ -251,7 +300,8 @@ function renderTabla(data) {
         filas += `
             <tr class="hover:bg-gray-50 border-b border-gray-100 transition-colors">
                 <td class="px-6 py-4 font-medium text-gray-700">${u.numero_documento}</td>
-                <td class="px-6 py-4">${u.nombre_completo}</td>
+                <td class="px-6 py-4"><span class="cell-nombre-wrap">${u.nombre_completo || ''}</span></td>
+                <td class="px-6 py-4 text-gray-600">${u.cargo || '—'}</td>
                 <td class="px-6 py-4 text-gray-500">${u.correo_electronico}</td>
                 <td class="px-6 py-4 text-right">
                     <div class="flex items-center justify-end gap-2 shrink-0">
@@ -296,6 +346,7 @@ function renderTabla(data) {
 function enhanceSelectsWithCustomDropdown() {
     document.querySelectorAll('.select-usuario').forEach(select => {
         if (select.dataset.customDropdown) return;
+        if (select.id === 'filtroCargos' || select.id === 'filtroRoles') return;
         select.dataset.customDropdown = '1';
 
         const wrapper = document.createElement('div');
@@ -386,9 +437,65 @@ function enhanceSelectsWithCustomDropdown() {
     });
 }
 
+function aplicarEstadoFiltroRoles() {
+    const filtroCargos = document.getElementById('filtroCargos');
+    const filtroRoles = document.getElementById('filtroRoles');
+    if (!filtroRoles) return;
+    const esInstructor = /instructor/i.test((filtroCargos?.value || '').trim());
+    filtroRoles.disabled = !esInstructor;
+    if (!esInstructor) filtroRoles.value = '';
+}
+
+async function cargarRolesDisponibles() {
+    try {
+        const roles = await apiRequest("rolesDisponibles");
+        if (!Array.isArray(roles)) return;
+        const sel = document.getElementById('filtroRoles');
+        if (!sel) return;
+        const valorActual = sel.value;
+        sel.innerHTML = '<option value="">Todos los roles</option>';
+        roles.forEach(r => {
+            const opt = document.createElement('option');
+            opt.value = r.id_rol;
+            opt.textContent = r.nombre_rol || r.nombreRol || ('Rol ' + r.id_rol);
+            sel.appendChild(opt);
+        });
+        if (valorActual) sel.value = valorActual;
+        aplicarEstadoFiltroRoles();
+    } catch (e) {
+        console.warn('No se pudieron cargar roles para el filtro:', e);
+    }
+}
+
+function debounce(fn, ms) {
+    let t;
+    return function (...args) {
+        clearTimeout(t);
+        t = setTimeout(() => fn.apply(this, args), ms);
+    };
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    aplicarEstadoFiltroRoles();
     cargarUsuarios();
+    cargarRolesDisponibles();
     enhanceSelectsWithCustomDropdown();
+
+    const filtroCargos = document.getElementById('filtroCargos');
+    const filtroRoles = document.getElementById('filtroRoles');
+    const buscadorUsuario = document.getElementById('buscadorUsuario');
+    if (filtroCargos) {
+        filtroCargos.addEventListener('change', () => {
+            aplicarEstadoFiltroRoles();
+            cargarUsuarios();
+        });
+    }
+    if (filtroRoles) {
+        filtroRoles.addEventListener('change', () => cargarUsuarios());
+    }
+    if (buscadorUsuario) {
+        buscadorUsuario.addEventListener('input', debounce(() => cargarUsuarios(), 300));
+    }
 
     // Única delegación de eventos en body para .btn-editar, .btn-ver y .btn-estado
     document.body.addEventListener("click", (e) => {
@@ -484,6 +591,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await apiRequest("crear", "POST", datos);
         if (res.success) {
             cerrarModal('modalNuevoUsuario');
+            toast("Usuario creado satisfactoriamente");
             cargarUsuarios();
         } else {
             mostrarError(form, res.error || "Error al guardar", campoDesdeError(res.error));
@@ -508,6 +616,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await apiRequest("actualizar", "POST", datos);
         if (res.success) {
             cerrarModal('modalEditarUsuario');
+            toast("Usuario actualizado correctamente");
             cargarUsuarios();
         } else {
             mostrarError(form, res.error || "Error al actualizar", campoDesdeError(res.error));
@@ -552,12 +661,18 @@ async function prepararEdicion(id) {
 
             alternarCamposCargo(u.cargo, modal);
             limpiarErrores(form);
-            
+
             if (String(u.cargo || '').toLowerCase().includes('instructor')) {
                 const selModalidad = form.querySelector('[name="modalidad"]');
                 const selContrato = form.querySelector('[name="tipo_contrato"]');
-                setSelectValue(selModalidad, u.tipo_instructor || 'Técnico');
-                setSelectValue(selContrato, u.tipo_contrato || 'Contratista');
+                const rawTipoInstructor = (u.tipo_instructor ?? u.modalidad ?? u.tipoInstructor ?? '').toString().trim();
+                const rawTipoContrato = (u.tipo_contrato ?? u.tipoContrato ?? '').toString().trim();
+                const valorModalidad = rawTipoInstructor ? normalizarOpcionSelect(selModalidad, rawTipoInstructor) : 'Técnico';
+                const valorContrato = rawTipoContrato ? normalizarOpcionSelect(selContrato, rawTipoContrato) : 'Contratista';
+                setSelectValue(selModalidad, valorModalidad);
+                setSelectValue(selContrato, valorContrato);
+                selModalidad?.dispatchEvent(new Event('change', { bubbles: true }));
+                selContrato?.dispatchEvent(new Event('change', { bubbles: true }));
             } else {
                 const inputArea = form.querySelector('[name="area_coordinador"]');
                 if (inputArea) inputArea.value = u.nombre_area || u.area_coordinador || '';
@@ -668,6 +783,9 @@ async function toggleEstado(id, estadoActual) {
 
     if (!res.success) {
         mostrarError('errorTablaUsuarios', res.error || "Error al cambiar estado", null);
+        toast(res.error || "Error al cambiar estado", "error");
+    } else {
+        toast(nuevoEstado === 1 ? "Usuario activado" : "Usuario desactivado");
     }
     cargarUsuarios(); // Recarga para sincronizar datos y visuales
 }

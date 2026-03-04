@@ -253,6 +253,51 @@ class Usuario {
     // ============================================================
 
     /**
+     * Lista usuarios con filtros opcionales: cargo, rol funcional (solo aplica si cargo es Instructor), búsqueda por texto.
+     * @param string $cargo Opcional. Ej: 'Instructor', 'Coordinador'.
+     * @param int|null $id_rol_funcional Opcional. Solo filtra por rol cuando se combina con cargo Instructor.
+     * @param string $buscar Opcional. Busca en nombre_completo, numero_documento, correo_electronico.
+     * @return array Lista de usuarios.
+     */
+    public function listarConFiltros($cargo = '', $id_rol_funcional = null, $buscar = '') {
+        $cargo = trim((string) $cargo);
+        $buscar = trim((string) $buscar);
+        $id_rol = $id_rol_funcional !== null && $id_rol_funcional !== '' ? intval($id_rol_funcional) : null;
+        if ($id_rol <= 0) $id_rol = null;
+
+        $joinRol = $id_rol !== null ? " INNER JOIN " . $this->table_roles . " urf ON u.id_usuario = urf.id_usuario AND urf.id_rol = :id_rol " : "";
+        $sql = "SELECT DISTINCT u.*, a.nombre_area 
+                FROM " . $this->table . " u
+                LEFT JOIN area a ON u.id_area = a.id_area
+                " . $joinRol . "
+                WHERE 1=1 ";
+        $params = [];
+
+        if ($cargo !== '') {
+            $sql .= " AND LOWER(TRIM(u.cargo)) = LOWER(:cargo) ";
+            $params[':cargo'] = $cargo;
+        }
+        if ($buscar !== '') {
+            $sql .= " AND (u.nombre_completo LIKE :buscar OR CAST(u.numero_documento AS CHAR) LIKE :buscar_num OR u.correo_electronico LIKE :buscar_correo) ";
+            $term = '%' . $buscar . '%';
+            $params[':buscar'] = $term;
+            $params[':buscar_num'] = $term;
+            $params[':buscar_correo'] = $term;
+        }
+
+        $sql .= " ORDER BY u.nombre_completo ASC";
+        $stmt = $this->conn->prepare($sql);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        if ($id_rol !== null) {
+            $stmt->bindValue(':id_rol', $id_rol, PDO::PARAM_INT);
+        }
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Lista todos los usuarios filtrados por su cargo principal (COORDINADOR o INSTRUCTOR).
      * @param string $cargo 'COORDINADOR' o 'INSTRUCTOR'.
      * @return array Lista de usuarios con ese cargo.
