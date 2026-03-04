@@ -69,9 +69,6 @@ function getFiltrosActuales() {
 
 async function cargarGrupos() {
     const filtros = getFiltrosActuales();
-    // #region agent log
-    fetch('http://127.0.0.1:7412/ingest/11627054-5f80-4415-9332-42cb7861975f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c7ead1'},body:JSON.stringify({sessionId:'c7ead1',location:'gestionGrupos.js:cargarGrupos',message:'listar request params',data:{buscar:filtros.buscar,id_programa:filtros.id_programa},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
-    // #endregion
     const response = await apiRequest("listar", "GET", null, filtros);
     if (response.status === "success") {
         grupos = response.data;
