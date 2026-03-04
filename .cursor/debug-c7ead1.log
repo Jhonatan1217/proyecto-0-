@@ -19,3 +19,23 @@
 {"sessionId":"c7ead1","location":"gestionUsuarios.js:abrirModal","message":"before apply","data":{"id":"modalVerUsuario","parentTag":"BODY","parentDisplay":"flex"},"timestamp":1772486167360,"hypothesisId":"H5"}
 {"sessionId":"c7ead1","location":"gestionUsuarios.js:apiResponse","message":"obtener response","data":{"hasError":false,"isArray":false,"keys":["id_usuario","nombre_completo","tipo_documento","numero_documento","correo_electronico"]},"timestamp":1772486167371,"hypothesisId":"H4"}
 {"sessionId":"c7ead1","location":"gestionUsuarios.js:abrirModal","message":"before apply","data":{"id":"modalNuevoUsuario","parentTag":"DIV","parentDisplay":"block"},"timestamp":1772486401275,"hypothesisId":"H5"}
+{"sessionId":"c7ead1","location":"gestionGrupos.js:cargarGrupos","message":"listar request params","data":{"buscar":"","id_programa":""},"timestamp":1772650937219,"hypothesisId":"H2"}
+{"sessionId":"c7ead1","location":"gestionGrupos.js:cargarGrupos","message":"listar request params","data":{"buscar":"","id_programa":""},"timestamp":1772650939684,"hypothesisId":"H2"}
+{"sessionId":"c7ead1","location":"gestionGrupos.js:cargarGrupos","message":"listar request params","data":{"buscar":"","id_programa":"2323211"},"timestamp":1772650941234,"hypothesisId":"H2"}
+{"sessionId":"c7ead1","location":"gestionGrupos.js:cargarGrupos","message":"listar request params","data":{"buscar":"","id_programa":""},"timestamp":1772650944675,"hypothesisId":"H2"}
+{"sessionId":"c7ead1","location":"gestionGrupos.js:cargarGrupos","message":"listar request params","data":{"buscar":"","id_programa":"23123"},"timestamp":1772650945660,"hypothesisId":"H2"}
+{"sessionId":"c7ead1","location":"gestionGrupos.js:cargarGrupos","message":"listar request params","data":{"buscar":"","id_programa":"2323211"},"timestamp":1772650947326,"hypothesisId":"H2"}
+{"sessionId":"c7ead1","location":"gestionGrupos.js:cargarGrupos","message":"listar request params","data":{"buscar":"","id_programa":""},"timestamp":1772650949048,"hypothesisId":"H2"}
+{"sessionId":"c7ead1","location":"gestionGrupos.js:cargarGrupos","message":"listar request params","data":{"buscar":"","id_programa":""},"timestamp":1772650954965,"hypothesisId":"H2"}
+{"sessionId":"c7ead1","location":"gestionGrupos.js:cargarGrupos","message":"listar request params","data":{"buscar":"","id_programa":"23123"},"timestamp":1772650956866,"hypothesisId":"H2"}
+{"sessionId":"c7ead1","location":"gestionGrupos.js:cargarGrupos","message":"listar request params","data":{"buscar":"","id_programa":"2323211"},"timestamp":1772650958323,"hypothesisId":"H2"}
+{"sessionId":"c7ead1","location":"gestionGrupos.js:cargarGrupos","message":"listar request params","data":{"buscar":"","id_programa":""},"timestamp":1772650967290,"hypothesisId":"H2"}
+{"sessionId":"c7ead1","location":"gestionGrupos.js:cargarGrupos","message":"listar request params","data":{"buscar":"221","id_programa":""},"timestamp":1772650970972,"hypothesisId":"H2"}
+{"sessionId":"c7ead1","location":"gestionGrupos.js:cargarGrupos","message":"listar request params","data":{"buscar":"22","id_programa":""},"timestamp":1772650972846,"hypothesisId":"H2"}
+{"sessionId":"c7ead1","location":"gestionGrupos.js:cargarGrupos","message":"listar request params","data":{"buscar":"","id_programa":""},"timestamp":1772650974636,"hypothesisId":"H2"}
+{"sessionId":"c7ead1","location":"gestionGrupos.js:cargarGrupos","message":"listar request params","data":{"buscar":"2","id_programa":""},"timestamp":1772650976802,"hypothesisId":"H2"}
+{"sessionId":"c7ead1","location":"gestionGrupos.js:cargarGrupos","message":"listar request params","data":{"buscar":"23","id_programa":""},"timestamp":1772650977677,"hypothesisId":"H2"}
+{"sessionId":"c7ead1","location":"gestionGrupos.js:cargarGrupos","message":"listar request params","data":{"buscar":"231","id_programa":""},"timestamp":1772650979570,"hypothesisId":"H2"}
+{"sessionId":"c7ead1","location":"gestionGrupos.js:cargarGrupos","message":"listar request params","data":{"buscar":"","id_programa":""},"timestamp":1772650980599,"hypothesisId":"H2"}
+{"sessionId":"c7ead1","location":"gestionGrupos.js:cargarGrupos","message":"listar request params","data":{"buscar":"","id_programa":""},"timestamp":1772650984045,"hypothesisId":"H2"}
+{"sessionId":"c7ead1","location":"gestionGrupos.js:cargarGrupos","message":"listar request params","data":{"buscar":"","id_programa":""},"timestamp":1772650986702,"hypothesisId":"H2"}

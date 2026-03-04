@@ -48,9 +48,11 @@ if (!$accion) {
 try {
     switch ($accion) {
 
-        // Listar todas las fichas
+        // Listar fichas (opcional: filtrar por programa y/o búsqueda por número o nombre programa)
         case 'listar':
-            $res = $ficha->listar();
+            $buscar = trim($_GET['buscar'] ?? '');
+            $id_programa = trim($_GET['id_programa'] ?? '');
+            $res = $ficha->listar($buscar, $id_programa);
             echo json_encode([
                 'status' => 'success',
                 'data' => $res,

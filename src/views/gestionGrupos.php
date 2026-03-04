@@ -34,11 +34,11 @@
   border-top: 1px solid #e5e7eb;
   background: #fff;
 }
-/* Reglas de oro: Safe Zone + Truncado inteligente + Ancho responsivo */
+/* Select: padding-right mínimo para el chevron (2rem); texto usa todo el ancho hasta el icono */
 :root {
-  --select-safe-zone: 5.5rem;
-  --select-safe-zone-long: 6rem;   /* Programa y textos largos */
-  --chevron-offset: 1.25rem;
+  --select-padding-x: 0.75rem;
+  --select-chevron-zone: 2rem;
+  --chevron-size: 1.15rem;
 }
 .input-enterprise {
   width: 100%;
@@ -49,18 +49,18 @@
   color: #1f2937;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
-/* Selects: Safe Zone + Truncado inteligente (solo cuando alcanza el límite) */
+/* Selects nativos: pr-8 (2rem) para el chevron; truncado solo al llegar al icono */
 select.input-enterprise {
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  padding-right: var(--select-safe-zone);
-  padding-left: 0.75rem;
+  padding-left: var(--select-padding-x);
+  padding-right: var(--select-chevron-zone);
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right var(--chevron-offset) center;
-  background-size: 1.15rem;
+  background-position: right 0.5rem center;
+  background-size: var(--chevron-size);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -116,9 +116,6 @@ select.input-enterprise {
   overflow-y: auto;
   z-index: 100;
 }
-.custom-select-dropdown:not(.dropdown-up) {
-  border-top: 2px solid rgba(57, 169, 0, 0.35);
-}
 .custom-select-dropdown.dropdown-up {
   top: auto;
   bottom: 100%;
@@ -136,26 +133,29 @@ select.input-enterprise {
   background: rgba(57, 169, 0, 0.1);
   color: #0a3a57;
 }
-.custom-select-wrapper { position: relative; width: 100%; }
+.custom-select-wrapper { position: relative; width: 100%; min-width: 0; }
+/* Flexbox: texto e icono en extremos; texto usa todo el ancho hasta el icono; truncado solo al llegar */
 .custom-select-trigger {
-  padding-right: var(--select-safe-zone);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  padding-left: var(--select-padding-x);
+  padding-right: 0.5rem;
   box-sizing: border-box;
-}
-.custom-select-trigger .shrink-0 {
-  position: absolute;
-  right: var(--chevron-offset);
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-}
-/* Truncado solo cuando el texto alcanza el límite del Safe Zone */
-.custom-select-trigger .truncate {
   min-width: 0;
-  max-width: calc(100% - var(--select-safe-zone));
+}
+.custom-select-trigger .truncate {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding-right: 0.75rem;
+  padding-right: 0.25rem;
+}
+.custom-select-trigger .shrink-0 {
+  flex-shrink: 0;
+  pointer-events: none;
 }
 
 /* Regla de oro 3: Ancho de tabla responsivo — min-width por columna para scroll horizontal legible */
@@ -168,9 +168,6 @@ select.input-enterprise {
   table-layout: fixed;
   min-width: 60rem;
   width: 100%;
-}
-.table-grupos tbody tr {
-  min-height: 2.75rem;
 }
 .table-grupos th,
 .table-grupos td {
@@ -191,30 +188,14 @@ select.input-enterprise {
 .table-grupos .col-modalidad { min-width: 7.5rem; }
 .table-grupos .col-lider { min-width: 9rem; }
 .table-grupos .col-acciones { min-width: 8rem; white-space: nowrap; }
-/* Acciones siempre visible al final con scroll horizontal */
-.table-grupos thead th.col-acciones {
-  position: sticky;
-  right: 0;
-  z-index: 2;
-  background: #f9fafb;
-  box-shadow: -4px 0 8px -2px rgba(0, 0, 0, 0.06);
-}
-.table-grupos tbody td.col-acciones {
-  position: sticky;
-  right: 0;
-  z-index: 1;
-  background: #fff;
-  box-shadow: -4px 0 8px -2px rgba(0, 0, 0, 0.06);
-}
-.table-grupos tbody tr.editando td.col-acciones {
-  background: #f9fafb;
-}
-.table-grupos tbody tr:hover td.col-acciones { background: #fff; }
-.table-grupos tbody tr.editando:hover td.col-acciones { background: #f9fafb; }
-.table-grupos .col-acciones .btn-editar-grupo,
-.table-grupos .col-acciones .acciones-edit { background: #fff; }
-.table-grupos tr.editando .col-acciones .acciones-edit { background: #f9fafb; }
-.table-grupos .col-acciones .btn-editar-grupo:hover { background: #f3f4f6; }
+/* Ancho mínimo por celda para área de lectura digna en pantallas pequeñas */
+.table-grupos td.col-numero { min-width: 5.5rem; }
+.table-grupos td.col-programa { min-width: 14rem; }
+.table-grupos td.col-nivel { min-width: 5.5rem; }
+.table-grupos td.col-jornada { min-width: 7rem; }
+.table-grupos td.col-modalidad { min-width: 7.5rem; }
+.table-grupos td.col-lider { min-width: 9rem; }
+.table-grupos td.col-acciones { min-width: 8rem; }
 .table-grupos .col-nivel,
 .table-grupos .col-jornada,
 .table-grupos .col-modalidad,
@@ -250,13 +231,17 @@ select.input-enterprise {
 }
 .tag-pill:last-child { margin-right: 0; }
 
-/* Fila en edición: mismo alto que la fila normal, sin solapamientos */
+/* Fila en edición: misma lógica que zonas — mismo padding en td, controles compactos (py-2) */
 .table-grupos tr.editando td {
   min-width: 0;
-  min-height: 4rem;
   overflow: hidden;
   vertical-align: middle;
   padding: 0.5rem 0.75rem;
+}
+.table-grupos tr.editando .custom-select-trigger,
+.table-grupos tr.editando .input-enterprise {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
 }
 .table-grupos tr.editando .cell-edit-wrap {
   min-width: 0;
@@ -272,12 +257,15 @@ select.input-enterprise {
 .table-grupos tr.editando .col-programa {
   padding-left: 2rem;
   overflow: visible;
+  display: flex;
+  align-items: center;
 }
 .table-grupos tr.editando .col-programa .cell-edit-wrap {
   max-width: 100%;
+  width: 100%;
 }
 .table-grupos tr.editando .col-programa select.input-enterprise {
-  padding-right: var(--select-safe-zone-long);
+  padding-right: var(--select-chevron-zone);
 }
 .table-grupos tr.editando .col-jornada,
 .table-grupos tr.editando .col-modalidad,
@@ -306,12 +294,21 @@ select.input-enterprise {
   -moz-appearance: textfield;
   appearance: textfield;
 }
-.table-grupos tr.editando .input-enterprise,
-.table-grupos tr.editando select.input-enterprise {
+.table-grupos tr.editando .input-enterprise {
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
   padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+}
+.table-grupos tr.editando select.input-enterprise {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  padding-left: var(--select-padding-x);
+  padding-right: var(--select-chevron-zone);
   font-size: 0.8125rem;
 }
 .table-grupos tr.editando .col-acciones {
@@ -322,31 +319,30 @@ select.input-enterprise {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
   flex-wrap: nowrap;
 }
-.table-grupos tr.editando .acciones-edit .btn-guardar-grupo,
-.table-grupos tr.editando .acciones-edit .btn-cancelar-grupo {
-  padding: 0.5rem 1rem;
-  min-width: 5.25rem;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  border-radius: 10px;
-  text-align: center;
-}
-.table-grupos tr.editando .btn-guardar-grupo {
+/* Botones icono: check (verde) y x (rojo) como en referencia */
+.table-grupos tr.editando .btn-icon-check {
   background: #39A900;
+  border: none;
   color: #fff;
-  border: 1px solid #39A900;
 }
-.table-grupos tr.editando .btn-guardar-grupo:hover {
+.table-grupos tr.editando .btn-icon-check:hover {
   background: #2d8000;
-  border-color: #2d8000;
 }
-.table-grupos tr.editando .btn-cancelar-grupo {
-  background: #fff;
-  color: #374151;
-  border: 1px solid #d1d5db;
+.table-grupos tr.editando .btn-icon-x {
+  background: #dc2626;
+  border: none;
+  color: #fff;
+}
+.table-grupos tr.editando .btn-icon-x:hover {
+  background: #b91c1c;
+}
+.table-grupos tr.editando .btn-icon-check:focus,
+.table-grupos tr.editando .btn-icon-x:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.15);
 }
 </style>
 

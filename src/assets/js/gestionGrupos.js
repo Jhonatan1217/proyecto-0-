@@ -3,14 +3,24 @@ let grupos = [];
 let programas = [];
 let lideres = [];
 
-async function apiRequest(accion, method = "GET", body = null) {
+async function apiRequest(accion, method = "GET", body = null, queryParams = null) {
     const config = {
         method,
         headers: { "Content-Type": "application/json" }
     };
     if (body) config.body = JSON.stringify(body);
 
-    const res = await fetch(`${API}?accion=${accion}`, config);
+    let url = `${API}?accion=${encodeURIComponent(accion)}`;
+    if (queryParams && typeof queryParams === 'object') {
+        const q = new URLSearchParams();
+        Object.keys(queryParams).forEach(k => {
+            if (queryParams[k] != null && String(queryParams[k]).trim() !== '')
+                q.set(k, queryParams[k]);
+        });
+        const qs = q.toString();
+        if (qs) url += '&' + qs;
+    }
+    const res = await fetch(url, config);
     return await res.json();
 }
 
@@ -46,10 +56,23 @@ async function cargarSelectores() {
 }
 
 /* =========================
-   LISTAR GRUPOS
+   LISTAR GRUPOS (con filtro y búsqueda)
 ========================= */
+function getFiltrosActuales() {
+    const buscador = document.getElementById("buscadorGrupo");
+    const filtroPrograma = document.getElementById("filtroPrograma");
+    return {
+        buscar: (buscador?.value ?? "").trim(),
+        id_programa: (filtroPrograma?.value ?? "").trim()
+    };
+}
+
 async function cargarGrupos() {
-    const response = await apiRequest("listar");
+    const filtros = getFiltrosActuales();
+    // #region agent log
+    fetch('http://127.0.0.1:7412/ingest/11627054-5f80-4415-9332-42cb7861975f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c7ead1'},body:JSON.stringify({sessionId:'c7ead1',location:'gestionGrupos.js:cargarGrupos',message:'listar request params',data:{buscar:filtros.buscar,id_programa:filtros.id_programa},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
+    // #endregion
+    const response = await apiRequest("listar", "GET", null, filtros);
     if (response.status === "success") {
         grupos = response.data;
         renderTabla(grupos);
@@ -171,12 +194,16 @@ function entrarModoEdicion(e) {
             <div class="cell-edit-wrap"><select class="cell-edit modalidad select-grupo input-enterprise w-full py-2.5 text-sm">${optsModalidad}</select></div>
         </td>
         <td class="col-lider">
-            <div class="cell-edit-wrap"><select class="cell-edit lider select-grupo input-enterprise w-full py-2.5 text-sm"><option value="">Seleccione líder</option>${optsLider}</select></div>
+            <div class="cell-edit-wrap"><select class="cell-edit lider select-grupo input-enterprise w-full py-2.5 text-sm">${optsLider}</select></div>
         </td>
         <td class="col-acciones text-right">
-            <div class="acciones-edit">
-                <button type="button" class="btn-guardar-grupo rounded-xl border font-medium text-sm py-2 px-3 transition">Guardar</button>
-                <button type="button" class="btn-cancelar-grupo btn-modal-secondary text-sm py-2 px-3">Cancelar</button>
+            <div class="acciones-edit flex items-center justify-end gap-1">
+                <button type="button" class="btn-guardar-grupo btn-icon-check p-2 rounded-lg transition" title="Guardar" aria-label="Guardar">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                </button>
+                <button type="button" class="btn-cancelar-grupo btn-icon-x p-2 rounded-lg transition" title="Cancelar" aria-label="Cancelar">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
             </div>
         </td>
     `;
@@ -232,7 +259,7 @@ function enhanceSelectsWithCustomDropdown() {
         if (arrowSib && (arrowSib.classList?.contains('pointer-events-none') || arrowSib.matches?.('svg.absolute'))) arrowSib.style.display = 'none';
 
         const trigger = document.createElement('div');
-        trigger.className = 'custom-select-trigger ' + (select.classList.contains('py-2.5') ? 'py-2.5 text-sm' : 'py-3') + ' w-full border border-gray-300 rounded-xl px-4 pr-10 bg-white text-gray-700 flex items-center justify-between cursor-pointer hover:border-gray-400 focus-within:ring-2 focus-within:ring-[#39A900]/20 focus-within:border-[#39A900]';
+        trigger.className = 'custom-select-trigger ' + (select.classList.contains('py-2.5') ? 'py-2.5 text-sm' : 'py-3') + ' w-full border border-gray-300 rounded-xl bg-white text-gray-700 cursor-pointer hover:border-gray-400 focus-within:ring-2 focus-within:ring-[#39A900]/20 focus-within:border-[#39A900]';
         trigger.setAttribute('tabindex', '0');
         trigger.setAttribute('aria-haspopup', 'listbox');
 
@@ -347,6 +374,20 @@ function togglerModal(show = true) {
 document.addEventListener("DOMContentLoaded", async () => {
     await cargarSelectores();
     await cargarGrupos();
+
+    const buscadorGrupo = document.getElementById("buscadorGrupo");
+    const filtroPrograma = document.getElementById("filtroPrograma");
+
+    let debounceTimer = null;
+    if (buscadorGrupo) {
+        buscadorGrupo.addEventListener("input", () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => cargarGrupos(), 300);
+        });
+    }
+    if (filtroPrograma) {
+        filtroPrograma.addEventListener("change", () => cargarGrupos());
+    }
 
     document.getElementById("btnAbrirModalGrupo")?.addEventListener("click", () => togglerModal(true));
     document.getElementById("btnCerrarModal")?.addEventListener("click", () => togglerModal(false));
