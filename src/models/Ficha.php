@@ -8,18 +8,36 @@ class Ficha {
         $this->conn = $db;
     }
 
-    // Función para listar todas las fichas con información relacionada
-    public function listar() {
+    // Función para listar fichas con filtro opcional por programa y búsqueda (número o nombre programa)
+    public function listar($buscar = '', $id_programa = '') {
         $sql = "SELECT f.*, 
+                       p.nombre_programa,
+                       p.nivel_formacion as nivel,
                        u.nombre_completo as nombre_lider,
                        u.tipo_documento as tipo_doc_lider,
                        u.numero_documento as num_doc_lider,
                        u.correo_electronico as correo_lider,
                        u.cargo as cargo_lider
                 FROM fichas f
+                LEFT JOIN programas p ON f.id_programa = p.id_programa
                 LEFT JOIN usuarios u ON f.id_lider_grupo = u.id_usuario
-                ORDER BY f.numero_ficha DESC";
+                WHERE 1=1";
+        $params = [];
+        if ($id_programa !== '') {
+            $sql .= " AND f.id_programa = :id_programa";
+            $params[':id_programa'] = $id_programa;
+        }
+        if ($buscar !== '') {
+            $sql .= " AND (CAST(f.numero_ficha AS CHAR) LIKE :buscar OR p.nombre_programa LIKE :nombre)";
+            $term = '%' . $buscar . '%';
+            $params[':buscar'] = $term;
+            $params[':nombre'] = $term;
+        }
+        $sql .= " ORDER BY f.numero_ficha DESC";
         $stmt = $this->conn->prepare($sql);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -79,7 +97,7 @@ class Ficha {
                        tipo_instructor,
                        id_area
                 FROM usuarios 
-                WHERE estado = 1 AND cargo = 'INSTRUCTOR'
+                WHERE estado = 1 AND UPPER(TRIM(cargo)) = 'INSTRUCTOR'
                 ORDER BY nombre_completo";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
@@ -87,7 +105,7 @@ class Ficha {
     }
 
     // Función para crear una nueva ficha
-    public function crear($numero_ficha, $jornada, $modalidad, $id_lider_grupo) {
+    public function crear($numero_ficha, $id_programa, $jornada, $modalidad, $id_lider_grupo) {
         // Verificar si ya existe una ficha con el mismo número
         $sqlCheck = "SELECT COUNT(*) as total FROM " . $this->table . " WHERE numero_ficha = :numero_ficha";
         $stmtCheck = $this->conn->prepare($sqlCheck);
@@ -101,7 +119,7 @@ class Ficha {
 
         // Verificar que el líder de grupo existe y es instructor
         $sqlCheckInstructor = "SELECT COUNT(*) as total FROM usuarios 
-                               WHERE id_usuario = :id_usuario AND cargo = 'INSTRUCTOR' AND estado = 1";
+                               WHERE id_usuario = :id_usuario AND UPPER(TRIM(cargo)) = 'INSTRUCTOR' AND estado = 1";
         $stmtCheckIns = $this->conn->prepare($sqlCheckInstructor);
         $stmtCheckIns->bindParam(':id_usuario', $id_lider_grupo);
         $stmtCheckIns->execute();
@@ -112,11 +130,12 @@ class Ficha {
         }
 
         $sql = "INSERT INTO " . $this->table . " 
-                (numero_ficha, jornada, modalidad, id_lider_grupo, estado) 
-                VALUES (:numero_ficha, :jornada, :modalidad, :id_lider_grupo, 1)";
+                (numero_ficha, id_programa, jornada, modalidad, id_lider_grupo, estado) 
+                VALUES (:numero_ficha, :id_programa, :jornada, :modalidad, :id_lider_grupo, 1)";
         
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':numero_ficha', $numero_ficha);
+        $stmt->bindParam(':id_programa', $id_programa);
         $stmt->bindParam(':jornada', $jornada);
         $stmt->bindParam(':modalidad', $modalidad);
         $stmt->bindParam(':id_lider_grupo', $id_lider_grupo);
@@ -126,7 +145,7 @@ class Ficha {
     }
 
     // Función para actualizar una ficha existente
-    public function actualizar($id_ficha, $numero_ficha, $jornada, $modalidad, $id_lider_grupo) {
+    public function actualizar($id_ficha, $numero_ficha, $id_programa, $jornada, $modalidad, $id_lider_grupo) {
         // Verificar si ya existe otra ficha con el mismo número (excluyendo la actual)
         $sqlCheck = "SELECT COUNT(*) as total FROM " . $this->table . " 
                      WHERE numero_ficha = :numero_ficha AND id_ficha != :id_ficha";
@@ -143,7 +162,7 @@ class Ficha {
         // Verificar que el líder de grupo existe y es instructor (si se proporciona)
         if ($id_lider_grupo) {
             $sqlCheckInstructor = "SELECT COUNT(*) as total FROM usuarios 
-                                   WHERE id_usuario = :id_usuario AND cargo = 'INSTRUCTOR' AND estado = 1";
+                                   WHERE id_usuario = :id_usuario AND UPPER(TRIM(cargo)) = 'INSTRUCTOR' AND estado = 1";
             $stmtCheckIns = $this->conn->prepare($sqlCheckInstructor);
             $stmtCheckIns->bindParam(':id_usuario', $id_lider_grupo);
             $stmtCheckIns->execute();
@@ -156,6 +175,7 @@ class Ficha {
 
         $sql = "UPDATE " . $this->table . " 
                 SET numero_ficha = :numero_ficha,
+                    id_programa = :id_programa,
                     jornada = :jornada,
                     modalidad = :modalidad,
                     id_lider_grupo = :id_lider_grupo
@@ -164,6 +184,7 @@ class Ficha {
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':id_ficha', $id_ficha);
         $stmt->bindParam(':numero_ficha', $numero_ficha);
+        $stmt->bindParam(':id_programa', $id_programa);
         $stmt->bindParam(':jornada', $jornada);
         $stmt->bindParam(':modalidad', $modalidad);
         $stmt->bindParam(':id_lider_grupo', $id_lider_grupo);
@@ -194,7 +215,7 @@ class Ficha {
     public function cambiarLider($id_ficha, $id_usuario) {
         // Verificar que el usuario existe y es instructor
         $sqlCheck = "SELECT COUNT(*) as total FROM usuarios 
-                     WHERE id_usuario = :id_usuario AND cargo = 'INSTRUCTOR' AND estado = 1";
+                     WHERE id_usuario = :id_usuario AND UPPER(TRIM(cargo)) = 'INSTRUCTOR' AND estado = 1";
         $stmtCheck = $this->conn->prepare($sqlCheck);
         $stmtCheck->bindParam(':id_usuario', $id_usuario);
         $stmtCheck->execute();
