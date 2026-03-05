@@ -78,7 +78,7 @@
                 Bienvenido
             </h1>
 
-            <form action="src/controllers/login_controller.php" method="POST" class="flex flex-col gap-6">
+            <form action="<?= defined('BASE_URL') ? BASE_URL : '' ?>src/controllers/login_controller.php" method="POST" class="flex flex-col gap-6">
 
                 <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-medium text-gray-700">Correo Electronico</label>

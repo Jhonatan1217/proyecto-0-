@@ -53,8 +53,6 @@
 
   async function apiPost(accion, payload) {
   const url = `${API_URL}?accion=${encodeURIComponent(accion)}`;
-  console.log("Enviando POST a:", url, "Payload:", payload); // DEBUG
-  
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -66,7 +64,6 @@
   });
   
   const response = await parseJsonOrThrow(res);
-  console.log("Respuesta del servidor:", response); // DEBUG
   return response;
 }
 
@@ -330,8 +327,6 @@
       if (!id) return;
 
       const nuevoEstado = sw.checked ? 1 : 0;
-
-      console.log("Cambio estado área:", { id, nuevoEstado }); // DEBUG
 
       // Si se va a DESHABILITAR el área, pedimos confirmación
       if (nuevoEstado === 0) {

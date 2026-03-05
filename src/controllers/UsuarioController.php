@@ -5,6 +5,9 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 header('Content-Type: application/json; charset=utf-8');
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../models/Usuario.php'; // Ajusta la ruta a tu modelo
 
@@ -264,6 +267,40 @@ try {
         case 'rolesDisponibles':
             $roles = $usuarioModel->listarRolesFuncionalesDisponibles();
             echo json_encode($roles);
+            break;
+
+        // ============================================================
+        // CAMBIAR CONTRASEÑA (perfil del usuario logueado)
+        // ============================================================
+        case 'cambiarContrasena':
+            $id_sesion = (int) ($_SESSION['usuario_id'] ?? 0);
+            $id_usuario = intval(inreq('id_usuario'));
+            $password_actual = trim((string) inreq('password_actual'));
+            $password_nueva = trim((string) inreq('password_nueva'));
+
+            if (!$id_sesion) {
+                echo json_encode(['error' => 'Debe iniciar sesión']);
+                break;
+            }
+            if (!$id_usuario || $id_usuario !== $id_sesion) {
+                echo json_encode(['error' => 'No puede cambiar la contraseña de otro usuario']);
+                break;
+            }
+            if (empty($password_actual)) {
+                echo json_encode(['error' => 'Debe ingresar la contraseña actual']);
+                break;
+            }
+            if (empty($password_nueva)) {
+                echo json_encode(['error' => 'Debe ingresar la nueva contraseña']);
+                break;
+            }
+
+            $resultado = $usuarioModel->cambiarContrasena($id_usuario, $password_actual, $password_nueva);
+            if ($resultado === true) {
+                echo json_encode(['success' => true, 'message' => 'Contraseña actualizada correctamente']);
+            } else {
+                echo json_encode(['error' => $resultado]);
+            }
             break;
 
         // ============================================================

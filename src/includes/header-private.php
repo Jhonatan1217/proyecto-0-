@@ -87,10 +87,48 @@ document.addEventListener("DOMContentLoaded", function () {
       justify-content: center;
       overflow: hidden;
     }
-    #modalSolicitarCambiosPerfil .select-perfil { cursor: pointer; }
-    #modalSolicitarCambiosPerfil .select-chevron { transition: transform 0.2s ease, color 0.15s ease; }
-    #modalSolicitarCambiosPerfil .select-perfil:focus + .select-chevron,
-    #modalSolicitarCambiosPerfil .select-perfil:hover + .select-chevron { color: #16a34a; }
+    /* Selects estilo grupos/usuarios para modal Solicitar cambios */
+    #modalSolicitarCambiosPerfil .select-perfil.input-enterprise {
+      width: 100%; min-width: 0; box-sizing: border-box;
+      padding-left: 0.75rem; padding-right: 2rem;
+      appearance: none; border-radius: 12px; border: 1px solid #d1d5db;
+      background: #fff; color: #1f2937;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    #modalSolicitarCambiosPerfil .select-perfil.input-enterprise:hover { border-color: #9ca3af; }
+    #modalSolicitarCambiosPerfil .select-perfil.input-enterprise:focus {
+      outline: none; border-color: #39A900; box-shadow: 0 0 0 3px rgba(57,169,0,0.2);
+    }
+    #modalSolicitarCambiosPerfil .custom-select-wrapper { position: relative; width: 100%; min-width: 0; }
+    #modalSolicitarCambiosPerfil .custom-select-trigger {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.25rem;
+      padding: 0.5rem 0.75rem; padding-right: 2rem; box-sizing: border-box; min-width: 0;
+      border-radius: 12px; border: 1px solid #d1d5db; background: #fff;
+      cursor: pointer; color: #374151; font-size: 0.875rem;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    #modalSolicitarCambiosPerfil .custom-select-trigger:hover { border-color: #9ca3af; }
+    #modalSolicitarCambiosPerfil .custom-select-trigger:focus-within { border-color: #39A900; box-shadow: 0 0 0 3px rgba(57,169,0,0.2); }
+    #modalSolicitarCambiosPerfil .custom-select-trigger .truncate { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #modalSolicitarCambiosPerfil .custom-select-dropdown {
+      position: absolute; left: 0; right: 0; top: 100%; margin-top: 8px;
+      border-radius: 12px; border: 1px solid #e5e7eb;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
+      background: white; max-height: 220px; overflow-y: auto; z-index: 100;
+    }
+    #modalSolicitarCambiosPerfil .custom-select-dropdown.dropdown-up {
+      top: auto; bottom: 100%; margin-top: 0; margin-bottom: 8px;
+      box-shadow: 0 -10px 25px -5px rgba(0,0,0,0.1), 0 -8px 10px -6px rgba(0,0,0,0.05);
+    }
+    #modalSolicitarCambiosPerfil .custom-select-dropdown .custom-option {
+      padding: 10px 14px; cursor: pointer; transition: background 0.15s;
+    }
+    #modalSolicitarCambiosPerfil .custom-select-dropdown .custom-option:hover { background: #f3f4f6; }
+    #modalSolicitarCambiosPerfil .custom-select-dropdown .custom-option.selected {
+      background: rgba(57, 169, 0, 0.1); color: #0a3a57;
+    }
+    #modalSolicitarCambiosPerfil .modal-perfil-footer { flex-shrink: 0; overflow: visible; }
+    #modalSolicitarCambiosPerfil .modal-perfil-footer .btn-enviar-solicitud { visibility: visible !important; opacity: 1 !important; }
     #academicos-submenu {
       padding-left: 1.5rem !important;
     }
@@ -214,7 +252,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 <!-- Modales del widget de perfil -->
 <div id="modalVerPerfil" class="modal-perfil fixed inset-0 hidden items-center justify-center p-4 bg-black/40" aria-modal="true" role="dialog" aria-labelledby="modalVerPerfilTitle">
-  <div class="relative z-10 bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
+  <div class="relative z-10 bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-hidden flex flex-col">
     <div class="modal-perfil-header flex items-center justify-between gap-4 p-5 border-b border-gray-200">
       <div class="min-w-0 flex-1">
         <h2 id="modalVerPerfilTitle" class="modal-perfil-titulo text-gray-900">Perfil del usuario</h2>
@@ -238,8 +276,8 @@ document.addEventListener("DOMContentLoaded", function () {
   </div>
 </div>
 
-<div id="modalSolicitarCambiosPerfil" class="modal-perfil fixed inset-0 hidden items-center justify-center pt-12 px-4 pb-4 sm:pt-16 sm:px-6 bg-black/40" aria-modal="true" role="dialog" aria-labelledby="modalSolicitarCambiosTitle">
-  <div class="relative z-10 bg-white rounded-2xl shadow-xl max-w-md w-full h-[85vh] max-h-[85vh] overflow-hidden flex flex-col">
+<div id="modalSolicitarCambiosPerfil" class="modal-perfil fixed inset-0 hidden items-center justify-center p-6 sm:p-8 bg-black/40" aria-modal="true" role="dialog" aria-labelledby="modalSolicitarCambiosTitle">
+  <div class="relative z-10 bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[55vh] sm:max-h-[60vh] overflow-hidden flex flex-col pt-6">
     <div class="modal-perfil-header flex items-center justify-between gap-4 px-5 pt-5 pb-0">
       <h2 id="modalSolicitarCambiosTitle" class="modal-perfil-titulo text-gray-900 min-w-0 flex-1">Solicitar cambios de perfil</h2>
       <button type="button" data-close="modalSolicitarCambiosPerfil" class="btn-cerrar-perfil shrink-0 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition flex items-center justify-center" aria-label="Cerrar"><img src="<?= BASE_URL ?>src/assets/img/icons/Acction/x.svg" alt="" class="w-5 h-5" /></button>
@@ -247,11 +285,11 @@ document.addEventListener("DOMContentLoaded", function () {
     <p class="px-5 pt-1 pb-2 text-sm text-gray-500">Los cambios serán enviados al Administrador para su aprobación.</p>
     <form id="formSolicitarCambiosPerfil" class="p-5 overflow-y-auto flex-1 min-h-0 space-y-4">
       <div class="border-t border-gray-200 pt-4 -mt-1"><label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label><input type="text" name="nombre_completo" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none" /></div>
-      <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo de documento</label><div class="relative"><select name="tipo_documento" class="select-perfil w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none appearance-none bg-white"><option value="">Seleccione tipo de documento</option><option value="CC">Cédula de Ciudadanía</option><option value="CE">Cédula de Extranjería</option><option value="PASAPORTE">Pasaporte</option></select><span class="select-chevron pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></span></div></div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo de documento</label><div class="relative"><select name="tipo_documento" class="select-perfil input-enterprise py-2.5 text-sm pr-10 appearance-none cursor-pointer"><option value="">Seleccione tipo de documento</option><option value="CC">Cédula de Ciudadanía</option><option value="CE">Cédula de Extranjería</option><option value="PASAPORTE">Pasaporte</option></select></div></div>
       <div><label class="block text-sm font-medium text-gray-700 mb-1">Número de documento</label><input type="text" name="numero_documento" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none" /></div>
       <div><label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label><input type="email" name="correo_electronico" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none" /></div>
-      <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo instructor</label><div class="relative"><select name="tipo_instructor" class="select-perfil w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none appearance-none bg-white"><option value="">Seleccione tipo instructor</option><option value="Técnico">Técnico</option><option value="Transversal">Transversal</option></select><span class="select-chevron pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></span></div></div>
-      <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo contrato</label><div class="relative"><select name="tipo_contrato" class="select-perfil w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none appearance-none bg-white"><option value="">Seleccione tipo contrato</option><option value="Planta">Planta</option><option value="Contratista">Contratista</option></select><span class="select-chevron pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></span></div></div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo instructor</label><div class="relative"><select name="tipo_instructor" class="select-perfil input-enterprise py-2.5 text-sm pr-10 appearance-none cursor-pointer"><option value="">Seleccione tipo instructor</option><option value="Técnico">Técnico</option><option value="Transversal">Transversal</option></select></div></div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo contrato</label><div class="relative"><select name="tipo_contrato" class="select-perfil input-enterprise py-2.5 text-sm pr-10 appearance-none cursor-pointer"><option value="">Seleccione tipo contrato</option><option value="Planta">Planta</option><option value="Contratista">Contratista</option></select></div></div>
       <div class="pt-3 border-t border-gray-200">
         <p class="text-sm font-semibold text-gray-700 mb-2">Seguridad</p>
         <button type="button" id="btnAbrirCambiarContrasena" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 transition focus:ring-2 focus:ring-green-600/30 outline-none">
@@ -262,13 +300,13 @@ document.addEventListener("DOMContentLoaded", function () {
     </form>
     <div class="modal-perfil-footer flex justify-end gap-3 p-5 border-t border-gray-200 bg-white shrink-0">
       <button type="button" data-close="modalSolicitarCambiosPerfil" class="px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition">Cancelar</button>
-      <button type="submit" form="formSolicitarCambiosPerfil" class="px-5 py-2.5 rounded-lg bg-[#1a2e3b] text-white text-sm font-medium hover:bg-[#253d4d] transition shadow-sm">Enviar Solicitud</button>
+      <button type="submit" form="formSolicitarCambiosPerfil" class="btn-enviar-solicitud px-5 py-2.5 rounded-lg bg-[#0a3a57] text-white text-sm font-semibold hover:bg-[#00304D] transition border-0 shadow-sm">Enviar Solicitud</button>
     </div>
   </div>
 </div>
 
 <div id="modalCambiarContrasena" class="modal-perfil fixed inset-0 hidden items-center justify-center p-4 bg-black/40" aria-modal="true" role="dialog" aria-labelledby="modalCambiarContrasenaTitle">
-  <div class="relative z-10 bg-white rounded-2xl shadow-xl max-w-md w-full p-6 flex flex-col">
+  <div class="relative z-10 bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-6 flex flex-col">
     <div class="modal-perfil-header flex items-center justify-between gap-4 pb-4 border-b border-gray-200 mb-4">
       <h2 id="modalCambiarContrasenaTitle" class="modal-perfil-titulo text-xl font-bold text-gray-900">Cambiar contraseña</h2>
       <button type="button" data-close="modalCambiarContrasena" class="btn-cerrar-perfil shrink-0 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition flex items-center justify-center" aria-label="Cerrar"><img src="<?= BASE_URL ?>src/assets/img/icons/Acction/x.svg" alt="" class="w-5 h-5" /></button>
@@ -298,7 +336,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 <!-- Modal confirmación cerrar sesión -->
 <div id="modalCerrarSesion" class="modal-perfil fixed inset-0 hidden items-center justify-center p-4 bg-black/40" aria-modal="true" role="dialog" aria-labelledby="modalCerrarSesionTitle">
-  <div class="relative z-10 bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 flex flex-col items-center text-center">
+  <div class="relative z-10 bg-white rounded-2xl shadow-xl max-w-sm w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-6 flex flex-col items-center text-center">
     <img src="<?= BASE_URL ?>src/assets/img/triangle-alert.svg" alt="" class="w-14 h-14 mb-4 shrink-0" aria-hidden="true" />
     <h2 id="modalCerrarSesionTitle" class="modal-perfil-titulo text-gray-900 mb-2">Cerrar sesión</h2>
     <p class="text-sm text-gray-600 mb-6">¿Está seguro que quiere salir?</p>
@@ -344,10 +382,6 @@ window.BASE_URL = <?= json_encode(BASE_URL) ?>;
         <a href="<?= BASE_URL ?>index.php?page=src/views/gestionTrimestres">Trimestres</a>
       </li>
 
-      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/user-star.svg" alt="Mi perfil" class="w-5 h-5">
-        <a href="<?= BASE_URL ?>index.php?page=gestion_perfil">Mi perfil</a>
-      </li>
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/users.svg" alt="Icono de Usuarios">
         <a href="<?= BASE_URL ?>index.php?page=gestionUsuarios">Usuarios</a>

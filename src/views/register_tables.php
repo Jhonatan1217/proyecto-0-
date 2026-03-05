@@ -825,8 +825,6 @@ if (isset($conn)) {
           const progVal = selProg.value;
           let hayCoincidencias = false;
 
-          console.log('📋 Programa seleccionado:', progVal);
-
           for (const opt of selComp.options) {
             if (opt.value === "") {
               // Placeholder siempre visible
@@ -839,13 +837,6 @@ if (isset($conn)) {
             const show = progVal !== "" && (String(optProg) === String(progVal));
 
             if (show) hayCoincidencias = true;
-
-            console.log(
-              '  Competencia:',
-              (opt.textContent || '').trim(),
-              '| data-programa =', optProg,
-              '| coincide:', show
-            );
 
             opt.hidden = !show;
             opt.disabled = !show;
@@ -930,10 +921,23 @@ if (isset($conn)) {
 
         function abrirModalRaes() {
           modalRaes.classList.remove('hidden');
+          modalRaes.style.display = '';
+          modalRaes.style.pointerEvents = '';
+          modalRaes.style.visibility = '';
+          modalRaes.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach((el) => { el.style.pointerEvents = ''; });
         }
 
         function cerrarModalRaes() {
+          const activeEl = document.activeElement;
+          if (activeEl && modalRaes.contains(activeEl)) activeEl.blur();
           modalRaes.classList.add('hidden');
+          modalRaes.classList.remove('flex', 'block', 'items-center', 'justify-center');
+          modalRaes.style.display = 'none';
+          modalRaes.style.pointerEvents = 'none';
+          modalRaes.style.visibility = 'hidden';
+          modalRaes.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach((el) => { el.style.pointerEvents = 'none'; });
+          document.body.style.overflow = '';
+          document.body.classList.remove('overflow-hidden');
         }
 
         function contarSeleccionadas() {

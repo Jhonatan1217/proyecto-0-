@@ -74,6 +74,12 @@ if (isset($_SESSION['usuario_id']) && in_array($page, $public_pages)) {
     exit;
 }
 
+// Página "Mi perfil" eliminada: redirigir a la vista por defecto
+if ($page === 'gestion_perfil') {
+    header("Location: index.php?page=$private_default");
+    exit;
+}
+
 /* =========================
    CONSTANTES BASE
 ========================= */
