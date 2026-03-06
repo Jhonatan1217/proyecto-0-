@@ -390,13 +390,11 @@ select.input-enterprise {
         <p class="text-sm text-gray-500">Lista de todos los grupos registrados</p>
       </div>
 
-      <?php if ($cargo != 'INSTRUCTOR'): ?>
-        <button id="btnAbrirModalGrupo"
-          class="w-full md:w-auto bg-[#0a3a57] hover:bg-[#00304D] active:scale-95 transition
-                text-white px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-sm">
-          <span>Nuevo Grupo</span>
-        </button>
-        <?php endif; ?>
+      <button id="btnAbrirModalGrupo"
+        class="w-full md:w-auto bg-[#0a3a57] hover:bg-[#00304D] active:scale-95 transition
+               text-white px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-sm">
+        <span>Nuevo Grupo</span>
+      </button>
     </div>
 
     <!-- Filtros -->
@@ -457,9 +455,7 @@ select.input-enterprise {
             <th class="font-medium col-jornada">Jornada</th>
             <th class="font-medium col-modalidad">Modalidad</th>
             <th class="font-medium col-lider">Líder</th>
-            <?php if (($_SESSION['usuario_cargo'] ?? '') !== 'INSTRUCTOR'): ?>
-              <th class="font-medium text-right col-acciones">Acciones</th>
-            <?php endif; ?>
+            <th class="font-medium text-right col-acciones">Acciones</th>
           </tr>
         </thead>
         <tbody id="tbodyGrupos"
@@ -582,6 +578,5 @@ select.input-enterprise {
 <script>
 window.API_FICHA = "<?= BASE_URL ?>src/controllers/fichaController.php";
 window.BASE_GRUPOS = "<?= BASE_URL ?>";
-window.USER_CARGO = "<?= $_SESSION['usuario_cargo'] ?? '' ?>";
 </script>
 <script src="<?= BASE_URL ?>src/assets/js/gestionGrupos.js"></script>

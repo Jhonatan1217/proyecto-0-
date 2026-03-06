@@ -223,6 +223,21 @@ function abrirModal(id) {
     modal.classList.add('flex');
     modal.style.display = "flex";
     modal.style.zIndex = "60";
+    document.body.style.overflow = 'hidden';
+    // Evitar que el wheel dispare scroll en la tabla de atrás: capturar wheel en el overlay
+    if (!modal._wheelCapture) {
+        modal._wheelCapture = function (e) {
+            var box = modal.querySelector('.modal-usuario-box');
+            var scrollable = box ? (box.querySelector('.modal-usuario-body') || box.querySelector('.flex-1.overflow-y-auto') || box.querySelector('[class*="overflow-y-auto"]')) : null;
+            var target = e.target;
+            if (scrollable && (scrollable === target || scrollable.contains(target))) {
+                scrollable.scrollTop += e.deltaY;
+            }
+            e.preventDefault();
+            e.stopPropagation();
+        };
+        modal.addEventListener('wheel', modal._wheelCapture, { passive: false });
+    }
 }
 
 function cerrarModal(id) {
@@ -232,6 +247,10 @@ function cerrarModal(id) {
     modal.classList.remove('flex');
     modal.style.display = "none";
     modal.style.zIndex = "50";
+    var anyOpen = document.querySelector('#modalNuevoUsuario.flex, #modalEditarUsuario.flex, #modalVerUsuario.flex');
+    if (!anyOpen) {
+        document.body.style.overflow = '';
+    }
 }
 
 function alternarCamposCargo(cargo, contenedorModal) {
@@ -633,12 +652,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const cargo = datos.cargo || '';
             const cbTrim = form.querySelector('#rol_trimestralizacion_editar');
             const teniaRol = form.dataset.teniaRolTrimestralizacion === '1';
-            if (String(cargo).toLowerCase().includes('instructor') && idRolTrimestralizacion && idUsuario) {
+            if (String(cargo).toLowerCase().includes('instructor') && idRolTrimestralizacion && idUsuario && (window.USUARIO_ID || 0) > 0) {
                 if (cbTrim?.checked && !teniaRol) {
                     const rRol = await apiRequest("asignarRol", "POST", {
                         id_usuario: idUsuario,
                         id_rol: idRolTrimestralizacion,
-                        asignado_por: window.USUARIO_ID || 0
+                        asignado_por: window.USUARIO_ID
                     });
                     if (!rRol.success) toast(rRol.error || "Error al asignar rol", "error");
                 } else if (!cbTrim?.checked && teniaRol) {

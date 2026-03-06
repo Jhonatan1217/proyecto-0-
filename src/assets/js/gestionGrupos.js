@@ -1,5 +1,4 @@
 const API = window.API_FICHA;
-const USER_CARGO = (window.USER_CARGO || "").trim().toUpperCase();
 let grupos = [];
 let programas = [];
 let lideres = [];
@@ -109,94 +108,43 @@ function renderTabla(data) {
     const fmtModalidad = (m) => { if (!m) return ''; const x = String(m).toUpperCase(); return x === 'A DISTANCIA' ? 'A Distancia' : (m.charAt(0).toUpperCase() + m.slice(1).toLowerCase()); };
 
     data.forEach(g => {
-    const activo = String(g.estado ?? 1) === "1";
-
-    const tr = document.createElement("tr");
-    tr.className = "border-b hover:bg-gray-50 transition";
-    tr.dataset.id = g.id_ficha ?? "";
-
-    const programa = (g.nombre_programa ?? '').trim();
-    const programaTitle = programa.replace(/"/g, '&quot;');
-    const nivel = String(g.nivel ?? '').trim().toUpperCase();
-    const jornada = fmtJornada(g.jornada);
-    const modalidad = fmtModalidad(g.modalidad);
-    const lider = (g.nombre_lider ?? '').trim().toUpperCase();
-
-    let accionesHTML = "";
-
-if (USER_CARGO !== "INSTRUCTOR") {
-        accionesHTML = `
-            <button type="button"
-                class="btn-editar-grupo p-2 border rounded-lg hover:bg-gray-50 transition text-gray-600 hover:text-[#39A900]"
-                title="Editar">
-                <span class="inline-block w-5 h-5">${ICON_PENCIL_SVG}</span>
-            </button>
-
-            <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox"
-                    class="sr-only peer switch-estado-grupo"
-                    ${activo ? "checked" : ""}
-                    data-id="${g.id_ficha ?? ''}">
-
-                <div class="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-[#39A900] transition"></div>
-
-                <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition peer-checked:translate-x-5"></div>
-            </label>
+        const activo = String(g.estado ?? 1) === "1";
+        const tr = document.createElement("tr");
+        tr.className = "border-b hover:bg-gray-50 transition";
+        tr.dataset.id = g.id_ficha ?? "";
+        const programa = (g.nombre_programa ?? '').trim();
+        const programaTitle = programa.replace(/"/g, '&quot;');
+        const nivel = String(g.nivel ?? '').trim().toUpperCase();
+        const jornada = fmtJornada(g.jornada);
+        const modalidad = fmtModalidad(g.modalidad);
+        const lider = (g.nombre_lider ?? '').trim().toUpperCase();
+        tr.innerHTML = `
+            <td class="col-numero"><span class="cell-numero">${g.numero_ficha ?? ''}</span></td>
+            <td class="col-programa"><span class="cell-programa cell-programa-wrap" title="${programaTitle}">${programa || '—'}</span></td>
+            <td class="col-nivel"><span class="cell-nivel cell-nivel-tag tag-pill">${nivel || '—'}</span></td>
+            <td class="col-jornada"><span class="cell-jornada tag-pill">${jornada || '—'}</span></td>
+            <td class="col-modalidad"><span class="cell-modalidad tag-pill">${modalidad || '—'}</span></td>
+            <td class="col-lider"><span class="cell-lider cell-lider-wrap tag-pill">${lider || '—'}</span></td>
+            <td class="col-acciones text-right">
+                <div class="flex justify-end items-center gap-3 acciones-grupo">
+                    <button type="button" class="btn-editar-grupo p-2 border rounded-lg hover:bg-gray-50 transition text-gray-600 hover:text-[#39A900]" title="Editar">
+                        <span class="inline-block w-5 h-5">${ICON_PENCIL_SVG}</span>
+                    </button>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" class="sr-only peer switch-estado-grupo" ${activo ? "checked" : ""} data-id="${g.id_ficha ?? ''}">
+                        <div class="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-[#39A900] transition"></div>
+                        <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition peer-checked:translate-x-5"></div>
+                    </label>
+                </div>
+            </td>
         `;
-    }
-
-    tr.innerHTML = `
-        <td class="col-numero">
-            <span class="cell-numero">${g.numero_ficha ?? ''}</span>
-        </td>
-
-        <td class="col-programa">
-            <span class="cell-programa cell-programa-wrap" title="${programaTitle}">
-                ${programa || '—'}
-            </span>
-        </td>
-
-        <td class="col-nivel">
-            <span class="cell-nivel cell-nivel-tag tag-pill">
-                ${nivel || '—'}
-            </span>
-        </td>
-
-        <td class="col-jornada">
-            <span class="cell-jornada tag-pill">
-                ${jornada || '—'}
-            </span>
-        </td>
-
-        <td class="col-modalidad">
-            <span class="cell-modalidad tag-pill">
-                ${modalidad || '—'}
-            </span>
-        </td>
-
-        <td class="col-lider">
-            <span class="cell-lider cell-lider-wrap tag-pill">
-                ${lider || '—'}
-            </span>
-        </td>
-
-        <td class="col-acciones text-right">
-            <div class="flex justify-end items-center gap-3 acciones-grupo">
-                ${accionesHTML}
-            </div>
-        </td>
-    `;
-
-    tbody.appendChild(tr);
-});
+        tbody.appendChild(tr);
+    });
 
     bindEventosTabla();
 }
 
 function bindEventosTabla() {
-
-     if (USER_CARGO && USER_CARGO.toUpperCase() === "INSTRUCTOR") return;
-
     const tbody = document.getElementById("tbodyGrupos");
     if (!tbody) return;
 
