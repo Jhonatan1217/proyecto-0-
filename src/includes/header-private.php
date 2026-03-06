@@ -349,6 +349,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 <script>
 window.API_USUARIO = "<?= BASE_URL ?>src/controllers/UsuarioController.php";
+window.API_SOLICITUD = "<?= BASE_URL ?>src/controllers/SolicitudController.php";
 window.USUARIO_ID = <?= json_encode((int)($_SESSION['usuario_id'] ?? 0)) ?>;
 window.BASE_URL = <?= json_encode(BASE_URL) ?>;
 </script>
