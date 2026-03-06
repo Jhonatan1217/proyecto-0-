@@ -315,7 +315,7 @@ document.addEventListener("DOMContentLoaded", function () {
       <div class="rounded-full flex items-center justify-center mb-3 shrink-0" style="background-color: #BFBFBF; width: 32px; height: 32px;">
         <img src="<?= BASE_URL ?>src/assets/img/icons/Security/Shield-Check.svg" alt="" class="w-5 h-5" style="width: 20px; height: 20px;" />
       </div>
-      <p class="modal-perfil-subtitulo text-gray-500 mb-5">Tu correo fue verificado correctamente. Ahora ingresa tu nueva contraseña.</p>
+      <p class="modal-perfil-subtitulo text-gray-500 mb-5">Ingresa tu nueva contraseña.</p>
     </div>
     <div class="mx-auto w-full max-w-sm">
     <form id="formCambiarContrasena" class="space-y-4 w-full">
