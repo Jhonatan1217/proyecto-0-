@@ -159,15 +159,25 @@ select.input-enterprise {
 }
 
 /* Regla de oro 3: Ancho de tabla responsivo — min-width por columna para scroll horizontal legible */
+/* Máximo 5 filas visibles, resto con scroll vertical */
 .table-grupos-wrap {
   overflow-x: auto;
+  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   width: 100%;
+  max-height: calc(5 * 71px + 2.75rem);
 }
 .table-grupos {
   table-layout: fixed;
   min-width: 60rem;
   width: 100%;
+}
+.table-grupos thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f9fafb;
+  box-shadow: 0 1px 0 0 #e5e7eb;
 }
 .table-grupos th,
 .table-grupos td {

@@ -96,6 +96,29 @@
   margin-bottom: 0.375rem;
 }
 
+/* Tabla usuarios: máximo 5 filas visibles (mismo alto que tabla grupos), resto con scroll vertical */
+.table-usuarios-wrap {
+  overflow-x: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  max-height: calc(5 * 71px + 2.75rem);
+}
+.table-usuarios-wrap table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f9fafb;
+  box-shadow: 0 1px 0 0 #e5e7eb;
+}
+.table-usuarios-wrap table tbody tr {
+  height: 71px;
+}
+.table-usuarios-wrap table tbody td {
+  height: 71px;
+  box-sizing: border-box;
+  vertical-align: middle;
+}
+
 /* Panel desplegable personalizado */
 .custom-select-dropdown {
   position: absolute;
@@ -266,8 +289,8 @@
       <span class="alert-error-text"></span>
     </div>
 
-    <!-- Tabla -->
-    <div class="overflow-x-auto">
+    <!-- Tabla: máximo 5 filas visibles, scroll para el resto -->
+    <div class="overflow-x-auto table-usuarios-wrap">
       <table class="w-full text-left">
         <thead class="bg-gray-50 border-b border-gray-200 text-sm text-gray-600">
           <tr>
