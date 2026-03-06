@@ -67,9 +67,11 @@
                 <div class="flex flex-col md:flex-row gap-4 md:items-end">
 
                     <!-- Botón limpiar -->
-                    <button id="clearFilters" class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-lg text-sm font-semibold transition-colors duration-200 whitespace-nowrap h-fit">
-                        Limpiar Filtros
-                    </button>
+                    <?php if (($_SESSION['usuario_cargo'] ?? '') !== 'INSTRUCTOR'): ?>
+                        <button id="clearFilters" class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-lg text-sm font-semibold transition-colors duration-200 whitespace-nowrap h-fit">
+                            Limpiar Filtros
+                        </button>
+                     <?php endif; ?>
 
                     <!-- Contador -->
                     <div class="flex flex-col gap-1 text-right">

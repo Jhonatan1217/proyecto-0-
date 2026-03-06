@@ -1,3 +1,12 @@
+<?php
+$cargo = $_SESSION['cargo'] ?? '';
+
+if ($cargo === 'INSTRUCTOR') {
+    header("Location: index.php?page=register_tables");
+    exit;
+}
+?>
+
 <?php /* views/grupos.php */ ?>
 <?php if(!defined('BASE_URL')) { 
   $base = '/senlock/';
