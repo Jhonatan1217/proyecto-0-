@@ -25,9 +25,6 @@ if (!window.TRIMESTRALIZACION_INIT) {
     }
 
     function validarFormularioHorario(form, overrideDia = null) {
-      const modalidad = (form.querySelector("[name='modalidad']")?.value || "").trim().toLowerCase();
-      const esPresencial = modalidad === "presencial" || modalidad === "";
-
       const zona = form.querySelector("[name='zona']").value.trim();
 
       let areaField = form.querySelector("[name='area']");
@@ -40,7 +37,6 @@ if (!window.TRIMESTRALIZACION_INIT) {
         }
       }
 
-      const nivel = form.querySelector("[name='nivel_ficha']").value.trim();
       const numeroFicha = form.querySelector("[name='numero_ficha']").value.trim();
       const instructor = form.querySelector("[name='nombre_instructor']").value.trim();
 
@@ -59,9 +55,7 @@ if (!window.TRIMESTRALIZACION_INIT) {
       const idRaeField = form.querySelector("[name='id_rae']");
       const id_rae = idRaeField ? idRaeField.value.trim() : "";
 
-      const campos = esPresencial
-        ? [zona, nivel, numeroFicha, instructor, dia, horaInicio, horaFin, id_competencia]
-        : [nivel, numeroFicha, instructor, dia, horaInicio, horaFin, id_competencia];
+      const campos = [zona, numeroFicha, instructor, dia, horaInicio, horaFin, id_competencia];
       const vacios = campos.filter((v) => v === "").length;
 
       if (vacios === campos.length) {
@@ -77,21 +71,16 @@ if (!window.TRIMESTRALIZACION_INIT) {
         return { ok: false };
       }
 
-      if (esPresencial && !zona) {
+      if (!zona) {
         Toast.fire({ icon: "warning", title: "Seleccione la zona" });
         return { ok: false };
       }
 
-      if (esPresencial && !id_area) {
+      if (!id_area) {
         Toast.fire({
           icon: "warning",
           title: "No se identificó el área. Recarga la página o seleccione un área válida."
         });
-        return { ok: false };
-      }
-
-      if (!nivel) {
-        Toast.fire({ icon: "warning", title: "Seleccione el nivel de la ficha" });
         return { ok: false };
       }
 
@@ -145,7 +134,6 @@ if (!window.TRIMESTRALIZACION_INIT) {
         ok: true,
         zona,
         id_area,
-        nivel,
         numeroFicha,
         instructor,
         dia,
