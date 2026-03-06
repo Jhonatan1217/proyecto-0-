@@ -146,6 +146,9 @@ if (isset($conn)) {
             focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none
             transition-all duration-200 cursor-pointer pr-10">
             <option value="" class="text-[#00324D]" selected hidden>SELECCIONE LA MODALIDAD</option>
+            <option value="presencial"> Presencial </option>
+            <option value="virtual"> Virtual </option>
+            <option value="mixto"> Mixta </option>
           </select>
           <img 
             src="<?= BASE_URL ?>src/assets/img/chevron-down.svg" 
@@ -197,10 +200,18 @@ if (isset($conn)) {
           <img 
             src="<?= BASE_URL ?>src/assets/img/chevron-down.svg" 
             alt="arrow" 
-            class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70"
-          />
+            class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70"/>
         </div>
       </div>
+    </div>
+
+
+
+
+    <!-- Input para filtrar por grupo -->
+    <div id="contenedorGrupoFiltro" class="relative w-full sm:w-auto hidden">
+      <label for="inputGrupoTexto" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Filtrar por grupo</label>
+      <input type="number" id="inputGrupoTexto" placeholder="Ingrese el número del grupo" class="w-full sm:w-64 lg:w-72 xl:w-80 2xl:w-96 px-4 py-2.5 border border-gray-300 rounded-lg text-sm sm:text-base text-slate-700 font-semibold tracking-wider bg-white shadow-sm hover:bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all duration-200">
     </div>
 
 
@@ -215,7 +226,7 @@ if (isset($conn)) {
          text-white font-medium tracking-wider
          text-sm sm:text-base
          shadow-md hover:shadow-lg
-         hover:bg-[#004a70]
+         hover:bg-[#00304D]
          active:scale-[0.98]
          transition-all duration-200
          focus:outline-none focus:ring-2 focus:ring-[#00324d]/20">
@@ -258,8 +269,7 @@ if (isset($conn)) {
           viewBox="0 0 24 24"
           fill="none"
           class="mb-4 block text-[#00324D] mx-auto"
-          xmlns="http://www.w3.org/2000/svg"
-        >
+          xmlns="http://www.w3.org/2000/svg">
           <rect x="3" y="4" width="18" height="17" rx="2" ry="2" stroke="currentColor" stroke-width="1.5"/>
           <line x1="16" y1="2.5" x2="16" y2="5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           <line x1="8" y1="2.5" x2="8" y2="5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>

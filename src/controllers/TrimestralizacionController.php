@@ -126,12 +126,85 @@ if (!$tablaHorario) {
 
 switch ($accion) {
 
+
+// ============================================================
+// LISTAR POR GRUPO (Virtual / Mixto)
+// ============================================================
+case 'listarPorGrupo':
+
+    $numero_ficha = $_GET['numero_ficha'] ?? null;
+
+    if (!$numero_ficha) {
+        echo json_encode(['status' => 'error', 'mensaje' => 'Falta numero_ficha']);
+        exit;
+    }
+
+    try {
+        $joinInstructores = "LEFT JOIN instructores i ON h.id_instructor = i.id_instructor";
+        $selectInstructores = "i.id_instructor, i.nombre_instructor, i.tipo_instructor";
+
+        if (!hasTable($conn, 'instructores')) {
+            $joinInstructores = "LEFT JOIN usuarios i ON h.id_instructor = i.id_usuario";
+            $selectInstructores = "i.id_usuario AS id_instructor, i.nombre_completo AS nombre_instructor, i.tipo_instructor";
+        }
+
+        $sql = "
+            SELECT 
+                h.id_horario,
+                h.modalidad,
+                h.dia,
+                h.hora_inicio,
+                h.hora_fin,
+                h.id_zona,
+                h.id_area,
+                h.numero_trimestre,
+                h.id_programa,
+                h.id_competencia,
+                f.numero_ficha,
+                p.nombre_programa,
+                {$selectInstructores},
+                c.nombre_competencia,
+                r.id_rae,
+                r.descripcion AS descripcion_rae,
+                h.estado
+            FROM {$tablaHorario} h
+            LEFT JOIN fichas f ON h.id_ficha = f.id_ficha
+            LEFT JOIN programas p ON h.id_programa = p.id_programa
+            {$joinInstructores}
+            LEFT JOIN competencias c ON h.id_competencia = c.id_competencia
+            LEFT JOIN raes r ON FIND_IN_SET(r.id_rae, h.id_rae)
+            WHERE f.numero_ficha = :numero_ficha
+              AND h.estado = 1
+              AND h.modalidad IN ('VIRTUAL','MIXTO')
+            ORDER BY 
+                FIELD(UPPER(h.dia),'LUNES','MARTES','MIERCOLES','JUEVES','VIERNES','SABADO'),
+                h.hora_inicio
+        ";
+
+        $stmt = $conn->prepare($sql);
+        $stmt->bindValue(':numero_ficha', $numero_ficha);
+        $stmt->execute();
+
+        $registros = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode([
+            'status' => 'success',
+            'data' => $registros ?: []
+        ]);
+        exit;
+
+    } catch (PDOException $e) {
+        echo json_encode(['status' => 'error', 'mensaje' => 'Error al listar por grupo: ' . $e->getMessage()]);
+        exit;
+    }
+
     // ============================================================
     // LISTAR POR ZONA (+ opcional AREA)
     // ============================================================
     case 'listar':
         $id_zona = $_GET['id_zona'] ?? null;
         $id_area_supplied = $_GET['id_area'] ?? null;
+        $modalidad = $_GET['modalidad'] ?? 'PRESENCIAL';
 
         if (!$id_zona) {
             echo json_encode(['status' => 'error', 'mensaje' => 'Falta id_zona']);
@@ -174,7 +247,7 @@ switch ($accion) {
                     c.id_competencia,
                     c.nombre_competencia,
                     r.id_rae,
-                    r.descripcion AS descripcion_rae
+                                        r.descripcion AS descripcion_rae
                 FROM {$tablaHorario} h
                 LEFT JOIN fichas f ON h.id_ficha = f.id_ficha
                 LEFT JOIN programas p ON h.id_programa = p.id_programa
@@ -182,6 +255,7 @@ switch ($accion) {
                 LEFT JOIN competencias c ON h.id_competencia = c.id_competencia
                 LEFT JOIN raes r ON FIND_IN_SET(r.id_rae, h.id_rae)
                 WHERE h.id_zona = :id_zona
+                                    AND UPPER(h.modalidad) = :modalidad
             ";
 
             if (!empty($id_area_supplied)) {
@@ -196,6 +270,7 @@ switch ($accion) {
 
             $stmt = $conn->prepare($sql);
             $stmt->bindValue(':id_zona', intval($id_zona), PDO::PARAM_INT);
+            $stmt->bindValue(':modalidad', strtoupper($modalidad));
 
             if (!empty($id_area_supplied)) {
                 $stmt->bindValue(':id_area', intval($id_area_supplied), PDO::PARAM_INT);
@@ -233,6 +308,12 @@ switch ($accion) {
             exit;
         }
 
+        $modalidad_raw     = trim($_POST['modalidad'] ?? 'PRESENCIAL');
+        $modalidad         = strtoupper($modalidad_raw);
+        if ($modalidad === 'MIXTA') {
+            $modalidad = 'MIXTO';
+        }
+
         $dia               = strtoupper(trim($_POST['dia_semana'] ?? ''));
         $hora_inicio_raw   = trim($_POST['hora_inicio'] ?? '');
         $hora_fin_raw      = trim($_POST['hora_fin'] ?? '');
@@ -246,13 +327,13 @@ switch ($accion) {
         $id_programa       = isset($_POST['id_programa']) && $_POST['id_programa'] !== '' ? intval($_POST['id_programa']) : null;
         $id_rae_raw        = trim($_POST['id_rae'] ?? '');
 
-        $id_zona = intval($id_zona_raw);
+        $id_zona = ($id_zona_raw !== null && $id_zona_raw !== '') ? intval($id_zona_raw) : null;
 
         if (empty($dia) || empty($hora_inicio_raw) || empty($hora_fin_raw)) {
             echo json_encode(['status' => 'error', 'mensaje' => 'Día, hora inicio y hora fin son obligatorios.']);
             exit;
         }
-        if ($id_zona <= 0) {
+        if ($modalidad === "PRESENCIAL" && (!$id_zona || $id_zona <= 0)) {
             echo json_encode(['status' => 'error', 'mensaje' => 'Debe seleccionar una zona válida.']);
             exit;
         }
@@ -284,11 +365,34 @@ switch ($accion) {
         try {
             $conn->beginTransaction();
 
-            $id_area = resolveAreaForZona($conn, $id_zona, $id_area_post);
-            if ($id_area === null) {
-                $conn->rollBack();
-                echo json_encode(['status' => 'error', 'mensaje' => 'Ambigüedad en zona: envía también id_area.']);
-                exit;
+            $id_area = null;
+
+            if ($modalidad === 'PRESENCIAL') {
+                $id_area = resolveAreaForZona($conn, $id_zona, $id_area_post);
+                if ($id_area === null) {
+                    $conn->rollBack();
+                    echo json_encode(['status' => 'error', 'mensaje' => 'Ambigüedad en zona: envía también id_area.']);
+                    exit;
+                }
+            } else {
+                if ($id_zona && $id_zona > 0) {
+                    $id_area = resolveAreaForZona($conn, $id_zona, $id_area_post);
+                }
+
+                if (($id_zona === null || $id_zona <= 0) || $id_area === null) {
+                    try {
+                        $fallbackZona = $conn->query("SELECT id_zona, id_area FROM zonas WHERE estado = 1 ORDER BY id_zona ASC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+                        if ($fallbackZona) {
+                            if ($id_zona === null || $id_zona <= 0) {
+                                $id_zona = intval($fallbackZona['id_zona']);
+                            }
+                            if ($id_area === null) {
+                                $id_area = isset($fallbackZona['id_area']) ? intval($fallbackZona['id_area']) : null;
+                            }
+                        }
+                    } catch (Throwable $e) {
+                    }
+                }
             }
 
             if (!$numero_trimestre) {
@@ -334,34 +438,55 @@ switch ($accion) {
             $idsRae = array_filter(array_map('trim', explode(',', $id_rae_raw)));
             $id_rae = implode(',', $idsRae);
 
-            $stmtCruce = $conn->prepare("
-                SELECT COUNT(*) AS cnt FROM {$tablaHorario}
-                WHERE id_zona = :id_zona
-                  AND id_area = :id_area
-                  AND dia = :dia
-                  AND estado = 1
-                  AND NOT (hora_fin <= :hora_inicio OR hora_inicio >= :hora_fin)
-            ");
-            $stmtCruce->execute([
-                ':id_zona' => $id_zona,
-                ':id_area' => $id_area,
-                ':dia' => $dia,
-                ':hora_inicio' => $horaInicio,
-                ':hora_fin' => $horaFin
-            ]);
+            if ($modalidad === 'PRESENCIAL') {
+                $stmtCruce = $conn->prepare(" 
+                    SELECT COUNT(*) AS cnt FROM {$tablaHorario}
+                    WHERE id_zona = :id_zona
+                      AND id_area = :id_area
+                      AND dia = :dia
+                      AND estado = 1
+                      AND NOT (hora_fin <= :hora_inicio OR hora_inicio >= :hora_fin)
+                ");
+                $stmtCruce->execute([
+                    ':id_zona' => $id_zona,
+                    ':id_area' => $id_area,
+                    ':dia' => $dia,
+                    ':hora_inicio' => $horaInicio,
+                    ':hora_fin' => $horaFin
+                ]);
+            } else {
+                $stmtCruce = $conn->prepare(" 
+                    SELECT COUNT(*) AS cnt FROM {$tablaHorario}
+                    WHERE id_instructor = :id_instructor
+                      AND dia = :dia
+                      AND estado = 1
+                      AND NOT (hora_fin <= :hora_inicio OR hora_inicio >= :hora_fin)
+                ");
+                $stmtCruce->execute([
+                    ':id_instructor' => $id_instructor,
+                    ':dia' => $dia,
+                    ':hora_inicio' => $horaInicio,
+                    ':hora_fin' => $horaFin
+                ]);
+            }
+
             if ($stmtCruce->fetchColumn() > 0) {
                 $conn->rollBack();
-                echo json_encode(['status' => 'error', 'mensaje' => 'Ya existe un horario activo que se cruza con el rango seleccionado en esta zona y área.']);
+                $mensajeCruce = $modalidad === 'PRESENCIAL'
+                    ? 'Ya existe un horario activo que se cruza con el rango seleccionado en esta zona y área.'
+                    : 'El instructor ya tiene un horario activo que se cruza en ese rango.';
+                echo json_encode(['status' => 'error', 'mensaje' => $mensajeCruce]);
                 exit;
             }
 
             $insHorario = $conn->prepare("
-                INSERT INTO {$tablaHorario} (id_zona, id_area, dia, hora_inicio, hora_fin, id_ficha, id_instructor, id_competencia, numero_trimestre, estado, id_programa, id_rae)
-                VALUES (:id_zona, :id_area, :dia, :hora_inicio, :hora_fin, :id_ficha, :id_instructor, :id_competencia, :numero_trimestre, 1, :id_programa, :id_rae)
+                INSERT INTO {$tablaHorario} (id_zona, id_area, modalidad, dia, hora_inicio, hora_fin, id_ficha, id_instructor, id_competencia, numero_trimestre, estado, id_programa, id_rae)
+                VALUES (:id_zona, :id_area, :modalidad, :dia, :hora_inicio, :hora_fin, :id_ficha, :id_instructor, :id_competencia, :numero_trimestre, 1, :id_programa, :id_rae)
             ");
             $insHorario->execute([
                 ':id_zona' => $id_zona,
                 ':id_area' => $id_area,
+                ':modalidad' => $modalidad,
                 ':dia' => $dia,
                 ':hora_inicio' => $horaInicio,
                 ':hora_fin' => $horaFin,
