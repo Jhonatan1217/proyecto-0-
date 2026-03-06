@@ -204,132 +204,164 @@ async function cargarAreasYZonas() {
   }
 }
 
+
 // =======================
-// CARGAR TRIMESTRALIZACIÓN
-// =======================
-async function cargarTrimestralizacion() {
+// Configurar filtros
+// ======================
+
+function configurarFiltros(){
+  const selectModalidad = document.getElementById("selectModalidad") || document.getElementById("selectModalidadFiltro");
+  const selectArea = document.getElementById("selectArea")?.parentElement;
+  const selectZona = document.getElementById("selectZona")?.parentElement;
+  const contenedorGrupo = document.getElementById("contenedorGrupoFiltro");
+  const inputGrupo = document.getElementById("inputGrupoTexto");
+
+  if(!selectModalidad) return;
+
+  const normalizarModalidad = (valor) => {
+    const v = String(valor || "").trim().toLowerCase();
+    if (v === "mixta") return "mixto";
+    return v;
+  };
+
+  if(inputGrupo){
+    inputGrupo.addEventListener("input", () => {
+      const modalidadActual = normalizarModalidad(selectModalidad.value);
+      if (modalidadActual !== "virtual" && modalidadActual !== "mixto") return;
+
+      const valor = inputGrupo.value.trim();
+      if(!valor){
+        toggleTabla(false);
+        return;
+      }
+      cargarTrimestralizacionPorGrupo(valor);
+    });
+  }
+  
+  selectModalidad.addEventListener("change", () => {
+    const modalidad = normalizarModalidad(selectModalidad.value);
+    if(modalidad === "presencial"){
+      if(selectArea) selectArea.classList.remove("hidden");
+      if(selectZona) selectZona.classList.remove("hidden");
+      if(contenedorGrupo) contenedorGrupo.classList.add("hidden");
+
+      if (id_zona && document.getElementById("selectArea")?.value) {
+        cargarTrimestralizacion();
+      } else {
+        toggleTabla(false);
+      }
+    } else if (modalidad === "virtual" || modalidad === "mixto"){
+        if(selectArea) selectArea.classList.add("hidden");
+        if(selectZona) selectZona.classList.add("hidden");
+        if(contenedorGrupo) contenedorGrupo.classList.remove("hidden");
+
+        toggleTabla(false);
+
+        const valor = inputGrupo?.value.trim();
+        if (valor) {
+          cargarTrimestralizacionPorGrupo(valor);
+        }
+    } else {
+      toggleTabla(false);
+    }
+  });
+}
+
+function renderizarTablaDesdeRegistros(registrosServer, emptyMessage = "No hay registros activos.") {
   const tbody = document.getElementById("tbody-horarios");
-  const selectArea = document.getElementById("selectArea");
-  const id_area = selectArea ? selectArea.value : "";
-
   if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500">Cargando datos...</td></tr>`;
 
-  if (!id_zona || !id_area) {
+  tbody.innerHTML = "";
+
+  const activos = (Array.isArray(registrosServer) ? registrosServer : []).filter(
+    (d) => d && (d.estado === 1 || d.estado === "1")
+  );
+
+  if (!activos.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500 text-center">${emptyMessage}</td></tr>`;
     toggleTabla(false);
     return;
   }
 
-  try {
-    const res = await fetch(
-      `${API_BASE}src/controllers/TrimestralizacionController.php?accion=listar&id_zona=${id_zona}&id_area=${id_area}`
-    );
-    const data = await res.json();
-    tbody.innerHTML = "";
+  const mapHorarios = new Map();
+  activos.forEach((r) => {
+    const id = r.id_horario ?? (r.id_horario === 0 ? 0 : null);
+    if (id === null) return;
 
-    const registrosServer = Array.isArray(data)
-      ? data
-      : Array.isArray(data.data)
-      ? data.data
-      : [];
-    const activos = registrosServer.filter(
-      (d) => d && (d.estado === 1 || d.estado === "1")
-    );
-
-    if (!activos.length) {
-      tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500 text-center">No hay registros activos para esta zona y área.</td></tr>`;
-      Toast.fire({ icon: "info", title: "Sin registros activos" });
-      return;
+    if (!mapHorarios.has(id)) {
+      mapHorarios.set(id, {
+        id_horario: id,
+        dia: r.dia,
+        hora_inicio: r.hora_inicio,
+        hora_fin: r.hora_fin,
+        id_zona: r.id_zona,
+        id_area: r.id_area,
+        numero_trimestre: r.numero_trimestre,
+        estado: r.estado,
+        numero_ficha: r.numero_ficha,
+        nivel_ficha: r.nivel_ficha,
+        id_instructor: r.id_instructor,
+        nombre_instructor: r.nombre_instructor,
+        tipo_instructor: r.tipo_instructor,
+        programa_formacion: r.programa_formacion,
+        nombre_programa: r.nombre_programa,
+        id_competencia: r.id_competencia,
+        nombre_competencia: r.nombre_competencia,
+        raesArray: [],
+      });
     }
 
-    // -------------------------
-    // AGRUPAR POR id_horario
-    // -------------------------
-    const mapHorarios = new Map();
-    activos.forEach((r) => {
-      const id = r.id_horario ?? (r.id_horario === 0 ? 0 : null);
-      if (id === null) return;
-
-      if (!mapHorarios.has(id)) {
-        mapHorarios.set(id, {
-          id_horario: id,
-          dia: r.dia,
-          hora_inicio: r.hora_inicio,
-          hora_fin: r.hora_fin,
-          id_zona: r.id_zona,
-          id_area: r.id_area,
-          numero_trimestre: r.numero_trimestre,
-          estado: r.estado,
-          numero_ficha: r.numero_ficha,
-          nivel_ficha: r.nivel_ficha,
-          nombre_instructor: r.nombre_instructor,
-          tipo_instructor: r.tipo_instructor,
-          programa_formacion: r.programa_formacion,
-          nombre_programa: r.nombre_programa,
-          id_competencia: r.id_competencia,
-          nombre_competencia: r.nombre_competencia,
-          raesArray: [],
-        });
+    const agr = mapHorarios.get(id);
+    if (r.id_rae) {
+      const textoRae = `${r.id_rae} - ${r.descripcion_rae ?? ""}`.trim();
+      if (textoRae && !agr.raesArray.includes(textoRae)) {
+        agr.raesArray.push(textoRae);
       }
+    }
+  });
 
-      const agr = mapHorarios.get(id);
-      if (r.id_rae) {
-        const textoRae = `${r.id_rae} - ${r.descripcion_rae ?? ""}`.trim();
-        if (textoRae && !agr.raesArray.includes(textoRae))
-          agr.raesArray.push(textoRae);
-      }
-    });
+  const horariosAgrupados = Array.from(mapHorarios.values());
+  horariosCache = horariosAgrupados;
 
-    const horariosAgrupados = Array.from(mapHorarios.values());
+  horariosAgrupados.forEach((h) => {
+    if (h.raesArray.length) {
+      h.raesHtml = `<ul class="list-disc ml-5 mt-1">${h.raesArray
+        .map((x) => `<li>${x}</li>`)
+        .join("")}</ul>`;
+    } else {
+      h.raesHtml = `<span class="text-gray-500 italic">Sin especificar</span>`;
+    }
+  });
 
-    horariosCache = horariosAgrupados;
+  const dias = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"];
+  const horas = Array.from({ length: 16 }, (_, i) => i + 6);
 
-    horariosAgrupados.forEach((h) => {
-      if (h.raesArray.length) {
-        h.raesHtml = `<ul class="list-disc ml-5 mt-1">${h.raesArray
-          .map((x) => `<li>${x}</li>`)
-          .join("")}</ul>`;
-      } else {
-        h.raesHtml = `<span class="text-gray-500 italic">Sin especificar</span>`;
-      }
-    });
-
-    const dias = [
-      "LUNES",
-      "MARTES",
-      "MIERCOLES",
-      "JUEVES",
-      "VIERNES",
-      "SABADO",
-    ];
-    const horas = Array.from({ length: 16 }, (_, i) => i + 6);
-
-    horas.forEach((hora, idx) => {
-      const fila = document.createElement("tr");
-      fila.className = idx % 2 === 0 ? "bg-gray-50" : "bg-white";
-      fila.innerHTML = `<td class="border border-gray-300 p-3 font-bold text-gray-700 text-center bg-gray-100 whitespace-nowrap min-w-[110px] w-[110px]">
+  horas.forEach((hora, idx) => {
+    const fila = document.createElement("tr");
+    fila.className = idx % 2 === 0 ? "bg-gray-50" : "bg-white";
+    fila.innerHTML = `<td class="border border-gray-300 p-3 font-bold text-gray-700 text-center bg-gray-100 whitespace-nowrap min-w-[110px] w-[110px]">
       ${String(hora).padStart(2, "0")}:00 - ${String(hora + 1).padStart(2, "0")}:00 </td>`;
 
-      dias.forEach((dia) => {
-        const registros = horariosAgrupados.filter((r) => {
-          if (!r.dia || r.dia.toUpperCase() !== dia) return false;
-          const rStart = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
-          const rEnd = r.hora_fin
-            ? parseInt(r.hora_fin.split(":")[0], 10)
-            : rStart + 1;
-          return hora >= rStart && hora < rEnd;
-        });
+    dias.forEach((dia) => {
+      const registros = horariosAgrupados.filter((r) => {
+        if (!r.dia || r.dia.toUpperCase() !== dia) return false;
+        const rStart = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
+        const rEnd = r.hora_fin
+          ? parseInt(r.hora_fin.split(":")[0], 10)
+          : rStart + 1;
+        return hora >= rStart && hora < rEnd;
+      });
 
-        let contenido = "";
-        registros.forEach((r) => {
-          const rStart = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
-          const rEnd = r.hora_fin
-            ? parseInt(r.hora_fin.split(":")[0], 10)
-            : rStart + 1;
+      let contenido = "";
+      registros.forEach((r) => {
+        const rStart = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
+        const rEnd = r.hora_fin
+          ? parseInt(r.hora_fin.split(":")[0], 10)
+          : rStart + 1;
 
-          if (hora === rStart) {
-            const duracionHoras = rEnd - rStart;
-            contenido += `
+        if (hora === rStart) {
+          const duracionHoras = rEnd - rStart;
+          contenido += `
               <div class="registro border-l-4 border-l-green-600 bg-white rounded-md p-2 mb-2 shadow-sm"
                   data-id="${r.id_horario || ""}"
                   data-id-instructor="${r.id_instructor ?? ""}"
@@ -365,11 +397,11 @@ async function cargarTrimestralizacion() {
                   <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
                   </svg>
-                  <span>${duracionHoras} hora${duracionHoras > 1 ? 's' : ''}</span>
+                  <span>${duracionHoras} hora${duracionHoras > 1 ? "s" : ""}</span>
                 </div>
               </div>`;
-          } else if (hora > rStart && hora < rEnd) {
-            contenido += `<div class="border-l-4 border-l-green-600 bg-white rounded-md p-2 mb-2 shadow-sm">
+        } else if (hora > rStart && hora < rEnd) {
+          contenido += `<div class="border-l-4 border-l-green-600 bg-white rounded-md p-2 mb-2 shadow-sm">
                 <div class="flex items-start gap-1 text-xs text-gray-600">
                   <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
@@ -386,26 +418,114 @@ async function cargarTrimestralizacion() {
                   </span>
                 </div>
               </div>`;
-          }
-        });
-        const isLibre = !contenido;
-        fila.innerHTML += `
-          <td class="border border-gray-300 p-2 text-sm text-center leading-tight align-top ${isLibre ? "zona-libre cursor-pointer hover:bg-[#00324D]": ""}"
+        }
+      });
+      const isLibre = !contenido;
+      fila.innerHTML += `
+          <td class="border border-gray-300 p-2 text-sm text-center leading-tight align-top ${isLibre ? "zona-libre cursor-pointer hover:bg-[#00304D]": ""}"
               data-dia="${dia}"
               data-hora="${String(hora).padStart(2, "0")}: 00">
               ${contenido || `<span class="text-gray-400 italic">Zona libre</span>`}
           </td>`;
-      });
-
-      tbody.appendChild(fila);
     });
+
+    tbody.appendChild(fila);
+  });
+
+  toggleTabla(true);
+  popupCeldas();
+  popupZonaLibre();
+}
+
+function configurarModalidadFormulario() {
+  const modalidadForm = document.getElementById("modalidad");
+  const areaField = document.getElementById("id_area")?.closest(".field");
+  const zonaField = document.getElementById("id_zona")?.closest(".field");
+
+  if (!modalidadForm) return;
+
+  modalidadForm.addEventListener("change", () => {
+    const modalidad = modalidadForm.value;
+
+    if (modalidad === "presencial") {
+      if (areaField) areaField.style.display = "";
+      if (zonaField) zonaField.style.display = "";
+    } else if (modalidad === "virtual" || modalidad === "mixto") {
+      if (areaField) areaField.style.display = "none";
+      if (zonaField) zonaField.style.display = "none";
+    }
+  });
+}
+
+
+// =====================
+//Cargar trimestralizacion por grupo
+// =====================
+async function cargarTrimestralizacionPorGrupo(grupo) {
+  const tbody = document.getElementById("tbody-horarios");
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500">Cargando datos...</td></tr>`;
+
+  try{
+    const res = await fetch(`${API_BASE}src/controllers/TrimestralizacionController.php?accion=listarPorGrupo&numero_ficha=${grupo}`);
+    const data = await res.json();
+    const registrosServer = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.data)
+      ? data.data
+      : [];
+
+    renderizarTablaDesdeRegistros(
+      registrosServer,
+      `No se encontraron registros para el grupo ${grupo}.`
+    );
+  }catch (e){
+    console.error(e);
+    Toast.fire({ icon: "error", title: "Error al cargar datos por grupo" });
+  }
+}
+  
+// =======================
+// CARGAR TRIMESTRALIZACIÓN
+// =======================
+async function cargarTrimestralizacion() {
+  const tbody = document.getElementById("tbody-horarios");
+  const selectArea = document.getElementById("selectArea");
+  const id_area = selectArea ? selectArea.value : "";
+
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500">Cargando datos...</td></tr>`;
+
+  if (!id_zona || !id_area) {
+    toggleTabla(false);
+    return;
+  }
+
+  try {
+    const modalidad = String(document.getElementById("selectModalidad")?.value || "presencial")
+      .trim()
+      .toLowerCase();
+    const modalidadParam = modalidad === "mixta" ? "MIXTO" : modalidad.toUpperCase();
+
+    const res = await fetch(
+      `${API_BASE}src/controllers/TrimestralizacionController.php?accion=listar&id_zona=${id_zona}&id_area=${id_area}&modalidad=${encodeURIComponent(modalidadParam)}`
+    );
+    const data = await res.json();
+    console.log("Datos recibidos del servidor:", data);
+    const registrosServer = Array.isArray(data)
+      ? data
+      : Array.isArray(data.data)
+      ? data.data
+      : [];
+    renderizarTablaDesdeRegistros(
+      registrosServer,
+      "No hay registros activos para esta zona y área."
+    );
 
     Toast.fire({
       icon: "success",
       title: "Trimestralización cargada correctamente",
     });
-    popupCeldas();
-    popupZonaLibre();
 
 
   } catch (error) {
@@ -706,14 +826,14 @@ async function editarTrimestralizacion (reg){
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
         <div>
           <label class="block text-xs font-semibold text-[#00324D] mb-1">Día</label>
-          <select id="editDia" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324D] focus:border-transparent">
+          <select id="editDia" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324d]/20 focus:border-transparent">
             ${["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"].map(d => `<option value="${d}" ${d === dia ? "selected" : ""}>${d}</option>`).join("")}
           </select>
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-[#00324D] mb-1">Ficha / Grupo</label>
-          <select id="editFicha" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324D] focus:border-transparent">
+          <select id="editFicha" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324d]/20 focus:border-transparent">
             <option value="">Seleccione una ficha</option>
             ${optionFichas}
           </select>
@@ -721,7 +841,7 @@ async function editarTrimestralizacion (reg){
 
         <div>
           <label class="block text-xs font-semibold text-[#00324D] mb-1">Hora Inicio</label>
-          <select id="editHoraInicio" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324D] focus:border-transparent">
+          <select id="editHoraInicio" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324d]/20 focus:border-transparent">
             <option value="">Seleccionar hora</option>
             ${horaOpcionesInicio}
           </select>
@@ -729,7 +849,7 @@ async function editarTrimestralizacion (reg){
 
         <div>
           <label class="block text-xs font-semibold text-[#00324D] mb-1">Hora Fin</label>
-          <select id="editHoraFin" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324D] focus:border-transparent">
+          <select id="editHoraFin" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324d]/20 focus:border-transparent">
             <option value="">Seleccionar hora</option>
             ${horaOpcionesFin}
           </select>
@@ -737,7 +857,7 @@ async function editarTrimestralizacion (reg){
 
         <div>
           <label class="block text-xs font-semibold text-[#00324D] mb-1">Instructor</label>
-          <select id="editInstructor" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324D] focus:border-transparent">
+          <select id="editInstructor" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324d]/20 focus:border-transparent">
             <option value="">Seleccione un instructor</option>
             ${optionInstructors}
           </select>
@@ -745,7 +865,7 @@ async function editarTrimestralizacion (reg){
 
         <div>
           <label class="block text-xs font-semibold text-[#00324D] mb-1">Competencia</label>
-          <select id="editCompetencia" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324D] focus:border-transparent">
+          <select id="editCompetencia" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324d]/20 focus:border-transparent">
             <option value="">Seleccione una competencia</option>
             ${optionCompetencias}
           </select>
@@ -758,7 +878,7 @@ async function editarTrimestralizacion (reg){
 
         <div class="md:col-span-2">
           <label class="block text-xs font-semibold text-[#00324D] mb-1">Descripción (Opcional)</label>
-          <textarea id="editDescripcion" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324D] focus:border-transparent" placeholder="Notas adicionales del horario..."></textarea>
+          <textarea id="editDescripcion" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324d]/20 focus:border-transparent" placeholder="Notas adicionales del horario..."></textarea>
         </div>
       </div>
     </div>
@@ -1192,7 +1312,7 @@ function popupCeldas(){
               <!-- Botones -->
               <div class="mt-6 flex justify-end gap-2">
                 <button id="btnEditarRegistro"
-                  class="bg-[#00324D] text-white text-sm px-4 py-2 rounded-lg hover:bg-[#002233] transition">
+                  class="bg-[#00324d] text-white text-sm px-4 py-2 rounded-lg hover:bg-[#00304D] transition">
                   Editar
                 </button>
                 <button id="btnCerrarPopup"
@@ -1235,8 +1355,8 @@ function popupZonaLibre(){
           <p>En esta franja no hay ninguna competencia programada.</p>
           </div>  
           <div class="mt-8 flex justify-end gap-3">
-            <button id="btnCerrarPopupZonaLibre" class="bg-[#00324D] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#002233] transition flex items-center justify-center w-full sm:w-auto">Cerrar</button>
-            <button id="btnAbrirModalZonaLibre" class="bg-[#00324D] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#002233] transition flex items-center justify-center w-full sm:w-auto">
+            <button id="btnCerrarPopupZonaLibre" class="bg-[#00324d] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">Cerrar</button>
+            <button id="btnAbrirModalZonaLibre" class="bg-[#00324d] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">
               Agregar Horario
             </button>
           </div>
@@ -1264,6 +1384,8 @@ document.addEventListener("DOMContentLoaded", () => {
   cargarInstructores();
   cargarCompetencias();
   cargarAreasYZonas();
+  configurarFiltros();
+  configurarModalidadFormulario();
   if (id_zona) {
     toggleTabla(true);
     cargarTrimestralizacion();

@@ -8,6 +8,7 @@ $instructores = [];
 $trimestres   = [];
 $programas    = [];
 $competencias = [];
+$grupos       = [];
 
 if (isset($conn)) {
   try {
@@ -93,6 +94,14 @@ if (isset($conn)) {
       $competencias = [];
     }
   }
+
+  try {
+    $s = $conn->prepare("SELECT DISTINCT numero_ficha FROM fichas WHERE numero_ficha IS NOT NULL AND numero_ficha <> '' ORDER BY numero_ficha ASC");
+    $s->execute();
+    $grupos = $s->fetchAll(PDO::FETCH_ASSOC);
+  } catch (PDOException $e) {
+    $grupos = [];
+  }
 }
 
 ?>
@@ -113,6 +122,18 @@ if (isset($conn)) {
   #modalCard .form-grid {
     display: flex;
     flex-direction: column;
+  }
+
+  #id_competencia {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  #id_competencia option {
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   </style>
 </head>
@@ -146,6 +167,9 @@ if (isset($conn)) {
             focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none
             transition-all duration-200 cursor-pointer pr-10">
             <option value="" class="text-[#00324D]" selected hidden>SELECCIONE LA MODALIDAD</option>
+            <option value="presencial"> Presencial </option>
+            <option value="virtual"> Virtual </option>
+            <option value="mixto"> Mixta </option>
           </select>
           <img 
             src="<?= BASE_URL ?>src/assets/img/chevron-down.svg" 
@@ -197,10 +221,18 @@ if (isset($conn)) {
           <img 
             src="<?= BASE_URL ?>src/assets/img/chevron-down.svg" 
             alt="arrow" 
-            class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70"
-          />
+            class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70"/>
         </div>
       </div>
+    </div>
+
+
+
+
+    <!-- Input para filtrar por grupo -->
+    <div id="contenedorGrupoFiltro" class="relative w-full sm:w-auto hidden">
+      <label for="inputGrupoTexto" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Filtrar por grupo</label>
+      <input type="text" id="inputGrupoTexto" list="listaGrupos" placeholder="Seleccione o escriba número de grupo" class="w-full sm:w-64 lg:w-72 xl:w-80 2xl:w-96 px-4 py-2.5 border border-gray-300 rounded-lg text-sm sm:text-base text-slate-700 font-semibold tracking-wider bg-white shadow-sm hover:bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all duration-200">
     </div>
 
 
@@ -215,7 +247,7 @@ if (isset($conn)) {
          text-white font-medium tracking-wider
          text-sm sm:text-base
          shadow-md hover:shadow-lg
-         hover:bg-[#004a70]
+         hover:bg-[#00304D]
          active:scale-[0.98]
          transition-all duration-200
          focus:outline-none focus:ring-2 focus:ring-[#00324d]/20">
@@ -258,8 +290,7 @@ if (isset($conn)) {
           viewBox="0 0 24 24"
           fill="none"
           class="mb-4 block text-[#00324D] mx-auto"
-          xmlns="http://www.w3.org/2000/svg"
-        >
+          xmlns="http://www.w3.org/2000/svg">
           <rect x="3" y="4" width="18" height="17" rx="2" ry="2" stroke="currentColor" stroke-width="1.5"/>
           <line x1="16" y1="2.5" x2="16" y2="5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           <line x1="8" y1="2.5" x2="8" y2="5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -403,8 +434,20 @@ if (isset($conn)) {
               <!-- NUMERO DE FICHA -->
                <div class="field">
                 <label for="numero_ficha" class="block text-xs font-semibold text-gray-800 mb-1">Número de grupo</label>
-                <input type="text" name="numero_ficha" id="numero_ficha" placeholder="Ingrese número de grupo" 
+                <input
+                  type="text"
+                  name="numero_ficha"
+                  id="numero_ficha"
+                  list="listaGrupos"
+                  placeholder="Seleccione o escriba número de grupo"
                   class="form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white"/>
+                <datalist id="listaGrupos">
+                  <?php foreach ($grupos as $g): ?>
+                    <?php if (!empty($g['numero_ficha'])): ?>
+                      <option value="<?= htmlspecialchars($g['numero_ficha']) ?>"></option>
+                    <?php endif; ?>
+                  <?php endforeach; ?>
+                </datalist>
               </div>
 
 
@@ -423,20 +466,6 @@ if (isset($conn)) {
                 </select>
               </div>
 
-
-
-              <!-- Modalidad -->
-               <div class="field">
-                <label for="modalidad" class="block text-xs font-semibold text-gray-800 mb-1">Modalidad de grupo</label>
-                <select name="modalidad" id="modalidad" 
-                  class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
-                  <option value="">Seleccione la modalidad del grupo</option>
-                  <option value="presencial">Presencial</option>
-                  <option value="virtual">Virtual</option>
-                  <option value="mixto">Mixto</option>
-                </select>
-              </div>
-
               <!-- AREA + ZONA-->
               <div class="field">
                 <div class="flex flex-minw-0 gap-2">
@@ -445,7 +474,6 @@ if (isset($conn)) {
                     <select name="area" id="id_area" 
                       class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
                       <option value="">Seleccione el área</option>
-                    <option value="">Seleccione el area a la que pertenece la ficha</option>
                     <?php foreach ($areas as $a): ?>
                       <option value="<?= htmlspecialchars($a['id_area']) ?>"><?= htmlspecialchars($a['nombre_area']) ?></option>
                     <?php endforeach; ?>
@@ -455,7 +483,7 @@ if (isset($conn)) {
                   <div class="flex-1">
                     <label for="id_zona" class="block text-xs font-semibold text-gray-800 mb-1">Zona</label>
                     <select name="zona" id="id_zona" 
-                      class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
+                      class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white" disabled>
                       <option value="">Seleccione la zona</option>
                     <?php foreach ($zonas as $z): ?>
                       <?php $label = isset($z['id_zona']) ? "Zona " . $z['id_zona'] : "Zona"; ?>
@@ -535,18 +563,6 @@ if (isset($conn)) {
                     <?php endif; ?>
                   </select>
                 </div>
-              </div>
-
-
-              <!-- NIVEL FICHA -->
-              <div class="field">
-                <label for="nivel_ficha" class="block text-xs font-semibold text-gray-800 mb-1">Nivel de ficha</label>
-                <select name="nivel_ficha" id="nivel_ficha" 
-                  class="select-chev form-field w-full h-7 px-2 text-xs rounded-md border border-gray-200 outline-none bg-white shadow-sm">
-                  <option value="">Seleccione el nivel de la ficha</option>
-                  <option value="tecnico">Tecnico</option>
-                  <option value="tecnologo">Tecnologo</option>
-                </select>
               </div>
 
 
@@ -752,6 +768,7 @@ if (isset($conn)) {
 
         function filterZonas() {
           const areaVal = selArea.value;
+          selZona.disabled = areaVal === "";
 
           for (const opt of selZona.options) {
             if (opt.value === "") {
@@ -767,6 +784,7 @@ if (isset($conn)) {
 
           const selectedOpt = selZona.selectedOptions[0];
           if (selectedOpt && selectedOpt.hidden) selZona.value = "";
+          if (areaVal === "") selZona.value = "";
         }
 
         selArea.addEventListener('change', filterZonas);

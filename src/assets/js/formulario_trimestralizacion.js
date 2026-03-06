@@ -49,7 +49,6 @@ if (!window.TRIMESTRALIZACION_INIT) {
         }
       }
 
-      const nivel = form.querySelector("[name='nivel_ficha']").value.trim();
       const numeroFicha = form.querySelector("[name='numero_ficha']").value.trim();
       const instructor = form.querySelector("[name='nombre_instructor']").value.trim();
 
@@ -68,7 +67,7 @@ if (!window.TRIMESTRALIZACION_INIT) {
       const idRaeField = form.querySelector("[name='id_rae']");
       const id_rae = idRaeField ? idRaeField.value.trim() : "";
 
-      const campos = [zona, nivel, numeroFicha, instructor, dia, horaInicio, horaFin, id_competencia];
+      const campos = [zona, numeroFicha, instructor, dia, horaInicio, horaFin, id_competencia];
       const vacios = campos.filter((v) => v === "").length;
 
       if (vacios === campos.length) {
@@ -94,11 +93,6 @@ if (!window.TRIMESTRALIZACION_INIT) {
           icon: "warning",
           title: "No se identificó el área. Recarga la página o seleccione un área válida."
         });
-        return { ok: false };
-      }
-
-      if (!nivel) {
-        Toast.fire({ icon: "warning", title: "Seleccione el nivel de la ficha" });
         return { ok: false };
       }
 
@@ -152,7 +146,6 @@ if (!window.TRIMESTRALIZACION_INIT) {
         ok: true,
         zona,
         id_area,
-        nivel,
         numeroFicha,
         instructor,
         dia,
