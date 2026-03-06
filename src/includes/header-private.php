@@ -349,6 +349,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 <script>
 window.API_USUARIO = "<?= BASE_URL ?>src/controllers/UsuarioController.php";
+window.API_SOLICITUD = "<?= BASE_URL ?>src/controllers/SolicitudController.php";
 window.USUARIO_ID = <?= json_encode((int)($_SESSION['usuario_id'] ?? 0)) ?>;
 window.BASE_URL = <?= json_encode(BASE_URL) ?>;
 </script>
@@ -426,7 +427,7 @@ window.BASE_URL = <?= json_encode(BASE_URL) ?>;
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/clipboard-list.svg" alt="Icono de Solicitudes">
-        <a href="#">Solicitudes</a>
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionSolicitudes">Solicitudes</a>
       </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
