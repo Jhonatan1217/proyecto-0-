@@ -253,6 +253,51 @@ class Usuario {
     // ============================================================
 
     /**
+     * Lista usuarios con filtros opcionales: cargo, rol funcional (solo aplica si cargo es Instructor), búsqueda por texto.
+     * @param string $cargo Opcional. Ej: 'Instructor', 'Coordinador'.
+     * @param int|null $id_rol_funcional Opcional. Solo filtra por rol cuando se combina con cargo Instructor.
+     * @param string $buscar Opcional. Busca en nombre_completo, numero_documento, correo_electronico.
+     * @return array Lista de usuarios.
+     */
+    public function listarConFiltros($cargo = '', $id_rol_funcional = null, $buscar = '') {
+        $cargo = trim((string) $cargo);
+        $buscar = trim((string) $buscar);
+        $id_rol = $id_rol_funcional !== null && $id_rol_funcional !== '' ? intval($id_rol_funcional) : null;
+        if ($id_rol <= 0) $id_rol = null;
+
+        $joinRol = $id_rol !== null ? " INNER JOIN " . $this->table_roles . " urf ON u.id_usuario = urf.id_usuario AND urf.id_rol = :id_rol " : "";
+        $sql = "SELECT DISTINCT u.*, a.nombre_area 
+                FROM " . $this->table . " u
+                LEFT JOIN area a ON u.id_area = a.id_area
+                " . $joinRol . "
+                WHERE 1=1 ";
+        $params = [];
+
+        if ($cargo !== '') {
+            $sql .= " AND LOWER(TRIM(u.cargo)) = LOWER(:cargo) ";
+            $params[':cargo'] = $cargo;
+        }
+        if ($buscar !== '') {
+            $sql .= " AND (u.nombre_completo LIKE :buscar OR CAST(u.numero_documento AS CHAR) LIKE :buscar_num OR u.correo_electronico LIKE :buscar_correo) ";
+            $term = '%' . $buscar . '%';
+            $params[':buscar'] = $term;
+            $params[':buscar_num'] = $term;
+            $params[':buscar_correo'] = $term;
+        }
+
+        $sql .= " ORDER BY u.nombre_completo ASC";
+        $stmt = $this->conn->prepare($sql);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        if ($id_rol !== null) {
+            $stmt->bindValue(':id_rol', $id_rol, PDO::PARAM_INT);
+        }
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Lista todos los usuarios filtrados por su cargo principal (COORDINADOR o INSTRUCTOR).
      * @param string $cargo 'COORDINADOR' o 'INSTRUCTOR'.
      * @return array Lista de usuarios con ese cargo.
@@ -330,6 +375,40 @@ class Usuario {
         }
         $stmt->execute();
         return $stmt->fetchColumn() > 0;
+    }
+
+    /**
+     * Cambia la contraseña del usuario validando primero la contraseña actual.
+     * @param int $id_usuario ID del usuario.
+     * @param string $password_actual Contraseña actual (en texto plano).
+     * @param string $password_nueva Nueva contraseña (en texto plano).
+     * @return bool|string True si se actualiza correctamente, o mensaje de error.
+     */
+    public function cambiarContrasena($id_usuario, $password_actual, $password_nueva) {
+        $usuario = $this->obtenerPorId($id_usuario);
+        if (!$usuario) {
+            return "Usuario no encontrado.";
+        }
+        $hash_actual = $usuario['password_hash'] ?? '';
+        if (empty($hash_actual) || !password_verify($password_actual, $hash_actual)) {
+            return "La contraseña actual no es correcta.";
+        }
+        $password_nueva = trim((string) $password_nueva);
+        if (strlen($password_nueva) < 6) {
+            return "La nueva contraseña debe tener al menos 6 caracteres.";
+        }
+        if ($password_actual === $password_nueva) {
+            return "La nueva contraseña no puede ser igual a la actual.";
+        }
+        $nuevo_hash = password_hash($password_nueva, PASSWORD_DEFAULT);
+        $sql = "UPDATE " . $this->table . " SET password_hash = :password_hash WHERE id_usuario = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':password_hash', $nuevo_hash);
+        $stmt->bindParam(':id', $id_usuario, PDO::PARAM_INT);
+        if ($stmt->execute()) {
+            return true;
+        }
+        return "Error al actualizar la contraseña.";
     }
 
     /**

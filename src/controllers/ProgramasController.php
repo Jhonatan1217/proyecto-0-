@@ -31,7 +31,7 @@ function limpiar($v) {
 // ===============================
 if ($accion === 'listar') {
     try {
-        $sql = "SELECT id_programa, nombre_programa, descripcion, duracion, estado FROM programas ORDER BY nombre_programa ASC"; 
+        $sql = "SELECT id_programa, nombre_programa, descripcion, duracion, estado, nivel_formacion FROM programas ORDER BY nombre_programa ASC"; 
         $stmt = $conn->prepare($sql);
         $stmt->execute();
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);

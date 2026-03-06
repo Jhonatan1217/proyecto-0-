@@ -187,7 +187,6 @@ async function cargarAreasYZonas() {
     selectZona.addEventListener("change", (e) => {
       id_zona = e.target.value;
       const id_area = selectArea.value;
-      console.log("Zona seleccionada:", id_zona);
       if (!id_zona || !id_area) {
         toggleTabla(false);
         return;
@@ -555,7 +554,6 @@ async function cargarFichas() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     
     const data = await res.json();
-    console.log("Fichas recibidas de API:", data);
 
     const array = Array.isArray(data)
       ? data
@@ -574,7 +572,6 @@ async function cargarFichas() {
     }
   } catch (error) {
     console.error("Error cargando fichas del API:", error);
-    console.log("Extrayendo fichas de los horarios cargados...");
     extraerFichasDeHorarios();
   }
 }
@@ -593,7 +590,6 @@ function extraerFichasDeHorarios() {
     });
     
     listaFichas = Array.from(fichasSet).map(f => JSON.parse(f));
-    console.log("Fichas extraídas de horarios:", listaFichas);
   }
   
   if (!listaFichas.length) {
@@ -608,8 +604,6 @@ async function cargarCompetencias() {
       `${API_BASE}src/controllers/CompetenciaController.php?accion=listar`
     );
     const data = await res.json();
-
-    console.log("Competencias recibidas:", data);
 
     const array = Array.isArray(data)
       ? data
@@ -641,7 +635,6 @@ async function cargarInstructores() {
 
     if (resInstructor.ok) {
       const data = await resInstructor.json();
-      console.log("Respuesta del servidor (Instructores):", data);
       instructoresArray = Array.isArray(data)
         ? data
         : Array.isArray(data.data)
@@ -652,7 +645,6 @@ async function cargarInstructores() {
         `${API_BASE}src/controllers/UsuarioController.php?accion=listar&cargo=INSTRUCTOR`
       );
       const dataUsuarios = await resUsuarios.json();
-      console.log("Respuesta fallback (Usuarios como instructores):", dataUsuarios);
       const usuariosArray = Array.isArray(dataUsuarios)
         ? dataUsuarios
         : Array.isArray(dataUsuarios.data)
@@ -710,8 +702,6 @@ async function obtenerRoesPorCompetencia(id_competencia) {
       `${API_BASE}src/controllers/RaeController.php?accion=porCompetencia&id_competencia=${id_competencia}`
     );
     const data = await res.json();
-
-    console.log("RAEs de la BD:", data);
 
     if (Array.isArray(data)) return data;
     return [];
@@ -945,8 +935,7 @@ async function editarTrimestralizacion (reg){
   try{
     // El backend espera un ARRAY de registros
     const payload = [res.value];
-    console.log("Enviando payload:", JSON.stringify(payload, null, 2));
-    
+
     const resUpdate = await fetch(`${API_BASE}src/controllers/TrimestralizacionController.php?accion=actualizar`, {
       method: "POST",
       headers: {"Content-Type" : "application/json"},
@@ -958,8 +947,7 @@ async function editarTrimestralizacion (reg){
   }
   
   const data = await resUpdate.json();
-  console.log("Respuesta del servidor:", data);
-  
+
   // El backend retorna {success: true} o {success: false}
   const esExito = data.success === true || data.success === "true" || data.status === "success";
   
@@ -1048,11 +1036,27 @@ async function confirmarEliminar() {
 
 function mostrarModalEliminar() {
   const modal = document.getElementById("modalEliminar");
-  if (modal) modal.classList.remove("hidden");
+  if (modal) {
+    modal.classList.remove("hidden");
+    modal.style.display = "";
+    modal.style.pointerEvents = "";
+    modal.style.visibility = "";
+    modal.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach((el) => { el.style.pointerEvents = ""; });
+  }
 }
 function cerrarModal() {
   const modal = document.getElementById("modalEliminar");
-  if (modal) modal.classList.add("hidden");
+  if (!modal) return;
+  const activeEl = document.activeElement;
+  if (activeEl && modal.contains(activeEl)) activeEl.blur();
+  modal.classList.add("hidden");
+  modal.classList.remove("flex", "block", "items-center", "justify-center");
+  modal.style.display = "none";
+  modal.style.pointerEvents = "none";
+  modal.style.visibility = "hidden";
+  modal.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach((el) => { el.style.pointerEvents = "none"; });
+  document.body.style.overflow = "";
+  document.body.classList.remove("overflow-hidden");
 }
 
 // =======================
@@ -1149,6 +1153,8 @@ async function descargarPDF() {
 // ABRIR / CERRAR MODAL CREAR TRIMESTRALIZACIÓN
 // =======================
 
+const btnAbrirModalTrimestralizacion = document.getElementById("btnAbrirModal");
+
 function abrirModal() {
   const modal = document.getElementById("modalCrearLanding");
   if (!modal) {
@@ -1156,12 +1162,26 @@ function abrirModal() {
     return;
   }
   modal.classList.remove("hidden");
+  modal.style.display = "";
+  modal.style.pointerEvents = "";
+  modal.style.visibility = "";
+  modal.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach((el) => { el.style.pointerEvents = ""; });
 }
 
 function cerrarModalCrear() {
   const modal = document.getElementById("modalCrearLanding");
   if (!modal) return;
+  const activeEl = document.activeElement;
+  if (activeEl && modal.contains(activeEl)) activeEl.blur();
   modal.classList.add("hidden");
+  modal.classList.remove("flex", "block", "items-center", "justify-center");
+  modal.style.display = "none";
+  modal.style.pointerEvents = "none";
+  modal.style.visibility = "hidden";
+  modal.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach((el) => { el.style.pointerEvents = "none"; });
+  document.body.style.overflow = "";
+  document.body.classList.remove("overflow-hidden");
+  if (btnAbrirModalTrimestralizacion?.focus) try { btnAbrirModalTrimestralizacion.focus(); } catch (e) {}
 }
 
 // Botón principal "Nueva trimestralización"
@@ -1188,7 +1208,6 @@ function popupCeldas(){
   document.querySelectorAll("#tbody-horarios .registro").forEach(reg => {
     reg.classList.add("cursor-pointer", "hover:bg-green-50");
     reg.addEventListener("click", () => {
-      console.log("DATASET DEL REGISTRO:", reg.dataset);
         const competencia = reg.getAttribute("data-competencia") || "Sin competencia"
         const ficha = reg.getAttribute("data-ficha") || "Sin ficha"
         const programa = reg.getAttribute("data-programa") || "Sin programa"

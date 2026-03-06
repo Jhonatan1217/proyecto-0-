@@ -21,7 +21,19 @@ if (!window.TRIMESTRALIZACION_INIT) {
 
     function cerrarModalCrear() {
       const modal = document.getElementById("modalCrearLanding");
-      if (modal) modal.classList.add("hidden");
+      if (!modal) return;
+      const activeEl = document.activeElement;
+      if (activeEl && modal.contains(activeEl)) activeEl.blur();
+      modal.classList.add("hidden");
+      modal.classList.remove("flex", "block", "items-center", "justify-center");
+      modal.style.display = "none";
+      modal.style.pointerEvents = "none";
+      modal.style.visibility = "hidden";
+      modal.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach((el) => { el.style.pointerEvents = "none"; });
+      document.body.style.overflow = "";
+      document.body.classList.remove("overflow-hidden");
+      const btnAbrir = document.getElementById("btnAbrirModal");
+      if (btnAbrir?.focus) try { btnAbrir.focus(); } catch (e) {}
     }
 
     function validarFormularioHorario(form, overrideDia = null) {
@@ -215,10 +227,23 @@ if (!window.TRIMESTRALIZACION_INIT) {
       }
 
       modalDup.classList.remove("hidden");
+      modalDup.style.display = "";
+      modalDup.style.pointerEvents = "";
+      modalDup.style.visibility = "";
+      modalDup.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach((el) => { el.style.pointerEvents = ""; });
     }
 
     function cerrarModalDuplicar(soloCerrar = false) {
-      if (modalDup) modalDup.classList.add("hidden");
+      if (modalDup) {
+        const activeEl = document.activeElement;
+        if (activeEl && modalDup.contains(activeEl)) activeEl.blur();
+        modalDup.classList.add("hidden");
+        modalDup.classList.remove("flex", "block", "items-center", "justify-center");
+        modalDup.style.display = "none";
+        modalDup.style.pointerEvents = "none";
+        modalDup.style.visibility = "hidden";
+        modalDup.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach((el) => { el.style.pointerEvents = "none"; });
+      }
       if (!soloCerrar) {
         cerrarModalCrear();
         redirectToHorario();
@@ -226,7 +251,16 @@ if (!window.TRIMESTRALIZACION_INIT) {
     }
 
     function confirmarSoloEsteDia() {
-      if (modalDup) modalDup.classList.add("hidden");
+      if (modalDup) {
+        const activeEl = document.activeElement;
+        if (activeEl && modalDup.contains(activeEl)) activeEl.blur();
+        modalDup.classList.add("hidden");
+        modalDup.classList.remove("flex", "block", "items-center", "justify-center");
+        modalDup.style.display = "none";
+        modalDup.style.pointerEvents = "none";
+        modalDup.style.visibility = "hidden";
+        modalDup.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach((el) => { el.style.pointerEvents = "none"; });
+      }
       Toast.fire({
         icon: "success",
         title: "¡Horario creado correctamente!"

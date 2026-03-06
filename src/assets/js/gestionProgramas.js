@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 modal.querySelector('.modal-title')) : null;
 
     let editingId = null; // id del programa que se está editando (null si es creación)
+    let allPrograms = []; // lista completa para filtrar/buscar
 
     // ===============================
     // SWEETALERT TOASTS
@@ -298,17 +299,50 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ===============================
+    // FILTRO Y BÚSQUEDA
+    // ===============================
+    const programTypeFilter = document.getElementById('programTypeFilter');
+    const programSearchInput = document.getElementById('programSearchInput');
+
+    function applyFilters() {
+      const tipo = (programTypeFilter?.value || 'all').toLowerCase();
+      const busqueda = (programSearchInput?.value || '').trim().toLowerCase();
+      let list = allPrograms;
+      if (tipo !== 'all') {
+        list = list.filter(p => {
+          const nivel = String(p.nivel_formacion || p.nivel || '').toLowerCase().trim();
+          return nivel === tipo;
+        });
+      }
+      if (busqueda) {
+        list = list.filter(p => {
+          const nombre = String(p.nombre_programa || '').toLowerCase();
+          const codigo = String(p.id_programa || '').toLowerCase();
+          return nombre.includes(busqueda) || codigo.includes(busqueda);
+        });
+      }
+      renderList(list);
+    }
+
+    // ===============================
     // CARGA INICIAL
     // ===============================
     // Trae los programas y maneja errores de red/servidor
     async function loadPrograms() {
       try {
         const data = await apiListar();
-        if (Array.isArray(data)) renderList(data);
-        else if (data?.error)
+        if (Array.isArray(data)) {
+          allPrograms = data;
+          applyFilters();
+        } else if (data?.error) {
+          emptyBox.classList.remove('hidden');
           emptyBox.innerHTML = `<div class="py-12 text-center text-red-600">${escapeHtml(data.error)}</div>`;
-        else renderList([]);
+        } else {
+          allPrograms = [];
+          renderList([]);
+        }
       } catch {
+        emptyBox.classList.remove('hidden');
         emptyBox.innerHTML = `<div class="py-12 text-center text-red-600">No se pudo cargar la lista de programas.</div>`;
       }
     }
@@ -395,6 +429,12 @@ document.addEventListener('DOMContentLoaded', () => {
         t.err('No se pudo guardar el programa.');
       }
     });
+
+    // ===============================
+    // EVENTOS FILTRO Y BÚSQUEDA
+    // ===============================
+    if (programTypeFilter) programTypeFilter.addEventListener('change', applyFilters);
+    if (programSearchInput) programSearchInput.addEventListener('input', applyFilters);
 
     // ===============================
     // INIT

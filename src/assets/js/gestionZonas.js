@@ -63,6 +63,10 @@
   // =======================
   const openModal = () => {
     modal?.classList.remove("hidden");
+    modal.style.display = "";
+    modal.style.pointerEvents = "";
+    modal.style.visibility = "";
+    modal?.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach((el) => { el.style.pointerEvents = ""; });
     requestAnimationFrame(() => {
       panel?.classList.add("opacity-100", "scale-100", "translate-y-0");
       backdrop?.classList.add("opacity-100");
@@ -70,10 +74,23 @@
   };
 
   const closeModal = () => {
+    const activeEl = document.activeElement;
+    if (activeEl && modal?.contains(activeEl)) activeEl.blur();
     panel?.classList.remove("opacity-100", "scale-100", "translate-y-0");
     backdrop?.classList.remove("opacity-100");
-    setTimeout(() => modal?.classList.add("hidden"), 200);
-    formZona?.reset();
+    const doClose = () => {
+      modal?.classList.add("hidden");
+      modal?.classList.remove("flex", "block", "items-center", "justify-center");
+      modal.style.display = "none";
+      modal.style.pointerEvents = "none";
+      modal.style.visibility = "hidden";
+      modal?.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach((el) => { el.style.pointerEvents = "none"; });
+      document.body.style.overflow = "";
+      document.body.classList.remove("overflow-hidden");
+      if (openBtn?.focus) try { openBtn.focus(); } catch (e) {}
+      formZona?.reset();
+    };
+    setTimeout(doClose, 200);
   };
 
   openBtn?.addEventListener("click", openModal);
