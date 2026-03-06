@@ -378,6 +378,40 @@ class Usuario {
     }
 
     /**
+     * Cambia la contraseña del usuario validando primero la contraseña actual.
+     * @param int $id_usuario ID del usuario.
+     * @param string $password_actual Contraseña actual (en texto plano).
+     * @param string $password_nueva Nueva contraseña (en texto plano).
+     * @return bool|string True si se actualiza correctamente, o mensaje de error.
+     */
+    public function cambiarContrasena($id_usuario, $password_actual, $password_nueva) {
+        $usuario = $this->obtenerPorId($id_usuario);
+        if (!$usuario) {
+            return "Usuario no encontrado.";
+        }
+        $hash_actual = $usuario['password_hash'] ?? '';
+        if (empty($hash_actual) || !password_verify($password_actual, $hash_actual)) {
+            return "La contraseña actual no es correcta.";
+        }
+        $password_nueva = trim((string) $password_nueva);
+        if (strlen($password_nueva) < 6) {
+            return "La nueva contraseña debe tener al menos 6 caracteres.";
+        }
+        if ($password_actual === $password_nueva) {
+            return "La nueva contraseña no puede ser igual a la actual.";
+        }
+        $nuevo_hash = password_hash($password_nueva, PASSWORD_DEFAULT);
+        $sql = "UPDATE " . $this->table . " SET password_hash = :password_hash WHERE id_usuario = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':password_hash', $nuevo_hash);
+        $stmt->bindParam(':id', $id_usuario, PDO::PARAM_INT);
+        if ($stmt->execute()) {
+            return true;
+        }
+        return "Error al actualizar la contraseña.";
+    }
+
+    /**
      * Lista todos los roles funcionales disponibles.
      * @return array Lista de roles.
      */

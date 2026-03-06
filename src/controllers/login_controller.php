@@ -26,7 +26,7 @@ if (empty($correo) || empty($password)) {
 
 try {
 
-    $sql = "SELECT id_usuario, nombre_completo, correo_electronico, password_hash, estado 
+    $sql = "SELECT id_usuario, nombre_completo, correo_electronico, password_hash, estado, cargo 
             FROM usuarios 
             WHERE correo_electronico = :correo 
             LIMIT 1";
@@ -58,6 +58,7 @@ try {
     $_SESSION['usuario_id'] = $usuario['id_usuario'];
     $_SESSION['usuario_nombre'] = $usuario['nombre_completo'];
     $_SESSION['usuario_correo'] = $usuario['correo_electronico'];
+    $_SESSION['usuario_cargo'] = $usuario['cargo'] ?? '';
 
     header("Location: ../../index.php?page=register_tables");
     exit;

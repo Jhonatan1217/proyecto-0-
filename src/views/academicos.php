@@ -346,8 +346,6 @@
         })
         .then(r => r.text())
         .then(r => {
-          console.log("RESPUESTA DEL SERVIDOR:", r);
-
           // Cerrar el loading
           Swal.close();
 

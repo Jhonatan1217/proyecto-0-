@@ -1,3 +1,5 @@
 .config/database.php
 node_modules/
 .cursor/
+# Script de desarrollo (no desplegar)
+scripts/resetear_password.php
