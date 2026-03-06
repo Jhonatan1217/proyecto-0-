@@ -1,7 +1,12 @@
 <?php
-/* ==========================================
-   VISTA DE CARGA EXCEL
-   ========================================== */
+
+$cargo = $_SESSION['cargo'] ?? '';
+
+if ($cargo === 'INSTRUCTOR') {
+    header("Location: index.php?page=register_tables");
+    exit;
+}
+
 ?>
 <!-- ========== CARGA EXCEL ========== -->
 <section data-tab="upload" class="tab-pane hidden mt-8">

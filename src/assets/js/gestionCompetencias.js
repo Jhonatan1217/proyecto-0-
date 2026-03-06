@@ -1,17 +1,23 @@
 // src/assets/js/gestionCompetencias.js
 (function () {
+  /** * RESTRICCIÓN DE SEGURIDAD POR CARGO 
+   * Se asume que window.USER_CARGO viene definido desde el PHP (sesión)
+   */
+  const USER_CARGO = (window.USER_CARGO || "").toUpperCase();
+  const ES_INSTRUCTOR = USER_CARGO === 'INSTRUCTOR';
+
   // CONFIG: puntos finales y rutas usadas por el módulo
   const BASE = (window.BASE_URL || '').replace(/\/+$/, '');
-  const API_COMP = (window.API_COMPETENCIAS || (BASE + 'src/controllers/CompetenciaController.php')).replace(/\/+$/, '');
-  const API_PROG = (window.API_PROGRAMAS     || (BASE + 'src/controllers/ProgramasController.php')).replace(/\/+$/, '');
-  const API_RAE  = (window.API_RAES          || (BASE + 'src/controllers/RaeController.php')).replace(/\/+$/, '');
+  const API_COMP = (window.API_COMPETENCIAS || (BASE + '/src/controllers/CompetenciaController.php')).replace(/\/+$/, '');
+  const API_PROG = (window.API_PROGRAMAS     || (BASE + '/src/controllers/ProgramasController.php')).replace(/\/+$/, '');
+  const API_RAE  = (window.API_RAES          || (BASE + '/src/controllers/RaeController.php')).replace(/\/+$/, '');
 
-  // Iconos
-  const ICON_DOWN   = `${BASE}src/assets/img/chevron-down.svg`;
-  const ICON_RIGHT  = `${BASE}src/assets/img/chevron-right.svg`;
-  const ICON_PENCIL = `${BASE}src/assets/img/pencil-line.svg`;
-  const ICON_PLUS   = `${BASE}src/assets/img/plus.svg`;
-  const ICON_LIST   = `${BASE}src/assets/img/list-checks.svg`;
+  // Iconos (Rutas corregidas siguiendo el estándar del proyecto)
+  const ICON_DOWN   = `src/assets/img/chevron-down.svg`;
+  const ICON_RIGHT  = `src/assets/img/chevron-right.svg`;
+  const ICON_PENCIL = `src/assets/img/pencil-line.svg`;
+  const ICON_PLUS   = `src/assets/img/plus.svg`;
+  const ICON_LIST   = `src/assets/img/list-checks.svg`;
 
   const INITIAL_RAES_OPEN = false;
 
@@ -23,19 +29,23 @@
   const emptyBox      = document.getElementById('competenciesEmpty');
   const btnNew        = document.getElementById('btnNewCompetency');
   const filterProgram = document.getElementById('competencyProgramFilter');
-  const searchInput   = document.getElementById('competencySearch'); // ⭐ NUEVO: buscador por nombre/código
+  const searchInput   = document.getElementById('competencySearch'); 
 
   const modal     = document.getElementById('modalCompetency');
   const backdrop  = document.getElementById('modalCompetencyBackdrop');
   const form      = document.getElementById('formCompetencyNew');
 
+  // --- LÓGICA DE BLOQUEO UI PARA INSTRUCTOR ---
+  if (ES_INSTRUCTOR && btnNew) {
+      btnNew.remove(); 
+  }
+
   // Inputs modal
   const selProg   = document.getElementById('cp_program');
-  const inpCode   = document.getElementById('cp_code'); // id_competencia
+  const inpCode   = document.getElementById('cp_code'); 
   const inpName   = document.getElementById('cp_name');
   const inpDesc   = document.getElementById('cp_desc');
 
-  // Botón submit del formulario (para deshabilitarlo si hay duplicado)
   const btnSubmit = form ? (form.querySelector('[type="submit"]') || form.querySelector('button[type="submit"]')) : null;
 
   const modalCard = modal?.querySelector('.modal-card');
@@ -51,7 +61,7 @@
   }) : null);
   const t = {
     ok:   (m) => Toast && Toast.fire({ icon: 'success', title: m || 'Operación exitosa' }),
-    info: (m) => Toast && Toast.fire({ icon: 'info',    title: m || 'Información' }),
+    info: (m) => Toast && Toast.fire({ icon: 'info',     title: m || 'Información' }),
     warn: (m) => Toast && Toast.fire({ icon: 'warning', title: m || 'Revisa los datos' }),
     err:  (m) => Toast && Toast.fire({ icon: 'error',   title: m || 'Ocurrió un error' })
   };
@@ -63,8 +73,8 @@
   let editingId = null;
   let editingSnap = null;
 
-  // ====== NUEVO: soporte UI/validación de duplicados ======
-  let codeDupHelperEl = null; // pequeño texto de ayuda bajo el input
+  // ====== LÓGICA DE VALIDACIÓN DE DUPLICADOS ======
+  let codeDupHelperEl = null; 
   function ensureCodeHelper() {
     if (!inpCode || codeDupHelperEl) return;
     codeDupHelperEl = document.createElement('p');
@@ -72,6 +82,7 @@
     codeDupHelperEl.textContent = 'Este código ya existe. Elige uno diferente.';
     inpCode.parentElement?.appendChild(codeDupHelperEl);
   }
+
   function setSubmitDisabled(disabled) {
     if (!btnSubmit) return;
     btnSubmit.disabled = !!disabled;
@@ -81,6 +92,7 @@
       btnSubmit.classList.remove('opacity-60', 'pointer-events-none', 'cursor-not-allowed');
     }
   }
+
   function setCodeDuplicateUI(isDup) {
     ensureCodeHelper();
     if (!inpCode) return;
@@ -94,18 +106,18 @@
       setSubmitDisabled(false);
     }
   }
+
   function norm(v) { return String(v ?? '').trim().toLowerCase(); }
+
   function codeExists(code, excludeId = null) {
     const codeN = norm(code);
     return ITEMS.some(c => {
       const sameCode = norm(c.code) === codeN;
       if (!sameCode) return false;
-      // Excluir el propio registro cuando estamos editando
       if (excludeId != null && String(c.id) === String(excludeId)) return false;
       return true;
     });
   }
-  // ========================================================
 
   // UTILS
   const e = (s) => String(s ?? '')
@@ -292,27 +304,18 @@
 
     const pf = filterProgram?.value || 'all';
     const isFiltering = !!filterProgram && pf !== 'all';
-
-    // ⭐ NUEVO: término de búsqueda (nombre / código)
     const rawSearch = (searchInput?.value || '').trim().toLowerCase();
     const hasSearch = rawSearch.length > 0;
 
     const data = ITEMS.filter(c => {
-      // Filtro por programa (ya lo tenías)
       if (isFiltering) {
-        if (!c.program_id) return false;
-        if (String(c.program_id) !== String(pf)) return false;
+        if (!c.program_id || String(c.program_id) !== String(pf)) return false;
       }
-
-      // Filtro por buscador (nombre / código)
       if (hasSearch) {
         const name = (c.name || '').toLowerCase();
         const code = (c.code || '').toLowerCase();
-        if (!name.includes(rawSearch) && !code.includes(rawSearch)) {
-          return false;
-        }
+        if (!name.includes(rawSearch) && !code.includes(rawSearch)) return false;
       }
-
       return true;
     });
 
@@ -324,19 +327,15 @@
         emptyBox.innerHTML = `
           <div class="w-full rounded-2xl border border-zinc-200 bg-white">
             <div class="flex flex-col items-center justify-center text-center py-16">
-              <p class="text-zinc-500 mb-5 text-sm sm:text-base">
-                No hay competencias registrados
-              </p>
-              <button id="btnFirstCompetency"
-                      class="flex items-center gap-2  bg-[#00324d] text-white px-4 py-2 rounded-xl font-medium text-sm">
-                <img src="${ICON_PLUS}" class="w-4 h-4" alt="simbolo de mas" />
+              <p class="text-zinc-500 mb-5 text-sm sm:text-base">No hay competencias registradas</p>
+              ${ES_INSTRUCTOR ? '' : `
+              <button id="btnFirstCompetency" class="flex items-center gap-2 bg-[#00324d] text-white px-4 py-2 rounded-xl font-medium text-sm">
+                <img src="${ICON_PLUS}" class="w-4 h-4" alt="+" />
                 Crear Primera Competencia
-              </button>
+              </button>`}
             </div>
-          </div>
-        `;
-        document.getElementById('btnFirstCompetency')
-          ?.addEventListener('click', () => btnNew?.click());
+          </div>`;
+        if (!ES_INSTRUCTOR) document.getElementById('btnFirstCompetency')?.addEventListener('click', () => btnNew?.click());
       }
       return;
     }
@@ -347,29 +346,29 @@
         emptyBox.innerHTML = `
           <div class="w-full rounded-2xl border border-zinc-200 bg-white">
             <div class="flex items-center justify-center text-center py-16">
-              <p class="text-zinc-500 text-sm sm:text-base">
-                No hay competencias que coincidan con los criterios seleccionados.
-              </p>
+              <p class="text-zinc-500 text-sm sm:text-base">No hay competencias que coincidan con los criterios.</p>
             </div>
-          </div>
-        `;
+          </div>`;
       }
       return;
     }
 
-    if (emptyBox) {
-      emptyBox.innerHTML = '';
-      hide(emptyBox);
-    }
+    if (emptyBox) { emptyBox.innerHTML = ''; hide(emptyBox); }
 
     data.forEach(c => {
       const raes = RAE_MAP[String(c.id)] || [];
       const isOpen = INITIAL_RAES_OPEN;
-      const card = document.createElement('div');
-      card.className = 'rounded-2xl ring-1 ring-zinc-200 shadow-sm bg-white overflow-hidden';
-
       const raeTarget = `rae-${e(c.id)}`;
-      const iconSrc  = isOpen ? ICON_DOWN : ICON_RIGHT;
+      const card = document.createElement('div');
+      card.className = 'rounded-2xl ring-1 ring-zinc-200 shadow-sm bg-white overflow-hidden mb-4';
+
+      const controlesHtml = ES_INSTRUCTOR ? '' : `
+        <div class="shrink-0 flex items-center gap-3">
+          <button class="btn-edit inline-flex items-center justify-center p-2 text-zinc-600 hover:text-zinc-900" data-id="${e(c.id)}" title="Editar">
+            <img src="${ICON_PENCIL}" class="w-5 h-5" alt="Editar" />
+          </button>
+          ${renderSwitchHtml(c.id, !!c.estado)}
+        </div>`;
 
       card.innerHTML = `
         <div class="p-5">
@@ -378,11 +377,10 @@
               <div class="flex items-center gap-2">
                 <button class="btn-collapse inline-flex items-center justify-center p-1 text-zinc-700 hover:text-zinc-900"
                         data-target="${raeTarget}" aria-expanded="${isOpen}" title="${isOpen ? 'Ocultar RAEs' : 'Mostrar RAEs'}">
-                  <img src="${iconSrc}" alt="toggle" class="w-4 h-4 transition-transform duration-200" />
+                  <img src="${isOpen ? ICON_DOWN : ICON_RIGHT}" alt="toggle" class="w-4 h-4 transition-transform duration-200" />
                 </button>
                 <h3 class="text-2xl font-bold tracking-tight text-zinc-900">${e(c.name || '(Sin nombre)')}</h3>
               </div>
-
               <p class="text-sm text-zinc-500 mt-2 flex items-center gap-2 flex-wrap">
                 <span><span class="opacity-80">Código:</span> <span class="font-semibold">${e(c.code || '—')}</span></span>
                 <span class="text-zinc-300">•</span>
@@ -392,90 +390,69 @@
                 <span class="text-zinc-300">•</span>
                 ${statusChip(c.estado)}
               </p>
-
               ${c.desc ? `<p class="text-sm text-zinc-700 mt-3">${e(c.desc)}</p>` : ''}
-
               <div class="mt-4">${raeCountPill(raes.length)}</div>
             </div>
-
-            <div class="shrink-0 flex items-center gap-3">
-              <button class="btn-edit inline-flex items-center justify-center p-2 text-zinc-600 hover:text-zinc-900" data-id="${e(c.id)}" title="Editar">
-                <img src="${ICON_PENCIL}" class="w-5 h-5" alt="Editar" />
-              </button>
-              ${renderSwitchHtml(c.id, !!c.estado)}
-            </div>
+            ${controlesHtml}
           </div>
         </div>
-
-        <div class="border-t border-zinc-200 px-5 py-4 ${isOpen ? '' : 'hidden'}" id="${raeTarget}" role="region" aria-label="RAEs">
+        <div class="border-t border-zinc-200 px-5 py-4 ${isOpen ? '' : 'hidden'}" id="${raeTarget}" role="region">
           <div class="text-sm font-semibold text-zinc-900 mb-3">Resultados de Aprendizaje Esperados (RAE)</div>
-          <div class="grid gap-3">
-            ${renderRaeItemsHtml( (RAE_MAP[String(c.id)] || []) )}
-          </div>
-        </div>
-      `;
+          <div class="grid gap-3">${renderRaeItemsHtml(raes)}</div>
+        </div>`;
 
       list.appendChild(card);
     });
 
-    list.querySelectorAll('.btn-edit').forEach(b => b.addEventListener('click', onEditClick));
-    list.querySelectorAll('.switch').forEach(sw => {
-      paintSwitch(sw);
-      const input = sw.querySelector('input');
-      const id = sw.getAttribute('data-switch');
-      input.addEventListener('change', async () => {
-        const next = input.checked ? 1 : 0;
-        try {
-          const res = await apiJson(`${API_COMP}?accion=inhabilitar`, { id_competencia: id, estado: next });
-          if (res?.error) throw new Error(res.error);
-          t.ok('Estado actualizado');
-          await loadCompetencias();
-          await tryLoadRaeMap();
-        } catch (err) {
-          console.error('[Competencias] cambiar estado:', err);
-          input.checked = !input.checked;
+    if (!ES_INSTRUCTOR) {
+        list.querySelectorAll('.btn-edit').forEach(b => b.addEventListener('click', onEditClick));
+        list.querySelectorAll('.switch').forEach(sw => {
           paintSwitch(sw);
-          t.err('No fue posible cambiar el estado');
-        }
-      });
-    });
+          const input = sw.querySelector('input');
+          const id = sw.getAttribute('data-switch');
+          input.addEventListener('change', async () => {
+            const next = input.checked ? 1 : 0;
+            try {
+              const res = await apiJson(`${API_COMP}?accion=inhabilitar`, { id_competencia: id, estado: next });
+              if (res?.error) throw new Error(res.error);
+              t.ok('Estado actualizado');
+              await loadCompetencias();
+              await tryLoadRaeMap();
+            } catch (err) {
+              input.checked = !input.checked;
+              paintSwitch(sw);
+              t.err('Error al cambiar estado');
+            }
+          });
+        });
+    }
     list.querySelectorAll('.btn-collapse').forEach(b => b.addEventListener('click', onCollapseClick));
   }
 
-  // EVENTS
-  btnNew?.addEventListener('click', () => {
-    editingId = null;
-    editingSnap = null;
-    form?.reset();
-
-    if (titleComp) titleComp.textContent = 'Nueva Competencia';
-
-    if (inpCode) {
-      inpCode.removeAttribute('readonly');
-      inpCode.classList.remove('bg-zinc-50');
-      inpCode.value = '';
-      setCodeDuplicateUI(false); // limpiar estado duplicado
-    }
-    if (selProg) selProg.value = '';
-    if (inpName) inpName.value = '';
-    if (inpDesc) inpDesc.value = '';
-
-    openModal(true);
-  });
+  // EVENTOS
+  if (!ES_INSTRUCTOR) {
+      btnNew?.addEventListener('click', () => {
+        editingId = null; editingSnap = null;
+        form?.reset();
+        if (titleComp) titleComp.textContent = 'Nueva Competencia';
+        if (inpCode) {
+          inpCode.removeAttribute('readonly');
+          inpCode.classList.remove('bg-zinc-50');
+          setCodeDuplicateUI(false); 
+        }
+        openModal(true);
+      });
+  }
 
   document.getElementById('btnCloseCompetency')?.addEventListener('click', closeModal);
   document.getElementById('btnCancelCompetency')?.addEventListener('click', closeModal);
-  backdrop?.addEventListener('click', (e) => { if (e.target === backdrop) closeModal(); });
+  backdrop?.addEventListener('click', (ev) => { if (ev.target === backdrop) closeModal(); });
 
   filterProgram?.addEventListener('change', renderList);
+  searchInput?.addEventListener('input', renderList);
 
-  // ⭐ NUEVO: evento del buscador (filtra por nombre/código)
-  searchInput?.addEventListener('input', () => {
-    renderList();
-  });
-
-  function onCollapseClick(e) {
-    const btn = e.currentTarget;
+  function onCollapseClick(ev) {
+    const btn = ev.currentTarget;
     const targetId = btn.getAttribute('data-target');
     const panel = document.getElementById(targetId);
     if (!panel) return;
@@ -490,9 +467,8 @@
   }
 
   function openModal(withAnim = false) {
+    if (ES_INSTRUCTOR) return;
     show(backdrop); show(modal);
-    if (!editingId) form?.reset();
-
     if (withAnim) {
       backdrop.classList.add('animate-backdrop');
       modalCard?.classList.add('animate-modal');
@@ -508,8 +484,7 @@
   function closeModal() {
     hide(backdrop); hide(modal);
     form?.reset();
-    editingId = null;
-    editingSnap = null;
+    editingId = null; editingSnap = null;
     if (inpCode) {
       inpCode.removeAttribute('readonly');
       inpCode.classList.remove('bg-zinc-50');
@@ -517,71 +492,44 @@
     }
   }
 
-  async function onEditClick(e) {
-    const id = e.currentTarget.getAttribute('data-id');
+  async function onEditClick(ev) {
+    if (ES_INSTRUCTOR) return;
+    const id = ev.currentTarget.getAttribute('data-id');
     let item = ITEMS.find(x => String(x.id) === String(id));
-    if (!item || !item.name || !item.program_id) {
-      try {
-        const raw =
-          await apiGet(`${API_COMP}?accion=obtener&id=${encodeURIComponent(id)}`)
-            .catch(() => apiGet(`${API_COMP}?accion=obtener&id_competencia=${encodeURIComponent(id)}`));
-        if (raw && typeof raw === 'object') {
-          item = mapCompetencia(Array.isArray(raw) ? raw[0] : raw);
-        }
-      } catch (_) {}
+    if (!item) {
+        try {
+            const raw = await apiGet(`${API_COMP}?accion=obtener&id=${encodeURIComponent(id)}`);
+            if (raw) item = mapCompetencia(Array.isArray(raw) ? raw[0] : raw);
+        } catch (_) {}
     }
-    if (!item) { t.err('No fue posible cargar la competencia'); return; }
+    if (!item) { t.err('No se cargó la competencia'); return; }
 
     editingId = item.id;
-    editingSnap = {
-      program_id: String(item.program_id ?? ''),
-      code: String(item.code ?? ''),
-      name: String(item.name ?? ''),
-      desc: String(item.desc ?? '')
-    };
+    editingSnap = { program_id: String(item.program_id ?? ''), code: String(item.code ?? ''), name: String(item.name ?? ''), desc: String(item.desc ?? '') };
 
-    if (selProg) {
-      const target = String(item.program_id ?? '');
-      const exists = Array.from(selProg.options).some(o => String(o.value) === target);
-      selProg.value = exists ? target : '';
-    }
-
-    if (inpCode) {
-      inpCode.value = item.code || '';
-      inpCode.removeAttribute('readonly');
-      inpCode.classList.remove('bg-zinc-50');
-      // Al abrir en edición, marcar duplicado si cambia el código respecto al original:
-      setCodeDuplicateUI(false);
-    }
+    if (selProg) selProg.value = Array.from(selProg.options).some(o => String(o.value) === String(item.program_id)) ? item.program_id : '';
+    if (inpCode) { inpCode.value = item.code || ''; setCodeDuplicateUI(false); }
     if (inpName) inpName.value = item.name || '';
     if (inpDesc) inpDesc.value = item.desc || '';
-
     if (titleComp) titleComp.textContent = 'Editar Competencia';
 
     openModal(true);
   }
 
-  // ====== NUEVO: validación en vivo de código duplicado ======
+  // VALIDACIÓN EN VIVO
   let codeCheckTimer = null;
   inpCode?.addEventListener('input', () => {
     clearTimeout(codeCheckTimer);
     const val = (inpCode.value || '').trim();
-    // pequeño debounce para no recalcular en cada tecla
     codeCheckTimer = setTimeout(() => {
-      const isDup = val ? codeExists(val, editingId) : false;
-      setCodeDuplicateUI(isDup);
-    }, 120);
+      setCodeDuplicateUI(val ? codeExists(val, editingId) : false);
+    }, 150);
   });
-  inpCode?.addEventListener('blur', () => {
-    const val = (inpCode.value || '').trim();
-    const isDup = val ? codeExists(val, editingId) : false;
-    setCodeDuplicateUI(isDup);
-  });
-  // ===========================================================
 
   // GUARDAR
   form?.addEventListener('submit', async (ev) => {
     ev.preventDefault();
+    if (ES_INSTRUCTOR) return t.err('Sin permisos');
 
     const isEditing  = !!editingId;
     const newCode    = (inpCode?.value || '').trim();
@@ -593,89 +541,42 @@
       id_programa: (selProg?.value || '').trim() || null
     };
 
-    // Validación mínima
-    if (!payload.codigo_competencia && !payload.nombre_competencia && !payload.descripcion && !payload.id_programa) {
-      t.warn('Todos los campos son obligatorios'); return;
+    if (!payload.codigo_competencia || !payload.nombre_competencia || !payload.id_programa) {
+      t.warn('Completa los campos obligatorios'); return;
     }
-    if (!payload.nombre_competencia) { t.warn('El nombre es obligatorio'); return; }
-    if (!isEditing && !payload.codigo_competencia) { t.warn('El código es obligatorio'); return; }
-    if (!isEditing && !payload.id_programa) { t.warn('Seleccione un programa'); return; }
-  
 
-    // ====== NUEVO: validación de duplicado al enviar ======
-    const dupNow = newCode ? codeExists(newCode, isEditing ? editingId : null) : false;
-    if (dupNow) {
-      setCodeDuplicateUI(true);
-      t.err('El código ya existe. Por favor, ingresa uno diferente.');
-      return;
-    }
-    // =====================================================
-
-    if (isEditing && editingSnap) {
-      const changed =
-        String(payload.codigo_competencia) !== editingSnap.code ||
-        String(payload.id_programa ?? '')  !== editingSnap.program_id ||
-        String(payload.nombre_competencia) !== editingSnap.name ||
-        String(payload.descripcion)        !== editingSnap.desc;
-
-      if (!changed) { t.info('No has realizado cambios aun'); return; }
+    if (codeExists(newCode, isEditing ? editingId : null)) {
+      setCodeDuplicateUI(true); t.err('El código ya existe'); return;
     }
 
     try {
       if (isEditing) {
         payload.nuevo_id_competencia = newCode;
-        const res = await apiJson(`${API_COMP}?accion=actualizar`, payload);
-        if (res?.error) throw new Error(res.error);
+        await apiJson(`${API_COMP}?accion=actualizar`, payload);
         t.ok('Competencia actualizada');
       } else {
-        const res = await apiJson(`${API_COMP}?accion=crear`, payload);
-        if (res?.error) throw new Error(res.error);
+        await apiJson(`${API_COMP}?accion=crear`, payload);
         t.ok('Competencia creada');
       }
       closeModal();
       await loadCompetencias();
       await tryLoadRaeMap();
     } catch (err) {
-      console.error('[Competencias] guardar:', err);
-      t.err('No fue posible guardar');
+      t.err('Error al guardar');
     }
   });
 
-  // ESCUCHAR cambios externos
-  window.addEventListener('raes:changed', async (_ev) => {
-    await tryLoadRaeMap();
-    renderList();
-  });
-
-  function isModalOpen() {
-    return modal && !modal.classList.contains('hidden') && !backdrop?.classList.contains('hidden');
-  }
-
-  window.addEventListener('programs:changed', async (ev) => {
-    const type = ev?.detail?.type || '';
-    const prog = ev?.detail?.program || {};
-    const pid  = String(prog.id_programa ?? prog.id ?? '');
-
+  window.addEventListener('raes:changed', async () => await tryLoadRaeMap());
+  window.addEventListener('programs:changed', async () => {
     await loadPrograms({ preserveSelection: true });
-
-    if (type === 'create' && isModalOpen() && !editingId && pid && selProg) {
-      const has = Array.from(selProg.options).some(o => String(o.value) === pid);
-      if (has) selProg.value = pid;
-    }
-
     renderList();
   });
-
-  // 🔁 NUEVO: cuando se suba el Excel, recargar programas + competencias + RAEs sin recargar página
   window.addEventListener('excel-subido-ok', async () => {
-    await loadPrograms({ preserveSelection: true });
-    await loadCompetencias();
-    await tryLoadRaeMap();
+    await loadPrograms(); await loadCompetencias(); await tryLoadRaeMap();
   });
 
-  // INIT
   (async function init(){
-    await loadPrograms({ preserveSelection: true });
+    await loadPrograms();
     await loadCompetencias();
     await tryLoadRaeMap();
   })();
