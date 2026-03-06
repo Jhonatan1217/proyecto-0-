@@ -1,3 +1,11 @@
+<?php
+$cargo = $_SESSION['cargo'] ?? '';
+
+if ($cargo === 'INSTRUCTOR') {
+    header("Location: index.php?page=register_tables");
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>

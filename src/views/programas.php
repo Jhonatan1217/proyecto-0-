@@ -12,12 +12,15 @@
         </div>
         
         <div class="flex items-center gap-3 ">
-            <button id="btnNewProgram" class="rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 bg-[#0a3a57] text-white hover:bg-[#052433] transition-all whitespace-nowrap">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 5v14M5 12h14"/>
-                </svg>
-                Nuevo Programa
-            </button>
+
+            <?php if (($_SESSION['usuario_cargo'] ?? '') !== 'INSTRUCTOR'): ?>
+                <button id="btnNewProgram" class="rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 bg-[#0a3a57] text-white hover:bg-[#052433] transition-all whitespace-nowrap">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                    Nuevo Programa
+                </button>
+            <?php endif; ?>
         </div>
     </div>
     <div class="flex flex-col w-min gap-3 sm:flex-row sm:flex-wrap md:flex-nowrap md:justify-end competencias-filtros-wrapper">
@@ -43,64 +46,68 @@
 
 <!-- ===== MODAL: Nuevo/Editar Programa ===== -->
 <div id="modalProgramBackdrop" class="hidden fixed inset-0 z-40" style="background:rgba(0,0,0,.4)"></div>
-<section id="modalProgram" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl" style="border:1px solid #e5e7eb">
-        <div class="flex items-start justify-between p-6 pb-2">
-            <div>
-                <h2 id="modalProgramTitle" class="text-2xl font-bold text-zinc-900">Nuevo Programa</h2>
-                <p class="text-sm text-zinc-500">Complete la información del programa de formación</p>
+<?php if (($_SESSION['usuario_cargo'] ?? '') !== 'INSTRUCTOR'): ?>
+
+    <section id="modalProgram" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl" style="border:1px solid #e5e7eb">
+            <div class="flex items-start justify-between p-6 pb-2">
+                <div>
+                    <h2 id="modalProgramTitle" class="text-2xl font-bold text-zinc-900">Nuevo Programa</h2>
+                    <p class="text-sm text-zinc-500">Complete la información del programa de formación</p>
+                </div>
+                <button id="btnCloseProgram" class="p-2 rounded-lg hover:bg-zinc-100 transition text-zinc-500 hover:text-zinc-700">✕</button>
             </div>
-            <button id="btnCloseProgram" class="p-2 rounded-lg hover:bg-zinc-100 transition text-zinc-500 hover:text-zinc-700">✕</button>
+
+            <form id="formProgramNew" class="p-6 pt-4 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Código <span class="text-red-500">*</span></label>
+                    <input id="pg_code" type="number" min="1" placeholder="Ej: 2896365"
+                        class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none focus:border-[#0a3a57] focus:ring-1 focus:ring-[#0a3a57] transition" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-1">Nombre <span class="text-red-500">*</span></label>
+                    <input id="pg_name" type="text" placeholder="Ej: Análisis y Desarrollo de Software (ADSO)"
+                        class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none focus:border-[#0a3a57] focus:ring-1 focus:ring-[#0a3a57] transition" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-1">Tipo de programa <span class="text-red-500">*</span></label>
+                    <select id="pg_nivel" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm bg-white focus:border-[#0a3a57] focus:ring-1 focus:ring-[#0a3a57] transition" required>
+                        <option value="">Seleccione tipo de programa</option>
+                        <option value="tecnico">Técnico</option>
+                        <option value="tecnologo">Tecnólogo</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-1">Descripción</label>
+                    <textarea id="pg_desc" rows="3" placeholder="Ej: Programa orientado al diseño y desarrollo de aplicaciones empresariales"
+                            class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none focus:border-[#0a3a57] focus:ring-1 focus:ring-[#0a3a57] transition resize-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-1">Duración (horas)</label>
+                    <input id="pg_hours" type="number" min="0" placeholder="Ej: 2640"
+                        class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none focus:border-[#0a3a57] focus:ring-1 focus:ring-[#0a3a57] transition">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-1">Instructor asignado</label>
+                    <select id="pg_instructor" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm bg-white focus:border-[#0a3a57] focus:ring-1 focus:ring-[#0a3a57] transition">
+                        <option value="">Seleccione un instructor</option>
+                    </select>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" id="btnCancelProgram" class="rounded-xl border border-zinc-300 bg-white px-6 py-2.5 text-sm font-medium hover:bg-zinc-50 transition">Cancelar</button>
+                    <button type="submit" id="btnSubmitProgram" class="rounded-xl px-6 py-2.5 text-sm font-medium bg-[#0a3a57] text-white hover:bg-[#052433] transition">Guardar</button>
+                </div>
+            </form>
         </div>
+    </section>
 
-        <form id="formProgramNew" class="p-6 pt-4 space-y-4">
-            <div>
-                <label class="block text-sm font-medium mb-1">Código <span class="text-red-500">*</span></label>
-                <input id="pg_code" type="number" min="1" placeholder="Ej: 2896365"
-                       class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none focus:border-[#0a3a57] focus:ring-1 focus:ring-[#0a3a57] transition" required>
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium mb-1">Nombre <span class="text-red-500">*</span></label>
-                <input id="pg_name" type="text" placeholder="Ej: Análisis y Desarrollo de Software (ADSO)"
-                       class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none focus:border-[#0a3a57] focus:ring-1 focus:ring-[#0a3a57] transition" required>
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium mb-1">Tipo de programa <span class="text-red-500">*</span></label>
-                <select id="pg_nivel" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm bg-white focus:border-[#0a3a57] focus:ring-1 focus:ring-[#0a3a57] transition" required>
-                    <option value="">Seleccione tipo de programa</option>
-                    <option value="tecnico">Técnico</option>
-                    <option value="tecnologo">Tecnólogo</option>
-                </select>
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium mb-1">Descripción</label>
-                <textarea id="pg_desc" rows="3" placeholder="Ej: Programa orientado al diseño y desarrollo de aplicaciones empresariales"
-                          class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none focus:border-[#0a3a57] focus:ring-1 focus:ring-[#0a3a57] transition resize-none"></textarea>
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium mb-1">Duración (horas)</label>
-                <input id="pg_hours" type="number" min="0" placeholder="Ej: 2640"
-                       class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none focus:border-[#0a3a57] focus:ring-1 focus:ring-[#0a3a57] transition">
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium mb-1">Instructor asignado</label>
-                <select id="pg_instructor" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm bg-white focus:border-[#0a3a57] focus:ring-1 focus:ring-[#0a3a57] transition">
-                    <option value="">Seleccione un instructor</option>
-                </select>
-            </div>
-
-            <div class="flex justify-end gap-3 pt-4">
-                <button type="button" id="btnCancelProgram" class="rounded-xl border border-zinc-300 bg-white px-6 py-2.5 text-sm font-medium hover:bg-zinc-50 transition">Cancelar</button>
-                <button type="submit" id="btnSubmitProgram" class="rounded-xl px-6 py-2.5 text-sm font-medium bg-[#0a3a57] text-white hover:bg-[#052433] transition">Guardar</button>
-            </div>
-        </form>
-    </div>
-</section>
+<?php endif; ?>
 
 <!-- ===== MODAL: Agregar Instructor ===== -->
 <div id="modalInstructorBackdrop" class="hidden fixed inset-0 z-40" style="background:rgba(0,0,0,.4)"></div>
