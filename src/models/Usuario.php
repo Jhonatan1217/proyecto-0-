@@ -80,7 +80,7 @@ class Usuario {
         $stmt->bindParam(':es_sistema', $es_sistema, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
-            return true;
+            return (int) $this->conn->lastInsertId();
         }
         return "Error al crear el usuario.";
     }

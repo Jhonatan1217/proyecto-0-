@@ -427,6 +427,12 @@
                 </div>
               </div>
             </div>
+            <div class="pt-2">
+              <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="rol_encargado_trimestralizacion" id="rol_trimestralizacion_nuevo" value="1" class="rounded border-gray-300 text-[#39A900] focus:ring-[#39A900]">
+                <span class="text-sm text-gray-700">Encargado de trimestralización</span>
+              </label>
+            </div>
           </div>
 
           <div class="grupoCoordinador hidden pt-4 border-t border-gray-100">
@@ -564,6 +570,12 @@
                 </div>
               </div>
             </div>
+            <div class="pt-2">
+              <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="rol_encargado_trimestralizacion" id="rol_trimestralizacion_editar" value="1" class="rounded border-gray-300 text-[#39A900] focus:ring-[#39A900]">
+                <span class="text-sm text-gray-700">Encargado de trimestralización</span>
+              </label>
+            </div>
           </div>
 
           <div class="grupoCoordinador hidden pt-4 border-t border-gray-100">
@@ -643,6 +655,10 @@
                 <div>
                     <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Tipo de contrato</label>
                     <p id="verContrato" class="text-gray-800 mt-1">—</p>
+                </div>
+                <div id="verRolTrimestralizacion" class="hidden">
+                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Rol funcional</label>
+                    <p class="text-gray-800 mt-1">Encargado de trimestralización</p>
                 </div>
             </div>
 

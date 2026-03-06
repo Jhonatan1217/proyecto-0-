@@ -3,6 +3,8 @@
    ========================================================================== */
 
 const API = window.API_USUARIO;
+/** ID del rol funcional "Encargado de trimestralización" (se rellena al cargar roles disponibles). */
+let idRolTrimestralizacion = null;
 
 // Mapeo tipo_documento (DB: CC, CE, TI, PASAPORTE) <-> etiqueta legible
 const TIPO_DOC_LABELS = {
@@ -450,6 +452,8 @@ async function cargarRolesDisponibles() {
     try {
         const roles = await apiRequest("rolesDisponibles");
         if (!Array.isArray(roles)) return;
+        const rTrim = roles.find(r => (r.nombre_rol || '').toLowerCase().includes('trimestralización'));
+        idRolTrimestralizacion = rTrim ? (rTrim.id_rol != null ? parseInt(rTrim.id_rol, 10) : null) : null;
         const sel = document.getElementById('filtroRoles');
         if (!sel) return;
         const valorActual = sel.value;
@@ -590,6 +594,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const res = await apiRequest("crear", "POST", datos);
         if (res.success) {
+            const idUsuario = res.id_usuario ? parseInt(res.id_usuario, 10) : null;
+            const cbTrim = form.querySelector('#rol_trimestralizacion_nuevo');
+            if (idUsuario && idRolTrimestralizacion && cbTrim?.checked && (window.USUARIO_ID || 0) > 0) {
+                const rRol = await apiRequest("asignarRol", "POST", {
+                    id_usuario: idUsuario,
+                    id_rol: idRolTrimestralizacion,
+                    asignado_por: window.USUARIO_ID
+                });
+                if (!rRol.success) toast(rRol.error || "Error al asignar rol de trimestralización", "error");
+            }
             cerrarModal('modalNuevoUsuario');
             toast("Usuario creado satisfactoriamente");
             cargarUsuarios();
@@ -615,6 +629,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const res = await apiRequest("actualizar", "POST", datos);
         if (res.success) {
+            const idUsuario = form.querySelector('[name="id_usuario"]')?.value;
+            const cargo = datos.cargo || '';
+            const cbTrim = form.querySelector('#rol_trimestralizacion_editar');
+            const teniaRol = form.dataset.teniaRolTrimestralizacion === '1';
+            if (String(cargo).toLowerCase().includes('instructor') && idRolTrimestralizacion && idUsuario) {
+                if (cbTrim?.checked && !teniaRol) {
+                    const rRol = await apiRequest("asignarRol", "POST", {
+                        id_usuario: idUsuario,
+                        id_rol: idRolTrimestralizacion,
+                        asignado_por: window.USUARIO_ID || 0
+                    });
+                    if (!rRol.success) toast(rRol.error || "Error al asignar rol", "error");
+                } else if (!cbTrim?.checked && teniaRol) {
+                    const rRol = await apiRequest("quitarRol", "POST", { id_usuario: idUsuario, id_rol: idRolTrimestralizacion });
+                    if (!rRol.success) toast(rRol.error || "Error al quitar rol", "error");
+                }
+            }
             cerrarModal('modalEditarUsuario');
             toast("Usuario actualizado correctamente");
             cargarUsuarios();
@@ -673,6 +704,16 @@ async function prepararEdicion(id) {
                 setSelectValue(selContrato, valorContrato);
                 selModalidad?.dispatchEvent(new Event('change', { bubbles: true }));
                 selContrato?.dispatchEvent(new Event('change', { bubbles: true }));
+                const cbTrim = form.querySelector('#rol_trimestralizacion_editar');
+                if (cbTrim) {
+                    let rolesUsuario = [];
+                    try {
+                        rolesUsuario = await apiRequest("listarRolesUsuario", "GET", { id_usuario: u.id_usuario }) || [];
+                    } catch (_) {}
+                    const tieneTrim = Array.isArray(rolesUsuario) && rolesUsuario.some(r => (String(r.nombre_rol || '').toLowerCase().includes('trimestralización')));
+                    cbTrim.checked = tieneTrim;
+                    form.dataset.teniaRolTrimestralizacion = tieneTrim ? '1' : '0';
+                }
             } else {
                 const inputArea = form.querySelector('[name="area_coordinador"]');
                 if (inputArea) inputArea.value = u.nombre_area || u.area_coordinador || '';
@@ -748,8 +789,19 @@ async function verUsuarioDetalles(id) {
         if (String(u.cargo || '').toLowerCase().includes('instructor')) {
             set('verTipoIns', ti);
             set('verContrato', tc);
+            let rolesUsuario = [];
+            try {
+                rolesUsuario = await apiRequest("listarRolesUsuario", "GET", { id_usuario: id }) || [];
+            } catch (_) {}
+            const verBlock = document.getElementById('verRolTrimestralizacion');
+            if (verBlock) {
+                const tieneTrim = Array.isArray(rolesUsuario) && rolesUsuario.some(r => String(r.nombre_rol || '').toLowerCase().includes('trimestralización'));
+                verBlock.classList.toggle('hidden', !tieneTrim);
+            }
         } else {
             set('verArea', u.nombre_area || u.area_coordinador || 'No asignada');
+            const verBlock = document.getElementById('verRolTrimestralizacion');
+            if (verBlock) verBlock.classList.add('hidden');
         }
 
         const progEl = document.getElementById('verProgramas');

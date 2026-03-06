@@ -132,8 +132,8 @@ try {
             }
 
             $resultado = $usuarioModel->crear($datos);
-            if ($resultado === true) {
-                echo json_encode(['success' => true, 'message' => 'Usuario creado correctamente']);
+            if (is_numeric($resultado) && (int) $resultado > 0) {
+                echo json_encode(['success' => true, 'message' => 'Usuario creado correctamente', 'id_usuario' => (int) $resultado]);
             } else {
                 echo json_encode(['error' => $resultado]);
             }
