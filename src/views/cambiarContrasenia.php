@@ -4,6 +4,20 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+/* ================= BASE_URL AUTO ================= */
+if (!defined('BASE_URL')) {
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        ? 'https://'
+        : 'http://';
+
+    $host = $_SERVER['HTTP_HOST'];
+
+    $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
+    $project = preg_replace('#/src/.*$#', '', $scriptDir);
+
+    define('BASE_URL', $protocol . $host . $project . '/');
+}
+
 // Obtener token de la URL (prioridad) o de sesión
 $token = $_GET['token'] ?? $_SESSION['reset_token'] ?? '';
 
@@ -20,21 +34,14 @@ if (isset($_GET['token']) && !isset($_SESSION['reset_token'])) {
 
 $error = $_SESSION['error_password'] ?? '';
 unset($_SESSION['error_password']);
+
+include __DIR__ . '/../includes/header-public.php';
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nueva Contraseña - SENLOCK</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .alert-transition {
-            transition: all 0.3s ease;
-        }
-    </style>
-</head>
-<body class="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<div class="flex-1 min-h-screen flex items-center justify-center p-4 bg-cover bg-center bg-no-repeat" 
+style="background-image: url(../assets/img/fondo_restablecer_contrasenia.png);">
     
     <div class="w-full max-w-md">
         <!-- Tarjeta de cambio de contraseña -->
@@ -43,7 +50,7 @@ unset($_SESSION['error_password']);
 
             <!-- Mensajes de error -->
             <?php if ($error): ?>
-                <div class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg alert-transition">
+                <div class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg transition-all duration-300">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
                             <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -67,15 +74,22 @@ unset($_SESSION['error_password']);
                     <label for="password" class="block text-sm font-bold text-black mb-2">
                         Contraseña nueva
                     </label>
-                    <input 
-                        type="password" 
-                        id="password" 
-                        name="password" 
-                        class="w-full px-4 py-3 rounded-2xl border border-gray-400 focus:ring-2 focus:ring-[#39A900] focus:border-[#39A900] transition-colors"
-                        placeholder="••••••••"
-                        minlength="8"
-                        required
-                    >
+                    <div class="relative">
+                        <img
+                            src="../assets/img/lock.svg"
+                            alt="Contraseña"
+                            class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none"
+                        >
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            class="w-full pl-12 pr-4 py-3 rounded-2xl border border-gray-400 focus:ring-2 focus:ring-[#39A900] focus:border-[#39A900] transition-colors"
+                            placeholder="••••••••"
+                            minlength="8"
+                            required
+                        >
+                    </div>
                 </div>
 
                 <!-- Confirmar contraseña -->
@@ -83,22 +97,29 @@ unset($_SESSION['error_password']);
                     <label for="confirmar_password" class="block text-sm font-bold text-black mb-2">
                         Confirmar contraseña
                     </label>
-                    <input 
-                        type="password" 
-                        id="confirmar_password" 
-                        name="confirmar_password" 
-                        class="w-full px-4 py-3 rounded-2xl border border-gray-400 focus:ring-2 focus:ring-[#39A900] focus:border-[#39A900] transition-colors"
-                        placeholder="••••••••"
-                        minlength="8"
-                        required
-                    >
+                    <div class="relative">
+                        <img
+                            src="../assets/img/lock.svg"
+                            alt="Confirmar contraseña"
+                            class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none"
+                        >
+                        <input
+                            type="password"
+                            id="confirmar_password"
+                            name="confirmar_password"
+                            class="w-full pl-12 pr-4 py-3 rounded-2xl border border-gray-400 focus:ring-2 focus:ring-[#39A900] focus:border-[#39A900] transition-colors"
+                            placeholder="••••••••"
+                            minlength="8"
+                            required
+                        >
+                    </div>
                 </div>
 
                 <!-- Botones de acción -->
                 <div class="flex gap-6 pt-4 justify-center">
                     <button 
                         type="button" 
-                        onclick="window.location.href='restablecerContrasenia.php'"
+                        onclick="window.location.href='<?= BASE_URL ?>index.php?page=login';"
                         class="px-6 py-2.5 text-sm border-2 border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
                     >
                         Cancelar
@@ -136,5 +157,8 @@ unset($_SESSION['error_password']);
             confirmar.addEventListener('keyup', validateMatch);
         });
     </script>
-</body>
-</html>
+</div>
+
+<?php
+include __DIR__ . '/../includes/footer.php';
+?>
