@@ -404,7 +404,7 @@ if (isset($conn)) {
                 <select id="id_programa_select" name="id_programa_select" class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
                   <option value="">Ingrese el programa de formación</option>
                   <?php if (empty($programas)): ?>
-                    <option disabled>No se encontraron programas activos</option>
+                    <option disabled>Sin datos disponibles</option>
                   <?php else: ?>
                     <?php foreach ($programas as $prog): ?>
                       <option value="<?= htmlspecialchars($prog['id_programa']) ?>">
@@ -470,28 +470,49 @@ if (isset($conn)) {
               <div class="field">
                 <div class="flex flex-minw-0 gap-2">
                   <div class="flex-1">
-                    <label for="id_area" class="block text-xs font-semibold text-gray-800 mb-1">Área</label>
-                    <select name="area" id="id_area" 
-                      class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
+                    <label for="id_area_combo" class="block text-xs font-semibold text-gray-800 mb-1">Área</label>
+                    <input
+                      type="text"
+                      id="id_area_combo"
+                      list="listaAreasCombo"
+                      placeholder="Seleccione o escriba el área"
+                      class="form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white" />
+                    <datalist id="listaAreasCombo">
+                      <?php foreach ($areas as $a): ?>
+                        <option
+                          value="<?= htmlspecialchars($a['nombre_area']) ?>"
+                          data-id="<?= htmlspecialchars($a['id_area']) ?>"></option>
+                      <?php endforeach; ?>
+                    </datalist>
+
+                    <select name="area" id="id_area" class="hidden" tabindex="-1" aria-hidden="true">
                       <option value="">Seleccione el área</option>
-                    <?php foreach ($areas as $a): ?>
-                      <option value="<?= htmlspecialchars($a['id_area']) ?>"><?= htmlspecialchars($a['nombre_area']) ?></option>
-                    <?php endforeach; ?>
-                  </select>
+                      <?php foreach ($areas as $a): ?>
+                        <option value="<?= htmlspecialchars($a['id_area']) ?>"><?= htmlspecialchars($a['nombre_area']) ?></option>
+                      <?php endforeach; ?>
+                    </select>
                   </div>
 
                   <div class="flex-1">
-                    <label for="id_zona" class="block text-xs font-semibold text-gray-800 mb-1">Zona</label>
-                    <select name="zona" id="id_zona" 
-                      class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white" disabled>
+                    <label for="id_zona_combo" class="block text-xs font-semibold text-gray-800 mb-1">Zona</label>
+                    <input
+                      type="text"
+                      id="id_zona_combo"
+                      list="listaZonasCombo"
+                      placeholder="Seleccione o escriba la zona"
+                      class="form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white"
+                      disabled />
+                    <datalist id="listaZonasCombo"></datalist>
+
+                    <select name="zona" id="id_zona" class="hidden" tabindex="-1" aria-hidden="true">
                       <option value="">Seleccione la zona</option>
-                    <?php foreach ($zonas as $z): ?>
-                      <?php $label = isset($z['id_zona']) ? "Zona " . $z['id_zona'] : "Zona"; ?>
-                      <option value="<?= htmlspecialchars($z['id_zona']) ?>" data-area="<?= htmlspecialchars($z['id_area'] ?? '') ?>">
-                        <?= htmlspecialchars($label) ?>
-                      </option>
-                    <?php endforeach; ?>
-                  </select>
+                      <?php foreach ($zonas as $z): ?>
+                        <?php $label = isset($z['id_zona']) ? "Zona " . $z['id_zona'] : "Zona"; ?>
+                        <option value="<?= htmlspecialchars($z['id_zona']) ?>" data-area="<?= htmlspecialchars($z['id_area'] ?? '') ?>">
+                          <?= htmlspecialchars($label) ?>
+                        </option>
+                      <?php endforeach; ?>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -551,7 +572,7 @@ if (isset($conn)) {
                   <select id="id_competencia" name="id_competencia" class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
                     <option value="">Seleccione competencia</option>
                     <?php if (empty($competencias)): ?>
-                      <option disabled>No se encontraron competencias activas</option>
+                      <option disabled>Sin datos disponibles</option>
                     <?php else: ?>
                       <?php foreach ($competencias as $comp): ?>
                         <option
@@ -759,36 +780,69 @@ if (isset($conn)) {
     <script src="<?= BASE_URL ?>src/assets/js/landing.js"></script>
     <script src="<?= BASE_URL ?>src/assets/js/formulario_trimestralizacion.js"></script>
 
-    <!-- Filtrar zonas por área -->
+    <!-- Combobox área/zona en modal crear -->
     <script>
       (function(){
         const selArea = document.getElementById('id_area');
         const selZona = document.getElementById('id_zona');
-        if (!selArea || !selZona) return;
+        const inpArea = document.getElementById('id_area_combo');
+        const inpZona = document.getElementById('id_zona_combo');
+        const listAreas = document.getElementById('listaAreasCombo');
+        const listZonas = document.getElementById('listaZonasCombo');
 
-        function filterZonas() {
-          const areaVal = selArea.value;
-          selZona.disabled = areaVal === "";
+        if (!selArea || !selZona || !inpArea || !inpZona || !listAreas || !listZonas) return;
 
-          for (const opt of selZona.options) {
-            if (opt.value === "") {
-              opt.hidden = false;
-              opt.disabled = false;
-              continue;
-            }
-            const optArea = opt.dataset.area ?? "";
-            const show = areaVal !== "" ? (String(optArea) === String(areaVal)) : true;
-            opt.hidden = !show;
-            opt.disabled = !show;
-          }
-
-          const selectedOpt = selZona.selectedOptions[0];
-          if (selectedOpt && selectedOpt.hidden) selZona.value = "";
-          if (areaVal === "") selZona.value = "";
+        function findDatalistOptionByValue(listEl, value) {
+          const target = String(value || '').trim().toLowerCase();
+          if (!target) return null;
+          return Array.from(listEl.options).find((opt) =>
+            String(opt.value || '').trim().toLowerCase() === target
+          ) || null;
         }
 
-        selArea.addEventListener('change', filterZonas);
-        document.addEventListener('DOMContentLoaded', filterZonas);
+        function cargarZonasSegunArea(idArea) {
+          const allZonas = Array.from(selZona.options).filter((opt) => opt.value !== '');
+          listZonas.innerHTML = '';
+
+          allZonas.forEach((opt) => {
+            const areaOpt = String(opt.dataset.area || '');
+            if (!idArea || areaOpt !== String(idArea)) return;
+
+            const op = document.createElement('option');
+            op.value = String(opt.textContent || '').trim();
+            op.dataset.id = String(opt.value || '');
+            op.dataset.area = areaOpt;
+            listZonas.appendChild(op);
+          });
+        }
+
+        function syncAreaFromInput() {
+          const areaOption = findDatalistOptionByValue(listAreas, inpArea.value);
+          const idArea = areaOption ? String(areaOption.dataset.id || '') : '';
+
+          selArea.value = idArea;
+          inpZona.value = '';
+          selZona.value = '';
+          inpZona.disabled = !idArea;
+
+          cargarZonasSegunArea(idArea);
+        }
+
+        function syncZonaFromInput() {
+          const zonaOption = findDatalistOptionByValue(listZonas, inpZona.value);
+          const idZona = zonaOption ? String(zonaOption.dataset.id || '') : '';
+          selZona.value = idZona;
+        }
+
+        inpArea.addEventListener('change', syncAreaFromInput);
+        inpArea.addEventListener('input', syncAreaFromInput);
+        inpZona.addEventListener('change', syncZonaFromInput);
+        inpZona.addEventListener('input', syncZonaFromInput);
+
+        document.addEventListener('DOMContentLoaded', () => {
+          inpZona.disabled = true;
+          listZonas.innerHTML = '';
+        });
       })();
     </script>
 
@@ -803,7 +857,7 @@ if (isset($conn)) {
 
           const yaTieneProgramas = Array.from(selProg.options).some((opt) => {
             if (!opt.value) return false;
-            return !String(opt.textContent || '').toLowerCase().includes('no se encontraron');
+            return !String(opt.textContent || '').toLowerCase().includes('sin datos disponibles');
           });
 
           if (yaTieneProgramas) return;
