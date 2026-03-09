@@ -40,6 +40,11 @@ if ($cargo === 'INSTRUCTOR') {
       }
     }
 
+    /* Sombra gris en títulos de tabla (estándar con Zonas) */
+    #tablaAreas thead th {
+      box-shadow: 0 1px 0 0 #e5e7eb;
+    }
+
     /* ============================
        RESPONSIVE EXTRA (SIN CAMBIAR DISEÑO)
        ============================ */
@@ -84,8 +89,8 @@ if ($cargo === 'INSTRUCTOR') {
 
     <!-- Card -->
     <div class="bg-white shadow rounded-2xl border border-gray-200">
-      <!-- Header card -->
-      <div class="flex items-center justify-between px-6 pt-6 pb-4 border-b">
+      <!-- Header card (sin línea separadora) -->
+      <div class="flex items-center justify-between px-6 pt-6 pb-4">
         <div>
           <h2 class="text-xl font-semibold">Áreas</h2>
           <p class="text-sm text-gray-500">Administra las áreas</p>
@@ -102,15 +107,16 @@ if ($cargo === 'INSTRUCTOR') {
         </button>
       </div>
 
-      <!-- Buscador -->
-    <div class="px-6 py-4 border-b flex justify-start">
-      <input
-        type="text"
-        id="buscadorArea"
-        placeholder="Buscar área por nombre..."
-        class="w-64 rounded-xl border border-gray-200 px-4 py-2.5 text-sm 
-              placeholder:text-gray-400 focus:outline-none focus:border-gray-300"
-      />
+      <!-- Filtros (estilo estándar: sin línea horizontal) -->
+    <div class="px-6 py-4 flex flex-col md:flex-row gap-4">
+      <div class="relative w-full md:w-64">
+        <input
+          type="text"
+          id="buscadorArea"
+          placeholder="Buscar área por nombre..."
+          class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm placeholder:text-gray-400 focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] outline-none transition hover:border-gray-400"
+        />
+      </div>
     </div>
 
       <!-- Tabla -->
@@ -118,7 +124,7 @@ if ($cargo === 'INSTRUCTOR') {
         <!-- Wrapper con scroll vertical controlado por JS (igual a instructores) -->
         <div id="areasWrapper" class="w-full">
           <table class="w-full text-left" id="tablaAreas">
-            <thead>
+            <thead class="bg-gray-50">
               <tr class="text-gray-600 text-sm border-b">
                 <!-- Quité w-3/4 / w-1/4 rígidos para que la tabla se adapte mejor -->
                 <th class="px-6 py-3 font-medium">Nombre Área</th>

@@ -87,14 +87,217 @@ if ($cargo === 'INSTRUCTOR') {
       }
     }
 
-    /* Estilo para el select de filtro */
-    #filtroArea {
-      cursor: pointer;
-      width: 200px;
+    /* Mismo espacio a la izquierda que el filtro de áreas (1.25rem) */
+    #buscadorZonas {
+      padding-left: 1.25rem !important;
     }
-    
-    #filtroArea option {
-      padding: 8px;
+
+    /* Sombra gris en títulos de tabla (estándar con Áreas) */
+    #tablaInstructores thead th {
+      box-shadow: 0 1px 0 0 #e5e7eb;
+    }
+
+    /* Combobox filtro área: estilo cuando está abierto, chevron dentro */
+    .combobox-zona-wrapper {
+      position: relative;
+      width: 100%;
+      min-width: 0;
+    }
+    .combobox-zona-wrapper .combobox-zona-input {
+      width: 100%;
+      min-width: 0;
+      padding-left: 1.25rem;
+      padding-right: 2.25rem;
+      box-sizing: border-box;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      color: #111827;
+      font-size: inherit;
+      outline: none;
+    }
+    .combobox-zona-wrapper .combobox-zona-input::placeholder {
+      color: #9ca3af;
+    }
+    .combobox-zona-wrapper .combobox-zona-input:focus {
+      outline: none;
+      box-shadow: none;
+    }
+    .combobox-zona-wrapper .btn-clear-combobox-zona {
+      position: absolute;
+      right: 0.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 1.25rem;
+      height: 1.25rem;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: #6b7280;
+      cursor: pointer;
+      border-radius: 9999px;
+    }
+    .combobox-zona-wrapper .btn-clear-combobox-zona:hover {
+      color: #374151;
+      background: #f3f4f6;
+    }
+    .combobox-zona-wrapper .btn-clear-combobox-zona.visible {
+      display: flex;
+    }
+    .combobox-zona-wrapper .combobox-zona-trigger:focus-within {
+      border-color: #39A900;
+      box-shadow: 0 0 0 3px rgba(57,169,0,0.2);
+    }
+    .combobox-zona-wrapper .combobox-zona-trigger {
+      display: flex;
+      align-items: center;
+      position: relative;
+      width: 100%;
+      min-width: 0;
+    }
+    .combobox-zona-wrapper .combobox-zona-trigger .chevron-combobox-zona {
+      position: absolute;
+      right: 0.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 1.25rem;
+      height: 1.25rem;
+      pointer-events: none;
+      color: #6b7280;
+    }
+    .combobox-zona-wrapper.has-value .chevron-combobox-zona {
+      display: none;
+    }
+    .combobox-zona-wrapper .combobox-zona-dropdown {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 100%;
+      margin-top: 6px;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+      background: white;
+      max-height: calc(5 * 2.5rem);
+      overflow-y: auto;
+      z-index: 100;
+    }
+    .combobox-zona-wrapper .combobox-zona-dropdown .combobox-zona-option {
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .combobox-zona-wrapper .combobox-zona-dropdown .combobox-zona-option:hover { background: #f3f4f6; }
+    .combobox-zona-wrapper .combobox-zona-dropdown .combobox-zona-option.selected {
+      background: rgba(57, 169, 0, 0.1);
+      color: #0a3a57;
+    }
+
+    /* Última fila: que el combobox reciba eventos y no se recorte (scroll) */
+    #tablaInstructores tbody tr:last-child td:nth-child(2) {
+      overflow: visible;
+      position: relative;
+      z-index: 1;
+    }
+    #tablaInstructores tbody tr:last-child .select-zona-wrapper {
+      position: relative;
+      z-index: 2;
+    }
+    /* Select de área (modal e inline): mismo estilo que editar usuario */
+    .select-zona-wrapper {
+      position: relative;
+      width: 100%;
+    }
+    .select-zona-wrapper .select-zona-combobox-trigger {
+      display: flex;
+      align-items: center;
+      position: relative;
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      pointer-events: auto;
+      z-index: 50;
+      text-align: left;
+    }
+    .select-zona-dropdown {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 100%;
+      margin-top: 6px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+      background: white;
+      max-height: calc(4 * 2.5rem);
+      overflow-y: auto;
+      z-index: 100;
+    }
+    .select-zona-dropdown.select-zona-dropdown-over-table {
+      position: fixed;
+      z-index: 9999;
+      margin-top: 0;
+      margin-bottom: 0;
+      right: auto;
+    }
+    .select-zona-wrapper .select-zona-combobox-input {
+      width: 100%;
+      min-width: 0;
+      padding-left: 0.75rem;
+      padding-right: 2.25rem;
+      border: none;
+      background: transparent;
+      color: #111827;
+      font-size: inherit;
+      outline: none;
+      text-align: left;
+    }
+    .select-zona-wrapper .select-zona-combobox-input::placeholder { color: #9ca3af; }
+    .select-zona-wrapper .select-zona-combobox-trigger .select-zona-chevron-inner {
+      position: absolute;
+      right: 0.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 1.25rem;
+      height: 1.25rem;
+      pointer-events: none;
+      color: #6b7280;
+    }
+    .select-zona-wrapper.has-value-zona .select-zona-chevron-inner { display: none; }
+    .select-zona-wrapper .btn-clear-zona {
+      position: absolute;
+      right: 0.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 1.25rem;
+      height: 1.25rem;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: #6b7280;
+      cursor: pointer;
+      border-radius: 9999px;
+    }
+    .select-zona-wrapper .btn-clear-zona:hover { color: #374151; background: #f3f4f6; }
+    .select-zona-wrapper .btn-clear-zona.visible { display: flex; }
+    .select-zona-dropdown .select-zona-option {
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .select-zona-dropdown .select-zona-option:hover { background: #f3f4f6; }
+    .select-zona-dropdown .select-zona-option.selected {
+      background: rgba(57, 169, 0, 0.1);
+      color: #0a3a57;
     }
   </style>
 </head>
@@ -107,8 +310,8 @@ if ($cargo === 'INSTRUCTOR') {
 
     <!-- Card principal -->
     <div class="bg-white shadow rounded-2xl border border-gray-200">
-      <!-- Header card con título y botón -->
-      <div class="card-header flex items-center justify-between p-6 border-b">
+      <!-- Header card con título y botón (sin línea separadora) -->
+      <div class="card-header flex items-center justify-between p-6">
         <h2 class="text-xl font-semibold">Todas las áreas</h2>
         <button 
           id="btnAbrirModalZonas"
@@ -119,31 +322,28 @@ if ($cargo === 'INSTRUCTOR') {
         </button>
       </div>
 
-      <!-- Filtros - AMBOS DEL MISMO TAMAÑO -->
-      <div class="filtros-container flex items-center gap-4 p-6 border-b">
-        <!-- SELECT "Todas las áreas" - MISMO TAMAÑO QUE BUSCAR ZONA -->
-        <div class="relative w-[200px]">
+      <!-- Filtros (estilo estándar: sin línea horizontal) -->
+      <div class="filtros-container flex flex-col md:flex-row md:items-center gap-4 px-6 py-4">
+        <div id="filtroAreaWrap" class="relative w-full md:w-64">
           <select 
             id="filtroArea"
-            class="w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 py-2 pr-8 text-sm focus:outline-none focus:border-gray-300"
+            class="w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-2.5 pr-10 text-sm focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] outline-none transition hover:border-gray-400"
           >
             <option value="todas">Todas las áreas</option>
             <!-- Las áreas se cargarán dinámicamente desde la BD -->
           </select>
-          <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+          <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none filtro-area-chevron" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.18l3.71-3.95a.75.75 0 111.08 1.04l-4.24 4.52a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
           </svg>
         </div>
-
-        <!-- BUSCADOR - MISMO TAMAÑO QUE EL SELECT -->
-        <div class="relative w-[200px]">
+        <div class="relative w-full md:w-64">
           <input 
             type="text"
             id="buscadorZonas"
             placeholder="Buscar zona..."
-            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-2 pr-8 text-sm focus:outline-none focus:border-gray-300"
+            class="w-full rounded-xl border border-gray-300 bg-white pl-5 pr-10 py-2.5 text-sm focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] outline-none transition hover:border-gray-400"
           />
-          <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+          <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
           </svg>
         </div>
@@ -155,7 +355,7 @@ if ($cargo === 'INSTRUCTOR') {
           <table class="w-full text-left" id="tablaInstructores">
             <thead class="bg-gray-50">
               <tr class="text-gray-600 text-sm border-b">
-                <th class="px-6 py-3 font-medium">N° Zona</th>
+                <th class="px-6 py-3 font-medium">Nombre Zona</th>
                 <th class="px-6 py-3 font-medium text-center">Área</th>
                 <th class="px-6 py-3 font-medium text-right">Acciones</th>
               </tr>
@@ -200,13 +400,11 @@ if ($cargo === 'INSTRUCTOR') {
             <!-- Área -->
             <div class="space-y-2">
               <label for="id_area" class="block text-sm font-semibold">Área perteneciente</label>
-              <div class="relative">
-                <select id="id_area" name="id_area"
-                  class="w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 py-3 pr-10 shadow-sm
-                         focus:ring-0 focus:outline-none focus:border-gray-300">
+              <div id="id_areaWrap" class="relative">
+                <select id="id_area" name="id_area" class="select-zona w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 py-3 pr-10 shadow-sm focus:ring-0 focus:outline-none focus:border-gray-300">
                   <option disabled selected value="">Cargando áreas...</option>
                 </select>
-                <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 select-zona-chevron" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.18l3.71-3.95a.75.75 0 111.08 1.04l-4.24 4.52a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
                 </svg>
               </div>
@@ -339,9 +537,10 @@ if ($cargo === 'INSTRUCTOR') {
         const rowH = firstRow ? firstRow.getBoundingClientRect().height : 56;
         const maxFilas = 5;
         const maxH = headH + rowH * maxFilas;
-        wrapTabla.style.maxHeight = `${Math.ceil(maxH)}px`;
+        wrapTabla.style.maxHeight = filas > maxFilas ? `${Math.ceil(maxH)}px` : "";
         wrapTabla.style.overflowY = filas > maxFilas ? "auto" : "visible";
-        wrapTabla.style.overscrollBehavior = "contain";
+        wrapTabla.style.overscrollBehavior = filas > maxFilas ? "contain" : "";
+        wrapTabla.style.paddingBottom = filas > maxFilas ? "0.5rem" : "0";
       }
       window.addEventListener("resize", ajustarAltoTablaZonas);
 
@@ -394,6 +593,122 @@ if ($cargo === 'INSTRUCTOR') {
           console.error("Error al cargar áreas para filtro:", err);
           filtroArea.innerHTML = `<option value="todas">Todas las áreas</option>`;
         }
+        enhanceComboboxFiltroArea();
+      }
+
+      function enhanceComboboxFiltroArea() {
+        const select = document.getElementById("filtroArea");
+        const container = document.getElementById("filtroAreaWrap");
+        if (!select || !container || select.dataset.comboboxZona === "1") return;
+        select.dataset.comboboxZona = "1";
+
+        const wrapper = document.createElement("div");
+        wrapper.className = "combobox-zona-wrapper";
+
+        const triggerWrap = document.createElement("div");
+        triggerWrap.className = "combobox-zona-trigger w-full border border-gray-300 rounded-xl bg-white hover:border-gray-400 focus-within:ring-2 focus-within:ring-[#39A900]/20 focus-within:border-[#39A900] py-2.5 text-sm";
+        const input = document.createElement("input");
+        input.type = "text";
+        input.autocomplete = "off";
+        input.className = "combobox-zona-input w-full bg-transparent py-0 border-0 focus:ring-0 text-gray-900 placeholder:text-gray-400";
+        input.placeholder = "Todas las áreas";
+        const btnClear = document.createElement("button");
+        btnClear.type = "button";
+        btnClear.className = "btn-clear-combobox-zona";
+        btnClear.setAttribute("aria-label", "Limpiar búsqueda");
+        btnClear.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+        const chevron = document.createElement("span");
+        chevron.className = "chevron-combobox-zona";
+        chevron.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>';
+        triggerWrap.appendChild(input);
+        triggerWrap.appendChild(btnClear);
+        triggerWrap.appendChild(chevron);
+
+        const dropdown = document.createElement("div");
+        dropdown.className = "combobox-zona-dropdown hidden";
+
+        const optionsData = () => [...select.options].map(opt => ({ value: opt.value, text: (opt.textContent || "").trim() }));
+
+        function renderOptions(filterText) {
+          const q = (filterText || "").trim().toLowerCase();
+          dropdown.innerHTML = "";
+          optionsData().forEach(({ value, text }) => {
+            if (q && !text.toLowerCase().includes(q)) return;
+            const div = document.createElement("div");
+            div.className = "combobox-zona-option" + (value === select.value ? " selected" : "");
+            div.textContent = text;
+            div.dataset.value = value;
+            div.addEventListener("click", (e) => {
+              e.stopPropagation();
+              select.value = value;
+              select.dispatchEvent(new Event("change", { bubbles: true }));
+              input.value = value === "todas" ? "" : text;
+              dropdown.classList.add("hidden");
+              toggleClearVisibility();
+            });
+            dropdown.appendChild(div);
+          });
+          dropdown.classList.toggle("hidden", dropdown.children.length === 0);
+        }
+
+        function toggleClearVisibility() {
+          const hasText = (input.value || "").trim().length > 0;
+          wrapper.classList.toggle("has-value", hasText);
+          btnClear.classList.toggle("visible", hasText);
+        }
+
+        function updateInputFromSelect() {
+          if (select.value === "todas") {
+            input.value = "";
+          } else {
+            const opt = select.options[select.selectedIndex];
+            input.value = opt ? (opt.textContent || "").trim() : "";
+          }
+          toggleClearVisibility();
+        }
+        input.value = "";
+        toggleClearVisibility();
+
+        triggerWrap.addEventListener("click", (e) => {
+          if (e.target === input) return;
+          e.stopPropagation();
+          const isHidden = dropdown.classList.contains("hidden");
+          if (isHidden) {
+            renderOptions(input.value);
+          } else {
+            dropdown.classList.add("hidden");
+          }
+        });
+        input.addEventListener("focus", () => { renderOptions(input.value); });
+        input.addEventListener("input", () => {
+          renderOptions(input.value);
+          toggleClearVisibility();
+        });
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") { dropdown.classList.add("hidden"); input.blur(); }
+        });
+        btnClear.addEventListener("click", (e) => {
+          e.stopPropagation();
+          input.value = "";
+          select.value = "todas";
+          select.dispatchEvent(new Event("change", { bubbles: true }));
+          dropdown.classList.add("hidden");
+          toggleClearVisibility();
+          input.focus();
+        });
+        select.addEventListener("change", updateInputFromSelect);
+
+        document.addEventListener("click", (e) => {
+          if (!wrapper.contains(e.target)) dropdown.classList.add("hidden");
+        }, true);
+
+        select.classList.add("sr-only", "absolute", "opacity-0", "pointer-events-none", "overflow-hidden");
+        select.style.cssText = "position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;clip:rect(0,0,0,0);";
+        container.querySelector(".filtro-area-chevron")?.setAttribute("style", "display: none;");
+        container.insertBefore(wrapper, select);
+        wrapper.appendChild(triggerWrap);
+        wrapper.appendChild(dropdown);
+        wrapper.appendChild(select);
       }
 
       // =======================
@@ -427,7 +742,210 @@ if ($cargo === 'INSTRUCTOR') {
           console.error("Error al cargar áreas para modal:", err);
           selectArea.innerHTML = `<option disabled selected value="">Error al cargar áreas</option>`;
         }
+        enhanceSelectsZona();
       }
+
+      function enhanceSelectsZona() {
+        document.querySelectorAll(".select-zona").forEach((select) => {
+          if (select.dataset.customDropdownZona === "1") return;
+          select.dataset.customDropdownZona = "1";
+          const container = select.parentNode;
+          const wrapper = document.createElement("div");
+          wrapper.className = "select-zona-wrapper";
+          container.insertBefore(wrapper, select);
+          wrapper.appendChild(select);
+          const oldChevron = container.querySelector(".select-zona-chevron") || container.querySelector("svg");
+          if (oldChevron) oldChevron.style.display = "none";
+
+          const triggerWrap = document.createElement("div");
+          triggerWrap.className = "select-zona-combobox-trigger w-full border border-gray-300 rounded-xl bg-white hover:border-gray-400 focus-within:ring-2 focus-within:ring-[#39A900]/20 focus-within:border-[#39A900] py-2.5 text-sm";
+          const input = document.createElement("input");
+          input.type = "text";
+          input.autocomplete = "off";
+          input.className = "select-zona-combobox-input w-full bg-transparent py-0 border-0 focus:ring-0 text-gray-900 placeholder:text-gray-400";
+          input.placeholder = "Buscar área...";
+          const btnClear = document.createElement("button");
+          btnClear.type = "button";
+          btnClear.className = "btn-clear-zona";
+          btnClear.setAttribute("aria-label", "Limpiar");
+          btnClear.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+          const chevronInner = document.createElement("span");
+          chevronInner.className = "select-zona-chevron-inner";
+          chevronInner.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>';
+          triggerWrap.appendChild(input);
+          triggerWrap.appendChild(btnClear);
+          triggerWrap.appendChild(chevronInner);
+
+          const dropdown = document.createElement("div");
+          dropdown.className = "select-zona-dropdown hidden";
+          dropdown.setAttribute("role", "listbox");
+          dropdown._selectZonaWrapper = wrapper;
+
+          const optionsData = () => [...select.options].filter(opt => !opt.disabled).map(opt => ({ value: opt.value, text: (opt.textContent || "").trim() }));
+
+          function renderOptions(filterText) {
+            const q = (filterText || "").trim().toLowerCase();
+            dropdown.innerHTML = "";
+            optionsData().forEach(({ value, text }) => {
+              if (q && !text.toLowerCase().includes(q)) return;
+              const div = document.createElement("div");
+              div.className = "select-zona-option" + (value === select.value ? " selected" : "");
+              div.textContent = text;
+              div.dataset.value = value;
+              div.setAttribute("role", "option");
+              div.addEventListener("click", (e) => {
+                e.stopPropagation();
+                select.value = value;
+                select.dispatchEvent(new Event("change", { bubbles: true }));
+                input.value = text;
+                dropdown.classList.add("hidden");
+                if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
+                toggleClearVisibility();
+              });
+              dropdown.appendChild(div);
+            });
+            dropdown.classList.toggle("hidden", dropdown.children.length === 0);
+          }
+
+          function toggleClearVisibility() {
+            const hasText = (input.value || "").trim().length > 0;
+            wrapper.classList.toggle("has-value-zona", hasText);
+            btnClear.classList.toggle("visible", hasText);
+          }
+
+          function updateInputFromSelect() {
+            const opt = select.options[select.selectedIndex];
+            if (!opt || opt.disabled || !opt.value) {
+              input.value = "";
+            } else {
+              input.value = (opt.textContent || "").trim();
+            }
+            toggleClearVisibility();
+          }
+          updateInputFromSelect();
+
+          select.classList.add("sr-only", "absolute", "opacity-0", "pointer-events-none", "overflow-hidden");
+          select.style.cssText = "position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;clip:rect(0,0,0,0);";
+          wrapper.appendChild(triggerWrap);
+          wrapper.appendChild(dropdown);
+
+          function positionAndShowDropdown() {
+            const rect = wrapper.getBoundingClientRect();
+            const opts = 4;
+            const maxH = opts * 2.5 * parseFloat(getComputedStyle(document.documentElement).fontSize);
+            const margin = 8;
+            const isInTable = wrapper.closest("#wrapTablaZonas") || wrapper.closest("table");
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const spaceAbove = rect.top;
+            if (isInTable) {
+              dropdown.style.visibility = "hidden";
+              document.body.appendChild(dropdown);
+              dropdown.classList.add("select-zona-dropdown-over-table");
+              dropdown.style.width = rect.width + "px";
+              const tr = wrapper.closest("tr");
+              const tbody = wrapper.closest("#tablaInstructores tbody");
+              const visibleRows = tbody ? Array.from(tbody.querySelectorAll("tr")).filter(r => r.style.display !== "none") : [];
+              const isLastVisibleRow = visibleRows.length > 0 && tr === visibleRows[visibleRows.length - 1];
+              const preferUp = isLastVisibleRow && spaceAbove >= 60;
+              const openDown = preferUp ? false : (spaceBelow >= maxH + margin);
+              if (openDown) {
+                dropdown.style.maxHeight = Math.min(maxH, Math.max(60, spaceBelow - margin)) + "px";
+                dropdown.style.removeProperty("bottom");
+                dropdown.style.top = (rect.bottom + margin) + "px";
+                dropdown.style.left = rect.left + "px";
+              } else {
+                const upMaxH = Math.min(maxH, Math.max(60, spaceAbove - margin));
+                dropdown.style.maxHeight = upMaxH + "px";
+                dropdown.style.minHeight = "60px";
+                dropdown.style.top = (rect.top - margin - upMaxH) + "px";
+                dropdown.style.removeProperty("bottom");
+                dropdown.style.left = rect.left + "px";
+              }
+              dropdown.style.display = "block";
+              dropdown.style.zIndex = "9999";
+              requestAnimationFrame(() => {
+                dropdown.style.visibility = "visible";
+                dropdown.classList.remove("hidden");
+              });
+            } else {
+              dropdown.style.maxHeight = maxH + "px";
+              dropdown.classList.remove("hidden");
+            }
+            dropdown._selectZonaJustOpened = Date.now();
+          }
+
+          function openDropdownFromTrigger(ev) {
+            if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+            const open = !dropdown.classList.contains("hidden");
+            document.querySelectorAll(".select-zona-dropdown").forEach((d) => {
+              d.classList.add("hidden");
+              d.classList.remove("select-zona-dropdown-over-table");
+              d.style.cssText = "";
+              if (d._selectZonaWrapper && d.parentNode === document.body) d._selectZonaWrapper.appendChild(d);
+            });
+            if (!open) {
+              renderOptions(input.value);
+              if (dropdown.children.length > 0) {
+                positionAndShowDropdown();
+                setTimeout(function () { input.focus(); }, 0);
+              }
+            }
+          }
+          wrapper._selectZonaOpen = openDropdownFromTrigger;
+          triggerWrap.addEventListener("mousedown", openDropdownFromTrigger);
+          triggerWrap.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); });
+          input.addEventListener("focus", () => {
+            document.querySelectorAll(".select-zona-dropdown").forEach((d) => {
+              d.classList.add("hidden");
+              d.classList.remove("select-zona-dropdown-over-table");
+              d.style.cssText = "";
+              if (d._selectZonaWrapper && d.parentNode === document.body) d._selectZonaWrapper.appendChild(d);
+            });
+            renderOptions(input.value);
+            if (dropdown.children.length > 0) {
+              positionAndShowDropdown();
+            }
+          });
+          input.addEventListener("input", () => { renderOptions(input.value); toggleClearVisibility(); });
+          input.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+              dropdown.classList.add("hidden");
+              if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
+              input.blur();
+            }
+          });
+          btnClear.addEventListener("click", (e) => {
+            e.stopPropagation();
+            input.value = "";
+            const firstValid = Array.from(select.options).find(o => !o.disabled && o.value);
+            if (firstValid) { select.value = firstValid.value; select.dispatchEvent(new Event("change", { bubbles: true })); }
+            dropdown.classList.add("hidden");
+            if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
+            toggleClearVisibility();
+            input.focus();
+          });
+          select.addEventListener("change", updateInputFromSelect);
+          document.addEventListener("click", (e) => {
+            const wouldClose = !wrapper.contains(e.target) && !dropdown.contains(e.target);
+            if (dropdown._selectZonaJustOpened && (Date.now() - dropdown._selectZonaJustOpened) < 200) return;
+            if (wouldClose) {
+              dropdown.classList.add("hidden");
+              if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
+            }
+          }, true);
+        });
+      }
+
+      (function () {
+        const wrap = document.getElementById("wrapTablaZonas");
+        if (!wrap) return;
+        wrap.addEventListener("mousedown", function (e) {
+          const trigger = e.target.closest(".select-zona-combobox-trigger");
+          if (!trigger || !wrap.contains(trigger)) return;
+          const wrapper = trigger.closest(".select-zona-wrapper");
+          if (wrapper && typeof wrapper._selectZonaOpen === "function") wrapper._selectZonaOpen(e);
+        }, true);
+      })();
 
       // =======================
       // CARGAR ZONAS
@@ -660,10 +1178,10 @@ if ($cargo === 'INSTRUCTOR') {
         tdZona.innerHTML = `<input type="number" value="${zonaOriginal}" class="w-20 rounded-lg border border-gray-200 px-3 py-2 text-center focus:outline-none focus:border-gray-300">`;
         tdArea.innerHTML = `
           <div class="relative max-w-[220px] mx-auto">
-            <select class="w-full appearance-none rounded-lg border border-gray-200 bg-white px-3 py-2 pr-8 focus:outline-none focus:border-gray-300">
+            <select class="select-zona w-full appearance-none rounded-lg border border-gray-200 bg-white px-3 py-2 pr-8 focus:outline-none focus:border-gray-300">
               ${opcionesHTML}
             </select>
-            <svg class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+            <svg class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 select-zona-chevron" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.18l3.71-3.95a.75.75 0 111.08 1.04l-4.24 4.52a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
             </svg>
           </div>`;
@@ -677,6 +1195,8 @@ if ($cargo === 'INSTRUCTOR') {
           ajustarAltoTablaZonas();
         });
 
+        enhanceSelectsZona();
+
         tdAcc.querySelector(".btn-guardar").addEventListener("click", async () => {
           const id_zona_nueva = tdZona.querySelector("input").value.trim();
           const id_area_nueva = tdArea.querySelector("select").value.trim();
@@ -687,7 +1207,7 @@ if ($cargo === 'INSTRUCTOR') {
           }
 
           if (id_zona_nueva === id_zona_actual && id_area_nueva === id_area_actual) {
-            Toast.fire({ icon: "warning", title: "No se detectaron cambios." });
+            Toast.fire({ icon: "info", title: "No hay cambios. El número de zona y el área son los mismos que antes." });
             return;
           }
 

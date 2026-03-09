@@ -460,13 +460,13 @@ select.input-enterprise {
     </div>
 
     <!-- Filtros -->
-    <div class="px-6 py-4 border-b">
+    <div class="px-6 py-4">
       <div class="flex flex-col md:flex-row gap-4">
 
-        <!-- Select -->
+        <!-- Combobox Programa -->
         <div class="relative w-full md:w-64">
           <select id="filtroPrograma"
-            class="select-grupo w-full appearance-none rounded-xl border border-gray-300 bg-white
+            class="select-grupo programa w-full appearance-none rounded-xl border border-gray-300 bg-white
                    px-4 py-2.5 pr-10 text-sm
                    focus:ring-2 focus:ring-[#39A900]/20
                    focus:border-[#39A900] outline-none transition">
