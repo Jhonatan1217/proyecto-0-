@@ -261,9 +261,11 @@ if (!window.TRIMESTRALIZACION_INIT) {
         modalDup.style.visibility = "hidden";
         modalDup.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach((el) => { el.style.pointerEvents = "none"; });
       }
-      Toast.fire({
+      Swal.fire({
         icon: "success",
-        title: "¡Horario creado correctamente!"
+        title: "Trimestralización creada",
+        text: "El horario se guardó correctamente.",
+        confirmButtonText: "Aceptar"
       });
       cerrarModalCrear();
       setTimeout(() => {
@@ -391,6 +393,12 @@ if (!window.TRIMESTRALIZACION_INIT) {
         }
 
         if (huboError) {
+          Swal.fire({
+            icon: "warning",
+            title: "Creado con observaciones",
+            text: mensajeError || "El horario original se guardó, pero hubo errores al duplicar.",
+            confirmButtonText: "Entendido"
+          });
           Toast.fire({
             icon: "warning",
             title: mensajeError || "El horario original se guardó, pero hubo errores al duplicar."
@@ -398,6 +406,12 @@ if (!window.TRIMESTRALIZACION_INIT) {
           return;
         }
 
+        Swal.fire({
+          icon: "success",
+          title: "Trimestralización creada y duplicada",
+          text: "Se guardó el horario en los días seleccionados.",
+          confirmButtonText: "Aceptar"
+        });
         Toast.fire({
           icon: "success",
           title: "¡Horario creado y duplicado correctamente!"
@@ -462,8 +476,21 @@ if (!window.TRIMESTRALIZACION_INIT) {
 
           if (!res.ok || data.status === "error" || data.error) {
             const mensaje = data.mensaje || data.error || "Ocurrió un error en el servidor.";
+            Swal.fire({
+              icon: "error",
+              title: "No se pudo crear",
+              text: mensaje,
+              confirmButtonText: "Entendido"
+            });
             return Toast.fire({ icon: "error", title: mensaje });
           }
+
+          Swal.fire({
+            icon: "success",
+            title: "Trimestralización creada",
+            text: "Ahora puedes decidir si deseas duplicarla en otros días.",
+            confirmButtonText: "Continuar"
+          });
 
           abrirModalDuplicar({
             form,
@@ -474,6 +501,12 @@ if (!window.TRIMESTRALIZACION_INIT) {
 
         } catch (err) {
           console.error("Error de red:", err);
+          Swal.fire({
+            icon: "error",
+            title: "Error de conexión",
+            text: "No fue posible crear la trimestralización. Verifica tu conexión e intenta de nuevo.",
+            confirmButtonText: "Entendido"
+          });
           Toast.fire({
             icon: "error",
             title: "Error de red o respuesta inválida",

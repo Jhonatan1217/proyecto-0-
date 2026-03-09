@@ -96,12 +96,12 @@ async function cargarAreasYZonas() {
       if (contadorActivas === 0) {
         selectArea.innerHTML = `
           <option value="" hidden selected>SELECCIONE EL ÁREA</option>
-          <option value="" disabled>NO HAY ÁREAS DISPONIBLES</option>
+          <option value="" disabled>Sin datos disponibles</option>
         `;
 
         selectZona.innerHTML = `
           <option value="" hidden selected>SELECCIONE LA ZONA</option>
-          <option value="" disabled>NO HAY ZONAS DISPONIBLES</option>
+          <option value="" disabled>Sin datos disponibles</option>
         `;
 
         // NO deshabilitamos los selects para que puedan desplegarse
@@ -158,7 +158,7 @@ async function cargarAreasYZonas() {
           // Dejamos el placeholder seleccionado, pero al desplegar se verá el mensaje
           selectZona.innerHTML = `
             <option value="" hidden selected>SELECCIONE LA ZONA</option>
-            <option value="" disabled>NO HAY ZONAS DISPONIBLES</option>
+            <option value="" disabled>Sin datos disponibles</option>
           `;
           Toast.fire({
             icon: "info",
@@ -747,12 +747,12 @@ async function obtenerRoesPorCompetencia(id_competencia) {
     if (activas === 0) {
       selArea.innerHTML = `
         <option value="" hidden selected>SELECCIONE EL ÁREA</option>
-        <option value="" disabled>NO HAY ÁREAS DISPONIBLES</option>
+        <option value="" disabled>Sin datos disponibles</option>
       `;
 
       selZona.innerHTML = `
         <option value="" hidden selected>SELECCIONE LA ZONA</option>
-        <option value="" disabled>NO HAY ZONAS DISPONIBLES</option>
+        <option value="" disabled>Sin datos disponibles</option>
       `;
 
       // NO deshabilitamos para que puedan desplegar y ver el mensaje
@@ -952,6 +952,12 @@ async function editarTrimestralizacion (reg){
   const esExito = data.success === true || data.success === "true" || data.status === "success";
   
   if (esExito) {
+    await Swal.fire({
+      icon: "success",
+      title: "Trimestralización actualizada",
+      text: data.message || data.mensaje || "El horario se editó correctamente.",
+      confirmButtonText: "Aceptar"
+    });
     Toast.fire({
       icon: "success",
       title: "Horario actualizado correctamente"
@@ -959,6 +965,12 @@ async function editarTrimestralizacion (reg){
     cargarTrimestralizacion();
   } else {
     console.error("Error del servidor:", data);
+    await Swal.fire({
+      icon: "error",
+      title: "No se pudo editar",
+      text: data.error || data.message || data.mensaje || "Error al actualizar el horario.",
+      confirmButtonText: "Entendido"
+    });
     Toast.fire({
       icon: "error",
       title: data.error || data.message || "Error al actualizar el horario"
@@ -966,6 +978,12 @@ async function editarTrimestralizacion (reg){
   }
 } catch (e) {
   console.error("Error en actualización:", e);
+  await Swal.fire({
+    icon: "error",
+    title: "Error al editar",
+    text: e.message || "Ocurrió un problema de conexión al actualizar.",
+    confirmButtonText: "Entendido"
+  });
   Toast.fire({icon: "error", title: `Error: ${e.message}`});
 }
 });
