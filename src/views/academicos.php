@@ -1,4 +1,7 @@
 <?php
+/* ==========================================
+   VISTA PRINCIPAL – INCLUYE TODAS LAS SECCIONES
+   ========================================== */
 ?>
 
   <meta charset="utf-8">
@@ -129,15 +132,14 @@
       <!-- Tabs: cambiamos de sección sin recargar -->
       <div class="bg-zinc-100 rounded-2xl p-1 flex items-center gap-1 justify-around">
         <!-- CARGA EXCEL -->
-        <?php if ($cargo != 'INSTRUCTOR'): ?>
-          <button
-            data-tab-btn="upload"
-            class="tab-btn flex items-center justify-center gap-2 px-4 py-2 rounded-xl w-full sm:w-auto text-zinc-700"
-          >
-            <img src="src/assets/img/upload-grey.svg" class="w-4 h-4" alt="icono carga excel">
-            <span class="hidden sm:inline nav-label">Carga Excel</span>
-          </button>
-        <?php endif; ?>
+        <button
+          data-tab-btn="upload"
+          class="tab-btn flex items-center justify-center gap-2 px-4 py-2 rounded-xl w-full sm:w-auto text-zinc-700"
+        >
+          <img src="src/assets/img/upload-grey.svg" class="w-4 h-4" alt="icono carga excel">
+          <!-- 🔥 Texto solo en pantallas grandes -->
+          <span class="hidden sm:inline nav-label">Carga Excel</span>
+        </button> 
 
         <!-- PROGRAMAS -->
         <button
@@ -168,9 +170,7 @@
       </div>
 
       <!-- INCLUSIÓN DE LAS VISTAS PARCIALES -->
-      <?php if ($cargo != 'INSTRUCTOR'): ?>
-        <?php include 'carga_excel.php'; ?>
-      <?php endif; ?>
+      <?php include 'carga_excel.php'; ?>
       <?php include 'programas.php'; ?>
       <?php include 'competencias.php'; ?>
       <?php include 'raes.php'; ?>
@@ -211,30 +211,21 @@
             })
         );
 
-       const params = new URLSearchParams(window.location.search);
-
-        let defaultTab = 'upload';
-
-        <?php if ($cargo === 'INSTRUCTOR'): ?>
-          defaultTab = 'programs';
-        <?php endif; ?>
-
-        const tabFromUrl = params.get('tab') || defaultTab;
-
+        // 🔥 AQUÍ ESTÁ LA MAGIA
+        const params = new URLSearchParams(window.location.search);
+        const tabFromUrl = params.get('tab') || 'upload';
         activate(tabFromUrl);
+
     })();
 </script>
 
   <!-- Endpoints y flags globales que usan los JS -->
-<script>
-    // ESTA ES LA LÍNEA QUE TE FALTA PARA QUE EL JS SEPA QUIÉN ES EL USUARIO
-    window.USER_CARGO = "<?= strtoupper($_SESSION['usuario_cargo'] ?? '') ?>";
-
+  <script>
     window.API_PROGRAMAS     = encodeURI('<?= BASE_URL ?? '' ?>src/controllers/ProgramasController.php');
     window.PROGRAMS_MANAGED_BY_API = true;
     window.API_COMPETENCIAS  = encodeURI('<?= BASE_URL ?? '' ?>src/controllers/CompetenciaController.php');
     window.API_RAES = encodeURI('<?= BASE_URL ?? '' ?>src/controllers/RaeController.php');
-</script>
+  </script>
 
   <!-- Módulos: cada uno maneja su CRUD/UX. El ?v= ayuda a romper caché -->
   <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionProgramas.js?v=3"></script>

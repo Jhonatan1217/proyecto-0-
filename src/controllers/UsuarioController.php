@@ -8,8 +8,6 @@ header('Content-Type: application/json; charset=utf-8');
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-$cargoSesion = $_SESSION['cargo'] ?? null;
-
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../models/Usuario.php'; // Ajusta la ruta a tu modelo
 
@@ -104,10 +102,6 @@ try {
         // CREAR USUARIO
         // ============================================================
         case 'crear':
-            if ($cargoSesion === 'INSTRUCTOR') {
-                    echo json_encode(['error' => 'No tiene permisos para crear usuarios']);
-                    exit;
-                }
             $cargo = trim((string) inreq('cargo'));
             $id_area = inreq('id_area') ? intval(inreq('id_area')) : null;
             if (!$id_area && stripos($cargo, 'coordinador') !== false) {
@@ -124,7 +118,7 @@ try {
                 'tipo_instructor'   => inreq('tipo_instructor') ? trim((string) inreq('tipo_instructor')) : null,
                 'tipo_contrato'     => trim((string) inreq('tipo_contrato')) ?: 'CONTRATISTA',
                 'password_hash'     => password_hash(trim((string) inreq('password')), PASSWORD_DEFAULT),
-                'estado'            => inreq('estado') ?? 1,
+                'estado'            => (int) (inreq('estado') ?? 0),
                 'es_sistema'        => inreq('es_sistema') ?? 0
             ];
 
@@ -138,8 +132,8 @@ try {
             }
 
             $resultado = $usuarioModel->crear($datos);
-            if ($resultado === true) {
-                echo json_encode(['success' => true, 'message' => 'Usuario creado correctamente']);
+            if (is_numeric($resultado) && (int) $resultado > 0) {
+                echo json_encode(['success' => true, 'message' => 'Usuario creado correctamente', 'id_usuario' => (int) $resultado]);
             } else {
                 echo json_encode(['error' => $resultado]);
             }
@@ -149,11 +143,6 @@ try {
         // ACTUALIZAR USUARIO
         // ============================================================
         case 'actualizar':
-            if ($cargoSesion === 'INSTRUCTOR') {
-                echo json_encode(['error' => 'No tiene permisos para editar usuarios']);
-                exit;
-            }
-
             $id_usuario = intval(inreq('id_usuario'));
             if (!$id_usuario) {
                 echo json_encode(['error' => 'ID de usuario no proporcionado']);
@@ -205,11 +194,6 @@ try {
         // CAMBIAR ESTADO (INHABILITAR/ACTIVAR)
         // ============================================================
         case 'cambiarEstado':
-            if ($cargoSesion === 'INSTRUCTOR') {
-                echo json_encode(['error' => 'No tiene permisos para cambiar el estado de usuarios']);
-                exit;
-            }
-            
             $id_usuario = intval(inreq('id_usuario'));
             $estado = intval(inreq('estado'));
 
@@ -244,11 +228,6 @@ try {
 
         // Asignar un rol funcional a un usuario
         case 'asignarRol':
-            if ($cargoSesion === 'INSTRUCTOR') {
-                echo json_encode(['error' => 'No tiene permisos para asignar roles']);
-                exit;
-            }
-
             $id_usuario = intval(inreq('id_usuario'));
             $id_rol = intval(inreq('id_rol'));
             $asignado_por = intval(inreq('asignado_por')); // ID del usuario que está haciendo la asignación
@@ -268,11 +247,6 @@ try {
 
         // Quitar un rol funcional de un usuario
         case 'quitarRol':
-            if ($cargoSesion === 'INSTRUCTOR') {
-                echo json_encode(['error' => 'No tiene permisos para quitar roles']);
-                exit;
-            }
-
             $id_usuario = intval(inreq('id_usuario'));
             $id_rol = intval(inreq('id_rol'));
 

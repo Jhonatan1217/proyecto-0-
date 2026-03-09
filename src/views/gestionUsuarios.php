@@ -1,12 +1,3 @@
-<?php
-$cargo = $_SESSION['cargo'] ?? '';
-
-if ($cargo === 'INSTRUCTOR') {
-    header("Location: index.php?page=register_tables");
-    exit;
-}
-?>
-
 <?php /* views/grupos.php */ ?>
 <?php if(!defined('BASE_URL')) { 
   $base = '/senlock/';
@@ -17,12 +8,19 @@ if ($cargo === 'INSTRUCTOR') {
 .modal-usuario-overlay {
   backdrop-filter: blur(4px);
   background: rgba(0,0,0,0.35);
+  overflow: hidden;
 }
 .modal-usuario-box {
-  max-height: calc(100vh - 3rem);
-  margin: 1.5rem;
+  width: 480px;
+  max-width: calc(100vw - 2rem);
+  /* Espaciado visible con header y footer (~5rem + ~3rem + 2rem de separación) */
+  max-height: calc(100vh - 10rem);
+  margin: 2rem 1.5rem;
   box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
   border: 1px solid rgba(229,231,235,0.8);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 .modal-usuario-header {
   flex-shrink: 0;
@@ -31,9 +29,29 @@ if ($cargo === 'INSTRUCTOR') {
   background: #fff;
 }
 .modal-usuario-body {
-  flex: 1;
+  flex: 1 1 0%;
+  min-height: 0;
   overflow-y: auto;
-  padding: 1rem 1.25rem;
+  overflow-x: hidden;
+  padding: 1.25rem 1.5rem;
+  -webkit-overflow-scrolling: touch;
+}
+/* Contenido de formularios: inputs/selects 400px */
+.modal-usuario-form-content {
+  max-width: 400px;
+  width: 100%;
+  margin: 0 auto;
+}
+/* Form dentro del modal: debe ocupar el resto y no desbordar para que el body haga scroll */
+.modal-usuario-box form.flex {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.modal-usuario-box form.flex .modal-usuario-body {
+  flex: 1 1 0%;
   min-height: 0;
 }
 .modal-usuario-footer {
@@ -170,7 +188,11 @@ if ($cargo === 'INSTRUCTOR') {
   cursor: pointer;
 }
 
-/* Filtro roles desactivado cuando no se ha seleccionado Instructor */
+/* Filtro roles: wrapper deshabilitado cuando cargo no es Instructor */
+.custom-select-wrapper.filtro-rol-disabled {
+  pointer-events: none;
+  opacity: 0.7;
+}
 #filtroRoles:disabled {
   background-color: #f3f4f6;
   color: #9ca3af;
@@ -324,7 +346,7 @@ if ($cargo === 'INSTRUCTOR') {
 <div id="modalNuevoUsuario" role="dialog" aria-labelledby="modalNuevoUsuarioTitle" aria-modal="true"
   class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 modal-usuario-overlay hidden">
 
-  <div class="modal-usuario-box bg-white w-full max-w-xl rounded-2xl flex flex-col overflow-hidden">
+  <div class="modal-usuario-box bg-white rounded-2xl overflow-hidden">
 
     <header class="modal-usuario-header flex items-center justify-between">
       <h2 id="modalNuevoUsuarioTitle" class="text-xl font-bold text-[#39A900] tracking-tight">
@@ -339,6 +361,7 @@ if ($cargo === 'INSTRUCTOR') {
     </header>
 
     <form id="formUsuario" class="flex flex-col flex-1 min-h-0" novalidate>
+          <input type="hidden" name="estado" value="0">
       <div id="errorFormUsuario" class="hidden alert-error mx-6 mt-4" role="alert">
         <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
@@ -347,7 +370,7 @@ if ($cargo === 'INSTRUCTOR') {
       </div>
 
       <div class="modal-usuario-body flex-1">
-        <div class="space-y-5">
+        <div class="modal-usuario-form-content space-y-5">
           <div>
             <label for="nombre_completo_nuevo" class="label-enterprise">Nombre completo</label>
             <input type="text" id="nombre_completo_nuevo" name="nombre_completo" required
@@ -436,6 +459,12 @@ if ($cargo === 'INSTRUCTOR') {
                 </div>
               </div>
             </div>
+            <div class="pt-2">
+              <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="rol_encargado_trimestralizacion" id="rol_trimestralizacion_nuevo" value="1" class="rounded border-gray-300 text-[#39A900] focus:ring-[#39A900]">
+                <span class="text-sm text-gray-700">Encargado de trimestralización</span>
+              </label>
+            </div>
           </div>
 
           <div class="grupoCoordinador hidden pt-4 border-t border-gray-100">
@@ -461,7 +490,7 @@ if ($cargo === 'INSTRUCTOR') {
 <div id="modalEditarUsuario" role="dialog" aria-labelledby="modalEditarUsuarioTitle" aria-modal="true"
   class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 modal-usuario-overlay hidden">
 
-  <div class="modal-usuario-box bg-white w-full max-w-xl rounded-2xl flex flex-col overflow-hidden">
+  <div class="modal-usuario-box bg-white rounded-2xl overflow-hidden">
 
     <header class="modal-usuario-header flex items-center justify-between">
       <h2 id="modalEditarUsuarioTitle" class="text-xl font-bold text-[#39A900] tracking-tight">
@@ -484,7 +513,7 @@ if ($cargo === 'INSTRUCTOR') {
       </div>
 
       <div class="modal-usuario-body flex-1">
-        <div class="space-y-5">
+        <div class="modal-usuario-form-content space-y-5">
           <div>
             <label for="nombre_completo_editar" class="label-enterprise">Nombre completo</label>
             <input type="text" id="nombre_completo_editar" name="nombre_completo" required
@@ -573,6 +602,12 @@ if ($cargo === 'INSTRUCTOR') {
                 </div>
               </div>
             </div>
+            <div class="pt-2">
+              <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="rol_encargado_trimestralizacion" id="rol_trimestralizacion_editar" value="1" class="rounded border-gray-300 text-[#39A900] focus:ring-[#39A900]">
+                <span class="text-sm text-gray-700">Encargado de trimestralización</span>
+              </label>
+            </div>
           </div>
 
           <div class="grupoCoordinador hidden pt-4 border-t border-gray-100">
@@ -599,80 +634,89 @@ if ($cargo === 'INSTRUCTOR') {
 <div id="modalVerUsuario" 
     class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
     
-    <div class="bg-white w-full max-w-xl max-h-[85vh] overflow-y-auto rounded-2xl shadow-xl border border-gray-200 px-8 py-10 relative">
+    <div class="modal-usuario-box bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
         
-        <button onclick="cerrarModal('modalVerUsuario')" 
-                class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-lg">
-            ✕
-        </button>
-
-        <h2 class="text-2xl font-bold text-[#0a3a57] mb-6">
-            Detalles del Usuario
-        </h2>
-
-        <div id="errorModalVerUsuario" class="hidden alert-error mb-4" role="alert">
-          <svg class="w-5 h-5 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-          </svg>
-          <span class="alert-error-text"></span>
-        </div>
-
-        <!-- Avatar + Nombre + Tags (Rol, Estado) - Diseño alineado -->
-        <div class="flex items-start gap-4 mb-8 pb-6 border-b border-gray-200">
-            <div class="w-16 h-16 rounded-full flex items-center justify-center shrink-0 text-2xl font-semibold text-gray-500" id="verAvatar" style="background-color:#BFBFBF">—</div>
-            <div class="flex-1 min-w-0 flex flex-col gap-2">
-                <p id="verNombre" class="text-gray-900 font-bold text-lg leading-tight">Cargando...</p>
-                <div class="flex flex-wrap gap-2 items-center">
-                    <span id="verCargo" class="inline-block px-3 py-1.5 rounded-full text-xs font-semibold" style="background-color:#A8D4BA;color:#3F6278">Cargo</span>
-                    <span id="verEstado" class="inline-block px-3 py-1.5 rounded-full text-xs font-semibold" style="background-color:#C5E7B5;color:#39A900">Estado</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Atributos -->
-        <div class="space-y-5">
-            <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Tipo de documento</label>
-                <p id="verTipoDoc" class="text-gray-800 mt-1">—</p>
-            </div>
-            <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Número documento</label>
-                <p id="verNumDoc" class="text-gray-800 mt-1">—</p>
-            </div>
-            <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Correo electrónico</label>
-                <p id="verCorreo" class="text-gray-800 mt-1">—</p>
-            </div>
-
-            <div id="verGrupoInstructor" class="grupoInstructor space-y-5 pt-4 border-t border-gray-100 hidden">
-                <div>
-                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Tipo instructor</label>
-                    <p id="verTipoIns" class="text-gray-800 mt-1">—</p>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Tipo de contrato</label>
-                    <p id="verContrato" class="text-gray-800 mt-1">—</p>
-                </div>
-            </div>
-
-            <div id="verGrupoCoordinador" class="grupoCoordinador pt-4 border-t border-gray-100 hidden">
-                <div>
-                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Área coordinador</label>
-                    <p id="verArea" class="text-gray-800 mt-1">—</p>
-                </div>
-            </div>
-
-            <div class="pt-4 border-t border-gray-100">
-                <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Programas de Formación Vínculados</label>
-                <div id="verProgramas" class="text-gray-800 mt-1 space-y-1">—</div>
-            </div>
-        </div>
-
-        <div class="flex justify-end mt-10">
-            <button type="button" id="btnCerrarVerUsuario"
-                class="px-6 py-3 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
+        <header class="modal-usuario-header flex items-center justify-between flex-shrink-0">
+            <h2 class="text-xl font-bold text-[#0a3a57] tracking-tight">
+                Detalles del Usuario
+            </h2>
+            <button type="button" id="btnCerrarVerUsuario" onclick="cerrarModal('modalVerUsuario')" aria-label="Cerrar"
+                class="btn-modal-secondary inline-flex items-center gap-2">
                 Cerrar
             </button>
+        </header>
+
+        <div class="modal-usuario-body flex-1 min-h-0 px-6 py-4 flex flex-col">
+            <div id="errorModalVerUsuario" class="hidden alert-error mb-4 flex-shrink-0" role="alert">
+              <svg class="w-5 h-5 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+              </svg>
+              <span class="alert-error-text"></span>
+            </div>
+
+            <!-- Estado de carga (visible mientras se obtienen los datos) -->
+            <div id="verUsuarioLoading" class="flex-1 flex flex-col items-center justify-center py-12 gap-4 min-h-[200px] hidden">
+                <div class="w-10 h-10 border-2 border-[#39A900] border-t-transparent rounded-full animate-spin" role="status" aria-label="Cargando"></div>
+                <p class="text-gray-600 text-sm font-medium">Cargando datos del usuario...</p>
+            </div>
+
+            <!-- Contenido (visible solo cuando ya se cargaron los datos) -->
+            <div id="verUsuarioContent" class="flex-1 min-h-0 overflow-y-auto hidden">
+            <!-- Avatar + Nombre + Tags -->
+            <div class="flex items-start gap-4 mb-6 pb-6 border-b border-gray-200">
+                <div class="w-16 h-16 rounded-full flex items-center justify-center shrink-0 text-2xl font-semibold text-gray-500" id="verAvatar" style="background-color:#BFBFBF">—</div>
+                <div class="flex-1 min-w-0 flex flex-col gap-2">
+                    <p id="verNombre" class="text-gray-900 font-bold text-lg leading-tight">—</p>
+                    <div class="flex flex-wrap gap-2 items-center">
+                        <span id="verCargo" class="inline-block px-3 py-1.5 rounded-full text-xs font-semibold" style="background-color:#A8D4BA;color:#3F6278">—</span>
+                        <span id="verEstado" class="inline-block px-3 py-1.5 rounded-full text-xs font-semibold" style="background-color:#C5E7B5;color:#39A900">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Atributos -->
+            <div class="space-y-5">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Tipo de documento</label>
+                    <p id="verTipoDoc" class="text-gray-800 mt-1">—</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Número documento</label>
+                    <p id="verNumDoc" class="text-gray-800 mt-1">—</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Correo electrónico</label>
+                    <p id="verCorreo" class="text-gray-800 mt-1">—</p>
+                </div>
+
+                <div id="verGrupoInstructor" class="grupoInstructor space-y-5 pt-4 border-t border-gray-100 hidden">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Tipo instructor</label>
+                        <p id="verTipoIns" class="text-gray-800 mt-1">—</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Tipo de contrato</label>
+                        <p id="verContrato" class="text-gray-800 mt-1">—</p>
+                    </div>
+                    <div id="verRolTrimestralizacion" class="hidden">
+                        <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Rol funcional</label>
+                        <p class="text-gray-800 mt-1">Encargado de trimestralización</p>
+                    </div>
+                </div>
+
+                <div id="verGrupoCoordinador" class="grupoCoordinador pt-4 border-t border-gray-100 hidden">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Área coordinador</label>
+                        <p id="verArea" class="text-gray-800 mt-1">—</p>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-gray-100">
+                    <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Programas de Formación Vínculados</label>
+                    <div id="verProgramas" class="text-gray-800 mt-1 space-y-1">—</div>
+                </div>
+            </div>
+            </div>
         </div>
     </div>
 </div>  

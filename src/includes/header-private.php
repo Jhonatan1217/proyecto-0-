@@ -368,29 +368,25 @@ window.BASE_URL = <?= json_encode(BASE_URL) ?>;
         <a href="<?= BASE_URL ?>index.php?page=src/views/register_tables">Horarios</a>
       </li>
 
-      <?php if ($cargo != 'INSTRUCTOR'): ?>
+      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+        <img src="<?= BASE_URL ?>src/assets/img/map-pin.svg" alt="Icono de Áreas">
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionAreas">Áreas</a>
+      </li>
+      
+      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+        <img src="<?= BASE_URL ?>src/assets/img/house-plus.svg" alt="Icono de Zonas">
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionZonas">Zonas</a>
+      </li>
 
-        <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-          <img src="<?= BASE_URL ?>src/assets/img/map-pin.svg">
-          <a href="<?= BASE_URL ?>index.php?page=src/views/gestionAreas">Áreas</a>
-        </li>
+      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+        <img src="<?= BASE_URL ?>src/assets/img/layers.svg" alt="Icono de Trimestres">
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionTrimestres">Trimestres</a>
+      </li>
 
-        <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-          <img src="<?= BASE_URL ?>src/assets/img/house-plus.svg">
-          <a href="<?= BASE_URL ?>index.php?page=src/views/gestionZonas">Zonas</a>
-        </li>
-
-        <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-          <img src="<?= BASE_URL ?>src/assets/img/layers.svg">
-          <a href="<?= BASE_URL ?>index.php?page=src/views/gestionTrimestres">Trimestres</a>
-        </li>
-
-        <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-          <img src="<?= BASE_URL ?>src/assets/img/users.svg">
-          <a href="<?= BASE_URL ?>index.php?page=gestionUsuarios">Usuarios</a>
-        </li>
-
-      <?php endif; ?>
+      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+        <img src="<?= BASE_URL ?>src/assets/img/users.svg" alt="Icono de Usuarios">
+        <a href="<?= BASE_URL ?>index.php?page=gestionUsuarios">Usuarios</a>
+      </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/folder-minus.svg" alt="Icono de Grupos">
@@ -410,13 +406,10 @@ window.BASE_URL = <?= json_encode(BASE_URL) ?>;
         
         <!-- Submenú de Académicos (inicialmente oculto) -->
         <ul class="pl-12 mt-2 space-y-2 hidden" id="academicos-submenu">
-          <?php if ($cargo != 'INSTRUCTOR'): ?>
-            <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-              <img src="<?= BASE_URL ?>src/assets/img/upload.svg" class="w-5 h-5">
-              <a href="<?= BASE_URL ?>index.php?page=academicos&tab=upload">Carga Excel</a>
-            </li>
-          <?php endif; ?>
-
+          <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+            <img src="<?= BASE_URL ?>src/assets/img/upload.svg" alt="Icono de Carga Excel" class="w-5 h-5">
+            <a href="<?= BASE_URL ?>index.php?page=academicos&tab=upload">Carga Excel</a>
+          </li>
           <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
             <img src="<?= BASE_URL ?>src/assets/img/graduation-cap.svg" alt="Icono de Programas" class="w-5 h-5">
             <a href="<?= BASE_URL ?>index.php?page=academicos&tab=programs">Programas</a>

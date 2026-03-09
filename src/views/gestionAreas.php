@@ -1,6 +1,8 @@
 <?php
-if ($_SESSION['cargo'] === 'Instructor') {
-    header("Location: index.php");
+$cargo = $_SESSION['cargo'] ?? '';
+
+if ($cargo === 'INSTRUCTOR') {
+    header("Location: index.php?page=register_tables");
     exit;
 }
 ?>
@@ -182,15 +184,15 @@ if ($_SESSION['cargo'] === 'Instructor') {
           type="button">✕</button>
 
         <!-- Contenido -->
-        <div class="space-y-6">
+        <div class="space-y-8">
           <div>
             <h3 class="text-2xl font-semibold">Nueva Área</h3>
             <p class="text-gray-400 mt-1">Ingresa el nombre del área</p>
           </div>
 
-          <!-- Formulario -->
+          <!-- Formulario: input más estrecho y más espaciado -->
           <form id="formNuevaArea" class="space-y-6">
-            <div class="space-y-2">
+            <div class="max-w-xs space-y-2">
               <label class="block text-sm font-semibold">Nombre del Área</label>
               <input
                 type="text"
@@ -201,7 +203,7 @@ if ($_SESSION['cargo'] === 'Instructor') {
             </div>
 
             <!-- Acciones -->
-            <div class="pt-2 flex items-center justify-end gap-4">
+            <div class="pt-4 flex items-center justify-end gap-4">
               <button type="button" id="btnCancelarModalArea"
                 class="px-5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition">
                 Cancelar
