@@ -367,7 +367,6 @@ function renderTabla(data) {
 function enhanceSelectsWithCustomDropdown() {
     document.querySelectorAll('.select-usuario').forEach(select => {
         if (select.dataset.customDropdown) return;
-        if (select.id === 'filtroCargos' || select.id === 'filtroRoles') return;
         select.dataset.customDropdown = '1';
 
         const wrapper = document.createElement('div');
@@ -427,6 +426,7 @@ function enhanceSelectsWithCustomDropdown() {
         trigger.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
+            if (select.disabled) return;
             const open = !dropdown.classList.contains('hidden');
             document.querySelectorAll('.custom-select-dropdown').forEach(d => d.classList.add('hidden'));
             if (!open) {
@@ -464,14 +464,26 @@ function aplicarEstadoFiltroRoles() {
     if (!filtroRoles) return;
     const esInstructor = /instructor/i.test((filtroCargos?.value || '').trim());
     filtroRoles.disabled = !esInstructor;
-    if (!esInstructor) filtroRoles.value = '';
+    var wrapper = filtroRoles.closest('.custom-select-wrapper');
+    if (wrapper) {
+        if (esInstructor) {
+            wrapper.classList.remove('filtro-rol-disabled');
+        } else {
+            wrapper.classList.add('filtro-rol-disabled');
+            filtroRoles.value = '';
+            var triggerSpan = wrapper.querySelector('.custom-select-trigger span:first-child');
+            if (triggerSpan) triggerSpan.textContent = 'Todos los roles';
+        }
+    } else if (!esInstructor) {
+        filtroRoles.value = '';
+    }
 }
 
 async function cargarRolesDisponibles() {
     try {
         const roles = await apiRequest("rolesDisponibles");
         if (!Array.isArray(roles)) return;
-        const rTrim = roles.find(r => (r.nombre_rol || '').toLowerCase().includes('trimestralización'));
+        const rTrim = roles.find(r => (r.nombre_rol || r.nombreRol || '').toLowerCase().includes('trimestraliz'));
         idRolTrimestralizacion = rTrim ? (rTrim.id_rol != null ? parseInt(rTrim.id_rol, 10) : null) : null;
         const sel = document.getElementById('filtroRoles');
         if (!sel) return;
@@ -480,14 +492,45 @@ async function cargarRolesDisponibles() {
         roles.forEach(r => {
             const opt = document.createElement('option');
             opt.value = r.id_rol;
-            opt.textContent = r.nombre_rol || r.nombreRol || ('Rol ' + r.id_rol);
+            const nombre = (r.nombre_rol || r.nombreRol || '').trim();
+            opt.textContent = nombre.toLowerCase().includes('trimestraliz') ? 'Encargado de trimestralización' : (nombre || ('Rol ' + r.id_rol));
             sel.appendChild(opt);
         });
         if (valorActual) sel.value = valorActual;
         aplicarEstadoFiltroRoles();
+        if (sel.closest('.custom-select-wrapper')) refreshCustomDropdownOptions(sel);
     } catch (e) {
         console.warn('No se pudieron cargar roles para el filtro:', e);
     }
+}
+
+function refreshCustomDropdownOptions(select) {
+    const wrapper = select.closest('.custom-select-wrapper');
+    if (!wrapper) return;
+    const dropdown = wrapper.querySelector('.custom-select-dropdown');
+    const triggerSpan = wrapper.querySelector('.custom-select-trigger span:first-child');
+    if (!dropdown || !triggerSpan) return;
+    dropdown.innerHTML = '';
+    [...select.options].forEach((opt, i) => {
+        const div = document.createElement('div');
+        div.className = 'custom-option' + (opt.value === select.value ? ' selected' : '');
+        div.textContent = opt.textContent;
+        div.dataset.value = opt.value;
+        div.dataset.index = String(i);
+        div.setAttribute('role', 'option');
+        div.addEventListener('click', function(e) {
+            e.stopPropagation();
+            select.value = opt.value;
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            dropdown.querySelectorAll('.custom-option').forEach(function(o) { o.classList.remove('selected'); });
+            div.classList.add('selected');
+            triggerSpan.textContent = opt ? opt.textContent : '';
+            dropdown.classList.add('hidden');
+        });
+        dropdown.appendChild(div);
+    });
+    const opt = select.options[select.selectedIndex];
+    triggerSpan.textContent = opt ? opt.textContent : '';
 }
 
 function debounce(fn, ms) {
@@ -613,7 +656,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const res = await apiRequest("crear", "POST", datos);
         if (res.success) {
-            const idUsuario = res.id_usuario ? parseInt(res.id_usuario, 10) : null;
+            const idUsuario = res.id_usuario != null ? parseInt(res.id_usuario, 10) : null;
             const cbTrim = form.querySelector('#rol_trimestralizacion_nuevo');
             if (idUsuario && idRolTrimestralizacion && cbTrim?.checked && (window.USUARIO_ID || 0) > 0) {
                 const rRol = await apiRequest("asignarRol", "POST", {
@@ -729,7 +772,7 @@ async function prepararEdicion(id) {
                     try {
                         rolesUsuario = await apiRequest("listarRolesUsuario", "GET", { id_usuario: u.id_usuario }) || [];
                     } catch (_) {}
-                    const tieneTrim = Array.isArray(rolesUsuario) && rolesUsuario.some(r => (String(r.nombre_rol || '').toLowerCase().includes('trimestralización')));
+                    const tieneTrim = Array.isArray(rolesUsuario) && rolesUsuario.some(r => (String(r.nombre_rol || r.nombreRol || '').toLowerCase().includes('trimestraliz')));
                     cbTrim.checked = tieneTrim;
                     form.dataset.teniaRolTrimestralizacion = tieneTrim ? '1' : '0';
                 }
@@ -756,10 +799,13 @@ async function verUsuarioDetalles(id) {
     }
 
     limpiarErrores(document.getElementById('modalVerUsuario'));
-    ['verNombre', 'verAvatar', 'verCargo', 'verEstado', 'verTipoDoc', 'verNumDoc', 'verCorreo', 'verTipoIns', 'verContrato', 'verArea', 'verProgramas'].forEach(idEl => {
-        const el = document.getElementById(idEl);
-        if (el) el.textContent = 'Cargando...';
-    });
+    var loadingEl = document.getElementById('verUsuarioLoading');
+    var contentEl = document.getElementById('verUsuarioContent');
+    if (loadingEl) {
+        loadingEl.classList.remove('hidden');
+        loadingEl.classList.add('flex');
+    }
+    if (contentEl) contentEl.classList.add('hidden');
 
     abrirModal('modalVerUsuario');
 
@@ -767,10 +813,18 @@ async function verUsuarioDetalles(id) {
         const res = await apiRequest("obtener", "GET", { id: id });
         const u = Array.isArray(res) ? res[0] : res;
 
+        if (loadingEl) {
+            loadingEl.classList.add('hidden');
+            loadingEl.classList.remove('flex');
+        }
+
         if (!u || u.error) {
             mostrarError('modalVerUsuario', res?.error || "No se pudo cargar la información del usuario.", null);
+            if (contentEl) contentEl.classList.add('hidden');
             return;
         }
+
+        if (contentEl) contentEl.classList.remove('hidden');
 
         const set = (idEl, val) => {
             const el = document.getElementById(idEl);
@@ -812,9 +866,9 @@ async function verUsuarioDetalles(id) {
             try {
                 rolesUsuario = await apiRequest("listarRolesUsuario", "GET", { id_usuario: id }) || [];
             } catch (_) {}
+            const tieneTrim = Array.isArray(rolesUsuario) && rolesUsuario.some(r => String(r.nombre_rol || r.nombreRol || '').toLowerCase().includes('trimestraliz'));
             const verBlock = document.getElementById('verRolTrimestralizacion');
             if (verBlock) {
-                const tieneTrim = Array.isArray(rolesUsuario) && rolesUsuario.some(r => String(r.nombre_rol || '').toLowerCase().includes('trimestralización'));
                 verBlock.classList.toggle('hidden', !tieneTrim);
             }
         } else {
@@ -840,6 +894,11 @@ async function verUsuarioDetalles(id) {
         }
     } catch (e) {
         console.error("Error al ver usuario:", e);
+        if (loadingEl) {
+            loadingEl.classList.add('hidden');
+            loadingEl.classList.remove('flex');
+        }
+        if (contentEl) contentEl.classList.add('hidden');
         mostrarError('modalVerUsuario', "Ocurrió un error al cargar los detalles del usuario.", null);
     }
 }

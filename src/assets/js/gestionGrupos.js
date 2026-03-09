@@ -262,28 +262,150 @@ function entrarModoEdicion(e) {
 
 
 /* =========================
-   CUSTOM SELECT DROPDOWN
+   CUSTOM SELECT DROPDOWN / COMBOBOX
 ========================= */
+const DROPDOWN_MAX_H_PX = 220;
+const COMBOBOX_MAX_ITEMS = 5;
+const COMBOBOX_ITEM_HEIGHT_REM = 2.5;
+
+function applyDropdownPosition(wrapper, dropdown, dropdownMaxH) {
+    const rect = wrapper.getBoundingClientRect();
+    const margin = 8;
+    const isInTable = wrapper.closest('.table-grupos-wrap');
+    const modalBox = !isInTable ? wrapper.closest('.modal-grupo-box, .modal-usuario-box') : null;
+    const spaceBelow = modalBox
+        ? (modalBox.getBoundingClientRect().bottom - rect.bottom)
+        : (window.innerHeight - rect.bottom);
+    const needsUp = spaceBelow < (dropdownMaxH || DROPDOWN_MAX_H_PX) + margin;
+    dropdown.classList.toggle('dropdown-up', needsUp);
+    if (isInTable) {
+        dropdown.classList.add('dropdown-over-table');
+        dropdown.style.minWidth = rect.width + 'px';
+        dropdown.style.maxHeight = (dropdownMaxH || DROPDOWN_MAX_H_PX) + 'px';
+        if (needsUp) {
+            dropdown.style.top = '';
+            dropdown.style.bottom = (window.innerHeight - rect.top + margin) + 'px';
+            dropdown.style.left = rect.left + 'px';
+        } else {
+            dropdown.style.bottom = '';
+            dropdown.style.top = (rect.bottom + margin) + 'px';
+            dropdown.style.left = rect.left + 'px';
+        }
+    }
+}
+
+function closeAllDropdowns() {
+    document.querySelectorAll('.custom-select-dropdown').forEach(d => {
+        d.classList.add('hidden');
+        d.classList.remove('dropdown-over-table');
+        d.style.cssText = '';
+    });
+}
+
 function enhanceSelectsWithCustomDropdown() {
     document.querySelectorAll('.select-grupo').forEach(select => {
         if (select.dataset.customDropdown) return;
         select.dataset.customDropdown = '1';
 
+        const isCombobox = select.classList.contains('programa') || select.classList.contains('lider');
+
         const wrapper = document.createElement('div');
-        wrapper.className = 'custom-select-wrapper';
+        wrapper.className = 'custom-select-wrapper' + (isCombobox ? ' combobox-grupo-wrapper' : '');
         select.parentNode.insertBefore(wrapper, select);
         wrapper.appendChild(select);
         const arrowSib = wrapper.nextElementSibling;
         if (arrowSib && (arrowSib.classList?.contains('pointer-events-none') || arrowSib.matches?.('svg.absolute'))) arrowSib.style.display = 'none';
 
+        const dropdown = document.createElement('div');
+        dropdown.className = 'custom-select-dropdown hidden';
+        dropdown.setAttribute('role', 'listbox');
+
+        if (isCombobox) {
+            const triggerWrap = document.createElement('div');
+            triggerWrap.className = 'combobox-grupo-trigger w-full border border-gray-300 rounded-xl bg-white hover:border-gray-400 focus-within:ring-2 focus-within:ring-[#39A900]/20 focus-within:border-[#39A900] ' + (select.classList.contains('py-2.5') ? 'py-2.5 text-sm' : 'py-3');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.autocomplete = 'off';
+            input.className = 'combobox-grupo-input w-full bg-transparent py-0 border-0 focus:ring-0';
+            input.placeholder = select.classList.contains('programa') ? 'Buscar programa...' : 'Buscar líder...';
+            const chevron = document.createElement('span');
+            chevron.className = 'chevron-combobox';
+            chevron.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>';
+            triggerWrap.appendChild(input);
+            triggerWrap.appendChild(chevron);
+
+            const optionsData = [...select.options].map((opt, i) => ({ value: opt.value, text: (opt.textContent || '').trim(), index: i }));
+
+            const renderOptions = (filterText) => {
+                const q = (filterText || '').trim().toLowerCase();
+                dropdown.innerHTML = '';
+                optionsData.forEach(({ value, text }) => {
+                    if (q && !text.toLowerCase().includes(q)) return;
+                    const div = document.createElement('div');
+                    div.className = 'custom-option' + (value === select.value ? ' selected' : '');
+                    div.textContent = text;
+                    div.dataset.value = value;
+                    div.setAttribute('role', 'option');
+                    div.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        select.value = value;
+                        select.dispatchEvent(new Event('change', { bubbles: true }));
+                        input.value = text;
+                        dropdown.classList.add('hidden');
+                    });
+                    dropdown.appendChild(div);
+                });
+            };
+
+            const updateInputFromSelect = () => {
+                const opt = select.options[select.selectedIndex];
+                input.value = opt ? (opt.textContent || '').trim() : '';
+            };
+            updateInputFromSelect();
+
+            triggerWrap.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (e.target === input) return;
+                const open = !dropdown.classList.contains('hidden');
+                closeAllDropdowns();
+                if (!open) {
+                    renderOptions(input.value);
+                    const maxH = COMBOBOX_MAX_ITEMS * COMBOBOX_ITEM_HEIGHT_REM * parseFloat(getComputedStyle(document.documentElement).fontSize);
+                    applyDropdownPosition(wrapper, dropdown, maxH);
+                    dropdown.classList.remove('hidden');
+                }
+            });
+
+            input.addEventListener('focus', () => {
+                closeAllDropdowns();
+                renderOptions(input.value);
+                const maxH = COMBOBOX_MAX_ITEMS * COMBOBOX_ITEM_HEIGHT_REM * parseFloat(getComputedStyle(document.documentElement).fontSize);
+                applyDropdownPosition(wrapper, dropdown, maxH);
+                dropdown.classList.remove('hidden');
+            });
+
+            input.addEventListener('input', () => { renderOptions(input.value); });
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') { dropdown.classList.add('hidden'); input.blur(); }
+            });
+
+            select.addEventListener('change', updateInputFromSelect);
+
+            select.classList.add('sr-only', 'absolute', 'inset-0', 'w-full', 'h-full', 'opacity-0', 'pointer-events-none');
+            wrapper.appendChild(triggerWrap);
+            wrapper.appendChild(dropdown);
+
+            document.addEventListener('click', (e) => {
+                if (!wrapper.contains(e.target)) dropdown.classList.add('hidden');
+            }, true);
+            return;
+        }
+
         const trigger = document.createElement('div');
         trigger.className = 'custom-select-trigger ' + (select.classList.contains('py-2.5') ? 'py-2.5 text-sm' : 'py-3') + ' w-full border border-gray-300 rounded-xl bg-white text-gray-700 cursor-pointer hover:border-gray-400 focus-within:ring-2 focus-within:ring-[#39A900]/20 focus-within:border-[#39A900]';
         trigger.setAttribute('tabindex', '0');
         trigger.setAttribute('aria-haspopup', 'listbox');
-
-        const dropdown = document.createElement('div');
-        dropdown.className = 'custom-select-dropdown hidden';
-        dropdown.setAttribute('role', 'listbox');
 
         const span = document.createElement('span');
         span.className = 'truncate';
@@ -327,17 +449,9 @@ function enhanceSelectsWithCustomDropdown() {
             e.preventDefault();
             e.stopPropagation();
             const open = !dropdown.classList.contains('hidden');
-            document.querySelectorAll('.custom-select-dropdown').forEach(d => d.classList.add('hidden'));
+            closeAllDropdowns();
             if (!open) {
-                const rect = wrapper.getBoundingClientRect();
-                const dropdownMaxH = 220;
-                const margin = 12;
-                const modalBox = wrapper.closest('.modal-grupo-box, .modal-usuario-box');
-                const spaceBelow = modalBox
-                    ? (modalBox.getBoundingClientRect().bottom - rect.bottom)
-                    : (window.innerHeight - rect.bottom);
-                const needsUp = spaceBelow < dropdownMaxH + margin;
-                dropdown.classList.toggle('dropdown-up', needsUp);
+                applyDropdownPosition(wrapper, dropdown, DROPDOWN_MAX_H_PX);
                 dropdown.classList.remove('hidden');
             } else {
                 dropdown.classList.remove('dropdown-up');

@@ -118,7 +118,7 @@ try {
                 'tipo_instructor'   => inreq('tipo_instructor') ? trim((string) inreq('tipo_instructor')) : null,
                 'tipo_contrato'     => trim((string) inreq('tipo_contrato')) ?: 'CONTRATISTA',
                 'password_hash'     => password_hash(trim((string) inreq('password')), PASSWORD_DEFAULT),
-                'estado'            => inreq('estado') ?? 1,
+                'estado'            => (int) (inreq('estado') ?? 0),
                 'es_sistema'        => inreq('es_sistema') ?? 0
             ];
 

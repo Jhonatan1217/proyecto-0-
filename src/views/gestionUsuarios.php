@@ -188,7 +188,11 @@
   cursor: pointer;
 }
 
-/* Filtro roles desactivado cuando no se ha seleccionado Instructor */
+/* Filtro roles: wrapper deshabilitado cuando cargo no es Instructor */
+.custom-select-wrapper.filtro-rol-disabled {
+  pointer-events: none;
+  opacity: 0.7;
+}
 #filtroRoles:disabled {
   background-color: #f3f4f6;
   color: #9ca3af;
@@ -357,6 +361,7 @@
     </header>
 
     <form id="formUsuario" class="flex flex-col flex-1 min-h-0" novalidate>
+          <input type="hidden" name="estado" value="0">
       <div id="errorFormUsuario" class="hidden alert-error mx-6 mt-4" role="alert">
         <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
@@ -641,22 +646,30 @@
             </button>
         </header>
 
-        <div class="modal-usuario-body flex-1 min-h-0 px-6 py-4">
-            <div id="errorModalVerUsuario" class="hidden alert-error mb-4" role="alert">
+        <div class="modal-usuario-body flex-1 min-h-0 px-6 py-4 flex flex-col">
+            <div id="errorModalVerUsuario" class="hidden alert-error mb-4 flex-shrink-0" role="alert">
               <svg class="w-5 h-5 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
               </svg>
               <span class="alert-error-text"></span>
             </div>
 
+            <!-- Estado de carga (visible mientras se obtienen los datos) -->
+            <div id="verUsuarioLoading" class="flex-1 flex flex-col items-center justify-center py-12 gap-4 min-h-[200px] hidden">
+                <div class="w-10 h-10 border-2 border-[#39A900] border-t-transparent rounded-full animate-spin" role="status" aria-label="Cargando"></div>
+                <p class="text-gray-600 text-sm font-medium">Cargando datos del usuario...</p>
+            </div>
+
+            <!-- Contenido (visible solo cuando ya se cargaron los datos) -->
+            <div id="verUsuarioContent" class="flex-1 min-h-0 overflow-y-auto hidden">
             <!-- Avatar + Nombre + Tags -->
             <div class="flex items-start gap-4 mb-6 pb-6 border-b border-gray-200">
                 <div class="w-16 h-16 rounded-full flex items-center justify-center shrink-0 text-2xl font-semibold text-gray-500" id="verAvatar" style="background-color:#BFBFBF">—</div>
                 <div class="flex-1 min-w-0 flex flex-col gap-2">
-                    <p id="verNombre" class="text-gray-900 font-bold text-lg leading-tight">Cargando...</p>
+                    <p id="verNombre" class="text-gray-900 font-bold text-lg leading-tight">—</p>
                     <div class="flex flex-wrap gap-2 items-center">
-                        <span id="verCargo" class="inline-block px-3 py-1.5 rounded-full text-xs font-semibold" style="background-color:#A8D4BA;color:#3F6278">Cargo</span>
-                        <span id="verEstado" class="inline-block px-3 py-1.5 rounded-full text-xs font-semibold" style="background-color:#C5E7B5;color:#39A900">Estado</span>
+                        <span id="verCargo" class="inline-block px-3 py-1.5 rounded-full text-xs font-semibold" style="background-color:#A8D4BA;color:#3F6278">—</span>
+                        <span id="verEstado" class="inline-block px-3 py-1.5 rounded-full text-xs font-semibold" style="background-color:#C5E7B5;color:#39A900">—</span>
                     </div>
                 </div>
             </div>
@@ -702,6 +715,7 @@
                     <label class="block text-xs font-bold uppercase text-gray-500 tracking-wider">Programas de Formación Vínculados</label>
                     <div id="verProgramas" class="text-gray-800 mt-1 space-y-1">—</div>
                 </div>
+            </div>
             </div>
         </div>
     </div>

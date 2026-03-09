@@ -74,7 +74,7 @@ class Usuario {
         $stmt->bindParam(':tipo_instructor', $data['tipo_instructor']); // Puede ser NULL
         $stmt->bindParam(':tipo_contrato', $data['tipo_contrato']);
         $stmt->bindParam(':password_hash', $data['password_hash']);
-        $estado = $data['estado'] ?? 1;
+        $estado = isset($data['estado']) ? (int) $data['estado'] : 0;
         $stmt->bindParam(':estado', $estado, PDO::PARAM_INT);
         $es_sistema = $data['es_sistema'] ?? 0;
         $stmt->bindParam(':es_sistema', $es_sistema, PDO::PARAM_INT);
