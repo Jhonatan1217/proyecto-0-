@@ -211,8 +211,8 @@ async function cargarAreasYZonas() {
 
 function configurarFiltros(){
   const selectModalidad = document.getElementById("selectModalidad") || document.getElementById("selectModalidadFiltro");
-  const selectArea = document.getElementById("selectArea")?.parentElement;
-  const selectZona = document.getElementById("selectZona")?.parentElement;
+  const selectArea = document.getElementById("contenedorAreaFiltro") || document.getElementById("selectArea")?.parentElement;
+  const selectZona = document.getElementById("contenedorZonaFiltro") || document.getElementById("selectZona")?.parentElement;
   const contenedorGrupo = document.getElementById("contenedorGrupoFiltro");
   const inputGrupo = document.getElementById("inputGrupoTexto");
 

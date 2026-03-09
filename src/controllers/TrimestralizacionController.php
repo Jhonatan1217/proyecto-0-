@@ -132,7 +132,7 @@ switch ($accion) {
 // ============================================================
 case 'listarPorGrupo':
 
-    $numero_ficha = $_GET['numero_ficha'] ?? null;
+    $numero_ficha = trim((string)($_GET['numero_ficha'] ?? ''));
 
     if (!$numero_ficha) {
         echo json_encode(['status' => 'error', 'mensaje' => 'Falta numero_ficha']);
@@ -173,7 +173,7 @@ case 'listarPorGrupo':
             {$joinInstructores}
             LEFT JOIN competencias c ON h.id_competencia = c.id_competencia
             LEFT JOIN raes r ON FIND_IN_SET(r.id_rae, h.id_rae)
-            WHERE f.numero_ficha = :numero_ficha
+                        WHERE f.numero_ficha LIKE :numero_ficha
               AND h.estado = 1
               AND h.modalidad IN ('VIRTUAL','MIXTO')
             ORDER BY 
@@ -182,7 +182,7 @@ case 'listarPorGrupo':
         ";
 
         $stmt = $conn->prepare($sql);
-        $stmt->bindValue(':numero_ficha', $numero_ficha);
+        $stmt->bindValue(':numero_ficha', $numero_ficha . '%');
         $stmt->execute();
 
         $registros = $stmt->fetchAll(PDO::FETCH_ASSOC);

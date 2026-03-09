@@ -183,7 +183,7 @@ if (isset($conn)) {
 
   
       <!-- Selector de Área -->
-      <div class="relative w-full sm:w-auto">
+      <div id="contenedorAreaFiltro" class="relative w-full sm:w-auto">
         <label for="selectArea" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Seleccione el Área</label>
         <div class="relative">
           <select id="selectArea" name="id_area"
@@ -206,7 +206,7 @@ if (isset($conn)) {
 
 
       <!-- Selector de Zona -->
-      <div class="relative w-full sm:w-auto">
+      <div id="contenedorZonaFiltro" class="relative w-full sm:w-auto">
         <label for="selectZona" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Seleccione la Zona</label>
         <div class="relative">
           <select id="selectZona" name="id_zona"
@@ -466,8 +466,20 @@ if (isset($conn)) {
                 </select>
               </div>
 
-              <!-- AREA + ZONA-->
+              <!-- MODALIDAD -->
               <div class="field">
+                <label for="modalidad" class="block text-xs font-semibold text-gray-800 mb-1">Modalidad</label>
+                <select name="modalidad" id="modalidad"
+                  class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
+                  <option value="">Seleccione la modalidad</option>
+                  <option value="presencial">Presencial</option>
+                  <option value="virtual">Virtual</option>
+                  <option value="mixto">Mixta</option>
+                </select>
+              </div>
+
+              <!-- AREA + ZONA-->
+              <div class="field" id="contenedorAreaZonaCrear">
                 <div class="flex flex-minw-0 gap-2">
                   <div class="flex-1">
                     <label for="id_area_combo" class="block text-xs font-semibold text-gray-800 mb-1">Área</label>
