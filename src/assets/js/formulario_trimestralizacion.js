@@ -37,6 +37,8 @@ if (!window.TRIMESTRALIZACION_INIT) {
     }
 
     function validarFormularioHorario(form, overrideDia = null) {
+      const modalidad = (form.querySelector("[name='modalidad']")?.value || "").trim().toLowerCase();
+      const esPresencial = modalidad === "presencial";
       const zona = form.querySelector("[name='zona']").value.trim();
 
       let areaField = form.querySelector("[name='area']");
@@ -67,7 +69,9 @@ if (!window.TRIMESTRALIZACION_INIT) {
       const idRaeField = form.querySelector("[name='id_rae']");
       const id_rae = idRaeField ? idRaeField.value.trim() : "";
 
-      const campos = [zona, numeroFicha, instructor, dia, horaInicio, horaFin, id_competencia];
+      const campos = esPresencial
+        ? [modalidad, zona, numeroFicha, instructor, dia, horaInicio, horaFin, id_competencia]
+        : [modalidad, numeroFicha, instructor, dia, horaInicio, horaFin, id_competencia];
       const vacios = campos.filter((v) => v === "").length;
 
       if (vacios === campos.length) {
@@ -83,12 +87,17 @@ if (!window.TRIMESTRALIZACION_INIT) {
         return { ok: false };
       }
 
-      if (!zona) {
+      if (!modalidad) {
+        Toast.fire({ icon: "warning", title: "Seleccione la modalidad" });
+        return { ok: false };
+      }
+
+      if (esPresencial && !zona) {
         Toast.fire({ icon: "warning", title: "Seleccione la zona" });
         return { ok: false };
       }
 
-      if (!id_area) {
+      if (esPresencial && !id_area) {
         Toast.fire({
           icon: "warning",
           title: "No se identificó el área. Recarga la página o seleccione un área válida."
@@ -144,6 +153,7 @@ if (!window.TRIMESTRALIZACION_INIT) {
 
       return {
         ok: true,
+        modalidad,
         zona,
         id_area,
         numeroFicha,
@@ -155,7 +165,40 @@ if (!window.TRIMESTRALIZACION_INIT) {
       };
     }
 
+    function configurarModalidadCrear() {
+      const modalidadSel = document.getElementById("modalidad");
+      const contAreaZona = document.getElementById("contenedorAreaZonaCrear");
+      const selArea = document.getElementById("id_area");
+      const selZona = document.getElementById("id_zona");
+      const inpArea = document.getElementById("id_area_combo");
+      const inpZona = document.getElementById("id_zona_combo");
+
+      if (!modalidadSel || !contAreaZona) return;
+
+      const aplicar = () => {
+        const modalidad = String(modalidadSel.value || "").trim().toLowerCase();
+        const ocultar = modalidad === "virtual" || modalidad === "mixto";
+
+        contAreaZona.style.display = ocultar ? "none" : "";
+
+        if (ocultar) {
+          if (selArea) selArea.value = "";
+          if (selZona) selZona.value = "";
+          if (inpArea) inpArea.value = "";
+          if (inpZona) {
+            inpZona.value = "";
+            inpZona.disabled = true;
+          }
+        }
+      };
+
+      modalidadSel.addEventListener("change", aplicar);
+      aplicar();
+    }
+
     // ================== MODAL DUPLICAR ==================
+    configurarModalidadCrear();
+
     const modalDup       = document.getElementById("modalDuplicarHorario");
     const backdropDup    = document.getElementById("modalDuplicarBackdrop");
     const selDiaDup      = document.getElementById("selectDiaDuplicar");
