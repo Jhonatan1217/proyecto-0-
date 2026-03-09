@@ -123,6 +123,20 @@ select.input-enterprise {
   margin-bottom: 8px;
   box-shadow: 0 -10px 25px -5px rgba(0,0,0,0.1), 0 -8px 10px -6px rgba(0,0,0,0.05);
 }
+/* Dropdown en fila de edición: encima de la tabla, sin activar scroll */
+.custom-select-dropdown.dropdown-over-table {
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  right: auto;
+  min-width: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.custom-select-dropdown.dropdown-over-table.dropdown-up {
+  top: auto;
+  bottom: auto;
+}
 .custom-select-dropdown .custom-option {
   padding: 10px 14px;
   cursor: pointer;
@@ -134,7 +148,7 @@ select.input-enterprise {
   color: #0a3a57;
 }
 .custom-select-wrapper { position: relative; width: 100%; min-width: 0; }
-/* Flexbox: texto e icono en extremos; texto usa todo el ancho hasta el icono; truncado solo al llegar */
+/* Zona reservada para chevron: el contenido no se superpone al icono */
 .custom-select-trigger {
   display: flex;
   align-items: center;
@@ -151,11 +165,59 @@ select.input-enterprise {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding-right: 0.25rem;
+  padding-right: 0.5rem;
 }
 .custom-select-trigger .shrink-0 {
   flex-shrink: 0;
+  width: 1.25rem;
+  min-width: 1.25rem;
   pointer-events: none;
+  text-align: center;
+}
+/* Combobox (Programa / Líder): input + dropdown con máx. 5 elementos visibles y scroll */
+.combobox-grupo-wrapper {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+.combobox-grupo-wrapper .combobox-grupo-input {
+  width: 100%;
+  min-width: 0;
+  padding-left: var(--select-padding-x, 0.75rem);
+  padding-right: 2.25rem;
+  box-sizing: border-box;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: #1f2937;
+  font-size: inherit;
+  outline: none;
+}
+.combobox-grupo-wrapper .combobox-grupo-trigger {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+.combobox-grupo-wrapper .combobox-grupo-trigger .chevron-combobox {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  pointer-events: none;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+.combobox-grupo-wrapper .custom-select-dropdown {
+  max-height: calc(5 * 2.5rem);
+  overflow-y: auto;
+}
+.table-grupos tr.editando .combobox-grupo-wrapper .combobox-grupo-trigger {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
 }
 
 /* Regla de oro 3: Ancho de tabla responsivo — min-width por columna para scroll horizontal legible */
@@ -390,13 +452,11 @@ select.input-enterprise {
         <p class="text-sm text-gray-500">Lista de todos los grupos registrados</p>
       </div>
 
-      <?php if ($cargo != 'INSTRUCTOR'): ?>
-        <button id="btnAbrirModalGrupo"
-          class="w-full md:w-auto bg-[#0a3a57] hover:bg-[#00304D] active:scale-95 transition
-                text-white px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-sm">
-          <span>Nuevo Grupo</span>
-        </button>
-        <?php endif; ?>
+      <button id="btnAbrirModalGrupo"
+        class="w-full md:w-auto bg-[#0a3a57] hover:bg-[#00304D] active:scale-95 transition
+               text-white px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-sm">
+        <span>Nuevo Grupo</span>
+      </button>
     </div>
 
     <!-- Filtros -->
@@ -457,9 +517,7 @@ select.input-enterprise {
             <th class="font-medium col-jornada">Jornada</th>
             <th class="font-medium col-modalidad">Modalidad</th>
             <th class="font-medium col-lider">Líder</th>
-            <?php if (($_SESSION['usuario_cargo'] ?? '') !== 'INSTRUCTOR'): ?>
-              <th class="font-medium text-right col-acciones">Acciones</th>
-            <?php endif; ?>
+            <th class="font-medium text-right col-acciones">Acciones</th>
           </tr>
         </thead>
         <tbody id="tbodyGrupos"
@@ -582,6 +640,5 @@ select.input-enterprise {
 <script>
 window.API_FICHA = "<?= BASE_URL ?>src/controllers/fichaController.php";
 window.BASE_GRUPOS = "<?= BASE_URL ?>";
-window.USER_CARGO = "<?= $_SESSION['usuario_cargo'] ?? '' ?>";
 </script>
 <script src="<?= BASE_URL ?>src/assets/js/gestionGrupos.js"></script>

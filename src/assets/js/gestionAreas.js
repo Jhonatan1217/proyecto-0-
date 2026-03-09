@@ -119,8 +119,20 @@
     const btnCancel = $("#btnCancelarModalArea");
     const form = $("#formNuevaArea");
     const tbody = $("#tablaAreas tbody");
+    const buscadorArea = $("#buscadorArea");
 
     let listaAreas = []; // Guardar en memoria la lista de áreas actuales
+
+    // Filtra por texto del buscador y re-renderiza (usa listaAreas en memoria)
+    function aplicarFiltroBusqueda() {
+      const term = (buscadorArea?.value || "").trim().toLowerCase();
+      const list = !term
+        ? listaAreas
+        : listaAreas.filter((a) =>
+            (a.nombre_area || "").toLowerCase().includes(term)
+          );
+      renderRows(list);
+    }
 
     // ---------- Modal ----------
     function openModal() {
@@ -146,6 +158,8 @@
     backdrop?.addEventListener("click", (e) => {
       if (e.target === backdrop) closeModal();
     });
+
+    buscadorArea?.addEventListener("input", aplicarFiltroBusqueda);
 
     // ---------- Render ----------
     function renderRows(lista) {
@@ -208,7 +222,7 @@
       try {
         const res = await apiGet({ accion: "listar" });
         listaAreas = Array.isArray(res) ? res : res?.data || [];
-        renderRows(listaAreas);
+        aplicarFiltroBusqueda();
       } catch (e) {
         console.error(e);
         tbody.innerHTML = `

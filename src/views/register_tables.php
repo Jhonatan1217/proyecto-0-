@@ -172,7 +172,7 @@ if (isset($conn)) {
             <option value="mixto"> Mixta </option>
           </select>
           <img 
-            src="<?= BASE_URL ?>src/assets/img/chevron-down.svg" 
+            src="<?= BASE_URL ?>src/assets/img/icons/Acction/chevron-down.svg" 
             alt="arrow" 
             class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70"
           />
@@ -196,7 +196,7 @@ if (isset($conn)) {
             <option value="" class="text-[#00324D]" selected hidden>SELECCIONE EL ÁREA</option>
           </select>
           <img 
-            src="<?= BASE_URL ?>src/assets/img/chevron-down.svg" 
+            src="<?= BASE_URL ?>src/assets/img/icons/Acction/chevron-down.svg" 
             alt="arrow" 
             class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70"/>
         </div>
@@ -219,7 +219,7 @@ if (isset($conn)) {
             <option value="" class="text-[#00324D]" selected hidden>SELECCIONE LA ZONA</option>
           </select>
           <img 
-            src="<?= BASE_URL ?>src/assets/img/chevron-down.svg" 
+            src="<?= BASE_URL ?>src/assets/img/icons/Acction/chevron-down.svg" 
             alt="arrow" 
             class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70"/>
         </div>

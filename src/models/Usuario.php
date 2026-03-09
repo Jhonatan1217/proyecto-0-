@@ -74,13 +74,13 @@ class Usuario {
         $stmt->bindParam(':tipo_instructor', $data['tipo_instructor']); // Puede ser NULL
         $stmt->bindParam(':tipo_contrato', $data['tipo_contrato']);
         $stmt->bindParam(':password_hash', $data['password_hash']);
-        $estado = $data['estado'] ?? 1;
+        $estado = isset($data['estado']) ? (int) $data['estado'] : 0;
         $stmt->bindParam(':estado', $estado, PDO::PARAM_INT);
         $es_sistema = $data['es_sistema'] ?? 0;
         $stmt->bindParam(':es_sistema', $es_sistema, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
-            return true;
+            return (int) $this->conn->lastInsertId();
         }
         return "Error al crear el usuario.";
     }
@@ -191,12 +191,12 @@ class Usuario {
             return false; // O podrías lanzar una excepción
         }
 
-        $sql = "INSERT INTO " . $this->table_roles . " (id_usuario, id_rol, asignado_por) VALUES (:id_usuario, :id_rol, :asignado_por)";
+        $sql = "INSERT INTO " . $this->table_roles . " (id_usuario, id_rol, asignado_por, fecha_asignacion) VALUES (:id_usuario, :id_rol, :asignado_por, NOW())";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
         $stmt->bindParam(':id_rol', $id_rol, PDO::PARAM_INT);
         $stmt->bindParam(':asignado_por', $asignado_por, PDO::PARAM_INT);
-        
+
         return $stmt->execute();
     }
 
