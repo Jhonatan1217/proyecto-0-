@@ -1,68 +1,57 @@
 <?php
 session_start();
-session_regenerate_id(true);
-
 require_once __DIR__ . '/../../config/database.php';
 
-// Si ya está logueado
-if (isset($_SESSION['usuario_id'])) {
-    header("Location: ../../index.php?page=register_tables");
+header('Content-Type: application/json');
+
+$correo = $_POST['correo'] ?? '';
+$password = $_POST['password'] ?? '';
+
+$sql = "SELECT * FROM usuarios WHERE correo_electronico = :correo LIMIT 1";
+$stmt = $conn->prepare($sql);
+$stmt->execute([":correo" => $correo]);
+
+if ($stmt->rowCount() === 0) {
+    echo json_encode(["status" => "error"]);
     exit;
 }
 
-// Verificar método
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header("Location: ../../index.php?page=login");
+$usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!password_verify($password, $usuario['password_hash'])) {
+    echo json_encode(["status" => "error"]);
     exit;
 }
 
-$correo = trim($_POST['correo'] ?? '');
-$password = trim($_POST['password'] ?? '');
+/* SI ESTA INACTIVO */
+if ($usuario['estado'] == 0) {
 
-if (empty($correo) || empty($password)) {
-    header("Location: ../../index.php?page=login&error=1");
+    $token = random_int(100000, 999999);
+    $expira = date("Y-m-d H:i:s", strtotime("+10 minutes"));
+
+    $insert = $conn->prepare("INSERT INTO tokens_correo
+        (id_usuario, token, tipo, fecha_expiracion)
+        VALUES (:id, :token, 'VERIFICACION', :expira)");
+
+    $insert->execute([
+        ":id" => $usuario['id_usuario'],
+        ":token" => $token,
+        ":expira" => $expira
+    ]);
+
+    echo json_encode([
+        "status" => "require_verification",
+        "id_usuario" => $usuario['id_usuario'],
+        "token_debug" => $token
+    ]);
     exit;
 }
 
-try {
+/* LOGIN NORMAL */
 
-    $sql = "SELECT id_usuario, nombre_completo, correo_electronico, password_hash, estado, cargo 
-            FROM usuarios 
-            WHERE correo_electronico = :correo 
-            LIMIT 1";
+$_SESSION['usuario_id'] = $usuario['id_usuario'];
+$_SESSION['usuario_nombre'] = $usuario['nombre_completo'];
+$_SESSION['usuario_correo'] = $usuario['correo_electronico'];
+$_SESSION['usuario_cargo'] = $usuario['cargo'];
 
-    $stmt = $conn->prepare($sql);
-    $stmt->bindParam(":correo", $correo);
-    $stmt->execute();
-
-    if ($stmt->rowCount() === 0) {
-        header("Location: ../../index.php?page=login&error=1");
-        exit;
-    }
-
-    $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (
-        !password_verify($password, $usuario['password_hash']) &&
-        $password !== $usuario['password_hash']
-        ) {
-            header("Location: ../../index.php?page=login&error=1");
-            exit;
-    }
-
-    if ($usuario['estado'] != 1) {
-        header("Location: ../../index.php?page=login&error=1");
-        exit;
-    }
-
-    $_SESSION['usuario_id'] = $usuario['id_usuario'];
-    $_SESSION['usuario_nombre'] = $usuario['nombre_completo'];
-    $_SESSION['usuario_correo'] = $usuario['correo_electronico'];
-    $_SESSION['usuario_cargo'] = $usuario['cargo'] ?? '';
-
-    header("Location: ../../index.php?page=register_tables");
-    exit;
-
-} catch (PDOException $e) {
-    die("Error en login: " . $e->getMessage());
-}
+echo json_encode(["status" => "success"]);
