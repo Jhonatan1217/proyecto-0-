@@ -29,6 +29,11 @@ if ($cargo === 'INSTRUCTOR') {
       justify-content: center;
       flex-shrink: 0;
     }
+    .btn-editar:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
 
     /* Contenedor de acciones en la última columna */
     #tablaInstructores td:last-child > div {
@@ -220,7 +225,6 @@ if ($cargo === 'INSTRUCTOR') {
       box-sizing: border-box;
       pointer-events: auto;
       z-index: 50;
-      text-align: left;
     }
     .select-zona-dropdown {
       position: absolute;
@@ -256,7 +260,14 @@ if ($cargo === 'INSTRUCTOR') {
       color: #111827;
       font-size: inherit;
       outline: none;
+    }
+    /* Celda y combobox en tabla: alinear a la izquierda para evitar centrado al cerrar/X */
+    #tablaInstructores tbody td .select-zona-wrapper {
       text-align: left;
+    }
+    #tablaInstructores tbody td .select-zona-wrapper .select-zona-combobox-trigger,
+    #tablaInstructores tbody td .select-zona-wrapper .select-zona-combobox-input {
+      text-align: left !important;
     }
     .select-zona-wrapper .select-zona-combobox-input::placeholder { color: #9ca3af; }
     .select-zona-wrapper .select-zona-combobox-trigger .select-zona-chevron-inner {
@@ -457,6 +468,9 @@ if ($cargo === 'INSTRUCTOR') {
       const inputZona = document.getElementById("id_zona");
       const wrapTabla = document.getElementById("wrapTablaZonas") || document.getElementById("wrapTabla");
 
+      /** Fila actualmente en modo edición (solo una a la vez). Se limpia al guardar o cancelar. */
+      let filaEnEdicion = null;
+
       // =======================
       // CONFIGURACIÓN TOAST
       // =======================
@@ -509,6 +523,13 @@ if ($cargo === 'INSTRUCTOR') {
       const closeModal = () => {
         panel?.classList.remove("opacity-100", "scale-100", "translate-y-0");
         backdrop?.classList.remove("opacity-100");
+        document.body.style.overflow = "";
+        document.body.classList.remove("overflow-hidden");
+        if (typeof resetZonaComboboxes === "function") resetZonaComboboxes();
+        filaEnEdicion = null;
+        if (tablaBody && tablaBody.querySelector(".btn-guardar")) {
+          cargarZonas().then(() => ajustarAltoTablaZonas());
+        }
         setTimeout(() => modal?.classList.add("hidden"), 200);
         formZona?.reset();
       };
@@ -540,7 +561,7 @@ if ($cargo === 'INSTRUCTOR') {
         wrapTabla.style.maxHeight = filas > maxFilas ? `${Math.ceil(maxH)}px` : "";
         wrapTabla.style.overflowY = filas > maxFilas ? "auto" : "visible";
         wrapTabla.style.overscrollBehavior = filas > maxFilas ? "contain" : "";
-        wrapTabla.style.paddingBottom = filas > maxFilas ? "0.5rem" : "0";
+        wrapTabla.style.paddingBottom = "0";
       }
       window.addEventListener("resize", ajustarAltoTablaZonas);
 
@@ -745,6 +766,15 @@ if ($cargo === 'INSTRUCTOR') {
         enhanceSelectsZona();
       }
 
+      function resetZonaComboboxes() {
+        document.querySelectorAll(".select-zona-dropdown").forEach((d) => {
+          d.classList.add("hidden");
+          d.classList.remove("select-zona-dropdown-over-table");
+          d.style.cssText = "";
+          if (d._selectZonaWrapper && d.parentNode === document.body) d._selectZonaWrapper.appendChild(d);
+        });
+      }
+
       function enhanceSelectsZona() {
         document.querySelectorAll(".select-zona").forEach((select) => {
           if (select.dataset.customDropdownZona === "1") return;
@@ -823,88 +853,90 @@ if ($cargo === 'INSTRUCTOR') {
             toggleClearVisibility();
           }
           updateInputFromSelect();
+          wrapper._selectZonaUpdateInput = updateInputFromSelect;
 
           select.classList.add("sr-only", "absolute", "opacity-0", "pointer-events-none", "overflow-hidden");
           select.style.cssText = "position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;clip:rect(0,0,0,0);";
           wrapper.appendChild(triggerWrap);
           wrapper.appendChild(dropdown);
 
-          function positionAndShowDropdown() {
-            const rect = wrapper.getBoundingClientRect();
+          function positionAndShowDropdown(forceShowAll) {
             const opts = 4;
             const maxH = opts * 2.5 * parseFloat(getComputedStyle(document.documentElement).fontSize);
-            const margin = 8;
+            const gap = 4;
             const isInTable = wrapper.closest("#wrapTablaZonas") || wrapper.closest("table");
-            const spaceBelow = window.innerHeight - rect.bottom;
-            const spaceAbove = rect.top;
-            if (isInTable) {
-              dropdown.style.visibility = "hidden";
-              document.body.appendChild(dropdown);
-              dropdown.classList.add("select-zona-dropdown-over-table");
-              dropdown.style.width = rect.width + "px";
+
+            const filterText = (forceShowAll || wrapper._reopenShowAll) ? "" : input.value;
+            if (wrapper._reopenShowAll) delete wrapper._reopenShowAll;
+            renderOptions(filterText);
+            if (dropdown.children.length === 0) return;
+
+            function applyPosition(rect) {
+              const spaceBelow = window.innerHeight - rect.bottom;
+              const spaceAbove = rect.top;
+              const inBottomThird = rect.top >= window.innerHeight * (2 / 3);
               const tr = wrapper.closest("tr");
               const tbody = wrapper.closest("#tablaInstructores tbody");
-              const visibleRows = tbody ? Array.from(tbody.querySelectorAll("tr")).filter(r => r.style.display !== "none") : [];
-              const isLastVisibleRow = visibleRows.length > 0 && tr === visibleRows[visibleRows.length - 1];
-              const preferUp = isLastVisibleRow && spaceAbove >= 60;
-              const openDown = preferUp ? false : (spaceBelow >= maxH + margin);
-              if (openDown) {
-                dropdown.style.maxHeight = Math.min(maxH, Math.max(60, spaceBelow - margin)) + "px";
-                dropdown.style.removeProperty("bottom");
-                dropdown.style.top = (rect.bottom + margin) + "px";
-                dropdown.style.left = rect.left + "px";
-              } else {
-                const upMaxH = Math.min(maxH, Math.max(60, spaceAbove - margin));
-                dropdown.style.maxHeight = upMaxH + "px";
-                dropdown.style.minHeight = "60px";
-                dropdown.style.top = (rect.top - margin - upMaxH) + "px";
-                dropdown.style.removeProperty("bottom");
-                dropdown.style.left = rect.left + "px";
-              }
-              dropdown.style.display = "block";
+              const isLastRow = tbody && tr && tbody.lastElementChild === tr;
+              const forceDropup = inBottomThird || isLastRow;
+              const openDown = !forceDropup && (spaceBelow >= maxH + gap);
+
+              dropdown.style.width = rect.width + "px";
+              dropdown.style.position = "fixed";
               dropdown.style.zIndex = "9999";
+              dropdown.style.marginTop = "0";
+              dropdown.style.marginBottom = "0";
+              dropdown.style.left = rect.left + "px";
+
+              if (openDown) {
+                dropdown.style.maxHeight = Math.min(maxH, Math.max(60, spaceBelow - gap)) + "px";
+                dropdown.style.removeProperty("bottom");
+                dropdown.style.minHeight = "";
+                dropdown.style.top = (rect.bottom + gap) + "px";
+              } else {
+                const upMaxH = Math.min(maxH, Math.max(60, spaceAbove - gap));
+                dropdown.style.maxHeight = upMaxH + "px";
+                dropdown.style.removeProperty("top");
+                dropdown.style.bottom = (window.innerHeight - rect.top) + "px";
+              }
+            }
+
+            if (isInTable) {
+              resetZonaComboboxes();
+              dropdown.style.visibility = "hidden";
+              dropdown.style.display = "block";
+              document.body.appendChild(dropdown);
+              dropdown.classList.add("select-zona-dropdown-over-table");
               requestAnimationFrame(() => {
-                dropdown.style.visibility = "visible";
-                dropdown.classList.remove("hidden");
+                requestAnimationFrame(() => {
+                  const rect = triggerWrap.getBoundingClientRect();
+                  applyPosition(rect);
+                  dropdown.style.visibility = "visible";
+                  dropdown.classList.remove("hidden");
+                  dropdown._selectZonaJustOpened = Date.now();
+                });
               });
             } else {
               dropdown.style.maxHeight = maxH + "px";
               dropdown.classList.remove("hidden");
+              dropdown._selectZonaJustOpened = Date.now();
             }
-            dropdown._selectZonaJustOpened = Date.now();
           }
 
           function openDropdownFromTrigger(ev) {
             if (ev) { ev.preventDefault(); ev.stopPropagation(); }
             const open = !dropdown.classList.contains("hidden");
-            document.querySelectorAll(".select-zona-dropdown").forEach((d) => {
-              d.classList.add("hidden");
-              d.classList.remove("select-zona-dropdown-over-table");
-              d.style.cssText = "";
-              if (d._selectZonaWrapper && d.parentNode === document.body) d._selectZonaWrapper.appendChild(d);
-            });
             if (!open) {
-              renderOptions(input.value);
-              if (dropdown.children.length > 0) {
-                positionAndShowDropdown();
-                setTimeout(function () { input.focus(); }, 0);
-              }
+              positionAndShowDropdown();
+              setTimeout(function () { input.focus(); }, 0);
             }
           }
           wrapper._selectZonaOpen = openDropdownFromTrigger;
           triggerWrap.addEventListener("mousedown", openDropdownFromTrigger);
           triggerWrap.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); });
           input.addEventListener("focus", () => {
-            document.querySelectorAll(".select-zona-dropdown").forEach((d) => {
-              d.classList.add("hidden");
-              d.classList.remove("select-zona-dropdown-over-table");
-              d.style.cssText = "";
-              if (d._selectZonaWrapper && d.parentNode === document.body) d._selectZonaWrapper.appendChild(d);
-            });
-            renderOptions(input.value);
-            if (dropdown.children.length > 0) {
-              positionAndShowDropdown();
-            }
+            resetZonaComboboxes();
+            positionAndShowDropdown();
           });
           input.addEventListener("input", () => { renderOptions(input.value); toggleClearVisibility(); });
           input.addEventListener("keydown", (e) => {
@@ -916,35 +948,69 @@ if ($cargo === 'INSTRUCTOR') {
           });
           btnClear.addEventListener("click", (e) => {
             e.stopPropagation();
+            e.preventDefault();
             input.value = "";
             const firstValid = Array.from(select.options).find(o => !o.disabled && o.value);
             if (firstValid) { select.value = firstValid.value; select.dispatchEvent(new Event("change", { bubbles: true })); }
             dropdown.classList.add("hidden");
             if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
             toggleClearVisibility();
-            input.focus();
+            wrapper._reopenShowAll = true;
+            requestAnimationFrame(() => {
+              positionAndShowDropdown();
+              setTimeout(() => input.focus(), 0);
+            });
           });
           select.addEventListener("change", updateInputFromSelect);
-          document.addEventListener("click", (e) => {
-            const wouldClose = !wrapper.contains(e.target) && !dropdown.contains(e.target);
-            if (dropdown._selectZonaJustOpened && (Date.now() - dropdown._selectZonaJustOpened) < 200) return;
-            if (wouldClose) {
-              dropdown.classList.add("hidden");
-              if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
-            }
-          }, true);
         });
+
+        if (!window._zonaComboboxDocClick) {
+          window._zonaComboboxDocClick = true;
+          function closeZonaDropdownIfOutside(target) {
+            document.querySelectorAll(".select-zona-dropdown").forEach((d) => {
+              if (d.classList.contains("hidden")) return;
+              const w = d._selectZonaWrapper;
+              if (!w || w.contains(target) || d.contains(target)) return;
+              if (d._selectZonaJustOpened && (Date.now() - d._selectZonaJustOpened) < 250) return;
+              d.classList.add("hidden");
+              if (d.parentNode === document.body && w) w.appendChild(d);
+              d.style.cssText = "";
+              const inp = w && w.querySelector(".select-zona-combobox-input");
+              if (inp && !(inp.value || "").trim() && typeof w._selectZonaUpdateInput === "function") w._selectZonaUpdateInput();
+            });
+          }
+          function onPossibleOutsideClick(e) {
+            closeZonaDropdownIfOutside(e.target);
+          }
+          document.addEventListener("mousedown", onPossibleOutsideClick, true);
+          document.addEventListener("click", onPossibleOutsideClick, true);
+          const modalPanel = document.getElementById("modalPanel");
+          const modalBackdrop = document.getElementById("modalBackdrop");
+          if (modalPanel) {
+            modalPanel.addEventListener("mousedown", onPossibleOutsideClick, true);
+            modalPanel.addEventListener("click", onPossibleOutsideClick, true);
+          }
+          if (modalBackdrop) {
+            modalBackdrop.addEventListener("mousedown", onPossibleOutsideClick, true);
+            modalBackdrop.addEventListener("click", onPossibleOutsideClick, true);
+          }
+        }
       }
 
       (function () {
-        const wrap = document.getElementById("wrapTablaZonas");
-        if (!wrap) return;
-        wrap.addEventListener("mousedown", function (e) {
-          const trigger = e.target.closest(".select-zona-combobox-trigger");
-          if (!trigger || !wrap.contains(trigger)) return;
-          const wrapper = trigger.closest(".select-zona-wrapper");
-          if (wrapper && typeof wrapper._selectZonaOpen === "function") wrapper._selectZonaOpen(e);
-        }, true);
+        var tableEl = document.getElementById("tablaInstructores");
+        if (tableEl) {
+          tableEl.addEventListener("mousedown", function (e) {
+            var trigger = e.target.closest(".select-zona-combobox-trigger");
+            if (!trigger) return;
+            var wrapper = trigger.closest(".select-zona-wrapper");
+            if (wrapper && typeof wrapper._selectZonaOpen === "function") {
+              wrapper._selectZonaOpen(e);
+              e.stopPropagation();
+              e.preventDefault();
+            }
+          }, true);
+        }
       })();
 
       // =======================
@@ -1144,6 +1210,13 @@ if ($cargo === 'INSTRUCTOR') {
         if (!btnEditar) return;
 
         const tr = btnEditar.closest("tr");
+        if (!tr) return;
+
+        if (filaEnEdicion !== null && filaEnEdicion !== tr) {
+          Toast.fire({ icon: "info", title: "Por favor, guarda o cancela los cambios actuales antes de editar otra zona." });
+          return;
+        }
+
         const id_zona_actual = tr?.dataset?.id;
         const id_area_actual = tr?.dataset?.idArea;
         const tdZona = tr.children[0];
@@ -1190,7 +1263,11 @@ if ($cargo === 'INSTRUCTOR') {
           <button class="btn-cancelar inline-flex items-center gap-2 px-5 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition">Cancelar</button>
         `;
 
+        filaEnEdicion = tr;
+        tablaBody.querySelectorAll(".btn-editar").forEach((btn) => { btn.disabled = true; });
+
         tdAcc.querySelector(".btn-cancelar").addEventListener("click", async () => {
+          filaEnEdicion = null;
           await cargarZonas();
           ajustarAltoTablaZonas();
         });
@@ -1223,6 +1300,7 @@ if ($cargo === 'INSTRUCTOR') {
             const json = await res.json();
 
             if (json.status === "success") {
+              filaEnEdicion = null;
               Toast.fire({ icon: "success", title: "Zona actualizada." });
               await Promise.all([cargarZonas(), cargarAreasParaFiltro()]);
               ajustarAltoTablaZonas();
