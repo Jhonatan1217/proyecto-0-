@@ -33,7 +33,7 @@ $page = basename($page);
    DEFINICIÓN DE RUTAS
 ========================= */
 
-$public_pages = ['landing', 'login'];
+$public_pages = ['landing', 'login', 'restablecerContrasenia', 'cambiarContrasenia'];
 $private_default = 'register_tables';
 
 /* =========================
