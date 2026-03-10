@@ -44,6 +44,24 @@ class Usuario {
     }
 
     /**
+     * Busca un usuario por su correo electrónico (para recuperación de contraseña).
+     * @param string $correo Correo electrónico.
+     * @return array|false Datos del usuario o false si no existe.
+     */
+    public function obtenerPorCorreo($correo) {
+        $sql = "SELECT id_usuario, nombre_completo, correo_electronico, estado 
+                FROM {$this->table} 
+                WHERE correo_electronico = :correo 
+                LIMIT 1";
+        
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(":correo", $correo);
+        $stmt->execute();
+        
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Crea un nuevo usuario.
      * @param array $data Datos del usuario (nombre_completo, tipo_documento, numero_documento, correo_electronico, cargo, password_hash, [id_area], [tipo_instructor], [tipo_contrato]).
      * @return bool|string True si se crea correctamente, o un mensaje de error (ej. duplicado).
@@ -211,6 +229,39 @@ class Usuario {
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
         $stmt->bindParam(':id_rol', $id_rol, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
+
+    /**
+     * Actualiza la contraseña de un usuario (para recuperación de contraseña).
+     * @param int $id_usuario ID del usuario.
+     * @param string $password_hash Hash de la nueva contraseña.
+     * @return bool True si se actualiza correctamente.
+     */
+    public function actualizarPassword($id_usuario, $password_hash) {
+        $sql = "UPDATE {$this->table} 
+                SET password_hash = :password 
+                WHERE id_usuario = :id";
+        
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(":password", $password_hash);
+        $stmt->bindParam(":id", $id_usuario);
+        
+        return $stmt->execute();
+    }
+
+    /**
+     * Deshabilita un usuario (soft delete - establece estado = 0).
+     * @param int $id ID del usuario.
+     * @return bool True si se deshabilita correctamente.
+     */
+    public function deshabilitar($id) {
+        $sql = "UPDATE {$this->table}
+                SET estado = 0
+                WHERE id_usuario = :id";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         return $stmt->execute();
     }
 
