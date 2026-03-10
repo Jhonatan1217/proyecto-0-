@@ -1,229 +1,91 @@
+<?php /* views/gestionAreas.php - Refactorizado: table-edit + modal-enterprise */ ?>
 <?php
 $cargo = $_SESSION['cargo'] ?? '';
-
 if ($cargo === 'INSTRUCTOR') {
     header("Location: index.php?page=register_tables");
     exit;
 }
+if (!defined('BASE_URL')) { $base = '/'; define('BASE_URL', $base); }
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Gestión de Áreas</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/table-edit.css">
+<link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/modal-enterprise.css">
+<style>
+.table-areas-wrap table tbody tr { height: 56px; }
+.table-areas-wrap table tbody td { height: 56px; }
+.table-areas-wrap tr.editando input.cell-edit { width: 14ch; min-width: 10ch; max-width: 24ch; }
+</style>
 
-  <!-- Ajustes específicos para que el lápiz SIEMPRE se vea en pantallas pequeñas -->
-  <style>
-    /* Asegurar que el botón de editar nunca se colapse */
-    .btn-editar {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
+<div class="max-w-6xl mx-auto px-4 py-10">
+  <h1 class="text-4xl font-extrabold tracking-tight mb-2 text-[#39A900]">Gestión de Áreas</h1>
+  <p class="text-gray-500 mb-6">Administra las áreas</p>
 
-    /* Evitar que el contenido de acciones se parta en varias líneas */
-    #tablaAreas td .acciones {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 0.5rem;
-      flex-wrap: nowrap;
-    }
-
-    /* En pantallas pequeñas, darle un ancho mínimo decente a la columna de Acciones */
-    @media (max-width: 640px) {
-      #tablaAreas th:last-child,
-      #tablaAreas td:last-child {
-        width: 120px; /* puedes subirlo a 140 si lo ves muy justo */
-      }
-    }
-
-    /* ============================
-       RESPONSIVE EXTRA (SIN CAMBIAR DISEÑO)
-       ============================ */
-
-    /* Header de la card: en móvil se apila título + botón */
-    @media (max-width: 640px) {
-      /* Header de esta card específica */
-      .bg-white.shadow.rounded-2xl.border.border-gray-200 > .flex {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.75rem;
-      }
-
-      /* Botón "Nueva Área" ocupa ancho completo en móvil */
-      #btnAbrirModalArea {
-        width: 100%;
-        justify-content: center;
-      }
-
-      /* Ajustar paddings de la tabla para pantallas pequeñas */
-      #tablaAreas th,
-      #tablaAreas td {
-        padding-left: 0.75rem;
-        padding-right: 0.75rem;
-      }
-
-      /* Altura máxima del wrapper y scroll vertical interno en móvil */
-      #areasWrapper {
-        max-height: 320px; /* igual que instructores/zona */
-        overflow-y: auto;
-      }
-    }
-  </style>
-</head>
-
-<body class="bg-white text-gray-900 font-sans">
-
-  <div class="max-w-6xl mx-auto px-4 py-10">
-    <!-- Encabezado -->
-    <h1 class="text-4xl font-extrabold tracking-tight mb-2 text-[#39A900]">Gestión de Áreas</h1>
-    <p class="text-gray-500 mb-6">Administra las áreas</p>
-
-    <!-- Card -->
-    <div class="bg-white shadow rounded-2xl border border-gray-200">
-      <!-- Header card -->
-      <div class="flex items-center justify-between px-6 pt-6 pb-4 border-b">
-        <div>
-          <h2 class="text-xl font-semibold">Áreas</h2>
-          <p class="text-sm text-gray-500">Administra las áreas</p>
-        </div>
-
-        <!-- Botón Nueva Área -->
-        <button
-          id="btnAbrirModalArea"
-          class="bg-[#0a3a57] text-white px-5 py-2 rounded-lg flex items-center gap-2 hover:bg-[#00304D] active:scale-[0.98] transition"
-          type="button"
-        >
-          <img class="w-4" src="<?= BASE_URL ?>src/assets/img/plus.svg" alt="Agregar" />
-          <span class="text-sm font-medium">Nueva Área</span>
-        </button>
+  <div class="bg-white shadow rounded-2xl border border-gray-200">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-6">
+      <div>
+        <h2 class="text-xl font-semibold text-gray-800">Áreas</h2>
+        <p class="text-sm text-gray-500">Administra las áreas</p>
       </div>
-
-      <!-- Buscador -->
-    <div class="px-6 py-4 border-b flex justify-start">
-      <input
-        type="text"
-        id="buscadorArea"
-        placeholder="Buscar área por nombre..."
-        class="w-64 rounded-xl border border-gray-200 px-4 py-2.5 text-sm 
-              placeholder:text-gray-400 focus:outline-none focus:border-gray-300"
-      />
+      <button id="btnAbrirModalArea" type="button"
+        class="w-full md:w-auto bg-[#0a3a57] hover:bg-[#00304D] active:scale-95 transition text-white px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-sm">
+        <img class="w-4" src="<?= BASE_URL ?>src/assets/img/plus.svg" alt="Agregar" />
+        <span class="text-sm font-medium">Nueva Área</span>
+      </button>
     </div>
 
-      <!-- Tabla -->
-      <div class="overflow-x-auto">
-        <!-- Wrapper con scroll vertical controlado por JS (igual a instructores) -->
-        <div id="areasWrapper" class="w-full">
-          <table class="w-full text-left" id="tablaAreas">
-            <thead>
-              <tr class="text-gray-600 text-sm border-b">
-                <!-- Quité w-3/4 / w-1/4 rígidos para que la tabla se adapte mejor -->
-                <th class="px-6 py-3 font-medium">Nombre Área</th>
-                <th class="px-6 py-3 font-medium text-right">Acciones</th>
-              </tr>
-            </thead>
-
-            <tbody class="text-sm">
-              <!-- Filas de ejemplo (serán reemplazadas al cargar) -->
-              <tr class="border-b">
-                <td class="px-6 py-4">Polivalente</td>
-                <td class="px-6 py-4 text-right">
-                  <div class="acciones">
-                    <button class="btn-editar p-2 border rounded-lg hover:bg-gray-50 transition" type="button" title="Editar">
-                      <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/pencil-line.svg" alt="Editar" />
-                    </button>
-                    <!-- Switch -->
-                    <label class="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" class="sr-only peer" checked>
-                      <div class="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-[#39A900] transition"></div>
-                      <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition peer-checked:translate-x-5"></div>
-                    </label>
-                  </div>
-                </td>
-              </tr>
-
-              <tr>
-                <td class="px-6 py-4">Infraestructura</td>
-                <td class="px-6 py-4 text-right">
-                  <div class="acciones">
-                    <button class="btn-editar p-2 border rounded-lg hover:bg-gray-50 transition" type="button" title="Editar">
-                      <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/pencil-line.svg" alt="Editar" />
-                    </button>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" class="sr-only peer">
-                      <div class="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-[#39A900] transition"></div>
-                      <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition peer-checked:translate-x-5"></div>
-                    </label>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div><!-- /areasWrapper -->
-      </div><!-- /overflow-x-auto -->
-    </div><!-- /card -->
-  </div><!-- /page -->
-
-  <!-- ========== MODAL: Nueva Área ========== -->
-  <div id="modalArea" class="fixed inset-0 z-50 hidden">
-    <!-- Fondo (animable) -->
-    <div id="modalBackdrop" class="absolute inset-0 bg-black/60 backdrop-blur-[1px] opacity-0 transition-opacity duration-200"></div>
-
-    <!-- Contenedor -->
-    <div class="absolute inset-0 flex items-center justify-center p-4">
-      <div id="modalPanel"
-        class="w-full max-w-[720px] bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 md:p-8 lg:p-10 relative
-               opacity-0 scale-95 translate-y-2 transition-all duration-200 ease-out">
-        
-        <!-- Botón cerrar -->
-        <button id="btnCerrarModalArea"
-          class="absolute right-4 top-4 p-2 rounded-full hover:bg-gray-100 transition"
-          type="button">✕</button>
-
-        <!-- Contenido -->
-        <div class="space-y-8">
-          <div>
-            <h3 class="text-2xl font-semibold">Nueva Área</h3>
-            <p class="text-gray-400 mt-1">Ingresa el nombre del área</p>
-          </div>
-
-          <!-- Formulario: input más estrecho y más espaciado -->
-          <form id="formNuevaArea" class="space-y-6">
-            <div class="max-w-xs space-y-2">
-              <label class="block text-sm font-semibold">Nombre del Área</label>
-              <input
-                type="text"
-                name="nombre_area"
-                placeholder="Ej: Área Polivalente"
-                class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm placeholder:text-gray-400 focus:ring-0 focus:outline-none focus:border-gray-300"
-              />
-            </div>
-
-            <!-- Acciones -->
-            <div class="pt-4 flex items-center justify-end gap-4">
-              <button type="button" id="btnCancelarModalArea"
-                class="px-5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition">
-                Cancelar
-              </button>
-              <button type="submit"
-                class="px-6 py-2.5 rounded-xl bg-[#0a3a57] text-white hover:bg-[#00304D] transition">
-                Crear Área
-              </button>
-            </div>
-          </form>
+    <div class="px-6 py-4">
+      <div class="flex flex-col md:flex-row gap-4">
+        <div id="buscadorAreaWrap" class="relative w-full md:w-64">
+          <input type="text" id="buscadorArea" placeholder="Buscar área por nombre..."
+            class="w-full rounded-xl border border-gray-300 bg-white pl-10 pr-10 py-2.5 text-sm focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] outline-none transition hover:border-gray-400" />
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
         </div>
       </div>
+    </div>
+
+    <div class="table-areas-wrap overflow-x-auto">
+      <table class="w-full text-left" id="tablaAreas">
+        <thead class="bg-gray-50 border-b border-gray-200 text-sm text-gray-600">
+          <tr>
+            <th class="px-6 py-3 font-medium">Nombre Área</th>
+            <th class="px-6 py-3 font-medium text-right" style="min-width:120px">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyAreas" class="text-sm divide-y divide-gray-100"></tbody>
+      </table>
     </div>
   </div>
+</div>
 
-  <script>
-    window.API_URL = "<?= BASE_URL ?>src/controllers/AreaController.php";
-  </script>
+<!-- Modal Nueva Área -->
+<div id="modalArea" role="dialog" aria-labelledby="modalAreaTitle" aria-modal="true"
+  class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 modal-area-overlay hidden">
+  <div class="modal-area-box bg-white w-full max-w-xl rounded-2xl flex flex-col overflow-hidden">
+    <header class="modal-area-header flex items-center justify-between">
+      <h2 id="modalAreaTitle" class="text-xl font-bold text-[#39A900] tracking-tight">Nueva Área</h2>
+      <button type="button" id="btnCerrarModalArea" aria-label="Cerrar"
+        class="p-2 -m-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </header>
+    <form id="formNuevaArea" class="flex flex-col flex-1 min-h-0">
+      <div class="modal-area-body flex-1">
+        <div class="space-y-5">
+          <div>
+            <label for="nombre_area" class="label-enterprise">Nombre del Área</label>
+            <input type="text" name="nombre_area" id="nombre_area" placeholder="Ej: Área Polivalente" class="input-enterprise" />
+          </div>
+        </div>
+      </div>
+      <footer class="modal-area-footer flex justify-end gap-3">
+        <button type="button" id="btnCancelarModalArea" class="btn-modal-secondary">Cancelar</button>
+        <button type="submit" class="btn-modal-primary">Crear Área</button>
+      </footer>
+    </form>
+  </div>
+</div>
 
-  <script src="<?= BASE_URL ?>src/assets/js/gestionAreas.js"></script>
-
-</body>
-</html>
+<script>
+window.API_URL = "<?= BASE_URL ?>src/controllers/AreaController.php";
+window.ICON_PENCIL_AREA = "<?= BASE_URL ?>src/assets/img/pencil-line.svg";
+</script>
+<script src="<?= BASE_URL ?>src/assets/js/gestionAreas.js"></script>

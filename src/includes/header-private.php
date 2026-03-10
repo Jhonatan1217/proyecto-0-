@@ -22,10 +22,10 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 <style>
-    /* Toasts visibles por encima de los modales de perfil */
+    /* Toast detrás de la sidebar y del widget de usuario (z-50) */
     .swal2-container.swal2-top-end {
       top: 5rem !important;
-      z-index: 9999999 !important;
+      z-index: 40 !important;
     }
     .modal-perfil {
       z-index: 999999 !important;
