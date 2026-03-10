@@ -266,6 +266,7 @@
 
     row.querySelector('.btn-cancelar-zona').addEventListener('click', () => {
       filaEnEdicion = null;
+      if (typeof ComboboxComponent !== 'undefined') ComboboxComponent.reset();
       cargarZonas();
     });
 
@@ -279,7 +280,7 @@
         return;
       }
       if (numero === String(z.id_zona) && idAreaNueva === String(idArea)) {
-        Toast.fire({ icon: 'info', title: 'No hay cambios.' });
+        Toast.fire({ icon: 'warning', title: 'No ha cambiado nada. Modifica al menos un campo para guardar.' });
         return;
       }
       const fd = new FormData();
@@ -442,6 +443,7 @@
     window.addEventListener('resize', ajustarAltoTabla);
 
     document.getElementById('tablaZonas')?.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.btn-clear-combobox')) return;
       const trigger = e.target.closest('.combobox-trigger');
       if (!trigger) return;
       const w = trigger.closest('.combobox-wrapper');

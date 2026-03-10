@@ -75,8 +75,16 @@
 
   function enhanceSelectsGrupo() {
     if (typeof ComboboxComponent === "undefined") return;
+    // Jornada y modalidad: pocas opciones predefinidas (solo dropdown)
     ComboboxComponent.enhance({
-      selector: ".select-grupo:not(#filtroPrograma)",
+      selector: ".select-grupo.select-simple",
+      dropdownClass: "custom-select-dropdown",
+      optionClass: "custom-option",
+      simpleSelect: true
+    });
+    // Programa y líder: muchas opciones (con búsqueda)
+    ComboboxComponent.enhance({
+      selector: ".select-grupo:not(.select-simple):not(#filtroPrograma)",
       dropdownClass: "custom-select-dropdown",
       optionClass: "custom-option",
       placeholder: "Buscar..."
@@ -206,8 +214,8 @@
       <td class="col-numero"><div class="cell-edit-wrap"><input type="number" class="cell-edit numero input-enterprise w-full" value="${g.numero_ficha ?? ""}" min="1" max="999999999" /></div></td>
       <td class="col-programa"><div class="cell-edit-wrap"><select class="cell-edit programa select-grupo input-enterprise w-full py-2.5 text-sm">${optsPrograma}</select></div></td>
       <td class="col-nivel"><span class="tag-pill cell-nivel-tag">${(g.nivel ?? "—").toString().trim().toUpperCase()}</span></td>
-      <td class="col-jornada"><div class="cell-edit-wrap"><select class="cell-edit jornada select-grupo input-enterprise w-full py-2.5 text-sm">${optsJornada}</select></div></td>
-      <td class="col-modalidad"><div class="cell-edit-wrap"><select class="cell-edit modalidad select-grupo input-enterprise w-full py-2.5 text-sm">${optsModalidad}</select></div></td>
+      <td class="col-jornada"><div class="cell-edit-wrap"><select class="cell-edit jornada select-grupo select-simple input-enterprise w-full py-2.5 text-sm">${optsJornada}</select></div></td>
+      <td class="col-modalidad"><div class="cell-edit-wrap"><select class="cell-edit modalidad select-grupo select-simple input-enterprise w-full py-2.5 text-sm">${optsModalidad}</select></div></td>
       <td class="col-lider"><div class="cell-edit-wrap"><select class="cell-edit lider select-grupo input-enterprise w-full py-2.5 text-sm">${optsLider}</select></div></td>
       <td class="col-acciones text-right">
         <div class="acciones-edit">
@@ -221,7 +229,10 @@
       </td>
     `;
 
-    row.querySelector(".btn-cancelar-grupo").addEventListener("click", () => cargarGrupos());
+    row.querySelector(".btn-cancelar-grupo").addEventListener("click", () => {
+      if (typeof ComboboxComponent !== "undefined") ComboboxComponent.reset();
+      cargarGrupos();
+    });
     enhanceSelectsGrupo();
 
     row.querySelector(".btn-guardar-grupo").addEventListener("click", async () => {
@@ -233,6 +244,16 @@
 
       if (!numero || !idPrograma || !jornada || !modalidad || !idLider) {
         toast("Complete todos los campos", "warning");
+        return;
+      }
+      const sinCambios =
+        String(numero) === String(g.numero_ficha ?? "") &&
+        String(idPrograma) === String(g.id_programa ?? "") &&
+        String(jornada) === String(g.jornada ?? "") &&
+        String(modalidad) === String(g.modalidad ?? "") &&
+        String(idLider) === String(g.id_lider_grupo ?? "");
+      if (sinCambios) {
+        toast("No ha cambiado nada. Modifica al menos un campo para guardar.", "warning");
         return;
       }
 
@@ -365,6 +386,7 @@
     });
 
     document.getElementById("tablaGrupos")?.addEventListener("mousedown", (e) => {
+      if (e.target.closest(".btn-clear-combobox")) return;
       const trigger = e.target.closest(".combobox-trigger");
       if (!trigger) return;
       const w = trigger.closest(".combobox-wrapper");
