@@ -1,314 +1,260 @@
-const API_URL = "src/controllers/TrimestreController.php";
+/**
+ * Gestión de Trimestres - Refactorizado: table-edit + modal-enterprise + buscador clear.
+ */
+(() => {
+  const API_URL = (typeof window !== "undefined" && window.API_URL) ? window.API_URL : "src/controllers/TrimestreController.php";
+  const ICON_PENCIL = window.ICON_PENCIL_TRIMESTRE || "src/assets/img/pencil-line.svg";
 
-/* ================================
-   CONFIGURACIÓN DE TOAST GLOBAL
-================================= */
-function toast(title, icon = "info") {
-  const Toast = Swal.mixin({
-    toast: true,
-    position: "top-end",
-    showConfirmButton: false,
-    timer: 2500,
-    timerProgressBar: true,
-    background: "#fff",
-    color: "#333",
-  });
-  Toast.fire({ icon, title });
-}
+  function toast(title, icon = "success") {
+    if (window.Swal) {
+      Swal.fire({ toast: true, position: "top-end", icon, title, showConfirmButton: false, timer: 2500, timerProgressBar: true });
+    } else {
+      alert((icon === "error" ? "❌ " : icon === "warning" ? "⚠ " : "✅ ") + title);
+    }
+  }
 
-/* ================================
-   MODAL ABRIR / CERRAR
-================================= */
-const btnOpen = document.getElementById("btnAbrirModalTrimestre");
-const modal = document.getElementById("modalTrimestre");
-const backdrop = document.getElementById("backdrop");
-const panel = document.getElementById("modalPanel");
-const btnClose = document.getElementById("btnCerrarModalTrimestre");
-const btnCancelModal = document.getElementById("btnCancelarModalTrimestre");
+  function setupBuscadorConClear() {
+    const wrap = document.getElementById("buscadorTrimestreWrap") || document.getElementById("buscadorTrimestre")?.parentElement;
+    const input = document.getElementById("buscadorTrimestre");
+    if (!wrap || !input) return;
+    let clearBtn = wrap.querySelector(".btn-clear-buscador");
+    if (!clearBtn) {
+      clearBtn = document.createElement("button");
+      clearBtn.type = "button";
+      clearBtn.className = "btn-clear-buscador absolute right-10 top-1/2 -translate-y-1/2 p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 hidden";
+      clearBtn.setAttribute("aria-label", "Limpiar búsqueda");
+      clearBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+      wrap.appendChild(clearBtn);
+    }
+    function toggleClear() { if (clearBtn) clearBtn.classList.toggle("hidden", !input.value.trim()); }
+    input.addEventListener("input", toggleClear);
+    input.addEventListener("focus", toggleClear);
+    clearBtn?.addEventListener("click", () => {
+      input.value = "";
+      input.focus();
+      toggleClear();
+      if (typeof aplicarFiltroBusqueda === "function") aplicarFiltroBusqueda();
+    });
+  }
 
-function openModal() {
-  modal.classList.remove("hidden");
-  requestAnimationFrame(() => {
-    backdrop.classList.remove("opacity-0");
-    backdrop.classList.add("opacity-100");
-    panel.classList.remove("opacity-0", "scale-95");
-    panel.classList.add("opacity-100", "scale-100");
-  });
-}
+  document.addEventListener("DOMContentLoaded", () => {
+    const modal = document.getElementById("modalTrimestre");
+    const form = document.getElementById("formNuevoTrimestre");
+    const tbody = document.getElementById("tbodyTrimestres");
+    const buscador = document.getElementById("buscadorTrimestre");
+    let listaTrimestres = [];
 
-function closeModal() {
-  backdrop.classList.remove("opacity-100");
-  backdrop.classList.add("opacity-0");
-  panel.classList.remove("opacity-100", "scale-100");
-  panel.classList.add("opacity-0", "scale-95");
-  setTimeout(() => modal.classList.add("hidden"), 200);
-}
-
-btnOpen?.addEventListener("click", openModal);
-btnClose?.addEventListener("click", closeModal);
-btnCancelModal?.addEventListener("click", closeModal);
-backdrop?.addEventListener("click", (e) => { if (e.target === backdrop) closeModal(); });
-window.addEventListener("keydown", (e) => { if (!modal.classList.contains("hidden") && e.key === "Escape") closeModal(); });
-
-/* ================================
-   CARGAR TRIMESTRES
-================================= */
-async function cargarTrimestres() {
-  const tbody = document.getElementById("tbodyTrimestres");
-  tbody.innerHTML = `<tr><td colspan="2" class="text-center py-4">Cargando...</td></tr>`;
-
-  try {
-    const res = await fetch(API_URL);
-    const data = await res.json();
-    tbody.innerHTML = "";
-
-    if (data.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="2" class="text-center py-4 text-gray-500">No hay trimestres registrados</td></tr>`;
-      return;
+    function openModal() {
+      modal?.classList.remove("hidden");
+      modal?.classList.add("flex");
+      document.body.style.overflow = "hidden";
     }
 
-    data.forEach(t => {
-      const tr = document.createElement("tr");
-      tr.className = "border-b";
-      tr.innerHTML = `
-        <td class="px-6 py-4 align-middle text-sm font-medium text-gray-800">
-          Trimestre ${t.numero_trimestre}
-        </td>
-        <td class="px-6 py-4 align-middle text-right">
-          <div class="flex justify-end items-center gap-3">
-            <button
-              class="p-2 border rounded-xl hover:bg-gray-100 transition btnEditar"
-              data-numero="${t.numero_trimestre}"
-              title="Editar"
-            >
-              <img class="w-5 h-5" src="src/assets/img/pencil-line.svg" alt="Editar" />
-            </button>
+    function closeModal() {
+      form?.reset();
+      modal?.classList.add("hidden");
+      modal?.classList.remove("flex");
+      document.body.style.overflow = "";
+    }
 
-            <!-- Switch -->
-            <label class="relative inline-flex items-center cursor-pointer select-none">
-              <input
-                type="checkbox"
-                class="sr-only peer toggleEstado"
-                data-numero="${t.numero_trimestre}"
-                ${t.estado == 1 ? "checked" : ""}
-                aria-checked="${t.estado == 1 ? "true" : "false"}"
-                aria-label="Activar trimestre ${t.numero_trimestre}"
-              >
-              <!-- Track -->
-              <div
-                class="w-11 h-6 rounded-full bg-gray-200 transition
-                       peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-[#39A900]/60
-                       peer-checked:bg-[#39A900] peer-disabled:opacity-60"
-              ></div>
-              <!-- Knob -->
-              <div
-                class="absolute left-0.5 top-0.5 w-5 h-5 rounded-full bg-white shadow
-                       transition-transform duration-200 ease-out
-                       peer-checked:translate-x-5"
-              ></div>
-            </label>
-          </div>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
+    function aplicarFiltroBusqueda() {
+      const term = (buscador?.value || "").trim().toLowerCase();
+      const list = !term ? listaTrimestres : listaTrimestres.filter((t) =>
+        String(t.numero_trimestre ?? "").toLowerCase().includes(term)
+      );
+      renderRows(list);
+    }
 
-    agregarEventosTabla();
-  } catch (error) {
-    console.error(error);
-    tbody.innerHTML = `<tr><td colspan="2" class="text-center text-red-500 py-4">Error al cargar los datos</td></tr>`;
-  }
-}
-
-/* ================================
-   EVENTOS DE TABLA
-================================= */
-function agregarEventosTabla() {
-  const tbody = document.getElementById("tbodyTrimestres");
-
-  tbody.addEventListener("click", async (e) => {
-    const btn = e.target.closest("button");
-    if (!btn) return;
-
-    const tr = btn.closest("tr");
-    const tdNumero = tr.children[0];
-    const tdAcc = tr.children[1];
-
-    // === GUARDAR ===
-    if (btn.classList.contains("btnGuardar")) {
-      const nuevoNumero = tr.querySelector("input[data-edit='numero']").value.trim();
-      const original = tr.dataset.originalNumero;
-
-      if (!nuevoNumero) {
-        return toast("Ingresa un número de trimestre válido", "warning");
+    function renderRows(lista) {
+      if (!tbody) return;
+      if (!Array.isArray(lista) || lista.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="2" class="px-6 py-8 text-gray-500 text-center">${lista?.length === 0 ? "No hay trimestres registrados" : "Cargando..."}</td></tr>`;
+        return;
       }
-      if (isNaN(nuevoNumero) || nuevoNumero.includes(",") || !Number.isInteger(Number(nuevoNumero))) {
-        return toast("Solo se permiten números enteros sin comas ni decimales", "warning");
-      }
+      tbody.innerHTML = lista.map((t) => {
+        const num = t.numero_trimestre ?? "";
+        const activo = t.estado == 1;
+        return `<tr class="border-b hover:bg-gray-50 transition-colors" data-numero="${num}">
+          <td class="px-6 py-4 align-middle text-sm font-medium text-gray-800">Trimestre ${num}</td>
+          <td class="px-6 py-4 align-middle text-right">
+            <div class="flex justify-end items-center gap-3">
+              <button class="btn-editar p-2 border rounded-xl hover:bg-gray-100 transition btnEditar" data-numero="${num}" title="Editar">
+                <img class="w-5 h-5 pointer-events-none" src="${ICON_PENCIL}" alt="Editar" />
+              </button>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" class="sr-only peer toggleEstado" data-numero="${num}" ${activo ? "checked" : ""} aria-label="Activar trimestre ${num}">
+                <div class="w-11 h-6 rounded-full bg-gray-200 transition peer-checked:bg-[#39A900] peer-disabled:opacity-60"></div>
+                <div class="absolute left-0.5 top-0.5 w-5 h-5 rounded-full bg-white shadow transition peer-checked:translate-x-5"></div>
+              </label>
+            </div>
+          </td>
+        </tr>`;
+      }).join("");
+    }
 
-      // 🔸 NUEVO: si no hubo cambios, mostramos aviso formal y no llamamos a la API
-      if (nuevoNumero === original) {
-        return toast("No se han detectado cambios en la información del trimestre.", "warning");
+    async function cargarTrimestres() {
+      if (!tbody) return;
+      tbody.innerHTML = `<tr><td colspan="2" class="px-6 py-8 text-gray-500 text-center">Cargando...</td></tr>`;
+      try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        listaTrimestres = Array.isArray(data) ? data : data?.data ?? [];
+        aplicarFiltroBusqueda();
+      } catch (err) {
+        console.error(err);
+        tbody.innerHTML = `<tr><td colspan="2" class="px-6 py-8 text-red-500 text-center">Error al cargar los datos</td></tr>`;
       }
+    }
 
+    document.getElementById("btnAbrirModalTrimestre")?.addEventListener("click", openModal);
+    document.getElementById("btnCerrarModalTrimestre")?.addEventListener("click", closeModal);
+    document.getElementById("btnCancelarModalTrimestre")?.addEventListener("click", closeModal);
+    modal?.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+    window.addEventListener("keydown", (e) => { if (modal && !modal.classList.contains("hidden") && e.key === "Escape") closeModal(); });
+
+    buscador?.addEventListener("input", aplicarFiltroBusqueda);
+    setupBuscadorConClear();
+
+    form?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const numero = document.getElementById("inputNumeroTrimestre").value.trim();
+      if (!numero) return toast("Ingresa el número del trimestre", "warning");
+      if (isNaN(numero) || numero.includes(",") || !Number.isInteger(Number(numero))) {
+        return toast("Solo se permiten números enteros", "warning");
+      }
+      if (Number(numero) < 1) return toast("El número debe ser mayor a 0", "warning");
       try {
         const res = await fetch(API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ accion: "editar", numero_trimestre: original, nuevo_numero: nuevoNumero }),
+          body: JSON.stringify({ numero_trimestre: numero, estado: 1 }),
         });
-
         const data = await res.json();
-
         if (data.mensaje?.toLowerCase().includes("existe") || data.mensaje?.toLowerCase().includes("repetido")) {
           return toast("Ya existe un trimestre con ese número", "warning");
         }
-
         if (data.status === "success" || data.mensaje?.includes("correctamente")) {
-          tdNumero.innerHTML = `Trimestre ${nuevoNumero}`;
-          restaurarAcciones(tdAcc);
-          delete tr.dataset.editing;
-          toast(data.mensaje || "Trimestre actualizado correctamente", "success");
+          toast(data.mensaje || "Trimestre creado correctamente", "success");
+          closeModal();
           cargarTrimestres();
         } else {
-          toast(data.mensaje || "No se pudo guardar el trimestre", "error");
+          toast(data.mensaje || "No se pudo crear", "error");
         }
       } catch (err) {
-        console.error(err);
         toast("No se pudo conectar con el servidor", "error");
       }
-      return;
-    }
+    });
 
-    // === CANCELAR ===
-    if (btn.classList.contains("btnCancelar")) {
-      tdNumero.innerHTML = `Trimestre ${tr.dataset.originalNumero}`;
-      restaurarAcciones(tdAcc);
-      delete tr.dataset.editing;
-      return;
-    }
+    tbody?.addEventListener("click", async (e) => {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+      const tr = btn.closest("tr");
+      const tdNumero = tr?.children[0];
+      const tdAcc = tr?.children[1];
+      const original = tr?.dataset.originalNumero;
 
-    // === EDITAR ===
-    if (btn.classList.contains("btnEditar")) {
-      if (tr.dataset.editing === "1") return;
-      tr.dataset.editing = "1";
-      const numeroActual = btn.dataset.numero;
-      tr.dataset.originalNumero = numeroActual;
+      if (btn.classList.contains("btnGuardar") || btn.classList.contains("btn-icon-check")) {
+        const nuevoNumero = (tr.querySelector("input[data-edit='numero']")?.value || "").trim();
+        if (!nuevoNumero) return toast("Ingresa un número válido", "warning");
+        if (isNaN(nuevoNumero) || !Number.isInteger(Number(nuevoNumero)) || Number(nuevoNumero) < 1) {
+          return toast("Solo números enteros mayores a 0", "warning");
+        }
+        if (nuevoNumero === original) return toast("No se detectaron cambios", "warning");
+        try {
+          const res = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ accion: "editar", numero_trimestre: original, nuevo_numero: nuevoNumero }),
+          });
+          const data = await res.json();
+          if (data.mensaje?.toLowerCase().includes("existe") || data.mensaje?.toLowerCase().includes("repetido")) {
+            return toast("Ya existe un trimestre con ese número", "warning");
+          }
+          if (data.status === "success" || data.mensaje?.includes("correctamente")) {
+            toast(data.mensaje || "Trimestre actualizado", "success");
+            cargarTrimestres();
+          } else {
+            toast(data.mensaje || "No se pudo guardar", "error");
+          }
+        } catch (err) {
+          toast("Error de conexión", "error");
+        }
+        return;
+      }
 
-      tdNumero.innerHTML = `
-        <input data-edit="numero" type="number" value="${numeroActual}" min="0"
-          class="w-32 rounded-xl border border-gray-300 px-3 py-1 focus:ring-0 focus:outline-none focus:border-[#2a7f00]" />
-      `;
+      if (btn.classList.contains("btn-icon-x") || btn.classList.contains("btnCancelar")) {
+        tdNumero.innerHTML = `Trimestre ${original}`;
+        tdAcc.innerHTML = `
+          <div class="flex justify-end items-center gap-3">
+            <button class="btn-editar p-2 border rounded-xl hover:bg-gray-100 transition btnEditar" data-numero="${original}" title="Editar">
+              <img class="w-5 h-5 pointer-events-none" src="${ICON_PENCIL}" alt="Editar" />
+            </button>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" class="sr-only peer toggleEstado" data-numero="${original}" aria-label="Activar trimestre ${original}">
+              <div class="w-11 h-6 rounded-full bg-gray-200 transition peer-checked:bg-[#39A900] peer-disabled:opacity-60"></div>
+              <div class="absolute left-0.5 top-0.5 w-5 h-5 rounded-full bg-white shadow transition peer-checked:translate-x-5"></div>
+            </label>
+          </div>`;
+        const estadoOriginal = listaTrimestres.find((t) => String(t.numero_trimestre) === String(original));
+        const chk = tdAcc.querySelector(".toggleEstado");
+        if (chk && estadoOriginal) chk.checked = estadoOriginal.estado == 1;
+        tr?.classList.remove("editando");
+        delete tr?.dataset.editing;
+        delete tr?.dataset.originalNumero;
+        return;
+      }
 
-      btn.classList.add("hidden");
-      const accionesBox = tdAcc.querySelector(".flex");
+      if (btn.classList.contains("btnEditar")) {
+        if (tr.dataset.editing === "1") return;
+        tr.classList.add("editando");
+        tr.dataset.editing = "1";
+        const numeroActual = btn.dataset.numero;
+        tr.dataset.originalNumero = numeroActual;
+        tdNumero.innerHTML = `<div class="cell-edit-wrap"><input data-edit="numero" type="number" value="${numeroActual}" min="1" class="cell-edit numero input-enterprise" /></div>`;
+        tdAcc.innerHTML = `
+          <div class="acciones-edit">
+            <button type="button" class="btnGuardar btn-icon-check p-2 rounded-lg transition" title="Guardar" aria-label="Guardar">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            </button>
+            <button type="button" class="btnCancelar btn-icon-x p-2 rounded-lg transition" title="Cancelar" aria-label="Cancelar">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>`;
+      }
+    });
 
-      const btnGuardar = document.createElement("button");
-      btnGuardar.className = "btnGuardar px-3 py-2 rounded-xl border border-green-600 text-green-700 hover:bg-green-50 transition";
-      btnGuardar.textContent = "Guardar";
-
-      const btnCancelar = document.createElement("button");
-      btnCancelar.className = "btnCancelar px-3 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition";
-      btnCancelar.textContent = "Cancelar";
-
-      accionesBox.insertBefore(btnGuardar, accionesBox.lastElementChild);
-      accionesBox.insertBefore(btnCancelar, accionesBox.lastElementChild);
-    }
-  });
-
-/* ================================ 
-   TOGGLE ESTADO
-================================= */
-
-  document.querySelectorAll(".toggleEstado").forEach(chk => {
-    chk.addEventListener("change", async (e) => {
-      const numero = e.currentTarget.dataset.numero;
-      const accion = e.currentTarget.checked ? "reactivar" : "suspender";
+    document.body.addEventListener("change", async (e) => {
+      const chk = e.target.closest(".toggleEstado");
+      if (!chk) return;
+      const numero = chk.dataset.numero;
+      const accion = chk.checked ? "reactivar" : "suspender";
       try {
         const res = await fetch(API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ accion, numero_trimestre: numero })
+          body: JSON.stringify({ accion, numero_trimestre: numero }),
         });
         const data = await res.json();
-
         if (data.mensaje?.includes("Error")) {
           toast("No se pudo actualizar el estado", "error");
-          e.currentTarget.checked = !e.currentTarget.checked;
+          chk.checked = !chk.checked;
         } else {
           toast(data.mensaje, "success");
+          cargarTrimestres();
         }
-      } catch (error) {
-        toast("No se pudo conectar con el servidor", "error");
-        e.currentTarget.checked = !e.currentTarget.checked;
+      } catch (err) {
+        toast("Error de conexión", "error");
+        chk.checked = !chk.checked;
       }
     });
-  });
-}
 
-/* ================================
-   RESTAURAR ACCIONES
-================================= */
-function restaurarAcciones(tdAcc) {
-  const accionesBox = tdAcc.querySelector(".flex");
-  accionesBox.querySelector(".btnEditar")?.classList.remove("hidden");
-  accionesBox.querySelector(".btnGuardar")?.remove();
-  accionesBox.querySelector(".btnCancelar")?.remove();
-}
-
-/* ================================
-   CREAR TRIMESTRE
-================================= */
-document.getElementById("formNuevoTrimestre").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const numero = document.getElementById("inputNumeroTrimestre").value.trim();
-
-  if (!numero) return toast("Ingresa el número del trimestre", "warning");
-  if (isNaN(numero) || numero.includes(",") || !Number.isInteger(Number(numero))) {
-    return toast("Solo se permiten números enteros sin comas ni decimales", "warning");
-  }
-
-  const body = { numero_trimestre: numero, estado: 1 };
-
-  try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+    document.addEventListener("input", (e) => {
+      if (e.target.type === "number" && e.target.value < 0) {
+        e.target.value = 0;
+        toast("No se permiten valores negativos", "warning");
+      }
     });
 
-    const data = await res.json();
-
-    if (data.mensaje?.toLowerCase().includes("existe") || data.mensaje?.toLowerCase().includes("repetido")) {
-      return toast("Ya existe un trimestre con ese número", "warning");
-    }
-
-    if (data.status === "success" || data.mensaje?.includes("correctamente")) {
-      toast(data.mensaje || "Trimestre creado correctamente", "success");
-      closeModal();
-      cargarTrimestres();
-    } else {
-      toast(data.mensaje || "No se pudo crear el trimestre", "error");
-    }
-  } catch (err) {
-    console.error(err);
-    toast("No se pudo conectar con el servidor", "error");
-  }
-});
-
-/* ================================
-   EVITAR NÚMEROS NEGATIVOS
-================================= */
-document.addEventListener("input", (e) => {
-  if (e.target.type === "number") {
-    if (e.target.value < 0) {
-      e.target.value = 0;
-      toast("No se permiten valores negativos", "warning");
-    }
-  }
-});
-
-/* ================================
-   INICIALIZAR
-================================= */
-document.addEventListener("DOMContentLoaded", cargarTrimestres);
+    cargarTrimestres();
+  });
+})();

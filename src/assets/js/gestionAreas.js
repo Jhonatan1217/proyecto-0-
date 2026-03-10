@@ -1,220 +1,120 @@
-// src/assets/js/gestionAreas.js
+/**
+ * Gestión de Áreas - Refactorizado: table-edit + modal-enterprise + buscador clear.
+ */
 (() => {
-  const API_URL = (typeof window !== "undefined" && window.API_URL)
-    ? window.API_URL
-    : "../../controllers/AreaController.php";
-
-  // Helper para querySelector
+  const API_URL = (typeof window !== "undefined" && window.API_URL) ? window.API_URL : "../../controllers/AreaController.php";
   const $ = (s, c = document) => c.querySelector(s);
 
-  // ---------- Toast ----------
   function toast(msg, type = "success") {
     if (window.Swal) {
-      Swal.fire({
-        toast: true,
-        position: "top-end",
-        icon: type,
-        title: msg,
-        showConfirmButton: false,
-        timer: 2200,
-        timerProgressBar: true,
-      });
+      Swal.fire({ toast: true, position: "top-end", icon: type, title: msg, showConfirmButton: false, timer: 2200, timerProgressBar: true });
     } else {
-      alert(
-        (type === "error" ? "❌ " : type === "warning" ? "⚠ " : "✅ ") + msg
-      );
+      alert((type === "error" ? "❌ " : type === "warning" ? "⚠ " : "✅ ") + msg);
     }
   }
 
-  // ---------- Helpers de fetch ----------
   async function parseJsonOrThrow(res) {
     const txt = await res.text();
-    try {
-      return JSON.parse(txt);
-    } catch {
+    try { return JSON.parse(txt); } catch {
       console.error("No JSON desde API:\n", txt);
-      const status = res.status;
-      const msg =
-        status >= 400
-          ? `Error ${status} del servidor`
-          : "La API no devolvió JSON.";
-      throw new Error(msg);
+      throw new Error(res.status >= 400 ? `Error ${res.status} del servidor` : "La API no devolvió JSON.");
     }
   }
 
   async function apiGet(params) {
     const url = `${API_URL}?${new URLSearchParams(params).toString()}`;
-    const res = await fetch(url, {
-      headers: { Accept: "application/json" },
-      credentials: "same-origin",
-    });
+    const res = await fetch(url, { headers: { Accept: "application/json" }, credentials: "same-origin" });
     return parseJsonOrThrow(res);
   }
 
   async function apiPost(accion, payload) {
-  const url = `${API_URL}?accion=${encodeURIComponent(accion)}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      Accept: "application/json",
-    },
-    credentials: "same-origin",
-    body: JSON.stringify(payload),
-  });
-  
-  const response = await parseJsonOrThrow(res);
-  return response;
-}
-
-  /* =======================================================
-     SCROLL DINÁMICO – MISMO COMPORTAMIENTO QUE INSTRUCTORES
-     (altura fija a 5 filas visibles dentro de la tarjeta)
-  ======================================================= */
-  function ajustarAltoTablaAreas() {
-    const wrapper = document.getElementById("areasWrapper");
-    const tabla = document.getElementById("tablaAreas");
-    if (!wrapper || !tabla) return;
-
-    const filasNode = tabla.querySelectorAll("tbody tr");
-    const filas = filasNode.length;
-
-    // Si no hay filas, no forzamos altura ni scroll
-    if (!filas) {
-      wrapper.style.maxHeight = "none";
-      wrapper.style.overflowY = "hidden";
-      return;
-    }
-
-    const thead = tabla.querySelector("thead");
-    const firstRow = filasNode[0];
-
-    const headH = thead ? thead.getBoundingClientRect().height : 44;
-    const rowH = firstRow ? firstRow.getBoundingClientRect().height : 56;
-
-    // Altura para 5 filas (igual que en instructores)
-    const maxH = headH + rowH * 5;
-
-    if (filas > 5) {
-      wrapper.style.maxHeight = `${Math.ceil(maxH)}px`;
-      wrapper.style.overflowY = "auto";
-      wrapper.style.overscrollBehavior = "contain";
-    } else {
-      // Si hay menos de 5 filas, dejamos la altura justa sin mostrar scroll
-      const h = headH + rowH * filas;
-      wrapper.style.maxHeight = `${Math.ceil(h)}px`;
-      wrapper.style.overflowY = "hidden";
-      wrapper.style.overscrollBehavior = "auto";
-    }
+    const res = await fetch(`${API_URL}?accion=${encodeURIComponent(accion)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8", Accept: "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify(payload),
+    });
+    return parseJsonOrThrow(res);
   }
-  /* ======================================================= */
 
-  // --- TODO el manejo de DOM lo hacemos cuando el DOM esté listo ---
+  function setupBuscadorConClear() {
+    const wrap = document.getElementById("buscadorAreaWrap") || document.getElementById("buscadorArea")?.parentElement;
+    const input = document.getElementById("buscadorArea");
+    if (!wrap || !input) return;
+    let clearBtn = wrap.querySelector(".btn-clear-buscador");
+    if (!clearBtn) {
+      clearBtn = document.createElement("button");
+      clearBtn.type = "button";
+      clearBtn.className = "btn-clear-buscador absolute right-10 top-1/2 -translate-y-1/2 p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 hidden";
+      clearBtn.setAttribute("aria-label", "Limpiar búsqueda");
+      clearBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+      wrap.appendChild(clearBtn);
+    }
+    function toggleClear() { if (clearBtn) clearBtn.classList.toggle("hidden", !input.value.trim()); }
+    input.addEventListener("input", toggleClear);
+    input.addEventListener("focus", toggleClear);
+    clearBtn?.addEventListener("click", () => { input.value = ""; input.focus(); toggleClear(); aplicarFiltroBusqueda(); });
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     const modal = $("#modalArea");
-    const backdrop = $("#modalBackdrop");
-    const panel = $("#modalPanel");
-    const btnOpen = $("#btnAbrirModalArea");
-    const btnClose = $("#btnCerrarModalArea");
-    const btnCancel = $("#btnCancelarModalArea");
     const form = $("#formNuevaArea");
-    const tbody = $("#tablaAreas tbody");
+    const tbody = $("#tbodyAreas");
     const buscadorArea = $("#buscadorArea");
+    let listaAreas = [];
 
-    let listaAreas = []; // Guardar en memoria la lista de áreas actuales
-
-    // Filtra por texto del buscador y re-renderiza (usa listaAreas en memoria)
     function aplicarFiltroBusqueda() {
       const term = (buscadorArea?.value || "").trim().toLowerCase();
-      const list = !term
-        ? listaAreas
-        : listaAreas.filter((a) =>
-            (a.nombre_area || "").toLowerCase().includes(term)
-          );
+      const list = !term ? listaAreas : listaAreas.filter((a) => (a.nombre_area || "").toLowerCase().includes(term));
       renderRows(list);
     }
 
-    // ---------- Modal ----------
     function openModal() {
       if (!modal) return;
       modal.classList.remove("hidden");
-      requestAnimationFrame(() => {
-        backdrop?.classList.remove("opacity-0");
-        panel?.classList.remove("opacity-0", "scale-95", "translate-y-2");
-      });
+      modal.classList.add("flex");
+      document.body.style.overflow = "hidden";
     }
+
     function closeModal() {
       form?.reset();
-      backdrop?.classList.add("opacity-0");
-      panel?.classList.add("opacity-0", "scale-95", "translate-y-2");
-      if (modal) {
-        setTimeout(() => modal.classList.add("hidden"), 180);
-      }
+      modal?.classList.add("hidden");
+      modal?.classList.remove("flex");
+      document.body.style.overflow = "";
     }
 
-    btnOpen?.addEventListener("click", openModal);
-    btnClose?.addEventListener("click", closeModal);
-    btnCancel?.addEventListener("click", closeModal);
-    backdrop?.addEventListener("click", (e) => {
-      if (e.target === backdrop) closeModal();
-    });
+    const ICON_PENCIL = window.ICON_PENCIL_AREA || "src/assets/img/pencil-line.svg";
 
-    buscadorArea?.addEventListener("input", aplicarFiltroBusqueda);
-
-    // ---------- Render ----------
     function renderRows(lista) {
       if (!tbody) return;
-
       if (!Array.isArray(lista)) {
-        tbody.innerHTML = `
-          <tr>
-            <td class="px-6 py-6 text-red-600 text-center" colspan="2">
-              Respuesta inesperada
-            </td>
-          </tr>`;
-        ajustarAltoTablaAreas();
+        tbody.innerHTML = `<tr><td class="px-6 py-6 text-red-600 text-center" colspan="2">Respuesta inesperada</td></tr>`;
         return;
       }
-
       if (lista.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td class="px-6 py-6 text-gray-500 text-center" colspan="2">
-              No hay áreas
-            </td>
-          </tr>`;
-        ajustarAltoTablaAreas();
+        tbody.innerHTML = `<tr><td class="px-6 py-6 text-gray-500 text-center" colspan="2">No hay áreas</td></tr>`;
         return;
       }
-
-      tbody.innerHTML = lista
-        .map((it) => {
-          const id = it.id_area ?? "";
-          const nombre = it.nombre_area ?? "";
-          const activo = String(it.estado ?? 1) === "1";
-          return `
-          <tr class="border-b" data-id="${id}">
-            <td class="px-6 py-4 align-middle">
-              <span class="cell-nombre">${nombre}</span>
-            </td>
-            <td class="px-6 py-4 align-middle text-right">
-              <div class="flex justify-end items-center gap-3">
-                <button class="btn-editar p-2 border rounded-lg hover:bg-gray-50 transition" type="button" title="Editar">
-                  <img class="w-5 h-5" src="src/assets/img/pencil-line.svg" alt="Editar" />
-                </button>
-                <label class="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" class="sr-only peer switch-estado" ${activo ? "checked" : ""}>
-                  <div class="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-[#39A900] transition"></div>
-                  <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition peer-checked:translate-x-5"></div>
-                </label>
-              </div>
-            </td>
-          </tr>`;
-        })
-        .join("");
-
-      // Ajustar alto y scroll después de re-renderizar
-      ajustarAltoTablaAreas();
+      tbody.innerHTML = lista.map((it) => {
+        const id = it.id_area ?? "";
+        const nombre = it.nombre_area ?? "";
+        const activo = String(it.estado ?? 1) === "1";
+        return `<tr class="border-b hover:bg-gray-50 transition-colors" data-id="${id}">
+          <td class="px-6 py-4 align-middle"><span class="cell-nombre">${nombre}</span></td>
+          <td class="px-6 py-4 align-middle text-right">
+            <div class="flex justify-end items-center gap-3 acciones">
+              <button class="btn-editar p-2 border rounded-xl hover:bg-gray-50 transition" type="button" title="Editar">
+                <img class="w-5 h-5 pointer-events-none" src="${ICON_PENCIL}" alt="Editar" />
+              </button>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" class="sr-only peer switch-estado" ${activo ? "checked" : ""} data-id="${id}" aria-label="Cambiar estado de ${nombre}">
+                <div class="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-[#39A900] transition"></div>
+                <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition peer-checked:translate-x-5"></div>
+              </label>
+            </div>
+          </td>
+        </tr>`;
+      }).join("");
     }
 
     async function cargarAreas() {
@@ -225,34 +125,28 @@
         aplicarFiltroBusqueda();
       } catch (e) {
         console.error(e);
-        tbody.innerHTML = `
-          <tr>
-            <td class="px-6 py-6 text-red-600 text-center" colspan="2">
-              ${e.message}
-            </td>
-          </tr>`;
+        tbody.innerHTML = `<tr><td class="px-6 py-6 text-red-600 text-center" colspan="2">${e.message}</td></tr>`;
         toast("Error al cargar áreas", "error");
-        ajustarAltoTablaAreas();
       }
     }
 
-    // ---------- Crear ----------
+    $("#btnAbrirModalArea")?.addEventListener("click", openModal);
+    $("#btnCerrarModalArea")?.addEventListener("click", closeModal);
+    $("#btnCancelarModalArea")?.addEventListener("click", closeModal);
+    modal?.querySelector(".modal-area-box")?.addEventListener("click", (e) => e.stopPropagation());
+    modal?.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+
+    buscadorArea?.addEventListener("input", aplicarFiltroBusqueda);
+    setupBuscadorConClear();
+
     form?.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const nombre = (form.querySelector("input[type=text]").value || "").trim();
-      if (!nombre) {
-        toast("Debe ingresar el nombre del área", "warning");
-        return;
-      }
-
-      const duplicado = listaAreas.some(
-        (a) => a.nombre_area.trim().toLowerCase() === nombre.toLowerCase()
-      );
-      if (duplicado) {
+      const nombre = (form.querySelector("input[name=nombre_area]").value || "").trim();
+      if (!nombre) { toast("Debe ingresar el nombre del área", "warning"); return; }
+      if (listaAreas.some((a) => (a.nombre_area || "").trim().toLowerCase() === nombre.toLowerCase())) {
         toast("Ya existe un área con ese nombre", "warning");
         return;
       }
-
       try {
         const res = await apiPost("crear", { nombre_area: nombre });
         if (res?.error) throw new Error(res.error);
@@ -264,62 +158,39 @@
       }
     });
 
-    // ---------- Editar ----------
     tbody?.addEventListener("click", async (e) => {
       const row = e.target.closest("tr[data-id]");
       if (!row) return;
       const id = row.getAttribute("data-id");
-
       const btnEditar = e.target.closest(".btn-editar");
       if (btnEditar) {
         if (row.classList.contains("editando")) return;
         row.classList.add("editando");
-
         const cellNombre = row.querySelector(".cell-nombre");
         const acciones = row.querySelector("td:last-child > div");
-        const nombreActual = cellNombre.textContent.trim();
-
-        cellNombre.innerHTML = `
-          <input type="text" class="w-full rounded-lg border border-gray-200 px-3 py-2"
-                 value="${nombreActual}" data-edit="nombre" />`;
-
+        const nombreActual = (cellNombre?.textContent || "").trim();
+        cellNombre.innerHTML = `<div class="cell-edit-wrap"><input type="text" class="cell-edit input-enterprise" value="${nombreActual}" data-edit="nombre" /></div>`;
         acciones.innerHTML = `
-          <button class="btn-guardar px-5 py-2 rounded-xl border border-green-600 text-green-600 hover:bg-green-50 transition">Guardar</button>
-          <button class="btn-cancelar px-5 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition">Cancelar</button>
+          <div class="acciones-edit">
+            <button type="button" class="btn-guardar btn-icon-check p-2 rounded-lg transition" title="Guardar" aria-label="Guardar">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            </button>
+            <button type="button" class="btn-cancelar btn-icon-x p-2 rounded-lg transition" title="Cancelar" aria-label="Cancelar">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
         `;
-
-        acciones.querySelector(".btn-cancelar").addEventListener("click", async () => {
-          row.classList.remove("editando");
-          await cargarAreas();
-        });
-
-        acciones.querySelector(".btn-guardar").addEventListener("click", async () => {
-          const nombreNuevo = row.querySelector('input[data-edit="nombre"]').value.trim();
-          if (!nombreNuevo) {
-            toast("Debe ingresar nombre del área", "warning");
-            return;
-          }
-
-          const duplicadoEditar = listaAreas.some(
-            (a) =>
-              a.id_area != id &&
-              a.nombre_area.trim().toLowerCase() === nombreNuevo.toLowerCase()
-          );
-          if (duplicadoEditar) {
+        acciones.querySelector(".btn-cancelar")?.addEventListener("click", () => { row.classList.remove("editando"); cargarAreas(); });
+        acciones.querySelector(".btn-guardar")?.addEventListener("click", async () => {
+          const nombreNuevo = (row.querySelector('input[data-edit="nombre"]')?.value || "").trim();
+          if (!nombreNuevo) { toast("Debe ingresar nombre del área", "warning"); return; }
+          if (listaAreas.some((a) => a.id_area != id && (a.nombre_area || "").trim().toLowerCase() === nombreNuevo.toLowerCase())) {
             toast("Ya existe un área con ese nombre", "warning");
             return;
           }
-
-          if (nombreNuevo === nombreActual) {
-            toast("Debes modificar el campo antes de guardar", "warning");
-            return;
-          }
-
+          if (nombreNuevo === nombreActual) { toast("Debes modificar el campo antes de guardar", "warning"); return; }
           try {
-            const res = await apiPost("actualizar", {
-              id_area: id,
-              nombre_area: nombreNuevo,
-            });
+            const res = await apiPost("actualizar", { id_area: id, nombre_area: nombreNuevo });
             if (res?.error) throw new Error(res.error);
             toast(res?.mensaje || "Área actualizada", "success");
             row.classList.remove("editando");
@@ -331,77 +202,45 @@
       }
     });
 
-    // ---------- Cambiar estado (con cascada al deshabilitar/habilitar) ----------
     tbody?.addEventListener("change", async (e) => {
       const sw = e.target.closest(".switch-estado");
       if (!sw) return;
-
       const row = e.target.closest("tr[data-id]");
       const id = row?.getAttribute("data-id");
       if (!id) return;
-
       const nuevoEstado = sw.checked ? 1 : 0;
-
-      // Si se va a DESHABILITAR el área, pedimos confirmación
       if (nuevoEstado === 0) {
         let confirmado = true;
-
         if (window.Swal) {
           const result = await Swal.fire({
             title: "Deshabilitar área",
-            text: "Si deshabilitas esta área, también se deshabilitarán todas las entidades relacionadas (por ejemplo, zonas y horarios asociados). ¿Deseas continuar?",
+            text: "Si deshabilitas esta área, también se deshabilitarán todas las entidades relacionadas (zonas y horarios). ¿Deseas continuar?",
             icon: "warning",
-            width: 420, // 🔹 Más pequeña que el tamaño por defecto
+            width: 420,
             showCancelButton: true,
             confirmButtonText: "Sí, deshabilitar todo",
             cancelButtonText: "Cancelar",
             reverseButtons: true,
-            // 🔹 Colores institucionales
-            confirmButtonColor: "#39A900", // Verde SENA
-            cancelButtonColor: "#6B7280",  // Gris
+            confirmButtonColor: "#39A900",
+            cancelButtonColor: "#6B7280",
           });
           confirmado = result.isConfirmed;
         } else {
-          confirmado = window.confirm(
-            "Si deshabilitas esta área, también se deshabilitarán todos los registros relacionados. ¿Deseas continuar?"
-          );
+          confirmado = window.confirm("Si deshabilitas esta área, se deshabilitarán los registros relacionados. ¿Continuar?");
         }
-
-        if (!confirmado) {
-          // Revertir el switch si el usuario cancela
-          sw.checked = true;
-          return;
-        }
+        if (!confirmado) { sw.checked = true; return; }
       }
-
       try {
-        const payload = {
-          id_area: id,
-          estado: nuevoEstado,
-          // Ahora siempre aplicamos la lógica en cascada (área + zonas relacionadas)
-          cascada: 1,
-        };
-
-        const res = await apiPost("cambiar_estado", payload);
+        const res = await apiPost("cambiar_estado", { id_area: id, estado: nuevoEstado, cascada: 1 });
         if (res?.error) throw new Error(res.error);
-
-        toast(
-          nuevoEstado === 1
-            ? res?.mensaje || "Área y zonas relacionadas habilitadas correctamente"
-            : res?.mensaje || "Área y zonas relacionadas deshabilitadas correctamente",
-          "success"
-        );
+        toast(nuevoEstado === 1 ? (res?.mensaje || "Área habilitada") : (res?.mensaje || "Área deshabilitada"), "success");
+        await cargarAreas();
       } catch (e4) {
-        // Si algo falla, revertimos visualmente el switch
         sw.checked = !sw.checked;
         toast(e4.message || "No se pudo cambiar el estado", "error");
       }
     });
 
-    // Recalcular alto al cambiar el tamaño de la ventana
-    window.addEventListener("resize", ajustarAltoTablaAreas);
-
-    // Cargar al inicio
     cargarAreas();
   });
 })();

@@ -250,6 +250,7 @@ function cerrarModal(id) {
     var anyOpen = document.querySelector('#modalNuevoUsuario.flex, #modalEditarUsuario.flex, #modalVerUsuario.flex');
     if (!anyOpen) {
         document.body.style.overflow = '';
+        if (typeof ComboboxComponent !== 'undefined') ComboboxComponent.reset();
     }
 }
 
@@ -364,98 +365,62 @@ function renderTabla(data) {
    3. INICIALIZACIÓN (ELIMINACIÓN DE BUGS)
    ============================================= */
 
-function enhanceSelectsWithCustomDropdown() {
-    document.querySelectorAll('.select-usuario').forEach(select => {
-        if (select.dataset.customDropdown) return;
-        select.dataset.customDropdown = '1';
-
-        const wrapper = document.createElement('div');
-        wrapper.className = 'custom-select-wrapper';
-        select.parentNode.insertBefore(wrapper, select);
-        wrapper.appendChild(select);
-        const arrowSib = wrapper.nextElementSibling;
-        if (arrowSib && (arrowSib.classList?.contains('pointer-events-none') || arrowSib.matches?.('svg.absolute'))) arrowSib.style.display = 'none';
-
-        const trigger = document.createElement('div');
-        trigger.className = 'custom-select-trigger ' + (select.classList.contains('py-2.5') ? 'py-2.5 text-sm' : 'py-3') + ' w-full border border-gray-300 rounded-xl px-4 pr-10 bg-white text-gray-700 flex items-center justify-between cursor-pointer hover:border-gray-400 focus-within:ring-2 focus-within:ring-[#39A900]/20 focus-within:border-[#39A900]';
-        trigger.setAttribute('tabindex', '0');
-        trigger.setAttribute('aria-haspopup', 'listbox');
-
-        const dropdown = document.createElement('div');
-        dropdown.className = 'custom-select-dropdown hidden';
-        dropdown.setAttribute('role', 'listbox');
-
-        const updateTrigger = () => {
-            const opt = select.options[select.selectedIndex];
-            span.textContent = opt ? opt.textContent : '';
-        };
-
-        const span = document.createElement('span');
-        span.className = 'truncate';
-        trigger.appendChild(span);
-        const arrow = document.createElement('span');
-        arrow.className = 'shrink-0 text-gray-400';
-        arrow.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>';
-        trigger.appendChild(arrow);
-
-        [...select.options].forEach((opt, i) => {
-            const div = document.createElement('div');
-            div.className = 'custom-option' + (opt.value === select.value ? ' selected' : '');
-            div.textContent = opt.textContent;
-            div.dataset.value = opt.value;
-            div.dataset.index = String(i);
-            div.setAttribute('role', 'option');
-            div.addEventListener('click', (e) => {
-                e.stopPropagation();
-                select.value = opt.value;
-                select.dispatchEvent(new Event('change', { bubbles: true }));
-                dropdown.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
-                div.classList.add('selected');
-                updateTrigger();
-                dropdown.classList.add('hidden');
+function enhanceSelectsUsuarios() {
+    if (typeof ComboboxComponent === 'undefined') return;
+    ['#filtroCargos', '#filtroRoles'].forEach(sel => {
+        const el = document.querySelector(sel);
+        if (el && !el.dataset.comboboxEnhanced) {
+            ComboboxComponent.enhance({
+                selector: sel,
+                dropdownClass: 'custom-select-dropdown',
+                optionClass: 'custom-option',
+                placeholder: sel === '#filtroCargos' ? 'Todos los cargos' : 'Todos los roles',
+                clearValue: ''
             });
-            dropdown.appendChild(div);
-        });
-
-        updateTrigger();
-
-        select.classList.add('sr-only', 'absolute', 'inset-0', 'w-full', 'h-full', 'opacity-0', 'pointer-events-none');
-        wrapper.appendChild(trigger);
-        wrapper.appendChild(dropdown);
-
-        trigger.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (select.disabled) return;
-            const open = !dropdown.classList.contains('hidden');
-            document.querySelectorAll('.custom-select-dropdown').forEach(d => d.classList.add('hidden'));
-            if (!open) {
-                const rect = wrapper.getBoundingClientRect();
-                const dropdownMaxH = 220;
-                const margin = 12;
-                const modal = wrapper.closest('.modal-usuario-box');
-                const spaceBelow = modal
-                    ? (modal.getBoundingClientRect().bottom - rect.bottom)
-                    : (window.innerHeight - rect.bottom);
-                const needsUp = spaceBelow < dropdownMaxH + margin;
-                dropdown.classList.toggle('dropdown-up', needsUp);
-                dropdown.classList.remove('hidden');
-            } else {
-                dropdown.classList.remove('dropdown-up');
-            }
-        });
-
-        select.addEventListener('change', () => {
-            updateTrigger();
-            dropdown.querySelectorAll('.custom-option').forEach(o => {
-                o.classList.toggle('selected', o.dataset.value === select.value);
-            });
-        });
-
-        document.addEventListener('click', (e) => {
-            if (!wrapper.contains(e.target)) dropdown.classList.add('hidden');
-        }, true);
+        }
     });
+    ComboboxComponent.enhance({
+        selector: '.select-usuario:not(#filtroCargos):not(#filtroRoles)',
+        dropdownClass: 'custom-select-dropdown',
+        optionClass: 'custom-option',
+        placeholder: 'Buscar...'
+    });
+}
+
+function syncComboboxesAfterReset(form) {
+    if (!form) return;
+    form.querySelectorAll('.select-usuario').forEach(sel => {
+        const w = sel.closest('.combobox-wrapper');
+        if (w && typeof w._cbUpdateInput === 'function') w._cbUpdateInput();
+    });
+}
+
+function setupBuscadorConClear() {
+    const wrap = document.getElementById('buscadorUsuarioWrap') || document.getElementById('buscadorUsuario')?.parentElement;
+    const input = document.getElementById('buscadorUsuario');
+    if (!wrap || !input) return;
+    let clearBtn = wrap.querySelector('.btn-clear-buscador');
+    if (!clearBtn) {
+        clearBtn = document.createElement('button');
+        clearBtn.type = 'button';
+        clearBtn.className = 'btn-clear-buscador absolute right-10 top-1/2 -translate-y-1/2 p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 hidden';
+        clearBtn.setAttribute('aria-label', 'Limpiar búsqueda');
+        clearBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+        wrap.appendChild(clearBtn);
+    }
+    function toggleClear() {
+        if (clearBtn) clearBtn.classList.toggle('hidden', !input.value.trim());
+    }
+    input.addEventListener('input', toggleClear);
+    input.addEventListener('focus', toggleClear);
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            input.value = '';
+            input.focus();
+            toggleClear();
+            cargarUsuarios();
+        });
+    }
 }
 
 function aplicarEstadoFiltroRoles() {
@@ -464,15 +429,14 @@ function aplicarEstadoFiltroRoles() {
     if (!filtroRoles) return;
     const esInstructor = /instructor/i.test((filtroCargos?.value || '').trim());
     filtroRoles.disabled = !esInstructor;
-    var wrapper = filtroRoles.closest('.custom-select-wrapper');
+    var wrapper = filtroRoles.closest('.combobox-wrapper');
     if (wrapper) {
         if (esInstructor) {
             wrapper.classList.remove('filtro-rol-disabled');
         } else {
             wrapper.classList.add('filtro-rol-disabled');
             filtroRoles.value = '';
-            var triggerSpan = wrapper.querySelector('.custom-select-trigger span:first-child');
-            if (triggerSpan) triggerSpan.textContent = 'Todos los roles';
+            if (typeof wrapper._cbUpdateInput === 'function') wrapper._cbUpdateInput();
         }
     } else if (!esInstructor) {
         filtroRoles.value = '';
@@ -498,39 +462,11 @@ async function cargarRolesDisponibles() {
         });
         if (valorActual) sel.value = valorActual;
         aplicarEstadoFiltroRoles();
-        if (sel.closest('.custom-select-wrapper')) refreshCustomDropdownOptions(sel);
+        var w = sel.closest('.combobox-wrapper');
+        if (w && typeof w._cbUpdateInput === 'function') w._cbUpdateInput();
     } catch (e) {
         console.warn('No se pudieron cargar roles para el filtro:', e);
     }
-}
-
-function refreshCustomDropdownOptions(select) {
-    const wrapper = select.closest('.custom-select-wrapper');
-    if (!wrapper) return;
-    const dropdown = wrapper.querySelector('.custom-select-dropdown');
-    const triggerSpan = wrapper.querySelector('.custom-select-trigger span:first-child');
-    if (!dropdown || !triggerSpan) return;
-    dropdown.innerHTML = '';
-    [...select.options].forEach((opt, i) => {
-        const div = document.createElement('div');
-        div.className = 'custom-option' + (opt.value === select.value ? ' selected' : '');
-        div.textContent = opt.textContent;
-        div.dataset.value = opt.value;
-        div.dataset.index = String(i);
-        div.setAttribute('role', 'option');
-        div.addEventListener('click', function(e) {
-            e.stopPropagation();
-            select.value = opt.value;
-            select.dispatchEvent(new Event('change', { bubbles: true }));
-            dropdown.querySelectorAll('.custom-option').forEach(function(o) { o.classList.remove('selected'); });
-            div.classList.add('selected');
-            triggerSpan.textContent = opt ? opt.textContent : '';
-            dropdown.classList.add('hidden');
-        });
-        dropdown.appendChild(div);
-    });
-    const opt = select.options[select.selectedIndex];
-    triggerSpan.textContent = opt ? opt.textContent : '';
 }
 
 function debounce(fn, ms) {
@@ -542,10 +478,11 @@ function debounce(fn, ms) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    aplicarEstadoFiltroRoles();
+    cargarRolesDisponibles().then(() => {
+        enhanceSelectsUsuarios();
+        aplicarEstadoFiltroRoles();
+    });
     cargarUsuarios();
-    cargarRolesDisponibles();
-    enhanceSelectsWithCustomDropdown();
 
     const filtroCargos = document.getElementById('filtroCargos');
     const filtroRoles = document.getElementById('filtroRoles');
@@ -562,6 +499,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (buscadorUsuario) {
         buscadorUsuario.addEventListener('input', debounce(() => cargarUsuarios(), 300));
     }
+    setupBuscadorConClear();
 
     // Única delegación de eventos en body para .btn-editar, .btn-ver y .btn-estado
     document.body.addEventListener("click", (e) => {
@@ -594,14 +532,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('#modalNuevoUsuario [name="numero_documento"]')?.addEventListener('input', limitarNumDoc);
     document.querySelector('#modalEditarUsuario [name="numero_documento"]')?.addEventListener('input', limitarNumDoc);
 
-    // Sincroniza los custom dropdowns tras form.reset() (el reset no dispara change)
-    function syncCustomSelectsAfterReset(form) {
-        if (!form) return;
-        form.querySelectorAll('.select-usuario').forEach(sel => {
-            sel.dispatchEvent(new Event('change', { bubbles: true }));
-        });
-    }
-
     // Abrir Modal Nuevo
     document.getElementById('btnAbrirModalUsuario')?.addEventListener('click', (e) => {
         e.preventDefault();
@@ -610,7 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const form = modal.querySelector('form');
         if (form) {
             form.reset();
-            syncCustomSelectsAfterReset(form);
+            syncComboboxesAfterReset(form);
             limpiarErrores(form);
         }
         alternarCamposCargo('', modal);

@@ -1,0 +1,250 @@
+/**
+ * Estilos compartidos para tablas con modo edición inline (Zonas, Grupos).
+ */
+
+/* Wrapper con scroll */
+.table-zonas-wrap,
+.table-grupos-wrap,
+.table-usuarios-wrap,
+.table-areas-wrap,
+.table-trimestres-wrap {
+  overflow-x: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  max-height: calc(5 * 71px + 2.75rem);
+}
+
+/* Scrollbar */
+.table-zonas-wrap::-webkit-scrollbar,
+.table-grupos-wrap::-webkit-scrollbar,
+.table-usuarios-wrap::-webkit-scrollbar,
+.table-areas-wrap::-webkit-scrollbar,
+.table-trimestres-wrap::-webkit-scrollbar {
+  width: 8px;
+}
+
+.table-zonas-wrap::-webkit-scrollbar-thumb,
+.table-grupos-wrap::-webkit-scrollbar-thumb,
+.table-usuarios-wrap::-webkit-scrollbar-thumb,
+.table-areas-wrap::-webkit-scrollbar-thumb,
+.table-trimestres-wrap::-webkit-scrollbar-thumb {
+  background-color: rgba(0,0,0,0.15);
+  border-radius: 10px;
+}
+
+.table-zonas-wrap:hover::-webkit-scrollbar-thumb,
+.table-grupos-wrap:hover::-webkit-scrollbar-thumb,
+.table-usuarios-wrap:hover::-webkit-scrollbar-thumb,
+.table-areas-wrap:hover::-webkit-scrollbar-thumb,
+.table-trimestres-wrap:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(0,0,0,0.25);
+}
+
+/* Head sticky */
+.table-zonas thead th,
+.table-grupos thead th,
+.table-usuarios-wrap table thead th,
+.table-areas-wrap table thead th,
+.table-trimestres-wrap table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f9fafb;
+  box-shadow: 0 1px 0 0 #e5e7eb;
+}
+
+.table-zonas th,
+.table-zonas td,
+.table-grupos th,
+.table-grupos td {
+  padding: 0.5rem 0.75rem;
+  vertical-align: middle;
+}
+
+.table-zonas tbody tr,
+.table-grupos tbody tr,
+.table-usuarios-wrap table tbody tr,
+.table-areas-wrap table tbody tr,
+.table-trimestres-wrap table tbody tr {
+  height: 71px;
+}
+
+.table-zonas tbody td,
+.table-grupos tbody td,
+.table-usuarios-wrap table tbody td,
+.table-areas-wrap table tbody td,
+.table-trimestres-wrap table tbody td {
+  height: 71px;
+  box-sizing: border-box;
+}
+
+/* Botón editar */
+.btn-editar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.btn-editar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Fila en edición */
+.table-zonas tr.editando td,
+.table-grupos tr.editando td,
+.table-areas-wrap table tr.editando td,
+.table-trimestres-wrap table tr.editando td {
+  min-width: 0;
+  overflow: visible;
+  vertical-align: middle;
+  padding: 0.5rem 0.75rem;
+}
+
+.table-zonas tr.editando .combobox-wrapper .combobox-trigger,
+.table-zonas tr.editando .input-enterprise,
+.table-grupos tr.editando .combobox-wrapper .combobox-trigger,
+.table-grupos tr.editando .input-enterprise {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.table-zonas tr.editando .cell-edit-wrap,
+.table-grupos tr.editando .cell-edit-wrap {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Acciones edit: check y cancelar */
+.acciones-edit {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: nowrap;
+}
+
+.btn-icon-check {
+  background: #39A900;
+  border: none;
+  color: #fff;
+}
+
+.btn-icon-check:hover {
+  background: #2d8000;
+}
+
+.btn-icon-x {
+  background: #dc2626;
+  border: none;
+  color: #fff;
+}
+
+.btn-icon-x:hover {
+  background: #b91c1c;
+}
+
+.btn-icon-check:focus,
+.btn-icon-x:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.15);
+}
+
+/* Tag pills (Nivel, Jornada, Área, etc.) */
+.tag-pill {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  margin: 0.125rem 0.25rem 0.125rem 0;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.2;
+  background: rgba(57, 169, 0, 0.15);
+  color: #166534;
+}
+
+.tag-pill:last-child {
+  margin-right: 0;
+}
+
+.cell-nivel-tag {
+  text-transform: uppercase;
+}
+
+.cell-programa-wrap {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+.cell-lider-wrap {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  word-break: break-word;
+  white-space: normal;
+}
+
+/* Grupos: anchos de columna */
+.table-grupos {
+  table-layout: fixed;
+  min-width: 60rem;
+  width: 100%;
+}
+
+.table-grupos .col-numero,
+.table-grupos .col-programa,
+.table-grupos .col-nivel,
+.table-grupos .col-jornada,
+.table-grupos .col-modalidad,
+.table-grupos .col-lider,
+.table-grupos .col-acciones {
+  box-sizing: border-box;
+}
+
+.table-grupos .col-numero { min-width: 5.5rem; padding-right: 1.25rem; }
+.table-grupos .col-programa { min-width: 14rem; padding-left: 1.25rem; }
+.table-grupos .col-nivel,
+.table-grupos .col-jornada,
+.table-grupos .col-modalidad { min-width: 5.5rem; white-space: nowrap; }
+.table-grupos .col-jornada { min-width: 7rem; }
+.table-grupos .col-modalidad { min-width: 7.5rem; }
+.table-grupos .col-lider { min-width: 9rem; white-space: normal; }
+.table-grupos .col-acciones { min-width: 8rem; white-space: nowrap; }
+
+.table-grupos tr.editando .col-numero { overflow: visible; padding-right: 2rem; }
+.table-grupos tr.editando .col-programa { overflow: visible; display: flex; align-items: center; }
+.table-grupos tr.editando .col-jornada,
+.table-grupos tr.editando .col-modalidad,
+.table-grupos tr.editando .col-lider { overflow: visible; }
+
+.table-grupos tr.editando input.cell-edit.numero {
+  width: 14ch;
+  min-width: 14ch;
+  max-width: 16ch;
+  padding-right: 0.75rem;
+  box-sizing: border-box;
+}
+
+.table-grupos input[type="number"].cell-edit.numero::-webkit-outer-spin-button,
+.table-grupos input[type="number"].cell-edit.numero::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.table-grupos input[type="number"].cell-edit.numero {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
