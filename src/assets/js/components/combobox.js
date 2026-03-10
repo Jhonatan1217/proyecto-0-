@@ -61,6 +61,7 @@
    * @param {string} opts.optionClass - Clase de cada opción
    * @param {string} opts.placeholder - Placeholder del input
    * @param {string} [opts.clearValue] - Valor para "limpiar" (ej: 'todas')
+   * @param {boolean} [opts.simpleSelect] - Si true: solo dropdown, sin input ni botón limpiar (para opciones predefinidas)
    * @param {boolean} [opts.inTable] - Si está dentro de tabla (usa position: fixed + dropup)
    * @param {Function} [opts.onEnhance] - Callback cuando se enhancea cada select
    */
@@ -70,6 +71,7 @@
     const optionClass = opts.optionClass || 'custom-option';
     const placeholder = opts.placeholder || 'Buscar...';
     const clearValue = opts.clearValue;
+    const simpleSelect = opts.simpleSelect === true;
     const isInTable = (el) => el.closest('table') || el.closest('[id*="wrapTabla"]');
 
     document.querySelectorAll(selector).forEach(select => {
@@ -78,7 +80,7 @@
 
       const container = select.parentNode;
       const wrapper = document.createElement('div');
-      wrapper.className = 'combobox-wrapper';
+      wrapper.className = 'combobox-wrapper' + (simpleSelect ? ' combobox-simple' : '');
       container.insertBefore(wrapper, select);
       wrapper.appendChild(select);
 
@@ -87,27 +89,46 @@
       });
 
       const triggerWrap = document.createElement('div');
-      triggerWrap.className = 'combobox-trigger w-full border border-gray-300 rounded-xl bg-white hover:border-gray-400 focus-within:ring-2 focus-within:ring-[#39A900]/20 focus-within:border-[#39A900] py-2.5 text-sm';
+      triggerWrap.className = 'combobox-trigger w-full border border-gray-300 rounded-xl bg-white hover:border-gray-400 focus-within:ring-2 focus-within:ring-[#39A900]/20 focus-within:border-[#39A900] py-2.5 text-sm flex items-center justify-between gap-2';
 
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.autocomplete = 'off';
-      input.className = 'combobox-input w-full bg-transparent py-0 border-0 focus:ring-0 text-gray-900 placeholder:text-gray-400';
-      input.placeholder = placeholder;
-
-      const btnClear = document.createElement('button');
-      btnClear.type = 'button';
-      btnClear.className = 'btn-clear-combobox';
-      btnClear.setAttribute('aria-label', 'Limpiar');
-      btnClear.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+      let input, btnClear;
+      const spanDisplay = document.createElement('span');
+      spanDisplay.className = 'combobox-display truncate flex-1 text-left text-gray-900';
 
       const chevron = document.createElement('span');
-      chevron.className = 'chevron-combobox';
+      chevron.className = 'chevron-combobox shrink-0 text-gray-400';
       chevron.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>';
 
-      triggerWrap.appendChild(input);
-      triggerWrap.appendChild(btnClear);
-      triggerWrap.appendChild(chevron);
+      if (simpleSelect) {
+        triggerWrap.appendChild(spanDisplay);
+        triggerWrap.appendChild(chevron);
+      } else {
+        input = document.createElement('input');
+        input.type = 'text';
+        input.autocomplete = 'off';
+        input.className = 'combobox-input w-full bg-transparent py-0 border-0 focus:ring-0 text-gray-900 placeholder:text-gray-400 flex-1 min-w-0';
+        input.placeholder = placeholder;
+
+        const iconSlot = document.createElement('div');
+        iconSlot.className = 'combobox-icon-slot';
+
+        const iconChevron = document.createElement('span');
+        iconChevron.className = 'combobox-icon-chevron';
+        iconChevron.setAttribute('aria-hidden', 'true');
+        iconChevron.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>';
+
+        btnClear = document.createElement('button');
+        btnClear.type = 'button';
+        btnClear.className = 'btn-clear-combobox';
+        btnClear.setAttribute('aria-label', 'Limpiar');
+        btnClear.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+
+        iconSlot.appendChild(iconChevron);
+        iconSlot.appendChild(btnClear);
+
+        triggerWrap.appendChild(input);
+        triggerWrap.appendChild(iconSlot);
+      }
 
       const dropdown = document.createElement('div');
       dropdown.className = 'combobox-dropdown ' + dropdownClass + ' hidden';
@@ -117,7 +138,7 @@
       const optionsData = () => [...select.options].filter(o => !o.disabled).map(o => ({ value: o.value, text: (o.textContent || '').trim() }));
 
       function renderOptions(filterText) {
-        const q = (filterText || '').trim().toLowerCase();
+        const q = simpleSelect ? '' : (filterText || '').trim().toLowerCase();
         dropdown.innerHTML = '';
         optionsData().forEach(({ value, text }) => {
           if (q && !text.toLowerCase().includes(q)) return;
@@ -130,10 +151,19 @@
             e.stopPropagation();
             select.value = value;
             select.dispatchEvent(new Event('change', { bubbles: true }));
-            input.value = (clearValue !== undefined && clearValue !== null && String(value) === String(clearValue)) ? '' : text;
-            dropdown.classList.add('hidden');
-            if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
-            toggleClearVisibility();
+            if (!simpleSelect) {
+              input.value = (clearValue !== undefined && clearValue !== null && String(value) === String(clearValue)) ? '' : text;
+              toggleClearVisibility();
+              input.blur();
+              closeDropdownOnly();
+            } else {
+              updateDisplayFromSelect();
+              dropdown.classList.add('hidden');
+              dropdown.classList.remove('dropdown-over-table', 'dropdown-up');
+              dropdown.style.cssText = '';
+              if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
+              wrapper.classList.remove('combobox-open');
+            }
           });
           dropdown.appendChild(div);
         });
@@ -141,22 +171,36 @@
       }
 
       function toggleClearVisibility() {
+        if (simpleSelect || !input) return;
         const hasText = (input.value || '').trim().length > 0;
         wrapper.classList.toggle('has-value', hasText);
-        btnClear.classList.toggle('visible', hasText);
+      }
+
+      function updateDisplayFromSelect() {
+        const opt = select.options[select.selectedIndex];
+        const text = opt ? (opt.textContent || '').trim() : '';
+        if (simpleSelect && spanDisplay) {
+          spanDisplay.textContent = text;
+        }
       }
 
       function updateInputFromSelect() {
-        if (clearValue !== undefined && clearValue !== null && String(select.value) === String(clearValue)) {
-          input.value = '';
+        if (simpleSelect) {
+          updateDisplayFromSelect();
         } else {
-          const opt = select.options[select.selectedIndex];
-          input.value = opt ? (opt.textContent || '').trim() : '';
+          if (clearValue !== undefined && clearValue !== null && String(select.value) === String(clearValue)) {
+            input.value = '';
+          } else {
+            const opt = select.options[select.selectedIndex];
+            input.value = opt ? (opt.textContent || '').trim() : '';
+          }
+          toggleClearVisibility();
         }
-        toggleClearVisibility();
       }
       updateInputFromSelect();
       wrapper._cbUpdateInput = updateInputFromSelect;
+      wrapper._cbSelect = select;
+      wrapper._cbClearValue = clearValue;
 
       select.classList.add('sr-only');
       select.style.cssText = 'position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;clip:rect(0,0,0,0);';
@@ -167,16 +211,13 @@
       const maxH = DROPDOWN_MAX_ITEMS * ITEM_HEIGHT_REM * parseFloat(getComputedStyle(document.documentElement).fontSize);
 
       function positionAndShow(forceShowAll) {
-        const filterText = forceShowAll ? '' : input.value;
+        const filterText = forceShowAll ? '' : (input ? input.value : '');
         renderOptions(filterText);
         if (dropdown.children.length === 0) return;
+        wrapper._cbValueOnOpen = select.value;
 
         if (inTable) {
           closeAllDropdowns();
-          // Fijar position:fixed ANTES de appendear al body para que nunca entre en el
-          // flujo normal del documento. Sin esto, durante los 2 rAFs el dropdown queda
-          // como position:absolute hijo directo de <body>, extiende el alto de la página
-          // y hace aparecer/desaparecer la scrollbar de Windows (layout shift).
           dropdown.style.cssText = 'position:fixed;visibility:hidden;top:-9999px;left:0;display:block;';
           document.body.appendChild(dropdown);
           requestAnimationFrame(() => {
@@ -185,57 +226,98 @@
               dropdown.style.visibility = 'visible';
               dropdown.classList.remove('hidden');
               dropdown._cbJustOpened = Date.now();
+              wrapper.classList.add('combobox-open');
             });
           });
         } else {
           dropdown.style.maxHeight = maxH + 'px';
           dropdown.classList.remove('hidden');
           dropdown._cbJustOpened = Date.now();
+          wrapper.classList.add('combobox-open');
         }
+      }
+
+      function closeDropdownOnly() {
+        dropdown.classList.add('hidden');
+        dropdown.classList.remove('dropdown-over-table', 'dropdown-up');
+        dropdown.style.cssText = '';
+        if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
+        wrapper.classList.remove('combobox-open');
       }
 
       function openFromTrigger(ev) {
         if (ev) { ev.preventDefault(); ev.stopPropagation(); }
         if (dropdown.classList.contains('hidden')) {
           positionAndShow();
-          setTimeout(() => { try { input.focus({ preventScroll: true }); } catch (_) { input.focus(); } }, 0);
+          if (!simpleSelect && input) {
+            setTimeout(() => { try { input.focus({ preventScroll: true }); } catch (_) { input.focus(); } }, 0);
+          }
+        } else if (simpleSelect) {
+          closeDropdownOnly();
         }
       }
       wrapper._cbOpen = openFromTrigger;
 
-      triggerWrap.addEventListener('mousedown', (e) => { if (e.target !== input) openFromTrigger(e); });
+      triggerWrap.addEventListener('mousedown', (e) => {
+        if (simpleSelect || e.target !== input) openFromTrigger(e);
+      });
       triggerWrap.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
-      input.addEventListener('focus', (e) => {
-        closeAllDropdowns();
-        positionAndShow();
-        e?.preventDefault?.();
-      });
-      input.addEventListener('input', () => { renderOptions(input.value); toggleClearVisibility(); });
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          dropdown.classList.add('hidden');
-          if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
-          input.blur();
-        }
-      });
 
-      btnClear.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        input.value = '';
-        if (clearValue !== undefined && clearValue !== null) {
-          select.value = clearValue;
+      if (!simpleSelect && input) {
+        input.addEventListener('focus', (e) => {
+          closeAllDropdowns();
+          positionAndShow();
+          e?.preventDefault?.();
+        });
+        input.addEventListener('blur', () => {
+          requestAnimationFrame(() => {
+            if (wrapper._cbValueOnOpen === undefined) return;
+            const isEmpty = select.value === '' || (clearValue !== undefined && clearValue !== null && String(select.value) === String(clearValue));
+            if (isEmpty) {
+              select.value = wrapper._cbValueOnOpen;
+              updateInputFromSelect();
+            }
+          });
+        });
+        input.addEventListener('input', () => { renderOptions(input.value); toggleClearVisibility(); });
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            if (wrapper._cbValueOnOpen !== undefined) {
+              const isEmpty = select.value === '' || (clearValue !== undefined && clearValue !== null && String(select.value) === String(clearValue));
+              if (isEmpty) {
+                select.value = wrapper._cbValueOnOpen;
+                updateInputFromSelect();
+              }
+            }
+            closeDropdownOnly();
+            input.blur();
+          }
+        });
+      }
+
+      if (!simpleSelect && btnClear) {
+        btnClear.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          // Guardar el valor original ANTES de limpiar, para poder restaurarlo al salir
+          const savedValue = wrapper._cbValueOnOpen !== undefined
+            ? wrapper._cbValueOnOpen
+            : select.value;
+          closeDropdownOnly();
+          input.value = '';
+          select.value = (clearValue !== undefined && clearValue !== null) ? clearValue : '';
           select.dispatchEvent(new Event('change', { bubbles: true }));
-        } else {
-          const first = Array.from(select.options).find(o => !o.disabled && o.value);
-          if (first) { select.value = first.value; select.dispatchEvent(new Event('change', { bubbles: true })); }
-        }
-        dropdown.classList.add('hidden');
-        if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
-        toggleClearVisibility();
-        positionAndShow(true);
-        setTimeout(() => { try { input.focus({ preventScroll: true }); } catch (_) { input.focus(); } }, 0);
-      });
+          toggleClearVisibility();
+          requestAnimationFrame(() => {
+            positionAndShow(true);
+            // positionAndShow sobreescribiría _cbValueOnOpen con ''; lo restauramos al original
+            wrapper._cbValueOnOpen = savedValue;
+            requestAnimationFrame(() => {
+              try { input.focus({ preventScroll: true }); } catch (_) { input.focus(); }
+            });
+          });
+        });
+      }
 
       select.addEventListener('change', updateInputFromSelect);
 
@@ -251,10 +333,22 @@
           if (!w || w.contains(e.target) || d.contains(e.target)) return;
           if (d._cbJustOpened && (Date.now() - d._cbJustOpened) < 250) return;
           d.classList.add('hidden');
-          if (d.parentNode === document.body && w) w.appendChild(d);
+          d.classList.remove('dropdown-over-table', 'dropdown-up');
           d.style.cssText = '';
-          const inp = w?.querySelector('.combobox-input');
-          if (inp && !(inp.value || '').trim() && typeof w._cbUpdateInput === 'function') w._cbUpdateInput();
+          if (d.parentNode === document.body && w) w.appendChild(d);
+          w.classList.remove('combobox-open');
+          const sel = w._cbSelect;
+          const clearVal = w._cbClearValue;
+          if (sel && w._cbValueOnOpen !== undefined) {
+            const isEmpty = sel.value === '' || (clearVal !== undefined && clearVal !== null && String(sel.value) === String(clearVal));
+            if (isEmpty) {
+              sel.value = w._cbValueOnOpen;
+              if (typeof w._cbUpdateInput === 'function') w._cbUpdateInput();
+            }
+          } else {
+            const inp = w?.querySelector('.combobox-input');
+            if (inp && !(inp.value || '').trim() && typeof w._cbUpdateInput === 'function') w._cbUpdateInput();
+          }
         });
       }, true);
     }

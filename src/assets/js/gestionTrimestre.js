@@ -55,6 +55,7 @@
       modal?.classList.add("hidden");
       modal?.classList.remove("flex");
       document.body.style.overflow = "";
+      if (typeof ComboboxComponent !== "undefined") ComboboxComponent.reset();
     }
 
     function aplicarFiltroBusqueda() {
@@ -159,7 +160,7 @@
         if (isNaN(nuevoNumero) || !Number.isInteger(Number(nuevoNumero)) || Number(nuevoNumero) < 1) {
           return toast("Solo números enteros mayores a 0", "warning");
         }
-        if (nuevoNumero === original) return toast("No se detectaron cambios", "warning");
+        if (nuevoNumero === original) return toast("No ha cambiado nada. Modifica al menos un campo para guardar.", "warning");
         try {
           const res = await fetch(API_URL, {
             method: "POST",
@@ -183,6 +184,7 @@
       }
 
       if (btn.classList.contains("btn-icon-x") || btn.classList.contains("btnCancelar")) {
+        if (typeof ComboboxComponent !== "undefined") ComboboxComponent.reset();
         tdNumero.innerHTML = `Trimestre ${original}`;
         tdAcc.innerHTML = `
           <div class="flex justify-end items-center gap-3">
