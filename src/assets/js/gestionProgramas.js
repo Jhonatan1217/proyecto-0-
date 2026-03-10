@@ -126,46 +126,92 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ===============================
+// LISTAR INSTRUCTORES
+// ===============================
+async function loadInstructores() {
+  try {
+    const r = await fetch(`${API}?accion=listar_instructores`, {
+      credentials: 'same-origin'
+    });
+
+    if (!r.ok) throw new Error("Error HTTP " + r.status);
+
+    const data = await r.json();
+
+    const select = document.getElementById('pg_instructor');
+    if (!select) return;
+
+    // Resetear opciones
+    select.innerHTML = '<option value="">Seleccione un instructor</option>';
+
+    if (Array.isArray(data) && data.length > 0) {
+      data.forEach(inst => {
+        const option = document.createElement('option');
+        option.value = inst.id_usuario;
+        option.textContent = inst.nombre_completo;
+        select.appendChild(option);
+      });
+    } else {
+      const option = document.createElement('option');
+      option.value = "";
+      option.textContent = "No hay instructores disponibles";
+      select.appendChild(option);
+    }
+
+  } catch (error) {
+    console.error('Error cargando instructores:', error);
+  }
+}
+
+    // ===============================
     // UI HELPERS
     // ===============================
     // Abre modal en modo crear/editar. También pre-carga datos y guarda "originales" para comparar cambios
-    function openModal(isCreate = true, data = null) {
-      // Seguridad adicional: No abrir modal si es instructor
-      if (ES_INSTRUCTOR) return;
+   function openModal(isCreate = true, data = null) {
+  // Seguridad adicional: No abrir modal si es instructor
+  if (ES_INSTRUCTOR) return;
 
-      editingId = isCreate ? null : (data?.id_programa ?? null);
+  editingId = isCreate ? null : (data?.id_programa ?? null);
 
-      if (inpCode)   inpCode.value  = isCreate ? '' : (data?.id_programa ?? '');
-      if (inpName)   inpName.value  = isCreate ? '' : (data?.nombre_programa ?? '');
-      if (inpDesc)   inpDesc.value  = isCreate ? '' : (data?.descripcion ?? '');
-      if (inpHours) inpHours.value = isCreate ? '' : (data?.duracion ?? '');
+  if (inpCode)   inpCode.value  = isCreate ? '' : (data?.id_programa ?? '');
+  if (inpName)   inpName.value  = isCreate ? '' : (data?.nombre_programa ?? '');
+  if (inpDesc)   inpDesc.value  = isCreate ? '' : (data?.descripcion ?? '');
+  if (inpHours)  inpHours.value = isCreate ? '' : (data?.duracion ?? '');
 
-      if (inpCode) inpCode.disabled = false;
+  // 🔥 AGREGADO (nivel_formacion)
+  const inpNivel = document.getElementById('pg_nivel');
+  if (inpNivel) inpNivel.value = isCreate ? '' : (data?.nivel_formacion ?? '');
 
-      if (modalTitle) modalTitle.textContent = isCreate ? 'Nuevo Programa' : 'Editar Programa';
+  if (inpCode) inpCode.disabled = false;
 
-      if (!isCreate && form) {
-        form.dataset.originalId    = data?.id_programa ?? '';
-        form.dataset.originalName  = data?.nombre_programa ?? '';
-        form.dataset.originalDesc  = data?.descripcion ?? '';
-        form.dataset.originalHours = data?.duracion ?? '';
-      } else if (form) {
-        delete form.dataset.originalId;
-        delete form.dataset.originalName;
-        delete form.dataset.originalDesc;
-        delete form.dataset.originalHours;
-      }
+  if (modalTitle) modalTitle.textContent = isCreate ? 'Nuevo Programa' : 'Editar Programa';
 
-      modal?.classList.remove('hidden');
-      backdrop?.classList.remove('hidden');
+  if (!isCreate && form) {
+    form.dataset.originalId    = data?.id_programa ?? '';
+    form.dataset.originalName  = data?.nombre_programa ?? '';
+    form.dataset.originalDesc  = data?.descripcion ?? '';
+    form.dataset.originalHours = data?.duracion ?? '';
+  } else if (form) {
+    delete form.dataset.originalId;
+    delete form.dataset.originalName;
+    delete form.dataset.originalDesc;
+    delete form.dataset.originalHours;
+  }
 
-      modal.classList.add('animate-modal');
-      backdrop.classList.add('animate-backdrop');
-      setTimeout(() => {
-        modal.classList.remove('animate-modal');
-        backdrop.classList.remove('animate-backdrop');
-      }, 300);
-    }
+  modal?.classList.remove('hidden');
+  backdrop?.classList.remove('hidden');
+
+  modal.classList.add('animate-modal');
+  backdrop.classList.add('animate-backdrop');
+
+  setTimeout(() => {
+    modal.classList.remove('animate-modal');
+    backdrop.classList.remove('animate-backdrop');
+  }, 300);
+
+  // 🔥 AGREGADO (cargar instructores cuando abre modal)
+  loadInstructores();
+}
 
     function closeModal() {
       modal?.classList.add('hidden');
@@ -256,6 +302,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 program: { id_programa: p.id_programa }
               });
               await loadPrograms();
+              recargarSelectProgramas(); // 👈 AGREGAR AQUÍ
+
             }
           } catch {
             t.err('No se pudo cambiar el estado.');
@@ -330,6 +378,34 @@ document.addEventListener('DOMContentLoaded', () => {
       renderList(list);
     }
 
+
+    function recargarSelectProgramas() {
+  const select = document.getElementById('upload_program');
+  if (!select) return;
+
+  fetch(`${API}?accion=listar`, { credentials: 'same-origin' })
+    .then(res => res.json())
+    .then(data => {
+
+      select.innerHTML = '<option value="">Seleccione un programa</option>';
+
+      if (Array.isArray(data)) {
+        data.forEach(p => {
+          const option = document.createElement('option');
+          option.value = p.id_programa;
+          option.textContent = p.nombre_programa;
+          select.appendChild(option);
+        });
+      }
+
+    })
+    .catch(err => {
+      console.error("Error recargando select:", err);
+    });
+}
+
+
+
     // ===============================
     // CARGA INICIAL
     // ===============================
@@ -363,70 +439,76 @@ document.addEventListener('DOMContentLoaded', () => {
     btnClose?.addEventListener('click', closeModal);
     btnCancel?.addEventListener('click', e => { e.preventDefault(); closeModal(); });
 
-    form?.addEventListener('submit', async e => {
-      e.preventDefault();
-      if (ES_INSTRUCTOR) return t.err('No tienes permisos para esta acción');
+form?.addEventListener('submit', async e => {
+  e.preventDefault();
+  if (ES_INSTRUCTOR) return t.err('No tienes permisos para esta acción');
 
-      const id_programa     = (inpCode?.value || '').trim();
-      const nombre_programa = (inpName?.value || '').trim();
-      const descripcion     = (inpDesc?.value || '').trim();
-      const duracion        = (inpHours?.value || '').trim();
+  const id_programa     = (inpCode?.value || '').trim();
+  const nombre_programa = (inpName?.value || '').trim();
+  const descripcion     = (inpDesc?.value || '').trim();
+  const duracion        = (inpHours?.value || '').trim();
+  const nivel_formacion = (document.getElementById('pg_nivel')?.value || '').trim();
 
-      if (!editingId) {
-        if (!id_programa && !nombre_programa && !descripcion && !duracion)
-          return t.warn('Todos los campos son obligatorios');
-        if (!id_programa)     return t.warn('El código es obligatorio');
-        if (!nombre_programa) return t.warn('El nombre del programa es obligatorio');
-        if (duracion !== '' && Number.isNaN(Number(duracion))) 
-          return t.warn('La duración debe ser numérica');
-      } else {
-        const original = {
-          id_programa:     form.dataset.originalId || '',
-          nombre_programa: form.dataset.originalName || '',
-          descripcion:     form.dataset.originalDesc || '',
-          duracion:        form.dataset.originalHours || ''
-        };
-        const sinCambios = 
-          original.id_programa === id_programa &&
-          original.nombre_programa === nombre_programa &&
-          original.descripcion === descripcion &&
-          String(original.duracion) === String(duracion);
+  if (!id_programa || !nombre_programa || !nivel_formacion) {
+    return t.warn('Código, nombre y tipo de programa son obligatorios');
+  }
 
-        if (sinCambios) return t.warn('No has editado nada aún');
-      }
+  let payload;
 
-      let payload;
-      if (editingId) {
-        const originalId = form.dataset.originalId || '';
-        payload = {
-          id_programa: originalId,
-          nuevo_id_programa: id_programa,
-          nombre_programa,
-          descripcion,
-          duracion
-        };
-      } else {
-        payload = { id_programa, nombre_programa, descripcion, duracion };
-      }
+  // 🔥 GUARDAMOS EL ESTADO ANTES DE CERRAR EL MODAL
+  const isEditing = !!editingId;
 
-      try {
-        const res = editingId ? await apiActualizar(payload) : await apiAgregar(payload);
-        if (res?.error) return t.err(res.error);
+  if (isEditing) {
+    const originalId = form.dataset.originalId || '';
 
-        closeModal();
-        t.ok(editingId ? 'Programa actualizado correctamente' : 'Programa creado correctamente');
+    payload = {
+      id_programa: originalId,
+      nuevo_id_programa: id_programa,
+      nombre_programa,
+      descripcion,
+      duracion,
+      nivel_formacion
+    };
 
-        notifyProgramsChanged({
-          type: editingId ? 'update' : 'create',
-          program: { id_programa: payload.nuevo_id_programa || id_programa, nombre_programa, descripcion, duracion }
-        });
+  } else {
 
-        await loadPrograms();
-      } catch {
-        t.err('No se pudo guardar el programa.');
-      }
+    payload = {
+      id_programa,
+      nombre_programa,
+      descripcion,
+      duracion,
+      nivel_formacion
+    };
+  }
+
+  try {
+    const res = isEditing
+      ? await apiActualizar(payload)
+      : await apiAgregar(payload);
+
+    if (res?.error) return t.err(res.error);
+
+    // 🔥 MOSTRAR MENSAJE ANTES DE RESETEAR editingId
+    t.ok(isEditing 
+      ? 'Programa actualizado correctamente' 
+      : 'Programa creado correctamente'
+    );
+
+    closeModal();
+
+    await loadPrograms();
+    recargarSelectProgramas();
+
+    // 🔔 Notificar a otras vistas
+    notifyProgramsChanged({
+      type: isEditing ? 'update' : 'create',
+      program: { id_programa }
     });
 
+  } catch {
+    t.err('No se pudo guardar el programa.');
+  }
+});
     // ===============================
     // EVENTOS FILTRO Y BÚSQUEDA
     // ===============================
@@ -442,4 +524,32 @@ document.addEventListener('DOMContentLoaded', () => {
       loadPrograms();
     });
   })();
-}); 
+  });
+
+// ===============================
+// 🔁 ESCUCHAR CAMBIOS DE PROGRAMAS EN OTRAS VISTAS
+// ===============================
+window.addEventListener('programs:changed', function () {
+  const select = document.getElementById('upload_program');
+  if (!select) return;
+
+  fetch('src/controllers/ProgramasController.php?accion=listar', {
+    credentials: 'same-origin'
+  })
+  .then(res => res.json())
+  .then(data => {
+
+    select.innerHTML = '<option value="">Seleccione un programa</option>';
+
+    if (Array.isArray(data)) {
+      data.forEach(p => {
+        const option = document.createElement('option');
+        option.value = p.id_programa;
+        option.textContent = p.nombre_programa;
+        select.appendChild(option);
+      });
+    }
+
+  })
+  .catch(err => console.error(err));
+});
