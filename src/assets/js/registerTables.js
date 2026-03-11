@@ -20,11 +20,239 @@ const Toast = Swal.mixin({
 });
 
 let horariosCache = [];
+let gestionHorasCache = { instructores: [], grupos: [] };
+let gestionHorasTabActual = "instructores";
 
 function timeToMinutes(t) {
   if (!t) return null;
   const [h, m] = t.split(":").map(Number);
   return Number.isFinite(h) ? h * 60 + (Number.isFinite(m) ? m : 0) : null;
+}
+
+function formatHourNumber(value) {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n)) return "0";
+  return Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, "");
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function getEstadoExcedente(value) {
+  const n = Number(value || 0);
+  if (n < 0) return "danger";
+  if (n <= 4) return "neutral";
+  return "ok";
+}
+
+function renderExcedentePill(value) {
+  const estado = getEstadoExcedente(value);
+  const texto = Number(value) < 0 ? `${formatHourNumber(value)} h` : `${formatHourNumber(value)} h libres`;
+  return `<span class="gestion-horas-pill gestion-horas-pill--${estado}">${texto}</span>`;
+}
+
+function dispararToastsExcedente(warnings) {
+  const instructores = Array.isArray(warnings?.instructores) ? warnings.instructores : [];
+  const grupos = Array.isArray(warnings?.grupos) ? warnings.grupos : [];
+
+  instructores.forEach((inst) => {
+    Toast.fire({
+      icon: "warning",
+      title: `Atención: El instructor ha superado su límite de carga horaria (${inst.nombre_instructor})`
+    });
+  });
+
+  grupos.forEach((grupo) => {
+    Toast.fire({
+      icon: "info",
+      title: `Aviso: El grupo ${grupo.id_grupo} ha excedido las 30 horas reglamentarias`
+    });
+  });
+}
+
+async function cargarResumenGestionHoras() {
+  const res = await fetch(`${API_BASE}src/controllers/TrimestralizacionController.php?accion=resumenHoras`);
+  const data = await res.json();
+  if (!res.ok || data.status !== "success") {
+    throw new Error(data.mensaje || data.error || "No fue posible cargar el resumen de horas");
+  }
+  gestionHorasCache = {
+    instructores: Array.isArray(data?.data?.instructores) ? data.data.instructores : [],
+    grupos: Array.isArray(data?.data?.grupos) ? data.data.grupos : []
+  };
+}
+
+function getGestionHorasFiltrados() {
+  const search = String(document.getElementById("gestionHorasSearch")?.value || "").trim().toLowerCase();
+  const extra = String(document.getElementById("gestionHorasExtraFiltro")?.value || "").trim().toLowerCase();
+
+  if (gestionHorasTabActual === "instructores") {
+    return gestionHorasCache.instructores.filter((item) => {
+      const bySearch = !search
+        || String(item.nombre_instructor || "").toLowerCase().includes(search)
+        || String(item.id_instructor || "").toLowerCase().includes(search);
+      const byExtra = !extra || String(item.tipo_contrato || "").toLowerCase() === extra;
+      return bySearch && byExtra;
+    });
+  }
+
+  return gestionHorasCache.grupos.filter((item) => {
+    const bySearch = !search
+      || String(item.id_grupo || "").toLowerCase().includes(search)
+      || String(item.id_ficha || "").toLowerCase().includes(search);
+    const byExtra = !extra || String(item.nivel_grupo || "").toLowerCase() === extra;
+    return bySearch && byExtra;
+  });
+}
+
+function renderGestionHorasResumen(rows) {
+  const resumen = document.getElementById("gestionHorasResumen");
+  if (!resumen) return;
+
+  if (gestionHorasTabActual === "instructores") {
+    resumen.innerHTML = `
+      <p class="gh-resumen-title">Instructores</p>
+      <p class="gh-resumen-sub">(Instructores Planta 32h, Instructores Contratista 40h)</p>`;
+  } else {
+    resumen.innerHTML = `
+      <p class="gh-resumen-title">Grupos</p>
+      <p class="gh-resumen-sub">(Cada grupo tiene un máximo de 30 horas semanales)</p>`;
+  }
+}
+
+function renderGestionHoras() {
+  const filtros = document.getElementById("gestionHorasFiltros");
+  const head = document.getElementById("gestionHorasHead");
+  const body = document.getElementById("gestionHorasBody");
+  const tabInst = document.getElementById("tabGestionHorasInstructores");
+  const tabGrupos = document.getElementById("tabGestionHorasGrupos");
+  if (!filtros || !head || !body) return;
+
+  if (tabInst) tabInst.classList.toggle("is-active", gestionHorasTabActual === "instructores");
+  if (tabGrupos) tabGrupos.classList.toggle("is-active", gestionHorasTabActual === "grupos");
+
+  if (gestionHorasTabActual === "instructores") {
+    filtros.innerHTML = `
+      <input id="gestionHorasSearch" type="text" placeholder="Buscar instructores" class="gh-filtros-input" />
+      <select id="gestionHorasExtraFiltro" class="gh-filtros-select">
+        <option value="">Todos los tipos de contrato</option>
+        <option value="planta">Planta</option>
+        <option value="contratista">Contratista</option>
+      </select>`;
+
+    head.innerHTML = `
+      <tr>
+        <th>Instructor</th>
+        <th>Tipo contrato</th>
+        <th class="center">Horas actuales</th>
+        <th class="center">Horas máxima</th>
+        <th class="center">Excedente</th>
+        <th class="center">Acciones</th>
+      </tr>`;
+  } else {
+    filtros.innerHTML = `
+      <input id="gestionHorasSearch" type="text" placeholder="Buscar grupos" class="gh-filtros-input" />
+      <select id="gestionHorasExtraFiltro" class="gh-filtros-select">
+        <option value="">Todos los niveles</option>
+        <option value="técnico">Técnico</option>
+        <option value="tecnólogo">Tecnólogo</option>
+        <option value="sin nivel">Sin nivel</option>
+      </select>`;
+
+    head.innerHTML = `
+      <tr>
+        <th>ID Grupo</th>
+        <th>Nivel de grupo</th>
+        <th class="center">Horas actuales</th>
+        <th class="center">Horas máxima</th>
+        <th class="center">Excedente</th>
+      </tr>`;
+  }
+
+  document.getElementById("gestionHorasSearch")?.addEventListener("input", renderGestionHorasTabla);
+  document.getElementById("gestionHorasExtraFiltro")?.addEventListener("change", renderGestionHorasTabla);
+  renderGestionHorasTabla();
+}
+
+function renderGestionHorasTabla() {
+  const body = document.getElementById("gestionHorasBody");
+  if (!body) return;
+
+  const rows = getGestionHorasFiltrados();
+  const colspan = gestionHorasTabActual === "instructores" ? 6 : 5;
+  renderGestionHorasResumen(rows);
+
+  if (!rows.length) {
+    body.innerHTML = `<tr><td colspan="${colspan}" style="text-align:center;padding:24px;color:#6b7280;">Sin datos disponibles</td></tr>`;
+    return;
+  }
+
+  if (gestionHorasTabActual === "instructores") {
+    body.innerHTML = rows.map((item) => {
+      const exc = Number(item.excedente ?? 0);
+      const excHTML = exc < 0
+        ? `<span class="gh-excedente-neg">${formatHourNumber(exc)}</span>`
+        : `--`;
+      return `
+        <tr>
+          <td>${escapeHtml(item.nombre_instructor || "Sin nombre")}</td>
+          <td>${escapeHtml(item.tipo_contrato || "Contratista")}</td>
+          <td class="center">${formatHourNumber(item.horas_actuales)}</td>
+          <td class="center">${formatHourNumber(item.horas_maximas)}</td>
+          <td class="center">${excHTML}</td>
+          <td class="center">
+            <button type="button" class="gh-action-btn" onclick="window.location.href='${API_BASE}index.php?page=src/views/gestionInstructores'" title="Gestionar instructor">
+              <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M4 20H8L18.5 9.5C19.33 8.67 19.33 7.33 18.5 6.5C17.67 5.67 16.33 5.67 15.5 6.5L5 17V20Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.5 8.5L16.5 11.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </td>
+        </tr>`;
+    }).join("");
+    return;
+  }
+
+  body.innerHTML = rows.map((item) => {
+    const exc = Number(item.excedente ?? 0);
+    const excHTML = exc < 0
+      ? `<span class="gh-excedente-neg">${formatHourNumber(exc)}</span>`
+      : `--`;
+    return `
+      <tr>
+        <td>${escapeHtml(item.id_grupo || "—")}</td>
+        <td>${escapeHtml(item.nivel_grupo || "Sin nivel")}</td>
+        <td class="center">${formatHourNumber(item.horas_actuales)}</td>
+        <td class="center">${formatHourNumber(item.horas_maximas)}</td>
+        <td class="center">${excHTML}</td>
+      </tr>`;
+  }).join("");
+}
+
+async function abrirModalGestionHoras() {
+  const modal = document.getElementById("modalGestionHoras");
+  if (!modal) return;
+  try {
+    await cargarResumenGestionHoras();
+    gestionHorasTabActual = "instructores";
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+    document.body.style.overflow = "hidden";
+    renderGestionHoras();
+  } catch (e) {
+    Toast.fire({ icon: "error", title: e.message || "No se pudo abrir la gestión de horas" });
+  }
+}
+
+function cerrarModalGestionHoras() {
+  const modal = document.getElementById("modalGestionHoras");
+  if (!modal) return;
+  modal.classList.add("hidden");
+  modal.classList.remove("flex");
+  document.body.style.overflow = "";
 }
 
 function hasOverlap({ dia, inicio, fin, excludeId }) {
@@ -952,6 +1180,7 @@ async function editarTrimestralizacion (reg){
   const esExito = data.success === true || data.success === "true" || data.status === "success";
   
   if (esExito) {
+    dispararToastsExcedente(data.warnings);
     await Swal.fire({
       icon: "success",
       title: "Trimestralización actualizada",
@@ -1410,7 +1639,28 @@ document.addEventListener("DOMContentLoaded", () => {
   } else toggleTabla(false);
 
   const btnActualizar = document.getElementById("btn-actualizar");
-  if (btnActualizar && typeof activarEdicion === "function") {
-    btnActualizar.addEventListener("click", activarEdicion);
+  if (btnActualizar) {
+    btnActualizar.addEventListener("click", abrirModalGestionHoras);
   }
+
+  document.getElementById("btnCerrarGestionHoras")?.addEventListener("click", cerrarModalGestionHoras);
+  document.getElementById("btnAceptarGestionHoras")?.addEventListener("click", cerrarModalGestionHoras);
+  document.getElementById("tabGestionHorasInstructores")?.addEventListener("click", () => {
+    gestionHorasTabActual = "instructores";
+    renderGestionHoras();
+  });
+  document.getElementById("tabGestionHorasGrupos")?.addEventListener("click", () => {
+    gestionHorasTabActual = "grupos";
+    renderGestionHoras();
+  });
+  document.querySelector("#modalGestionHoras .gh-backdrop")?.addEventListener("click", cerrarModalGestionHoras);
+  document.getElementById("btnIrGestionInstructores")?.addEventListener("click", () => {
+    window.location.href = `${API_BASE}index.php?page=src/views/gestionInstructores`;
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    const modal = document.getElementById("modalGestionHoras");
+    if (!modal || modal.classList.contains("hidden")) return;
+    cerrarModalGestionHoras();
+  });
 });
