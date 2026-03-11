@@ -163,7 +163,12 @@
       wrapper.appendChild(triggerWrap);
       wrapper.appendChild(dropdown);
 
-      const inTable = isInTable(wrapper);
+      // Contextos que usan position:fixed + applyDropdownPosition:
+      // 1) dentro de <table> o wrapTabla (filas editables)
+      // 2) dentro de modal-*-box que tienen overflow:hidden y recortarían el dropdown
+      const inTable = isInTable(wrapper) || !!wrapper.closest(
+        '.modal-usuario-box,.modal-grupo-box,.modal-zona-box,.modal-area-box,.modal-trimestre-box,.modal-enterprise-box'
+      );
       const maxH = DROPDOWN_MAX_ITEMS * ITEM_HEIGHT_REM * parseFloat(getComputedStyle(document.documentElement).fontSize);
 
       function positionAndShow(forceShowAll) {

@@ -14,11 +14,11 @@ if (!defined('BASE_URL')) {
 <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/table-edit.css">
 <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/modal-enterprise.css">
 <style>
-.table-zonas { table-layout: fixed; min-width: 32rem; width: 100%; }
-.table-zonas .col-numero { min-width: 6rem; }
+.table-zonas { table-layout: fixed; min-width: 36rem; width: 100%; }
+.table-zonas .col-nombre { min-width: 12rem; }
 .table-zonas .col-area { min-width: 12rem; }
 .table-zonas .col-acciones { min-width: 8rem; white-space: nowrap; }
-.table-zonas tr.editando input.cell-edit.numero { width: 8ch; min-width: 6ch; max-width: 10ch; }
+.table-zonas tr.editando input.cell-edit.nombre-zona { width: 100%; min-width: 8rem; max-width: 20rem; }
 </style>
 
 <div class="max-w-6xl mx-auto px-4 py-10">
@@ -28,7 +28,7 @@ if (!defined('BASE_URL')) {
   <div class="bg-white shadow rounded-2xl border border-gray-200">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-6">
       <div>
-        <h2 class="text-xl font-semibold text-gray-800">Todas las áreas</h2>
+        <h2 class="text-xl font-semibold text-gray-800">Zonas</h2>
         <p class="text-sm text-gray-500">Lista de zonas registradas</p>
       </div>
       <button id="btnAbrirModalZonas" type="button"
@@ -61,7 +61,7 @@ if (!defined('BASE_URL')) {
       <table class="w-full text-left table-zonas" id="tablaZonas">
         <thead class="bg-gray-50 border-b border-gray-200 text-sm text-gray-600">
           <tr>
-            <th class="font-medium col-numero">Número</th>
+            <th class="font-medium col-nombre">Nombre de Zona</th>
             <th class="font-medium col-area text-center">Área</th>
             <th class="font-medium text-right col-acciones">Acciones</th>
           </tr>
@@ -90,18 +90,15 @@ if (!defined('BASE_URL')) {
       <div class="modal-zona-body flex-1">
         <div class="space-y-5">
           <div>
-            <label for="id_zona" class="label-enterprise">Número de la Zona</label>
-            <input type="number" name="id_zona" id="id_zona" max="9999" min="1" required placeholder="Ej: 1" class="input-enterprise" />
+            <label for="nombre_zona" class="label-enterprise">Nombre de la Zona</label>
+            <input type="text" name="nombre_zona" id="nombre_zona" maxlength="125" required placeholder="Ej: Zona 1" class="input-enterprise" />
           </div>
           <div>
             <label for="id_area" class="label-enterprise">Área perteneciente</label>
-            <div id="id_areaWrap" class="relative">
-              <select name="id_area" id="id_area" required class="select-zona input-enterprise w-full border border-gray-300 rounded-xl py-2.5 text-sm appearance-none cursor-pointer pr-10">
+            <div id="id_areaWrap">
+              <select name="id_area" id="id_area" required class="select-zona input-enterprise w-full">
                 <option disabled selected value="">Seleccione un Área</option>
               </select>
-              <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 select-zona-chevron" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.18l3.71-3.95a.75.75 0 111.08 1.04l-4.24 4.52a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
-              </svg>
             </div>
           </div>
         </div>

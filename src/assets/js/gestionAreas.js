@@ -169,7 +169,14 @@
         const cellNombre = row.querySelector(".cell-nombre");
         const acciones = row.querySelector("td:last-child > div");
         const nombreActual = (cellNombre?.textContent || "").trim();
-        cellNombre.innerHTML = `<div class="cell-edit-wrap"><input type="text" class="cell-edit input-enterprise" value="${nombreActual}" data-edit="nombre" /></div>`;
+        cellNombre.innerHTML = `<div class="cell-edit-wrap"><input type="text" class="cell-edit input-enterprise" value="${nombreActual.replace(/"/g, '&quot;')}" data-edit="nombre" /></div>`;
+        const inp = cellNombre.querySelector('input[data-edit="nombre"]');
+        const autoWidth = () => {
+          const len = (inp.value || '').length;
+          inp.style.width = Math.min(Math.max(len + 2, 8), 28) + 'ch';
+        };
+        autoWidth();
+        inp.addEventListener('input', autoWidth);
         acciones.innerHTML = `
           <div class="acciones-edit">
             <button type="button" class="btn-guardar btn-icon-check p-2 rounded-lg transition" title="Guardar" aria-label="Guardar">
@@ -188,7 +195,10 @@
             toast("Ya existe un área con ese nombre", "warning");
             return;
           }
-          if (nombreNuevo === nombreActual) { toast("Debes modificar el campo antes de guardar", "warning"); return; }
+          if (nombreNuevo === nombreActual) {
+            toast("Sin cambios.", "info");
+            return;
+          }
           try {
             const res = await apiPost("actualizar", { id_area: id, nombre_area: nombreNuevo });
             if (res?.error) throw new Error(res.error);
