@@ -170,7 +170,14 @@
         const cellNombre = row.querySelector(".cell-nombre");
         const acciones = row.querySelector("td:last-child > div");
         const nombreActual = (cellNombre?.textContent || "").trim();
-        cellNombre.innerHTML = `<div class="cell-edit-wrap"><input type="text" class="cell-edit input-enterprise" value="${nombreActual}" data-edit="nombre" /></div>`;
+        cellNombre.innerHTML = `<div class="cell-edit-wrap"><input type="text" class="cell-edit input-enterprise" value="${nombreActual.replace(/"/g, '&quot;')}" data-edit="nombre" /></div>`;
+        const inp = cellNombre.querySelector('input[data-edit="nombre"]');
+        const autoWidth = () => {
+          const len = (inp.value || '').length;
+          inp.style.width = Math.min(Math.max(len + 2, 8), 28) + 'ch';
+        };
+        autoWidth();
+        inp.addEventListener('input', autoWidth);
         acciones.innerHTML = `
           <div class="acciones-edit">
             <button type="button" class="btn-guardar btn-icon-check p-2 rounded-lg transition" title="Guardar" aria-label="Guardar">
@@ -194,7 +201,7 @@
             return;
           }
           if (nombreNuevo === nombreActual) {
-            toast("No ha cambiado nada. Modifica al menos un campo para guardar.", "warning");
+            toast("Sin cambios.", "info");
             return;
           }
           try {
