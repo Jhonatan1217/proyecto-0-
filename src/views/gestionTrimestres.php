@@ -7,9 +7,13 @@ if ($cargo === 'INSTRUCTOR') {
 }
 if (!defined('BASE_URL')) { $base = '/'; define('BASE_URL', $base); }
 ?>
-<link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/combobox.css">
 <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/table-edit.css">
 <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/modal-enterprise.css">
+<style>
+.table-trimestres-wrap table tbody tr { height: 56px; }
+.table-trimestres-wrap table tbody td { height: 56px; }
+.table-trimestres-wrap tr.editando input.cell-edit.numero { width: 10ch; min-width: 8ch; max-width: 12ch; padding: 0.4rem 0.75rem; }
+</style>
 
 <div class="max-w-6xl mx-auto px-4 py-10">
   <h1 class="text-4xl font-extrabold tracking-tight mb-2 text-[#39A900]">Gestión de Trimestres</h1>
@@ -80,6 +84,8 @@ if (!defined('BASE_URL')) { $base = '/'; define('BASE_URL', $base); }
   </div>
 </div>
 
-<script>window.API_URL = "<?= BASE_URL ?>src/controllers/TrimestreController.php"; window.ICON_PENCIL_TRIMESTRE = "<?= BASE_URL ?>src/assets/img/pencil-line.svg";</script>
-<script src="<?= BASE_URL ?>src/assets/js/components/combobox.js"></script>
+<script>
+window.API_URL = "<?= BASE_URL ?>src/controllers/TrimestreController.php";
+window.ICON_PENCIL_TRIMESTRE = "<?= BASE_URL ?>src/assets/img/pencil-line.svg";
+</script>
 <script src="<?= BASE_URL ?>src/assets/js/gestionTrimestre.js"></script>

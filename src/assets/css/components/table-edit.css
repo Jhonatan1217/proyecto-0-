@@ -79,27 +79,6 @@
   box-sizing: border-box;
 }
 
-/* Áreas y Trimestres: filas más compactas (56px) */
-.table-areas-wrap table tbody tr,
-.table-areas-wrap table tbody td,
-.table-trimestres-wrap table tbody tr,
-.table-trimestres-wrap table tbody td {
-  height: 56px;
-}
-
-.table-areas-wrap tr.editando input.cell-edit {
-  width: 14ch;
-  min-width: 10ch;
-  max-width: 24ch;
-}
-
-.table-trimestres-wrap tr.editando input.cell-edit.numero {
-  width: 10ch;
-  min-width: 8ch;
-  max-width: 12ch;
-  padding: 0.4rem 0.75rem;
-}
-
 /* Botón editar */
 .btn-editar {
   display: inline-flex;

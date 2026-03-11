@@ -81,7 +81,6 @@
       modal?.classList.add("hidden");
       modal?.classList.remove("flex");
       document.body.style.overflow = "";
-      if (typeof ComboboxComponent !== "undefined") ComboboxComponent.reset();
     }
 
     const ICON_PENCIL = window.ICON_PENCIL_AREA || "src/assets/img/pencil-line.svg";
@@ -181,11 +180,7 @@
             </button>
           </div>
         `;
-        acciones.querySelector(".btn-cancelar")?.addEventListener("click", () => {
-          row.classList.remove("editando");
-          if (typeof ComboboxComponent !== "undefined") ComboboxComponent.reset();
-          cargarAreas();
-        });
+        acciones.querySelector(".btn-cancelar")?.addEventListener("click", () => { row.classList.remove("editando"); cargarAreas(); });
         acciones.querySelector(".btn-guardar")?.addEventListener("click", async () => {
           const nombreNuevo = (row.querySelector('input[data-edit="nombre"]')?.value || "").trim();
           if (!nombreNuevo) { toast("Debe ingresar nombre del área", "warning"); return; }
@@ -193,10 +188,7 @@
             toast("Ya existe un área con ese nombre", "warning");
             return;
           }
-          if (nombreNuevo === nombreActual) {
-            toast("No ha cambiado nada. Modifica al menos un campo para guardar.", "warning");
-            return;
-          }
+          if (nombreNuevo === nombreActual) { toast("Debes modificar el campo antes de guardar", "warning"); return; }
           try {
             const res = await apiPost("actualizar", { id_area: id, nombre_area: nombreNuevo });
             if (res?.error) throw new Error(res.error);

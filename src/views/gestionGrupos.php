@@ -99,7 +99,7 @@ if (!defined("BASE_URL")) {
           <div>
             <label for="selectJornada" class="label-enterprise">Jornada</label>
             <div class="relative">
-              <select name="jornada" id="selectJornada" required class="select-grupo select-simple input-enterprise pr-10 appearance-none cursor-pointer">
+              <select name="jornada" id="selectJornada" required class="select-grupo input-enterprise pr-10 appearance-none cursor-pointer">
                 <option value="" disabled selected>Seleccione jornada</option>
                 <option value="DIURNA">Diurna</option>
                 <option value="NOCTURNA">Nocturna</option>
@@ -113,7 +113,7 @@ if (!defined("BASE_URL")) {
           <div>
             <label for="selectModalidad" class="label-enterprise">Modalidad</label>
             <div class="relative">
-              <select name="modalidad" id="selectModalidad" required class="select-grupo select-simple input-enterprise pr-10 appearance-none cursor-pointer">
+              <select name="modalidad" id="selectModalidad" required class="select-grupo input-enterprise pr-10 appearance-none cursor-pointer">
                 <option value="" disabled selected>Seleccione modalidad</option>
                 <option value="PRESENCIAL">Presencial</option>
                 <option value="VIRTUAL">Virtual</option>

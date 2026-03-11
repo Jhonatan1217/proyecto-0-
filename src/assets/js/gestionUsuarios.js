@@ -367,7 +367,6 @@ function renderTabla(data) {
 
 function enhanceSelectsUsuarios() {
     if (typeof ComboboxComponent === 'undefined') return;
-    // Selects con pocas opciones predefinidas: solo dropdown, sin input ni botón limpiar
     ['#filtroCargos', '#filtroRoles'].forEach(sel => {
         const el = document.querySelector(sel);
         if (el && !el.dataset.comboboxEnhanced) {
@@ -376,21 +375,12 @@ function enhanceSelectsUsuarios() {
                 dropdownClass: 'custom-select-dropdown',
                 optionClass: 'custom-option',
                 placeholder: sel === '#filtroCargos' ? 'Todos los cargos' : 'Todos los roles',
-                clearValue: '',
-                simpleSelect: true
+                clearValue: ''
             });
         }
     });
-    // Select-simple: tipo documento, cargo, modalidad, tipo contrato (solo dropdown)
     ComboboxComponent.enhance({
-        selector: '.select-usuario.select-simple',
-        dropdownClass: 'custom-select-dropdown',
-        optionClass: 'custom-option',
-        simpleSelect: true
-    });
-    // Resto de selects usuario (si los hubiera con muchas opciones): con búsqueda
-    ComboboxComponent.enhance({
-        selector: '.select-usuario:not(.select-simple):not(#filtroCargos):not(#filtroRoles)',
+        selector: '.select-usuario:not(#filtroCargos):not(#filtroRoles)',
         dropdownClass: 'custom-select-dropdown',
         optionClass: 'custom-option',
         placeholder: 'Buscar...'
@@ -620,10 +610,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const form = e.target;
         if (!validarFormulario(form)) return;
         limpiarErrores(form);
-        if (form._snapshotEditar && getFormSnapshotEditar(form) === form._snapshotEditar) {
-            toast("No ha cambiado nada. Modifica al menos un campo para guardar.", "warning");
-            return;
-        }
         const datos = Object.fromEntries(new FormData(form));
         datos.tipo_documento = datos.tipo_documento || form.querySelector('[name="tipo_documento"]')?.value || '';
         if (datos.modalidad) { datos.tipo_instructor = datos.modalidad; delete datos.modalidad; }
@@ -660,19 +646,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
-
-/* Snapshot del formulario editar para detectar "no ha cambiado nada" */
-function getFormSnapshotEditar(form) {
-    const o = {};
-    const names = ['nombre_completo', 'tipo_documento', 'numero_documento', 'correo_electronico', 'cargo', 'modalidad', 'tipo_contrato', 'area_coordinador', 'id_usuario'];
-    names.forEach(n => {
-        const el = form.querySelector(`[name="${n}"]`);
-        o[n] = (el && el.value != null) ? String(el.value).trim() : '';
-    });
-    const cb = form.querySelector('#rol_trimestralizacion_editar');
-    o.rol_trimestralizacion_editar = (cb && cb.checked) ? '1' : '';
-    return JSON.stringify(o);
-}
 
 /* =============================================
    4. LOGICA DE CARGA DE DATOS
@@ -738,7 +711,6 @@ async function prepararEdicion(id) {
                 if (inputArea) inputArea.value = u.nombre_area || u.area_coordinador || '';
             }
 
-            form._snapshotEditar = getFormSnapshotEditar(form);
             abrirModal('modalEditarUsuario');
         } else {
             mostrarError('errorTablaUsuarios', u?.error || "No se pudo cargar la información del usuario.", null);
