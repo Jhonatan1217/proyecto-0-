@@ -9,6 +9,7 @@ $trimestres   = [];
 $programas    = [];
 $competencias = [];
 $grupos       = [];
+$isAuthenticated = isset($_SESSION['usuario_id']);
 
 if (isset($conn)) {
   try {
@@ -135,6 +136,280 @@ if (isset($conn)) {
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
+  .custom-combobox {
+    position: relative;
+  }
+
+  .custom-combobox-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 80;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 18px;
+    box-shadow: 0 18px 38px rgba(15, 23, 42, 0.12);
+    overflow: hidden;
+  }
+
+  .custom-combobox-panel.hidden {
+    display: none;
+  }
+
+  .custom-combobox-list {
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 6px;
+  }
+
+  .custom-combobox-list::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .custom-combobox-list::-webkit-scrollbar-thumb {
+    background: #9ca3af;
+    border-radius: 999px;
+  }
+
+  .custom-combobox-option,
+  .custom-combobox-empty {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    border-radius: 14px;
+    padding: 12px 14px;
+    font-size: 0.98rem;
+    color: #1f2937;
+  }
+
+  .custom-combobox-option {
+    cursor: pointer;
+    transition: background-color 0.18s ease, color 0.18s ease;
+  }
+
+  .custom-combobox-option:hover,
+  .custom-combobox-option.is-active {
+    background: #dfe8d8;
+    color: #243424;
+  }
+
+  .custom-combobox-empty {
+    color: #6b7280;
+    cursor: default;
+  }
+
+  /* ===== MODAL GESTIÓN DE HORAS ===== */
+  .gh-backdrop {
+    background: rgba(15, 23, 42, 0.45);
+  }
+
+  .gh-card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 8px 40px rgba(15, 23, 42, 0.18);
+    border: 1px solid #e2e8f0;
+  }
+
+  /* Header */
+  .gh-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .gh-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+  }
+
+  .gh-close {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+
+  .gh-close:hover { color: #111827; }
+
+  /* Tabs */
+  .gh-tabs {
+    display: flex;
+    gap: 8px;
+    border: 1.5px dashed #c4cdd6;
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin: 14px 0;
+  }
+
+  .gh-tab {
+    padding: 6px 20px;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all 0.15s;
+    background: transparent;
+    color: #374151;
+  }
+
+  .gh-tab.is-active {
+    background: #39a900;
+    color: #fff;
+    border-color: #39a900;
+  }
+
+  .gh-tab:not(.is-active) {
+    border-color: #d1d5db;
+    color: #374151;
+  }
+
+  /* Resumen simple */
+  .gh-resumen {
+    margin-bottom: 10px;
+  }
+
+  .gh-resumen-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 2px 0;
+  }
+
+  .gh-resumen-sub {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin: 0;
+  }
+
+  /* Filtros */
+  .gh-filtros {
+    display: flex;
+    gap: 10px;
+    border: 1.5px dashed #c4cdd6;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+  }
+
+  .gh-filtros-input,
+  .gh-filtros-select {
+    flex: 1;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.875rem;
+    color: #374151;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .gh-filtros-input:focus,
+  .gh-filtros-select:focus {
+    border-color: #39a900;
+  }
+
+  .gh-filtros-select {
+    max-width: 220px;
+  }
+
+  /* Tabla */
+  .gh-table-wrapper {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 340px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+  }
+
+  .gh-table-wrapper::-webkit-scrollbar { width: 6px; height: 6px; }
+  .gh-table-wrapper::-webkit-scrollbar-thumb { background: #c4cdd6; border-radius: 99px; }
+
+  .gh-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+
+  .gh-table thead th {
+    background: #f9fafb;
+    color: #374151;
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 0.82rem;
+  }
+
+  .gh-table thead th.center { text-align: center; }
+
+  .gh-table tbody tr {
+    border-bottom: 1px solid #e5e7eb;
+    transition: background 0.1s;
+  }
+
+  .gh-table tbody tr:hover { background: #f9fafb; }
+  .gh-table tbody tr:last-child { border-bottom: none; }
+
+  .gh-table tbody td {
+    padding: 11px 14px;
+    color: #374151;
+    font-size: 0.875rem;
+  }
+
+  .gh-table tbody td.center { text-align: center; }
+
+  .gh-excedente-neg {
+    color: #dc2626;
+    font-weight: 600;
+  }
+
+  .gh-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: 1px solid #d1d5db;
+    border-radius: 7px;
+    background: #fff;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .gh-action-btn:hover {
+    border-color: #39a900;
+    color: #39a900;
+  }
+
+  /* Footer */
+  .gh-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  @media (max-width: 600px) {
+    .gh-filtros { flex-direction: column; }
+    .gh-filtros-select { max-width: 100%; }
+    .gh-footer { flex-direction: column; }
+  }
   </style>
 </head>
 
@@ -232,7 +507,12 @@ if (isset($conn)) {
     <!-- Input para filtrar por grupo -->
     <div id="contenedorGrupoFiltro" class="relative w-full sm:w-auto hidden">
       <label for="inputGrupoTexto" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Filtrar por grupo</label>
-      <input type="text" id="inputGrupoTexto" list="listaGrupos" placeholder="Seleccione o escriba número de grupo" class="w-full sm:w-64 lg:w-72 xl:w-80 2xl:w-96 px-4 py-2.5 border border-gray-300 rounded-lg text-sm sm:text-base text-slate-700 font-semibold tracking-wider bg-white shadow-sm hover:bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all duration-200">
+      <div class="custom-combobox w-full sm:w-64 lg:w-72 xl:w-80 2xl:w-96">
+        <input type="text" id="inputGrupoTexto" placeholder="Seleccione o escriba número de grupo" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm sm:text-base text-slate-700 font-semibold tracking-wider bg-white shadow-sm hover:bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all duration-200">
+        <div id="panelGrupoFiltro" class="custom-combobox-panel hidden">
+          <div class="custom-combobox-list"></div>
+        </div>
+      </div>
     </div>
 
 
@@ -250,6 +530,7 @@ if (isset($conn)) {
          hover:bg-[#00304D]
          active:scale-[0.98]
          transition-all duration-200
+         <?= $isAuthenticated ? '' : 'hidden' ?>
          focus:outline-none focus:ring-2 focus:ring-[#00324d]/20">
         <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/plus.svg" />
       Nueva trimestralización
@@ -319,6 +600,7 @@ if (isset($conn)) {
         Descargar PDF
       </button>
 
+      <?php if ($isAuthenticated): ?>
       <button id="btn-actualizar" class="bg-[#39a900] text-white px-6 py-2 rounded-lg hover:bg-[#4ebe15] transition flex items-center justify-center w-full sm:w-auto">
         Gestionar horas
       </button>
@@ -330,7 +612,7 @@ if (isset($conn)) {
       <button onclick="enviarHorario()" class="bg-[#0a3a57] text-white px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">
         Enviar horario
       </button>
-
+      <?php endif; ?>
       
 
       
@@ -358,8 +640,47 @@ if (isset($conn)) {
     </div>
   </div>
 
+  <div id="modalGestionHoras" class="hidden fixed inset-0 z-[70] items-center justify-center px-4 py-6">
+    <div class="gh-backdrop absolute inset-0"></div>
+    <div class="gh-card relative z-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+
+      <!-- Header -->
+      <div class="gh-header">
+        <h2 class="gh-title">Gestión de horas</h2>
+        <button type="button" id="btnCerrarGestionHoras" class="gh-close" aria-label="Cerrar modal">×</button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="gh-tabs">
+        <button type="button" id="tabGestionHorasInstructores" class="gh-tab is-active">Instructores</button>
+        <button type="button" id="tabGestionHorasGrupos" class="gh-tab">Grupos</button>
+      </div>
+
+      <!-- Resumen (texto simple) -->
+      <div id="gestionHorasResumen" class="gh-resumen"></div>
+
+      <!-- Filtros -->
+      <div id="gestionHorasFiltros" class="gh-filtros"></div>
+
+      <!-- Tabla -->
+      <div class="gh-table-wrapper">
+        <table class="gh-table">
+          <thead id="gestionHorasHead"></thead>
+          <tbody id="gestionHorasBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Footer -->
+      <div class="gh-footer">
+        <button type="button" id="btnIrGestionInstructores" class="rounded-lg border border-gray-400 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">Gestionar instructores</button>
+        <button type="button" id="btnAceptarGestionHoras" class="rounded-lg bg-[#00324d] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#00263b] transition">Aceptar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     window.BASE_URL = window.BASE_URL || "<?= BASE_URL ?>";
+    window.IS_AUTHENTICATED = <?= $isAuthenticated ? 'true' : 'false' ?>;
   </script>
 
   <!-- Scripts de la vista de tablas (SOLO una vez registerTables.js para evitar el error de urlParams) -->
@@ -434,14 +755,18 @@ if (isset($conn)) {
               <!-- NUMERO DE FICHA -->
                <div class="field">
                 <label for="numero_ficha" class="block text-xs font-semibold text-gray-800 mb-1">Número de grupo</label>
-                <input
-                  type="text"
-                  name="numero_ficha"
-                  id="numero_ficha"
-                  list="listaGrupos"
-                  placeholder="Seleccione o escriba número de grupo"
-                  class="form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white"/>
-                <datalist id="listaGrupos">
+                <div class="custom-combobox w-full">
+                  <input
+                    type="text"
+                    name="numero_ficha"
+                    id="numero_ficha"
+                    placeholder="Seleccione o escriba número de grupo"
+                    class="form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white"/>
+                  <div id="panelGrupoCrear" class="custom-combobox-panel hidden">
+                    <div class="custom-combobox-list"></div>
+                  </div>
+                </div>
+                <datalist id="listaGruposData">
                   <?php foreach ($grupos as $g): ?>
                     <?php if (!empty($g['numero_ficha'])): ?>
                       <option value="<?= htmlspecialchars($g['numero_ficha']) ?>"></option>
@@ -483,12 +808,16 @@ if (isset($conn)) {
                 <div class="flex flex-minw-0 gap-2">
                   <div class="flex-1">
                     <label for="id_area_combo" class="block text-xs font-semibold text-gray-800 mb-1">Área</label>
-                    <input
-                      type="text"
-                      id="id_area_combo"
-                      list="listaAreasCombo"
-                      placeholder="Seleccione o escriba el área"
-                      class="form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white" />
+                    <div class="custom-combobox w-full">
+                      <input
+                        type="text"
+                        id="id_area_combo"
+                        placeholder="Seleccione o escriba el área"
+                        class="form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white" />
+                      <div id="panelAreaCrear" class="custom-combobox-panel hidden">
+                        <div class="custom-combobox-list"></div>
+                      </div>
+                    </div>
                     <datalist id="listaAreasCombo">
                       <?php foreach ($areas as $a): ?>
                         <option
@@ -507,13 +836,17 @@ if (isset($conn)) {
 
                   <div class="flex-1">
                     <label for="id_zona_combo" class="block text-xs font-semibold text-gray-800 mb-1">Zona</label>
-                    <input
-                      type="text"
-                      id="id_zona_combo"
-                      list="listaZonasCombo"
-                      placeholder="Seleccione o escriba la zona"
-                      class="form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white"
-                      disabled />
+                    <div class="custom-combobox w-full">
+                      <input
+                        type="text"
+                        id="id_zona_combo"
+                        placeholder="Seleccione o escriba la zona"
+                        class="form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white"
+                        disabled />
+                      <div id="panelZonaCrear" class="custom-combobox-panel hidden">
+                        <div class="custom-combobox-list"></div>
+                      </div>
+                    </div>
                     <datalist id="listaZonasCombo"></datalist>
 
                     <select name="zona" id="id_zona" class="hidden" tabindex="-1" aria-hidden="true">
@@ -795,14 +1128,94 @@ if (isset($conn)) {
     <!-- Combobox área/zona en modal crear -->
     <script>
       (function(){
+        function initStyledCombobox({ input, panel, getItems, onSelect, getLabel, emptyText = 'Sin datos disponibles' }) {
+          if (!input || !panel || typeof getItems !== 'function') return;
+
+          const list = panel.querySelector('.custom-combobox-list');
+          if (!list) return;
+
+          const normalize = (value) => String(value || '').trim().toLowerCase();
+
+          function closePanel() {
+            panel.classList.add('hidden');
+          }
+
+          function openPanel() {
+            if (input.disabled) return;
+            panel.classList.remove('hidden');
+          }
+
+          function render(query = '') {
+            const search = normalize(query);
+            const items = (getItems() || []).filter((item) => {
+              const label = normalize(getLabel ? getLabel(item) : item.label);
+              return !search || label.includes(search);
+            });
+
+            list.innerHTML = '';
+
+            if (!items.length) {
+              const empty = document.createElement('div');
+              empty.className = 'custom-combobox-empty';
+              empty.textContent = emptyText;
+              list.appendChild(empty);
+              openPanel();
+              return;
+            }
+
+            items.forEach((item) => {
+              const option = document.createElement('button');
+              option.type = 'button';
+              option.className = 'custom-combobox-option';
+              option.textContent = getLabel ? getLabel(item) : item.label;
+              option.addEventListener('click', () => {
+                input.value = getLabel ? getLabel(item) : item.label;
+                if (typeof onSelect === 'function') onSelect(item);
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                closePanel();
+              });
+              list.appendChild(option);
+            });
+
+            openPanel();
+          }
+
+          input.addEventListener('focus', () => render(input.value));
+          input.addEventListener('input', () => render(input.value));
+          input.addEventListener('click', () => render(input.value));
+
+          document.addEventListener('click', (event) => {
+            const wrapper = input.closest('.custom-combobox');
+            if (wrapper && !wrapper.contains(event.target)) {
+              closePanel();
+            }
+          });
+
+          input._styledCombobox = { render, closePanel, openPanel };
+        }
+
+        const grupoData = document.getElementById('listaGruposData');
+        const inputGrupoFiltro = document.getElementById('inputGrupoTexto');
+        const panelGrupoFiltro = document.getElementById('panelGrupoFiltro');
+        const inputGrupoCrear = document.getElementById('numero_ficha');
+        const panelGrupoCrear = document.getElementById('panelGrupoCrear');
         const selArea = document.getElementById('id_area');
         const selZona = document.getElementById('id_zona');
         const inpArea = document.getElementById('id_area_combo');
         const inpZona = document.getElementById('id_zona_combo');
         const listAreas = document.getElementById('listaAreasCombo');
         const listZonas = document.getElementById('listaZonasCombo');
+        const panelArea = document.getElementById('panelAreaCrear');
+        const panelZona = document.getElementById('panelZonaCrear');
 
         if (!selArea || !selZona || !inpArea || !inpZona || !listAreas || !listZonas) return;
+
+        const grupos = grupoData
+          ? Array.from(grupoData.options)
+              .map((opt) => ({ label: String(opt.value || '').trim() }))
+              .filter((item) => item.label !== '')
+          : [];
 
         function findDatalistOptionByValue(listEl, value) {
           const target = String(value || '').trim().toLowerCase();
@@ -826,6 +1239,10 @@ if (isset($conn)) {
             op.dataset.area = areaOpt;
             listZonas.appendChild(op);
           });
+
+          if (inpZona._styledCombobox) {
+            inpZona._styledCombobox.render(inpZona.value);
+          }
         }
 
         function syncAreaFromInput() {
@@ -846,10 +1263,57 @@ if (isset($conn)) {
           selZona.value = idZona;
         }
 
+        initStyledCombobox({
+          input: inputGrupoFiltro,
+          panel: panelGrupoFiltro,
+          getItems: () => grupos,
+          onSelect: () => {},
+          getLabel: (item) => item.label
+        });
+
+        initStyledCombobox({
+          input: inputGrupoCrear,
+          panel: panelGrupoCrear,
+          getItems: () => grupos,
+          onSelect: () => {},
+          getLabel: (item) => item.label
+        });
+
+        initStyledCombobox({
+          input: inpArea,
+          panel: panelArea,
+          getItems: () => Array.from(listAreas.options).map((opt) => ({
+            label: String(opt.value || '').trim(),
+            id: String(opt.dataset.id || '')
+          })),
+          onSelect: (item) => {
+            selArea.value = item.id || '';
+            inpZona.value = '';
+            selZona.value = '';
+            inpZona.disabled = !item.id;
+            cargarZonasSegunArea(item.id || '');
+          },
+          getLabel: (item) => item.label
+        });
+
+        initStyledCombobox({
+          input: inpZona,
+          panel: panelZona,
+          getItems: () => Array.from(listZonas.options).map((opt) => ({
+            label: String(opt.value || '').trim(),
+            id: String(opt.dataset.id || ''),
+            area: String(opt.dataset.area || '')
+          })),
+          onSelect: (item) => {
+            selZona.value = item.id || '';
+          },
+          getLabel: (item) => item.label
+        });
+
         inpArea.addEventListener('change', syncAreaFromInput);
-        inpArea.addEventListener('input', syncAreaFromInput);
+        inpArea.addEventListener('blur', syncAreaFromInput);
         inpZona.addEventListener('change', syncZonaFromInput);
-        inpZona.addEventListener('input', syncZonaFromInput);
+        inpZona.addEventListener('blur', syncZonaFromInput);
 
         document.addEventListener('DOMContentLoaded', () => {
           inpZona.disabled = true;
