@@ -5,6 +5,7 @@
 const urlParams = new URLSearchParams(window.location.search);
 let id_zona = urlParams.get("id_zona");
 const API_BASE = ((window && window.BASE_URL) || "").replace(/\/+$/, "/");
+const IS_AUTHENTICATED = Boolean(window && window.IS_AUTHENTICATED);
 
 // =======================
 // CONFIG TOAST (SweetAlert2)
@@ -1473,6 +1474,28 @@ function popupCeldas(){
           console.error("Error con las Raes:", e);
 
         }
+        const accionesPopup = IS_AUTHENTICATED
+          ? `
+              <div class="mt-6 flex justify-end gap-2">
+                <button id="btnEditarRegistro"
+                  class="bg-[#00324d] text-white text-sm px-4 py-2 rounded-lg hover:bg-[#00304D] transition">
+                  Editar
+                </button>
+                <button id="btnCerrarPopup"
+                  class="bg-gray-200 text-gray-800 text-sm px-4 py-2 rounded-lg hover:bg-gray-300 transition">
+                  Aceptar
+                </button>
+              </div>
+            `
+          : `
+              <div class="mt-6 flex justify-end gap-2">
+                <button id="btnCerrarPopup"
+                  class="bg-gray-200 text-gray-800 text-sm px-4 py-2 rounded-lg hover:bg-gray-300 transition">
+                  Cerrar
+                </button>
+              </div>
+            `;
+
         Swal.fire({
           title: "",
           showCloseButton: false,
@@ -1556,17 +1579,7 @@ function popupCeldas(){
                 </div>
               </div>
 
-              <!-- Botones -->
-              <div class="mt-6 flex justify-end gap-2">
-                <button id="btnEditarRegistro"
-                  class="bg-[#00324d] text-white text-sm px-4 py-2 rounded-lg hover:bg-[#00304D] transition">
-                  Editar
-                </button>
-                <button id="btnCerrarPopup"
-                  class="bg-gray-200 text-gray-800 text-sm px-4 py-2 rounded-lg hover:bg-gray-300 transition">
-                  Aceptar
-                </button>
-              </div>
+              ${accionesPopup}
             `,
             showConfirmButton: false,
             didOpen: () => {
@@ -1578,10 +1591,12 @@ function popupCeldas(){
             Swal.close();
           });
         
-          document.getElementById("btnEditarRegistro").addEventListener("click", () => {
-            Swal.close();
-            editarTrimestralizacion(reg);
-          });
+          if (IS_AUTHENTICATED) {
+            document.getElementById("btnEditarRegistro")?.addEventListener("click", () => {
+              Swal.close();
+              editarTrimestralizacion(reg);
+            });
+          }
         },
       });
     });
@@ -1593,6 +1608,21 @@ function popupZonaLibre(){
     td.addEventListener("click", () => {
       const dia = td.getAttribute("data-dia") || "Sin día";
       const hora = td.getAttribute("data-hora") || "Sin hora";
+      const accionesZonaLibre = IS_AUTHENTICATED
+        ? `
+          <div class="mt-8 flex justify-end gap-3">
+            <button id="btnCerrarPopupZonaLibre" class="bg-[#00324d] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">Cerrar</button>
+            <button id="btnAbrirModalZonaLibre" class="bg-[#00324d] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">
+              Agregar Horario
+            </button>
+          </div>
+        `
+        : `
+          <div class="mt-8 flex justify-end gap-3">
+            <button id="btnCerrarPopupZonaLibre" class="bg-[#00324d] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">Cerrar</button>
+          </div>
+        `;
+
       Swal.fire({
         title: "Zona libre",
         html:`
@@ -1601,22 +1631,19 @@ function popupZonaLibre(){
           <p><strong>Hora:</strong> ${hora}</p>
           <p>En esta franja no hay ninguna competencia programada.</p>
           </div>  
-          <div class="mt-8 flex justify-end gap-3">
-            <button id="btnCerrarPopupZonaLibre" class="bg-[#00324d] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">Cerrar</button>
-            <button id="btnAbrirModalZonaLibre" class="bg-[#00324d] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">
-              Agregar Horario
-            </button>
-          </div>
+          ${accionesZonaLibre}
           `,
           showConfirmButton: false,
           didOpen: () => {
             document.getElementById("btnCerrarPopupZonaLibre").addEventListener("click", () => {
               Swal.close();
             });
-            document.getElementById("btnAbrirModalZonaLibre").addEventListener("click", () => {
-              Swal.close();
-              abrirModal();
-            });
+            if (IS_AUTHENTICATED) {
+              document.getElementById("btnAbrirModalZonaLibre")?.addEventListener("click", () => {
+                Swal.close();
+                abrirModal();
+              });
+            }
           }
       });
     });
@@ -1627,12 +1654,14 @@ function popupZonaLibre(){
 // INICIO
 // =======================
 document.addEventListener("DOMContentLoaded", () => {
-  cargarFichas();
-  cargarInstructores();
-  cargarCompetencias();
   cargarAreasYZonas();
   configurarFiltros();
-  configurarModalidadFormulario();
+  if (IS_AUTHENTICATED) {
+    cargarFichas();
+    cargarInstructores();
+    cargarCompetencias();
+    configurarModalidadFormulario();
+  }
   if (id_zona) {
     toggleTabla(true);
     cargarTrimestralizacion();
@@ -1662,5 +1691,31 @@ document.addEventListener("DOMContentLoaded", () => {
     const modal = document.getElementById("modalGestionHoras");
     if (!modal || modal.classList.contains("hidden")) return;
     cerrarModalGestionHoras();
+  });
+
+  const mostrarAlertaSinConexion = () => {
+    Swal.fire({
+      icon: "error",
+      title: "Sin conexión a la red",
+      text: "No se pudo completar la consulta. Verifica tu conexión e intenta nuevamente.",
+      showCancelButton: true,
+      confirmButtonText: "Volver al inicio",
+      cancelButtonText: "Cerrar"
+    }).then((result) => {
+      if (result.isConfirmed) {
+        window.location.href = `${API_BASE}index.php?page=landing`;
+      }
+    });
+  };
+
+  window.addEventListener("offline", mostrarAlertaSinConexion);
+
+  document.addEventListener("click", (event) => {
+    if (!navigator.onLine) {
+      const objetivo = event.target.closest("button, a, select, input");
+      if (objetivo) {
+        mostrarAlertaSinConexion();
+      }
+    }
   });
 });

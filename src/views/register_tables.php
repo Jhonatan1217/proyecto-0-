@@ -9,6 +9,7 @@ $trimestres   = [];
 $programas    = [];
 $competencias = [];
 $grupos       = [];
+$isAuthenticated = isset($_SESSION['usuario_id']);
 
 if (isset($conn)) {
   try {
@@ -529,6 +530,7 @@ if (isset($conn)) {
          hover:bg-[#00304D]
          active:scale-[0.98]
          transition-all duration-200
+         <?= $isAuthenticated ? '' : 'hidden' ?>
          focus:outline-none focus:ring-2 focus:ring-[#00324d]/20">
         <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/plus.svg" />
       Nueva trimestralización
@@ -598,6 +600,7 @@ if (isset($conn)) {
         Descargar PDF
       </button>
 
+      <?php if ($isAuthenticated): ?>
       <button id="btn-actualizar" class="bg-[#39a900] text-white px-6 py-2 rounded-lg hover:bg-[#4ebe15] transition flex items-center justify-center w-full sm:w-auto">
         Gestionar horas
       </button>
@@ -609,7 +612,7 @@ if (isset($conn)) {
       <button onclick="enviarHorario()" class="bg-[#0a3a57] text-white px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">
         Enviar horario
       </button>
-
+      <?php endif; ?>
       
 
       
@@ -677,6 +680,7 @@ if (isset($conn)) {
 
   <script>
     window.BASE_URL = window.BASE_URL || "<?= BASE_URL ?>";
+    window.IS_AUTHENTICATED = <?= $isAuthenticated ? 'true' : 'false' ?>;
   </script>
 
   <!-- Scripts de la vista de tablas (SOLO una vez registerTables.js para evitar el error de urlParams) -->
