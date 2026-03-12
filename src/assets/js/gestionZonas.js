@@ -97,7 +97,8 @@
       dropdownClass: 'combobox-dropdown-filtro',
       optionClass: 'custom-option',
       placeholder: 'Todas las áreas',
-      clearValue: 'todas'
+      clearValue: 'todas',
+      restoreValueOnBlurWhenEmpty: false
     });
   }
 
@@ -287,7 +288,8 @@
 
     row.querySelector('.btn-guardar-zona').addEventListener('click', async () => {
       const nombreNuevo = row.querySelector('.cell-edit.nombre-zona').value.trim();
-      const idAreaNueva = row.querySelector('.cell-edit.area').value;
+      const areaEl = row.querySelector('.cell-edit.area');
+      const idAreaNueva = areaEl ? areaEl.value : undefined;
       if (!nombreNuevo || !idAreaNueva) {
         Toast.fire({ icon: 'warning', title: 'Completa todos los campos.' });
         return;
@@ -407,15 +409,17 @@
       e.preventDefault();
       const form       = e.target;
       const nombre_zona = form.nombre_zona?.value?.trim();
-      const id_area     = form.id_area?.value?.trim();
-      if (!nombre_zona || !id_area) {
+      const idAreaEl   = form.id_area;
+      const id_area     = idAreaEl ? idAreaEl.value : undefined;
+      const id_area_trim = (id_area || '').trim();
+      if (!nombre_zona || !id_area_trim) {
         Toast.fire({ icon: 'warning', title: 'Ingresa el nombre y selecciona un área.' });
         return;
       }
       const fd = new FormData();
       fd.append('accion', 'crear');
       fd.append('nombre_zona', nombre_zona);
-      fd.append('id_area', id_area);
+      fd.append('id_area', id_area_trim);
       try {
         const j = await apiFetch(API_URL, 'POST', fd);
         if (j.status === 'success') {

@@ -44,7 +44,7 @@ switch ($accion) {
     case 'crear':
         $nombre_zona = trim($_POST['nombre_zona'] ?? '');
         $id_area     = $_POST['id_area'] ?? null;
-        if ($nombre_zona === '' || !$id_area) {
+        if ($nombre_zona === '' || ($id_area === null || $id_area === '')) {
             $response = ["status" => "error", "message" => "Debe enviar nombre_zona e id_area"];
             break;
         }
@@ -55,7 +55,8 @@ switch ($accion) {
         $id_zona          = $_POST['id_zona'] ?? null;
         $nombre_zona_nueva = trim($_POST['nombre_zona_nueva'] ?? '');
         $id_area_nueva    = $_POST['id_area_nueva'] ?? null;
-        if (!$id_zona || $nombre_zona_nueva === '' || !$id_area_nueva) {
+        $missing = ($id_zona === null || $id_zona === '') || ($nombre_zona_nueva === '') || ($id_area_nueva === null || $id_area_nueva === '');
+        if ($missing) {
             $response = ["status" => "error", "message" => "Debe enviar id_zona, nombre_zona_nueva e id_area_nueva"];
             break;
         }
