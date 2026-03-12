@@ -1,7 +1,7 @@
 ---
 name: Ajuste de Diseño / UI
 about: Reportar problemas visuales o de interfaz
-title: '[DISEÑO]: '
+title: '[UI]: '
 labels: design, UI/UX
 assignees: ''
 ---
