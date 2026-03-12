@@ -369,22 +369,22 @@ window.BASE_URL = <?= json_encode(BASE_URL) ?>;
     <ul class="p-4 space-y-4 text-gray-700">
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/calendar-days.svg" alt="Icono de Horarios">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/register_tables">Horarios</a>
+        <a href="<?= BASE_URL ?>index.php?page=register_tables">Horarios</a>
       </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/map-pin.svg" alt="Icono de Áreas">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionAreas">Áreas</a>
+        <a href="<?= BASE_URL ?>index.php?page=gestionAreas">Áreas</a>
       </li>
       
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/house-plus.svg" alt="Icono de Zonas">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionZonas">Zonas</a>
+        <a href="<?= BASE_URL ?>index.php?page=gestionZonas">Zonas</a>
       </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/layers.svg" alt="Icono de Trimestres">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionTrimestres">Trimestres</a>
+        <a href="<?= BASE_URL ?>index.php?page=gestionTrimestres">Trimestres</a>
       </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
@@ -394,7 +394,7 @@ window.BASE_URL = <?= json_encode(BASE_URL) ?>;
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/folder-minus.svg" alt="Icono de Grupos">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionGrupos">Grupos</a>
+        <a href="<?= BASE_URL ?>index.php?page=gestionGrupos">Grupos</a>
       </li>
 
       <li class="relative">
@@ -431,12 +431,12 @@ window.BASE_URL = <?= json_encode(BASE_URL) ?>;
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/clipboard-list.svg" alt="Icono de Solicitudes">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionSolicitudes">Solicitudes</a>
+        <a href="<?= BASE_URL ?>index.php?page=gestionSolicitudes">Solicitudes</a>
       </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/history.svg" alt="Icono de Trimestres">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/historialRegistrosInactivos">Historial</a>
+        <a href="<?= BASE_URL ?>index.php?page=historialRegistrosInactivos">Historial</a>
       </li>
     </ul>
   </nav>
