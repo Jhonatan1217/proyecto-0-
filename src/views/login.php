@@ -78,7 +78,7 @@
                 Bienvenido
             </h1>
 
-            <form action="<?= defined('BASE_URL') ? BASE_URL : '' ?>src/controllers/login_controller.php" method="POST" class="flex flex-col gap-6">
+            <form id="loginForm" action="<?= defined('BASE_URL') ? BASE_URL : '' ?>src/controllers/login_controller.php" method="POST" class="flex flex-col gap-6">
 
                 <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-medium text-gray-700">Correo Electronico</label>
@@ -114,7 +114,6 @@
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878a4.5 4.5 0 106.262 6.262M4.5 4.5l15 15"/></svg>
                             </span>
                         </button>
-                        
                     </div>
                 </div>
 
@@ -141,6 +140,27 @@
                     Credenciales invalidas. Intente de nuevo.
                 </p>
             <?php endif; ?>
+
+            <!-- Modal verificación por correo (OTP) -->
+            <div id="verificationModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-2">Verificación</h2>
+                    <p class="text-sm text-gray-600 mb-4">Ingresa el código de 6 dígitos enviado a tu correo.</p>
+                    <div class="flex gap-2 justify-center mb-4">
+                        <input type="text" maxlength="1" class="otp-input w-10 h-12 text-center text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none" aria-label="Dígito 1">
+                        <input type="text" maxlength="1" class="otp-input w-10 h-12 text-center text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none" aria-label="Dígito 2">
+                        <input type="text" maxlength="1" class="otp-input w-10 h-12 text-center text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none" aria-label="Dígito 3">
+                        <input type="text" maxlength="1" class="otp-input w-10 h-12 text-center text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none" aria-label="Dígito 4">
+                        <input type="text" maxlength="1" class="otp-input w-10 h-12 text-center text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none" aria-label="Dígito 5">
+                        <input type="text" maxlength="1" class="otp-input w-10 h-12 text-center text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none" aria-label="Dígito 6">
+                    </div>
+                    <p id="contadorTexto" class="text-center text-sm text-gray-500 mb-2"></p>
+                    <div class="flex flex-col gap-2">
+                        <button type="button" onclick="verificarCodigo()" class="w-full h-11 rounded-lg bg-dark-navy text-white font-semibold text-sm hover:bg-dark-navy-hover">Verificar</button>
+                        <button type="button" id="reenviarBtn" onclick="reenviarCodigo()" class="hidden w-full h-11 rounded-lg border border-gray-300 text-gray-700 font-medium text-sm hover:bg-gray-50">Reenviar código</button>
+                    </div>
+                </div>
+            </div>
 
         </div>
     </div>
