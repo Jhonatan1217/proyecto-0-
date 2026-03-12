@@ -40,8 +40,7 @@ include __DIR__ . '/../includes/header-public.php';
 
 <script src="https://cdn.tailwindcss.com"></script>
 
-<div class="flex-1 min-h-screen flex items-center justify-center p-4 bg-cover bg-center bg-no-repeat" 
-style="background-image: url(../assets/img/fondo_restablecer_contrasenia.png);">
+<div class="flex-1 flex items-center justify-center p-4"> 
     
     <div class="w-full max-w-md">
         <!-- Tarjeta de cambio de contraseña -->

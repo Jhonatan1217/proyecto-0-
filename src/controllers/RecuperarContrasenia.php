@@ -34,6 +34,22 @@ function redirectTo(string $url) {
     exit; 
 }
 
+function enmascararCorreo(string $correo): string {
+    $partes = explode('@', $correo, 2);
+
+    if (count($partes) !== 2) {
+        return $correo;
+    }
+
+    $local = $partes[0];
+    $dominio = $partes[1];
+
+    $primerosDos = substr($local, 0, 2);
+    $cantidadAsteriscos = max(strlen($local) - 2, 1);
+
+    return $primerosDos . str_repeat('*', $cantidadAsteriscos) . '@' . $dominio;
+}
+
 switch ($accion) {
     
     /* ======================================
@@ -86,7 +102,8 @@ switch ($accion) {
         
         // Enviar correo (usa correo_electronico)
         if (enviarCorreoRecuperacion($usuario['correo_electronico'], $usuario['nombre_completo'], $resetLink)) {
-            $_SESSION['success_recuperacion'] = "Hemos enviado un enlace para restablecer tu contraseña. Por favor revisa tu bandeja de entrada.";
+            $correoEnmascarado = enmascararCorreo($correo);
+            $_SESSION['success_recuperacion'] = "Hemos enviado un enlace de restablecimiento a $correoEnmascarado. Revisa tu bandeja de entrada.";
         } else {
             error_log("Error al enviar correo a: " . $usuario['correo_electronico']);
             $_SESSION['error_recuperacion'] = "Error al enviar el correo. Por favor intenta más tarde.";
@@ -203,7 +220,7 @@ function enviarCorreoRecuperacion($correo, $nombre, $resetLink) {
         // Contenido
         $mail->isHTML(true);
         $mail->CharSet = 'UTF-8';
-        $mail->Subject = 'Recuperación de contraseña - SENLOCK';
+        $mail->Subject = 'Recuperación de contraseña - Proyecto Z';
         
         // Cuerpo del mensaje HTML
         $mail->Body = "
@@ -215,7 +232,7 @@ function enviarCorreoRecuperacion($correo, $nombre, $resetLink) {
                 .button { 
                     background-color: #39A900; 
                     border: none; 
-                    color: white; 
+                        color: #ffffff !important; 
                     padding: 15px 32px; 
                     text-align: center; 
                     text-decoration: none; 
@@ -233,7 +250,7 @@ function enviarCorreoRecuperacion($correo, $nombre, $resetLink) {
                 <h2>Hola, " . htmlspecialchars($nombre) . "</h2>
                 <p>Has solicitado restablecer tu contraseña. Haz clic en el siguiente botón para continuar:</p>
                 <p style='text-align: center;'>
-                    <a href='" . htmlspecialchars($resetLink) . "' class='button'>Restablecer contraseña</a>
+                    <a href='" . htmlspecialchars($resetLink) . "' class='button' style='color: #ffffff !important; text-decoration: none;'>Restablecer contraseña</a>
                 </p>
                 <p>Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
                 <p>" . htmlspecialchars($resetLink) . "</p>

@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Proyecto 0</title>
+  <link rel="icon" type="image/png" href="<?= BASE_URL ?>src/assets/img/logoSena.png" />
 
   <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
   <link rel="stylesheet" href="<?= BASE_URL ?>public/css/fonts.css">
