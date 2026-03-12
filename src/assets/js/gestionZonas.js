@@ -1,5 +1,5 @@
 /**
- * Gestión de Zonas - Refactorizado siguiendo patrón de Grupos.
+ * Gestión de Zonas - usa nombre_zona (texto) + id_area como identificadores.
  * Usa ComboboxComponent centralizado con dropup para última fila.
  */
 (function () {
@@ -38,7 +38,7 @@
     return fetch(url, { method: method || 'GET', body: body }).then(r => r.json());
   }
 
-  /* ========== CARGAR ÁREAS ========== */
+  /* ========== ÁREAS ========== */
   async function cargarAreas() {
     try {
       const json = await apiFetch(`${API_AREA_URL}?accion=listar`);
@@ -97,7 +97,8 @@
       dropdownClass: 'combobox-dropdown-filtro',
       optionClass: 'custom-option',
       placeholder: 'Todas las áreas',
-      clearValue: 'todas'
+      clearValue: 'todas',
+      restoreValueOnBlurWhenEmpty: false
     });
   }
 
@@ -117,8 +118,18 @@
 
   function enhanceSelectsZona() {
     if (typeof ComboboxComponent === 'undefined') return;
+    // Select del modal "Nueva Zona": clearValue:'' para que el input aparezca vacío
+    // cuando ningún área está seleccionada, mostrando el placeholder y todas las opciones al abrir.
     ComboboxComponent.enhance({
-      selector: '.select-zona',
+      selector: '#id_area',
+      dropdownClass: 'select-zona-dropdown',
+      optionClass: 'select-zona-option',
+      placeholder: 'Buscar área...',
+      clearValue: ''
+    });
+    // Selects de filas en edición inline (distintos al modal)
+    ComboboxComponent.enhance({
+      selector: '.select-zona:not(#id_area)',
       dropdownClass: 'select-zona-dropdown',
       optionClass: 'select-zona-option',
       placeholder: 'Buscar área...'
@@ -140,6 +151,7 @@
           tbody.innerHTML = '<tr><td colspan="3" class="text-center p-4 text-gray-500">No hay zonas registradas</td></tr>';
         } else {
           renderTabla(zonas);
+          aplicarFiltros();
         }
       } else {
         tbody.innerHTML = `<tr><td colspan="3" class="text-center p-4 text-red-500">${json.message || 'Error'}</td></tr>`;
@@ -149,21 +161,20 @@
       tbody.innerHTML = '<tr><td colspan="3" class="text-center p-4 text-red-500">Error al cargar</td></tr>';
     }
     ajustarAltoTabla();
-    aplicarFiltros();
   }
 
   function renderTabla(data) {
     const tbody = document.getElementById('tbodyZonas');
     if (!tbody) return;
     tbody.innerHTML = '';
-    const base = (window.BASE_URL || '').replace(/\/+$/, '/');
     data.forEach(z => {
       const tr = document.createElement('tr');
       tr.className = 'border-b hover:bg-gray-50 transition';
-      tr.dataset.id = z.id_zona;
-      tr.dataset.idArea = z.id_area ?? '';
+      tr.dataset.id      = z.id_zona;
+      tr.dataset.idArea  = z.id_area ?? '';
+      tr.dataset.nombre  = z.nombre_zona ?? '';
       tr.innerHTML = `
-        <td class="col-numero">${z.id_zona}</td>
+        <td class="col-nombre font-medium text-gray-800">${z.nombre_zona || '—'}</td>
         <td class="col-area text-center">
           <span class="tag-pill">${z.nombre_area || '—'}</span>
         </td>
@@ -173,7 +184,9 @@
               <span class="inline-block w-5 h-5">${ICON_PENCIL}</span>
             </button>
             <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" class="sr-only peer switch-estado-zona" ${Number(z.estado) === 1 ? 'checked' : ''} data-id="${z.id_zona}" data-id-area="${z.id_area ?? ''}">
+              <input type="checkbox" class="sr-only peer switch-estado-zona"
+                ${Number(z.estado) === 1 ? 'checked' : ''}
+                data-id="${z.id_zona}">
               <div class="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-[#39A900] transition"></div>
               <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition peer-checked:translate-x-5"></div>
             </label>
@@ -193,14 +206,12 @@
       const clone = sw.cloneNode(true);
       sw.replaceWith(clone);
       clone.addEventListener('change', async (e) => {
-        const id = e.target.dataset.id;
-        const idArea = e.target.dataset.idArea;
-        if (!id || !idArea) return;
+        const id     = e.target.dataset.id;
+        if (!id) return;
         const estado = e.target.checked ? 1 : 0;
         const fd = new FormData();
         fd.append('accion', 'cambiar_estado');
         fd.append('id_zona', id);
-        fd.append('id_area', idArea);
         fd.append('estado', String(estado));
         try {
           const j = await apiFetch(API_URL, 'POST', fd);
@@ -230,21 +241,25 @@
       return;
     }
 
-    const id = row.dataset.id;
-    const idArea = row.dataset.idArea;
+    const id          = row.dataset.id;
+    const idArea      = row.dataset.idArea;
+    const nombreActual = row.dataset.nombre;
     const z = zonas.find(x => String(x.id_zona) === String(id));
     if (!z) return;
 
     filaEnEdicion = row;
     row.classList.add('editando', 'bg-gray-50');
+
     const optsArea = areas.map(a =>
       `<option value="${a.id_area}" ${String(a.id_area) === String(idArea) ? 'selected' : ''}>${(a.nombre_area || '').trim()}</option>`
     ).join('');
 
     row.innerHTML = `
-      <td class="col-numero">
+      <td class="col-nombre">
         <div class="cell-edit-wrap">
-          <input type="number" class="cell-edit numero input-enterprise w-full" value="${z.id_zona ?? ''}" min="1" max="9999" />
+          <input type="text" class="cell-edit nombre-zona input-enterprise w-full"
+            value="${(z.nombre_zona || '').replace(/"/g, '&quot;')}"
+            maxlength="125" placeholder="Nombre de zona" />
         </div>
       </td>
       <td class="col-area">
@@ -272,21 +287,21 @@
     enhanceSelectsZona();
 
     row.querySelector('.btn-guardar-zona').addEventListener('click', async () => {
-      const numero = row.querySelector('.cell-edit.numero').value.trim();
-      const idAreaNueva = row.querySelector('.cell-edit.area').value;
-      if (!numero || !idAreaNueva) {
+      const nombreNuevo = row.querySelector('.cell-edit.nombre-zona').value.trim();
+      const areaEl = row.querySelector('.cell-edit.area');
+      const idAreaNueva = areaEl ? areaEl.value : undefined;
+      if (!nombreNuevo || !idAreaNueva) {
         Toast.fire({ icon: 'warning', title: 'Completa todos los campos.' });
         return;
       }
-      if (numero === String(z.id_zona) && idAreaNueva === String(idArea)) {
-        Toast.fire({ icon: 'info', title: 'No hay cambios.' });
+      if (normalizarTexto(nombreNuevo) === normalizarTexto(z.nombre_zona) && idAreaNueva === String(idArea)) {
+        Toast.fire({ icon: 'info', title: 'Sin cambios.' });
         return;
       }
       const fd = new FormData();
       fd.append('accion', 'actualizar');
-      fd.append('id_zona_actual', id);
-      fd.append('id_area_actual', idArea);
-      fd.append('id_zona_nueva', numero);
+      fd.append('id_zona', id);
+      fd.append('nombre_zona_nueva', nombreNuevo);
       fd.append('id_area_nueva', idAreaNueva);
       try {
         const j = await apiFetch(API_URL, 'POST', fd);
@@ -308,21 +323,22 @@
 
   /* ========== FILTROS ========== */
   function aplicarFiltros() {
-    const filtro = document.getElementById('filtroArea');
+    if (!zonas.length) return;
+    const filtro  = document.getElementById('filtroArea');
     const buscador = document.getElementById('buscadorZonas');
-    const areaVal = filtro?.value || 'todas';
-    const term = (buscador?.value || '').toLowerCase().trim();
-    const filas = document.querySelectorAll('#tablaZonas tbody tr');
+    const areaVal  = filtro?.value || 'todas';
+    const term     = (buscador?.value || '').toLowerCase().trim();
+    const filas    = document.querySelectorAll('#tablaZonas tbody tr');
     document.getElementById('fila-no-resultados')?.remove();
     let visibles = 0;
     filas.forEach(tr => {
       if (tr.children.length === 1) return;
-      const num = (tr.children[0]?.textContent || '').toLowerCase();
+      const nombre   = normalizarTexto(tr.dataset.nombre || tr.children[0]?.textContent || '');
       const areaSpan = tr.querySelector('.tag-pill, td:nth-child(2) span');
-      const areaTxt = areaSpan?.textContent || '';
+      const areaTxt  = areaSpan?.textContent || '';
       const idAreaFila = tr.dataset.idArea || '';
       const coincideArea = areaVal === 'todas' || String(idAreaFila) === String(areaVal);
-      const coincideBusq = !term || num.includes(term) || normalizarTexto(areaTxt).includes(normalizarTexto(term));
+      const coincideBusq = !term || nombre.includes(normalizarTexto(term)) || normalizarTexto(areaTxt).includes(normalizarTexto(term));
       const mostrar = coincideArea && coincideBusq;
       tr.style.display = mostrar ? '' : 'none';
       if (mostrar) visibles++;
@@ -339,55 +355,47 @@
   }
 
   function ajustarAltoTabla() {
-    const wrap = document.getElementById('wrapTablaZonas');
+    const wrap  = document.getElementById('wrapTablaZonas');
     const tabla = document.getElementById('tablaZonas');
     if (!wrap || !tabla) return;
-    const thead = tabla.querySelector('thead');
+    const thead    = tabla.querySelector('thead');
     const firstRow = tabla.querySelector('tbody tr');
-    const filas = tabla.querySelectorAll('tbody tr').length;
-    const headH = thead ? thead.getBoundingClientRect().height : 44;
-    const rowH = firstRow ? firstRow.getBoundingClientRect().height : 56;
+    const filas    = tabla.querySelectorAll('tbody tr').length;
+    const headH    = thead    ? thead.getBoundingClientRect().height    : 44;
+    const rowH     = firstRow ? firstRow.getBoundingClientRect().height : 56;
     const maxFilas = 5;
-    const maxH = headH + rowH * maxFilas;
-    wrap.style.maxHeight = filas > maxFilas ? `${Math.ceil(maxH)}px` : '';
-    wrap.style.overflowY = filas > maxFilas ? 'auto' : 'visible';
+    const maxH     = headH + rowH * maxFilas;
+    wrap.style.maxHeight        = filas > maxFilas ? `${Math.ceil(maxH)}px` : '';
+    wrap.style.overflowY        = filas > maxFilas ? 'auto'    : 'visible';
     wrap.style.overscrollBehavior = filas > maxFilas ? 'contain' : '';
   }
 
   /* ========== MODAL ========== */
   function openModal() {
     const m = document.getElementById('modalZonas');
-    const p = document.getElementById('modalPanel');
-    const b = document.getElementById('modalBackdrop');
     m?.classList.remove('hidden');
-    requestAnimationFrame(() => {
-      p?.classList.add('opacity-100', 'scale-100', 'translate-y-0');
-      b?.classList.add('opacity-100');
-    });
+    document.body.style.overflow = 'hidden';
   }
 
   function closeModal() {
-    const m = document.getElementById('modalZonas');
-    const p = document.getElementById('modalPanel');
-    const b = document.getElementById('modalBackdrop');
+    const m    = document.getElementById('modalZonas');
     const form = document.getElementById('formNuevaZona');
-    p?.classList.remove('opacity-100', 'scale-100', 'translate-y-0');
-    b?.classList.remove('opacity-100');
+    m?.classList.add('hidden');
     document.body.style.overflow = '';
     filaEnEdicion = null;
     if (typeof ComboboxComponent !== 'undefined') ComboboxComponent.reset();
-    setTimeout(() => m?.classList.add('hidden'), 200);
     form?.reset();
-    cargarZonas();
+    const w = document.querySelector('#id_areaWrap .combobox-wrapper');
+    if (w && typeof w._cbUpdateInput === 'function') w._cbUpdateInput();
   }
 
   /* ========== INIT ========== */
   document.addEventListener('DOMContentLoaded', async () => {
     await Promise.all([cargarAreasParaFiltro(), cargarAreasParaModal(), cargarZonas()]);
 
-    const filtro = document.getElementById('filtroArea');
+    const filtro   = document.getElementById('filtroArea');
     const buscador = document.getElementById('buscadorZonas');
-    if (filtro) filtro.addEventListener('change', aplicarFiltros);
+    if (filtro)   filtro.addEventListener('change', aplicarFiltros);
     if (buscador) buscador.addEventListener('input', aplicarFiltros);
 
     document.getElementById('btnAbrirModalZonas')?.addEventListener('click', openModal);
@@ -397,31 +405,21 @@
       if (e.target.id === 'modalBackdrop') closeModal();
     });
 
-    const inputZona = document.getElementById('id_zona');
-    inputZona?.addEventListener('input', (e) => {
-      let v = e.target.value.replace(/[^0-9]/g, '');
-      if (v.length > 1 && v.startsWith('0')) v = v.replace(/^0+/, '');
-      if (v.length > 4) v = v.slice(0, 4);
-      e.target.value = v;
-    });
-
     document.getElementById('formNuevaZona')?.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const form = e.target;
-      const id_zona = form.id_zona?.value?.trim();
-      const id_area = form.id_area?.value?.trim();
-      if (!id_zona || !id_area) {
-        Toast.fire({ icon: 'warning', title: 'Ingresa el número y selecciona un área.' });
-        return;
-      }
-      if (isNaN(id_zona) || parseInt(id_zona) <= 0) {
-        Toast.fire({ icon: 'warning', title: 'El número debe ser entero positivo.' });
+      const form       = e.target;
+      const nombre_zona = form.nombre_zona?.value?.trim();
+      const idAreaEl   = form.id_area;
+      const id_area     = idAreaEl ? idAreaEl.value : undefined;
+      const id_area_trim = (id_area || '').trim();
+      if (!nombre_zona || !id_area_trim) {
+        Toast.fire({ icon: 'warning', title: 'Ingresa el nombre y selecciona un área.' });
         return;
       }
       const fd = new FormData();
       fd.append('accion', 'crear');
-      fd.append('id_zona', id_zona);
-      fd.append('id_area', id_area);
+      fd.append('nombre_zona', nombre_zona);
+      fd.append('id_area', id_area_trim);
       try {
         const j = await apiFetch(API_URL, 'POST', fd);
         if (j.status === 'success') {

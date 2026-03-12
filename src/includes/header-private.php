@@ -22,10 +22,14 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 <style>
-    /* Toast detrás de la sidebar y del widget de usuario (z-50) */
+    /* Toast detrás de la sidebar y del widget de usuario (z-50) fuera de modal */
     .swal2-container.swal2-top-end {
       top: 5rem !important;
       z-index: 40 !important;
+    }
+    /* Cuando un modal está abierto (body overflow:hidden) el toast sube encima del backdrop */
+    body[style*="overflow: hidden"] .swal2-container {
+      z-index: 9999 !important;
     }
     .modal-perfil {
       z-index: 999999 !important;

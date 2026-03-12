@@ -447,7 +447,7 @@ if (isset($conn)) {
             <option value="mixto"> Mixta </option>
           </select>
           <img 
-            src="<?= BASE_URL ?>src/assets/img/icons/Acction/chevron-down.svg" 
+            src="<?= BASE_URL ?>src/assets/img/chevron-down.svg" 
             alt="arrow" 
             class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70"
           />
@@ -458,7 +458,7 @@ if (isset($conn)) {
 
   
       <!-- Selector de Área -->
-      <div id="contenedorAreaFiltro" class="relative w-full sm:w-auto">
+      <div class="relative w-full sm:w-auto">
         <label for="selectArea" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Seleccione el Área</label>
         <div class="relative">
           <select id="selectArea" name="id_area"
@@ -471,7 +471,7 @@ if (isset($conn)) {
             <option value="" class="text-[#00324D]" selected hidden>SELECCIONE EL ÁREA</option>
           </select>
           <img 
-            src="<?= BASE_URL ?>src/assets/img/icons/Acction/chevron-down.svg" 
+            src="<?= BASE_URL ?>src/assets/img/chevron-down.svg" 
             alt="arrow" 
             class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70"/>
         </div>
@@ -481,7 +481,7 @@ if (isset($conn)) {
 
 
       <!-- Selector de Zona -->
-      <div id="contenedorZonaFiltro" class="relative w-full sm:w-auto">
+      <div class="relative w-full sm:w-auto">
         <label for="selectZona" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Seleccione la Zona</label>
         <div class="relative">
           <select id="selectZona" name="id_zona"
@@ -494,7 +494,7 @@ if (isset($conn)) {
             <option value="" class="text-[#00324D]" selected hidden>SELECCIONE LA ZONA</option>
           </select>
           <img 
-            src="<?= BASE_URL ?>src/assets/img/icons/Acction/chevron-down.svg" 
+            src="<?= BASE_URL ?>src/assets/img/chevron-down.svg" 
             alt="arrow" 
             class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70"/>
         </div>
@@ -791,20 +791,8 @@ if (isset($conn)) {
                 </select>
               </div>
 
-              <!-- MODALIDAD -->
-              <div class="field">
-                <label for="modalidad" class="block text-xs font-semibold text-gray-800 mb-1">Modalidad</label>
-                <select name="modalidad" id="modalidad"
-                  class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
-                  <option value="">Seleccione la modalidad</option>
-                  <option value="presencial">Presencial</option>
-                  <option value="virtual">Virtual</option>
-                  <option value="mixto">Mixta</option>
-                </select>
-              </div>
-
               <!-- AREA + ZONA-->
-              <div class="field" id="contenedorAreaZonaCrear">
+              <div class="field">
                 <div class="flex flex-minw-0 gap-2">
                   <div class="flex-1">
                     <label for="id_area_combo" class="block text-xs font-semibold text-gray-800 mb-1">Área</label>

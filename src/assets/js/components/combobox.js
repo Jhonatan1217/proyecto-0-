@@ -61,6 +61,7 @@
    * @param {string} opts.optionClass - Clase de cada opción
    * @param {string} opts.placeholder - Placeholder del input
    * @param {string} [opts.clearValue] - Valor para "limpiar" (ej: 'todas')
+   * @param {boolean} [opts.restoreValueOnBlurWhenEmpty] - Si true (default), al salir con placeholder restaura el último valor (edición). Si false (filtros), deja el placeholder.
    * @param {boolean} [opts.inTable] - Si está dentro de tabla (usa position: fixed + dropup)
    * @param {Function} [opts.onEnhance] - Callback cuando se enhancea cada select
    */
@@ -70,6 +71,7 @@
     const optionClass = opts.optionClass || 'custom-option';
     const placeholder = opts.placeholder || 'Buscar...';
     const clearValue = opts.clearValue;
+    const restoreValueOnBlurWhenEmpty = opts.restoreValueOnBlurWhenEmpty !== false;
     const isInTable = (el) => el.closest('table') || el.closest('[id*="wrapTabla"]');
 
     document.querySelectorAll(selector).forEach(select => {
@@ -116,6 +118,67 @@
 
       const optionsData = () => [...select.options].filter(o => !o.disabled).map(o => ({ value: o.value, text: (o.textContent || '').trim() }));
 
+      function getOptionByText(exactText) {
+        const opts = optionsData();
+        const t = (exactText || '').trim();
+        if (!t) return null;
+        const exact = opts.find(o => o.text === t);
+        if (exact) return exact;
+        const singleStarts = opts.filter(o => o.text.toLowerCase().startsWith(t.toLowerCase()));
+        return singleStarts.length === 1 ? singleStarts[0] : null;
+      }
+
+      function storeLastValid() {
+        const opt = select.options[select.selectedIndex];
+        const text = opt ? (opt.textContent || '').trim() : '';
+        const val = select.value;
+        wrapper._cbLastValidValue = val;
+        wrapper._cbLastValidText = (clearValue !== undefined && clearValue !== null && String(val) === String(clearValue)) ? '' : text;
+      }
+
+      function validateAndResetOnClose() {
+        const typed = (input.value || '').trim();
+        const opts = optionsData();
+        const lastVal = wrapper._cbLastValidValue;
+        const beforeClear = wrapper._cbBeforeClearValue;
+        const matched = getOptionByText(typed);
+        if (typed === '') {
+          if (restoreValueOnBlurWhenEmpty && beforeClear !== undefined && beforeClear !== null) {
+            select.value = beforeClear;
+            wrapper._cbBeforeClearValue = undefined;
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+          } else if (clearValue !== undefined && clearValue !== null) {
+            select.value = clearValue;
+            wrapper._cbBeforeClearValue = undefined;
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+          } else {
+            if (lastVal !== undefined && lastVal !== null) select.value = lastVal;
+            else if (opts.length) select.value = opts[0].value;
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          updateInputFromSelect();
+          storeLastValid();
+          return;
+        }
+        if (matched) {
+          select.value = matched.value;
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+          updateInputFromSelect();
+          storeLastValid();
+          return;
+        }
+        const doReset = () => {
+          if (lastVal !== undefined && lastVal !== null) select.value = lastVal;
+          else if (opts.length) select.value = opts[0].value;
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+          updateInputFromSelect();
+          storeLastValid();
+        };
+        input.style.transition = 'opacity 0.12s ease';
+        input.style.opacity = '0';
+        setTimeout(() => { doReset(); input.style.opacity = '1'; }, 120);
+      }
+
       function renderOptions(filterText) {
         const q = (filterText || '').trim().toLowerCase();
         dropdown.innerHTML = '';
@@ -128,12 +191,16 @@
           div.setAttribute('role', 'option');
           div.addEventListener('click', (e) => {
             e.stopPropagation();
+            wrapper._cbOptionJustSelected = true;
             select.value = value;
             select.dispatchEvent(new Event('change', { bubbles: true }));
             input.value = (clearValue !== undefined && clearValue !== null && String(value) === String(clearValue)) ? '' : text;
+            storeLastValid();
             dropdown.classList.add('hidden');
+            dropdown.style.cssText = '';
             if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
             toggleClearVisibility();
+            setTimeout(() => { wrapper._cbOptionJustSelected = false; }, 150);
           });
           dropdown.appendChild(div);
         });
@@ -147,7 +214,8 @@
       }
 
       function updateInputFromSelect() {
-        if (clearValue !== undefined && clearValue !== null && String(select.value) === String(clearValue)) {
+        const val = select.value;
+        if (val === '' || (clearValue !== undefined && clearValue !== null && String(val) === String(clearValue))) {
           input.value = '';
         } else {
           const opt = select.options[select.selectedIndex];
@@ -156,17 +224,25 @@
         toggleClearVisibility();
       }
       updateInputFromSelect();
+      storeLastValid();
       wrapper._cbUpdateInput = updateInputFromSelect;
+      wrapper._cbValidateAndResetOnClose = validateAndResetOnClose;
 
       select.classList.add('sr-only');
       select.style.cssText = 'position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;clip:rect(0,0,0,0);';
       wrapper.appendChild(triggerWrap);
       wrapper.appendChild(dropdown);
 
-      const inTable = isInTable(wrapper);
+      // Contextos que usan position:fixed + applyDropdownPosition:
+      // 1) dentro de <table> o wrapTabla (filas editables)
+      // 2) dentro de modal-*-box que tienen overflow:hidden y recortarían el dropdown
+      const inTable = isInTable(wrapper) || !!wrapper.closest(
+        '.modal-usuario-box,.modal-grupo-box,.modal-zona-box,.modal-area-box,.modal-trimestre-box,.modal-enterprise-box'
+      );
       const maxH = DROPDOWN_MAX_ITEMS * ITEM_HEIGHT_REM * parseFloat(getComputedStyle(document.documentElement).fontSize);
 
       function positionAndShow(forceShowAll) {
+        storeLastValid();
         const filterText = forceShowAll ? '' : input.value;
         renderOptions(filterText);
         if (dropdown.children.length === 0) return;
@@ -211,10 +287,24 @@
         e?.preventDefault?.();
       });
       input.addEventListener('input', () => { renderOptions(input.value); toggleClearVisibility(); });
+      input.addEventListener('blur', () => {
+        setTimeout(() => {
+          if (dropdown.contains(document.activeElement)) return;
+          if (wrapper._cbOptionJustSelected) return;
+          if (!dropdown.classList.contains('hidden')) {
+            dropdown.classList.add('hidden');
+            dropdown.style.cssText = '';
+            if (dropdown.parentNode === document.body && wrapper) wrapper.appendChild(dropdown);
+          }
+          if (typeof wrapper._cbValidateAndResetOnClose === 'function') wrapper._cbValidateAndResetOnClose();
+        }, 120);
+      });
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
           dropdown.classList.add('hidden');
+          dropdown.style.cssText = '';
           if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
+          if (typeof wrapper._cbValidateAndResetOnClose === 'function') wrapper._cbValidateAndResetOnClose();
           input.blur();
         }
       });
@@ -222,16 +312,28 @@
       btnClear.addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();
-        input.value = '';
+        wrapper._cbBeforeClearValue = select.value;
+        const hasEmptyOption = Array.from(select.options).some(o => o.value === '');
         if (clearValue !== undefined && clearValue !== null) {
           select.value = clearValue;
           select.dispatchEvent(new Event('change', { bubbles: true }));
+        } else if (hasEmptyOption) {
+          select.value = '';
+          select.dispatchEvent(new Event('change', { bubbles: true }));
         } else {
-          const first = Array.from(select.options).find(o => !o.disabled && o.value);
-          if (first) { select.value = first.value; select.dispatchEvent(new Event('change', { bubbles: true })); }
+          input.value = '';
+          toggleClearVisibility();
+          dropdown.classList.add('hidden');
+          if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
+          dropdown.style.cssText = '';
+          positionAndShow(true);
+          setTimeout(() => { try { input.focus({ preventScroll: true }); } catch (_) { input.focus(); } }, 0);
+          return;
         }
         dropdown.classList.add('hidden');
         if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
+        dropdown.style.cssText = '';
+        updateInputFromSelect();
         toggleClearVisibility();
         positionAndShow(true);
         setTimeout(() => { try { input.focus({ preventScroll: true }); } catch (_) { input.focus(); } }, 0);
@@ -254,7 +356,8 @@
           if (d.parentNode === document.body && w) w.appendChild(d);
           d.style.cssText = '';
           const inp = w?.querySelector('.combobox-input');
-          if (inp && !(inp.value || '').trim() && typeof w._cbUpdateInput === 'function') w._cbUpdateInput();
+          if (typeof w._cbValidateAndResetOnClose === 'function') w._cbValidateAndResetOnClose();
+          else if (inp && !(inp.value || '').trim() && typeof w._cbUpdateInput === 'function') w._cbUpdateInput();
         });
       }, true);
     }

@@ -68,7 +68,7 @@
     if (filtroPrograma && !filtroPrograma.dataset.cb) {
       filtroPrograma.dataset.cb = "1";
       if (typeof ComboboxComponent !== "undefined") {
-        ComboboxComponent.enhance({ selector: "#filtroPrograma", placeholder: "Todos los programas", clearValue: "" });
+        ComboboxComponent.enhance({ selector: "#filtroPrograma", placeholder: "Todos los programas", clearValue: "", restoreValueOnBlurWhenEmpty: false });
       }
     }
   }

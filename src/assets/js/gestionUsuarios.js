@@ -375,7 +375,8 @@ function enhanceSelectsUsuarios() {
                 dropdownClass: 'custom-select-dropdown',
                 optionClass: 'custom-option',
                 placeholder: sel === '#filtroCargos' ? 'Todos los cargos' : 'Todos los roles',
-                clearValue: ''
+                clearValue: '',
+                restoreValueOnBlurWhenEmpty: false
             });
         }
     });
