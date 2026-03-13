@@ -380,14 +380,15 @@ function enhanceSelectsUsuarios() {
             });
         }
     });
-    ComboboxComponent.enhance({
-        selector: '.select-usuario:not(#filtroCargos):not(#filtroRoles)',
-        dropdownClass: 'custom-select-dropdown',
-        optionClass: 'custom-option',
-        placeholder: 'Buscar...',
-        allowClear: false,
-        restoreValueOnBlurWhenEmpty: true
-    });
+    // Selects estilizados (tipo doc, cargo, modalidad, tipo contrato): mismo desplegable y dropup que combobox, sin búsqueda ni X.
+    if (typeof ComboboxComponent.enhanceSelectStyled === 'function') {
+        ComboboxComponent.enhanceSelectStyled({
+            selector: '.select-styled',
+            dropdownClass: 'custom-select-dropdown',
+            optionClass: 'custom-option',
+            placeholder: 'Seleccione...'
+        });
+    }
 }
 
 function syncComboboxesAfterReset(form) {
@@ -613,14 +614,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const form = e.target;
         if (!validarFormulario(form)) return;
         limpiarErrores(form);
-        const datos = Object.fromEntries(new FormData(form));
-        datos.tipo_documento = datos.tipo_documento || form.querySelector('[name="tipo_documento"]')?.value || '';
-        if (datos.modalidad) { datos.tipo_instructor = datos.modalidad; delete datos.modalidad; }
-        if (String(datos.cargo || '').toLowerCase().includes('coordinador')) {
-            datos.tipo_instructor = null;
-            datos.tipo_contrato = null;
-        } else {
-            datos.area_coordinador = '';
+        const datos = datosEditarDesdeForm(form);
+        if (form._datosIniciales && JSON.stringify(datos) === form._datosIniciales) {
+            toast("Sin cambios.", "info");
+            return;
         }
         const res = await apiRequest("actualizar", "POST", datos);
         if (res.success) {
@@ -653,6 +650,22 @@ document.addEventListener('DOMContentLoaded', () => {
 /* =============================================
    4. LOGICA DE CARGA DE DATOS
    ============================================= */
+
+function datosEditarDesdeForm(form) {
+    const datos = Object.fromEntries(new FormData(form));
+    datos.tipo_documento = datos.tipo_documento || form.querySelector('[name="tipo_documento"]')?.value || '';
+    if (datos.modalidad) {
+        datos.tipo_instructor = datos.modalidad;
+        delete datos.modalidad;
+    }
+    if (String(datos.cargo || '').toLowerCase().includes('coordinador')) {
+        datos.tipo_instructor = null;
+        datos.tipo_contrato = null;
+    } else {
+        datos.area_coordinador = datos.area_coordinador || '';
+    }
+    return datos;
+}
 
 async function prepararEdicion(id) {
     try {
@@ -713,6 +726,9 @@ async function prepararEdicion(id) {
                 const inputArea = form.querySelector('[name="area_coordinador"]');
                 if (inputArea) inputArea.value = u.nombre_area || u.area_coordinador || '';
             }
+
+            const datosIniciales = datosEditarDesdeForm(form);
+            form._datosIniciales = datosIniciales ? JSON.stringify(datosIniciales) : '';
 
             abrirModal('modalEditarUsuario');
         } else {

@@ -53,6 +53,13 @@
     });
   }
 
+  function isInTableOrModal(el) {
+    if (!el) return false;
+    const inTable = el.closest('table') || el.closest('[id*="wrapTabla"]');
+    const inModal = el.closest('.modal-usuario-box,.modal-grupo-box,.modal-zona-box,.modal-area-box,.modal-trimestre-box,.modal-enterprise-box');
+    return !!(inTable || inModal);
+  }
+
   /**
    * Mejora un <select> a combobox con búsqueda y dropup.
    * @param {Object} opts
@@ -404,10 +411,141 @@
           d.style.cssText = '';
           const inp = w?.querySelector('.combobox-input');
           if (inp && typeof w._cbValidateAndResetOnBlur === 'function') w._cbValidateAndResetOnBlur();
-          else if (inp && typeof w._cbUpdateInput === 'function') w._cbUpdateInput();
+          else if (typeof w._cbUpdateInput === 'function') w._cbUpdateInput();
         });
       }, true);
     }
+  }
+
+  /**
+   * Mejora un <select> a desplegable custom: mismo diseño y dropup que el combobox,
+   * sin búsqueda ni botón X. Para listas fijas (jornada, modalidad, cargo, etc.).
+   */
+  function enhanceSelectStyled(opts) {
+    const selector = opts.selector || '.select-styled';
+    const dropdownClass = opts.dropdownClass || 'custom-select-dropdown';
+    const optionClass = opts.optionClass || 'custom-option';
+    const placeholder = (opts.placeholder != null && opts.placeholder !== '') ? opts.placeholder : 'Seleccione...';
+
+    document.querySelectorAll(selector).forEach(select => {
+      if (select.dataset.comboboxEnhanced === '1') return;
+      select.dataset.comboboxEnhanced = '1';
+
+      const container = select.parentNode;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'combobox-wrapper select-styled-wrapper';
+      container.insertBefore(wrapper, select);
+      wrapper.appendChild(select);
+
+      container.querySelectorAll('.select-grupo-chevron, .select-usuario-chevron').forEach(el => { el.style.display = 'none'; });
+
+      const triggerWrap = document.createElement('div');
+      triggerWrap.className = 'combobox-trigger w-full border border-gray-300 rounded-xl bg-white hover:border-gray-400 focus-within:ring-2 focus-within:ring-[#39A900]/20 focus-within:border-[#39A900] py-2.5 text-sm';
+      triggerWrap.setAttribute('tabindex', '0');
+      const triggerText = document.createElement('span');
+      triggerText.className = 'select-styled-trigger-text';
+      triggerText.style.paddingLeft = '0.75rem';
+      triggerText.style.flex = '1';
+      triggerText.style.minWidth = '0';
+      triggerText.style.overflow = 'hidden';
+      triggerText.style.textOverflow = 'ellipsis';
+      triggerText.style.whiteSpace = 'nowrap';
+      triggerText.style.textAlign = 'left';
+      const chevron = document.createElement('span');
+      chevron.className = 'chevron-combobox';
+      chevron.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>';
+      triggerWrap.appendChild(triggerText);
+      triggerWrap.appendChild(chevron);
+
+      const dropdown = document.createElement('div');
+      dropdown.className = 'combobox-dropdown ' + dropdownClass + ' hidden';
+      dropdown.setAttribute('role', 'listbox');
+      dropdown._cbWrapper = wrapper;
+
+      const optionsData = () => [...select.options].filter(o => !o.disabled).map(o => ({ value: o.value, text: (o.textContent || '').trim() }));
+
+      function updateTriggerText() {
+        const opt = select.options[select.selectedIndex];
+        const text = opt && String(opt.value) !== '' ? (opt.textContent || '').trim() : '';
+        triggerText.textContent = text || placeholder;
+        triggerText.style.color = text ? '#111827' : '#9ca3af';
+      }
+
+      function renderOptions() {
+        dropdown.innerHTML = '';
+        optionsData().forEach(({ value, text }) => {
+          const div = document.createElement('div');
+          div.className = optionClass + (value === select.value ? ' selected' : '');
+          div.textContent = text;
+          div.dataset.value = value;
+          div.setAttribute('role', 'option');
+          div.addEventListener('click', (e) => {
+            e.stopPropagation();
+            select.value = value;
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            updateTriggerText();
+            dropdown.classList.add('hidden');
+            dropdown.classList.remove('dropdown-over-table', 'dropdown-up');
+            if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
+            dropdown.style.cssText = '';
+          });
+          dropdown.appendChild(div);
+        });
+        dropdown.classList.toggle('hidden', dropdown.children.length === 0);
+      }
+
+      updateTriggerText();
+      select.classList.add('sr-only');
+      select.style.cssText = 'position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;clip:rect(0,0,0,0);';
+      wrapper.appendChild(triggerWrap);
+      wrapper.appendChild(dropdown);
+
+      const inTable = isInTableOrModal(wrapper);
+      const maxH = DROPDOWN_MAX_ITEMS * ITEM_HEIGHT_REM * parseFloat(getComputedStyle(document.documentElement).fontSize);
+
+      function positionAndShow() {
+        renderOptions();
+        if (dropdown.children.length === 0) return;
+        if (inTable) {
+          closeAllDropdowns();
+          dropdown.style.cssText = 'position:fixed;visibility:hidden;top:-9999px;left:0;display:block;';
+          document.body.appendChild(dropdown);
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              applyDropdownPosition(wrapper, dropdown, triggerWrap, maxH);
+              dropdown.style.visibility = 'visible';
+              dropdown.classList.remove('hidden');
+              dropdown._cbJustOpened = Date.now();
+            });
+          });
+        } else {
+          dropdown.style.maxHeight = maxH + 'px';
+          dropdown.classList.remove('hidden');
+          dropdown._cbJustOpened = Date.now();
+        }
+      }
+
+      function openFromTrigger(ev) {
+        if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+        if (dropdown.classList.contains('hidden')) positionAndShow();
+      }
+
+      wrapper._cbUpdateInput = updateTriggerText;
+
+      triggerWrap.addEventListener('mousedown', (e) => { e.preventDefault(); openFromTrigger(e); });
+      triggerWrap.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
+      triggerWrap.addEventListener('focus', () => { closeAllDropdowns(); positionAndShow(); });
+      triggerWrap.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          dropdown.classList.add('hidden');
+          if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
+          dropdown.style.cssText = '';
+          triggerWrap.blur();
+        }
+      });
+
+      select.addEventListener('change', updateTriggerText);
+    });
   }
 
   function resetComboboxes() {
@@ -433,6 +571,7 @@
 
   global.ComboboxComponent = {
     enhance: enhanceCombobox,
+    enhanceSelectStyled: enhanceSelectStyled,
     reset: resetComboboxes,
     closeAll: closeAllDropdowns,
     setInitialValue: setInitialValue,

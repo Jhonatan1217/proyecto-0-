@@ -12,46 +12,44 @@
 <body class="flex flex-col min-h-screen font-sans bg-gray-100 text-gray-900">
     <div class="flex-1 max-w-6xl w-full mx-auto px-4 md:px-6 py-6 md:py-8">
 
-        <div class="bg-white rounded-lg shadow-sm p-6 md:p-8 mb-6">
-            <h1 class="text-2xl md:text-3xl font-bold mb-2" style="color:#39A900;">Horarios Inactivos</h1>
-            <p class="text-gray-600 text-sm">Visualice y edite los horarios inactivos del sistema</p>
-        </div>
+        <h1 class="text-4xl font-extrabold tracking-tight mb-2 text-[#39A900]">Horarios Inactivos</h1>
+        <p class="text-gray-500 mb-6">Visualice y edite los horarios inactivos del sistema</p>
 
-        <!-- Bloque de filtros -->
-        <div class="bg-white rounded-lg shadow-sm p-6 md:p-8 mb-6 border border-gray-200">
-            <div class="flex flex-col md:flex-row md:justify-between gap-6">
+        <!-- Contenedor estándar (mismo que Zonas, Grupos, Usuarios) -->
+        <div class="bg-white shadow rounded-2xl border border-gray-200">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-6">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-800">Historial</h2>
+                    <p class="text-sm text-gray-500">Filtros y listado de horarios inactivos</p>
+                </div>
+                <div class="flex items-center gap-2 text-sm text-gray-600">
+                    <span class="text-gray-500">Resultados</span>
+                    <span id="resultCount" class="font-bold text-[#39A900]">0 horarios</span>
+                </div>
+            </div>
 
-                <div class="flex flex-col md:flex-row gap-4 md:gap-6 flex-1 flex-wrap">
-
-                    <!-- Filtro Área (PRIMERO) -->
-                    <div class="flex flex-col gap-2 min-w-48">
-                        <label for="filterArea" class="text-xs font-medium text-gray-600 uppercase tracking-wider">Área</label>
+            <div class="px-6 py-4 border-t border-gray-100">
+                <div class="flex flex-col md:flex-row gap-4 flex-wrap items-start">
+                    <div class="relative w-full md:w-64">
                         <select id="filterArea"
-                                class="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium text-gray-900 
-                                       focus:outline-none focus:ring-2 focus:border-transparent cursor-pointer hover:border-gray-400 transition-colors"
-                                style="--tw-ring-color:#39A900;" autocomplete="off">
+                                class="w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-2.5 pr-10 text-sm text-gray-900 focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] outline-none transition hover:border-gray-400"
+                                autocomplete="off">
                             <option value="">Todas las áreas</option>
                         </select>
+                        <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </div>
-
-                    <!-- Filtro Zona (DEPENDE de área seleccionada) -->
-                    <div class="flex flex-col gap-2 min-w-48">
-                        <label for="filterZona" class="text-xs font-medium text-gray-600 uppercase tracking-wider">Zona</label>
+                    <div class="relative w-full md:w-64">
                         <select id="filterZona"
-                                class="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium text-gray-900 
-                                       focus:outline-none focus:ring-2 focus:border-transparent cursor-pointer hover:border-gray-400 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                style="--tw-ring-color:#39A900;" autocomplete="off">
+                                class="w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-2.5 pr-10 text-sm text-gray-900 focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] outline-none transition hover:border-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                autocomplete="off">
                             <option value="">Todas las zonas</option>
                         </select>
+                        <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </div>
-
-                    <!-- Filtro Trimestre -->
-                    <div class="flex flex-col gap-2 min-w-48">
-                        <label for="filterTrimestre" class="text-xs font-medium text-gray-600 uppercase tracking-wider">Trimestre</label>
+                    <div class="relative w-full md:w-64">
                         <select id="filterTrimestre"
-                                class="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium text-gray-900 
-                                       focus:outline-none focus:ring-2 focus:border-transparent cursor-pointer hover:border-gray-400 transition-colors"
-                                style="--tw-ring-color:#39A900;" autocomplete="off">
+                                class="w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-2.5 pr-10 text-sm text-gray-900 focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] outline-none transition hover:border-gray-400"
+                                autocomplete="off">
                             <option value="">Todos los trimestres</option>
                             <option value="1">Trimestre 1</option>
                             <option value="2">Trimestre 2</option>
@@ -60,24 +58,14 @@
                             <option value="5">Trimestre 5</option>
                             <option value="6">Trimestre 6</option>
                         </select>
+                        <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </div>
-                </div>
-
-                <!-- Acciones y contador -->
-                <div class="flex flex-col md:flex-row gap-4 md:items-end">
-
-                    <!-- Botón limpiar -->
                     <?php if (($_SESSION['usuario_cargo'] ?? '') !== 'INSTRUCTOR'): ?>
-                        <button id="clearFilters" class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-lg text-sm font-semibold transition-colors duration-200 whitespace-nowrap h-fit">
-                            Limpiar Filtros
-                        </button>
-                     <?php endif; ?>
-
-                    <!-- Contador -->
-                    <div class="flex flex-col gap-1 text-right">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Resultados</span>
-                        <span id="resultCount" class="text-lg font-bold" style="color:#39A900;">0 horarios</span>
-                    </div>
+                    <button id="clearFilters" type="button"
+                            class="w-full md:w-auto rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] outline-none transition">
+                        Limpiar Filtros
+                    </button>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
