@@ -24,6 +24,12 @@ let horariosCache = [];
 let gestionHorasCache = { instructores: [], grupos: [] };
 let gestionHorasTabActual = "instructores";
 
+function registroActivo(estado) {
+  if (estado === undefined || estado === null || estado === "") return true;
+  const valor = String(estado).trim().toLowerCase();
+  return valor === "1" || valor === "true" || valor === "activo";
+}
+
 function timeToMinutes(t) {
   if (!t) return null;
   const [h, m] = t.split(":").map(Number);
@@ -313,7 +319,7 @@ async function cargarAreasYZonas() {
 
       dataAreas.data.forEach((a) => {
         // 🔥 SOLO ÁREAS ACTIVAS EN ESTE SELECT
-        if (String(a.estado) !== "1") return;
+        if (!registroActivo(a.estado)) return;
         contadorActivas++;
         const opt = document.createElement("option");
         opt.value = a.id_area;
@@ -381,7 +387,7 @@ async function cargarAreasYZonas() {
         }
 
         // SOLO ZONAS ACTIVAS EN ESTE ÁREA
-        const zonasActivas = zonasArea.filter((z) => String(z.estado) === "1");
+        const zonasActivas = zonasArea.filter((z) => registroActivo(z.estado));
 
         if (!zonasActivas.length) {
           // Dejamos el placeholder seleccionado, pero al desplegar se verá el mensaje
@@ -567,8 +573,8 @@ function renderizarTablaDesdeRegistros(registrosServer, emptyMessage = "No hay r
 
   horas.forEach((hora, idx) => {
     const fila = document.createElement("tr");
-    fila.className = idx % 2 === 0 ? "bg-gray-50" : "bg-white";
-    fila.innerHTML = `<td class="border border-gray-300 p-3 font-bold text-gray-700 text-center bg-gray-100 whitespace-nowrap min-w-[110px] w-[110px]">
+    fila.className = "";
+    fila.innerHTML = `<td class="hora-col p-3 whitespace-nowrap min-w-[110px] w-[110px]">
       ${String(hora).padStart(2, "0")}:00 - ${String(hora + 1).padStart(2, "0")}:00 </td>`;
 
     dias.forEach((dia) => {
@@ -630,7 +636,10 @@ function renderizarTablaDesdeRegistros(registrosServer, emptyMessage = "No hay r
                 </div>
               </div>`;
         } else if (hora > rStart && hora < rEnd) {
-          contenido += `<div class="border-l-4 border-l-green-600 bg-white rounded-md p-2 mb-2 shadow-sm">
+          contenido += `<div class="border-l-[6px] border-l-green-700 border-t-2 border-t-green-300 bg-green-50 rounded-md p-2 mb-2 shadow-sm">
+                <div class="inline-flex items-center gap-1 mb-1 px-2 py-[2px] rounded-full bg-green-100 text-green-800 text-[11px] font-semibold">
+                  ↳ Continuación
+                </div>
                 <div class="flex items-start gap-1 text-xs text-gray-600">
                   <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
@@ -651,7 +660,7 @@ function renderizarTablaDesdeRegistros(registrosServer, emptyMessage = "No hay r
       });
       const isLibre = !contenido;
       fila.innerHTML += `
-          <td class="border border-gray-300 p-2 text-sm text-center leading-tight align-top ${isLibre ? "zona-libre cursor-pointer hover:bg-[#00304D]": ""}"
+            <td class="p-2 text-sm text-center leading-tight align-top ${isLibre ? "zona-libre cursor-pointer": ""}"
               data-dia="${dia}"
               data-hora="${String(hora).padStart(2, "0")}: 00">
               ${contenido || `<span class="text-gray-400 italic">Zona libre</span>`}
@@ -792,7 +801,7 @@ async function cargarFichas() {
 
     if (array.length > 0) {
       // SOLO FICHAS ACTIVAS
-      listaFichas = array.filter((f) => String(f.estado) === "1");
+      listaFichas = array.filter((f) => registroActivo(f.estado));
     }
     
     if (!listaFichas.length) {
@@ -841,9 +850,7 @@ async function cargarCompetencias() {
       : [];
 
     // SOLO COMPETENCIAS ACTIVAS
-    listaCompetencias = array.filter(
-      (c) => String(c.estado) === "1"
-    );
+    listaCompetencias = array.filter((c) => registroActivo(c.estado));
 
     if (!listaCompetencias.length) {
       console.warn("No hay competencias activas");
@@ -889,7 +896,7 @@ async function cargarInstructores() {
     }
 
     // FILTRAR SOLO INSTRUCTORES ACTIVOS (estado = 1)
-    listaInstructores = instructoresArray.filter((i) => String(i.estado) === "1");
+    listaInstructores = instructoresArray.filter((i) => registroActivo(i.estado));
 
     if (listaInstructores.length > 0) {
       llenarSelectInstructores(listaInstructores);
@@ -964,7 +971,7 @@ async function obtenerRoesPorCompetencia(id_competencia) {
 
     let activas = 0;
     (dataAreas?.data || []).forEach((a) => {
-      if (String(a.estado) === "1") {
+      if (registroActivo(a.estado)) {
         activas++;
         selArea.innerHTML += `
                   <option value="${a.id_area}">${a.nombre_area}</option>
@@ -1656,12 +1663,10 @@ function popupZonaLibre(){
 document.addEventListener("DOMContentLoaded", () => {
   cargarAreasYZonas();
   configurarFiltros();
-  if (IS_AUTHENTICATED) {
-    cargarFichas();
-    cargarInstructores();
-    cargarCompetencias();
-    configurarModalidadFormulario();
-  }
+  cargarFichas();
+  cargarInstructores();
+  cargarCompetencias();
+  configurarModalidadFormulario();
   if (id_zona) {
     toggleTabla(true);
     cargarTrimestralizacion();

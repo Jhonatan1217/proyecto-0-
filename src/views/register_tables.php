@@ -126,8 +126,13 @@ if (isset($conn)) {
   }
 
   #id_competencia {
+    display: block;
     width: 100%;
     max-width: 100%;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   #id_competencia option {
@@ -135,6 +140,22 @@ if (isset($conn)) {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  /* Evita doble flecha (nativa + custom) en los combobox superiores */
+  #selectModalidad,
+  #selectArea,
+  #selectZona {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: none !important;
+  }
+
+  #selectModalidad::-ms-expand,
+  #selectArea::-ms-expand,
+  #selectZona::-ms-expand {
+    display: none;
   }
 
   .custom-combobox {
@@ -148,9 +169,9 @@ if (isset($conn)) {
     right: 0;
     z-index: 80;
     background: #ffffff;
-    border: 1px solid #d1d5db;
-    border-radius: 18px;
-    box-shadow: 0 18px 38px rgba(15, 23, 42, 0.12);
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
     overflow: hidden;
   }
 
@@ -159,9 +180,9 @@ if (isset($conn)) {
   }
 
   .custom-combobox-list {
-    max-height: 220px;
+    max-height: 240px;
     overflow-y: auto;
-    padding: 6px;
+    padding: 4px;
   }
 
   .custom-combobox-list::-webkit-scrollbar {
@@ -179,9 +200,9 @@ if (isset($conn)) {
     border: 0;
     background: transparent;
     text-align: left;
-    border-radius: 14px;
-    padding: 12px 14px;
-    font-size: 0.98rem;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.875rem;
     color: #1f2937;
   }
 
@@ -192,8 +213,8 @@ if (isset($conn)) {
 
   .custom-combobox-option:hover,
   .custom-combobox-option.is-active {
-    background: #dfe8d8;
-    color: #243424;
+    background: #f3f4f6;
+    color: #111827;
   }
 
   .custom-combobox-empty {
@@ -405,6 +426,65 @@ if (isset($conn)) {
     margin-top: 16px;
   }
 
+  /* ===== TABLA HORARIO (ESTILO REFERENCIA) ===== */
+  #tabla-horarios {
+    border: 1px solid #b6b6b6;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #ededed;
+  }
+
+  #tabla-horarios table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    background: #ededed;
+  }
+
+  #tabla-horarios thead th {
+    background: #9ea0a3 !important;
+    color: #f3f4f6 !important;
+    border: 1px solid #b6b6b6 !important;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 8px !important;
+    text-align: center;
+  }
+
+  #tabla-horarios tbody td {
+    background: #ffffff;
+    border: 1px solid #c0c0c0;
+    color: #5f5f5f;
+    font-size: 13px;
+    vertical-align: top;
+  }
+
+  #tabla-horarios tbody td.hora-col {
+    background: #e0e0e0 !important;
+    color: #5a5a5a !important;
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  #tabla-horarios .registro {
+    background: #dce8f4 !important;
+    border: 1px solid #c5d3e3;
+    border-left: 3px solid #39a900 !important;
+    border-radius: 0.45rem;
+    box-shadow: none !important;
+    margin-bottom: 4px !important;
+    padding: 6px 7px !important;
+  }
+
+  #tabla-horarios .zona-libre {
+    background: #ffffff !important;
+  }
+
+  #tabla-horarios .zona-libre:hover {
+    background: #f5f7fa !important;
+  }
+
   @media (max-width: 600px) {
     .gh-filtros { flex-direction: column; }
     .gh-filtros-select { max-width: 100%; }
@@ -435,22 +515,20 @@ if (isset($conn)) {
         <label for="selectModalidad" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Seleccione la Modalidad</label>
         <div class="relative">
           <select id="selectModalidad" name="id_modalidad"
-            class="appearance-none w-full sm:w-64 lg:w-72 xl:w-80 2xl:w-96 px-4 sm:px-5 py-2.5 border border-gray-300 text-sm sm:text-base 
-            rounded-lg
-            text-slate-700 font-semibold tracking-wider
-            bg-white shadow-sm hover:bg-gray-50
-            focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none
+            class="appearance-none w-full sm:w-64 lg:w-72 xl:w-80 2xl:w-96 px-4 py-2.5 border border-gray-300 text-sm 
+            rounded-xl
+            text-gray-700
+            bg-white
+            focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none
             transition-all duration-200 cursor-pointer pr-10">
             <option value="" class="text-[#00324D]" selected hidden>SELECCIONE LA MODALIDAD</option>
             <option value="presencial"> Presencial </option>
             <option value="virtual"> Virtual </option>
             <option value="mixto"> Mixta </option>
           </select>
-          <img 
-            src="<?= BASE_URL ?>src/assets/img/chevron-down.svg" 
-            alt="arrow" 
-            class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70"
-          />
+          <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </div>
       </div>
 
@@ -462,18 +540,17 @@ if (isset($conn)) {
         <label for="selectArea" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Seleccione el Área</label>
         <div class="relative">
           <select id="selectArea" name="id_area"
-            class="appearance-none w-full sm:w-64 lg:w-72 xl:w-80 2xl:w-96 px-4 sm:px-5 py-2.5 border border-gray-300 text-sm sm:text-base 
-            rounded-lg
-            text-slate-700 font-semibold tracking-wider
-            bg-white shadow-sm hover:bg-gray-50
-            focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none
+            class="appearance-none w-full sm:w-64 lg:w-72 xl:w-80 2xl:w-96 px-4 py-2.5 border border-gray-300 text-sm 
+            rounded-xl
+            text-gray-700
+            bg-white
+            focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none
             transition-all duration-200 cursor-pointer pr-10">
             <option value="" class="text-[#00324D]" selected hidden>SELECCIONE EL ÁREA</option>
           </select>
-          <img 
-            src="<?= BASE_URL ?>src/assets/img/chevron-down.svg" 
-            alt="arrow" 
-            class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70"/>
+          <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </div>
       </div>
 
@@ -485,18 +562,17 @@ if (isset($conn)) {
         <label for="selectZona" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Seleccione la Zona</label>
         <div class="relative">
           <select id="selectZona" name="id_zona"
-            class="appearance-none w-full sm:w-64 lg:w-72 xl:w-80 2xl:w-96 px-4 sm:px-5 py-2.5 border border-gray-300 text-sm sm:text-base 
-            rounded-lg
-            text-slate-700 font-semibold tracking-wider
-            bg-white shadow-sm hover:bg-gray-50
-            focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none
+            class="appearance-none w-full sm:w-64 lg:w-72 xl:w-80 2xl:w-96 px-4 py-2.5 border border-gray-300 text-sm 
+            rounded-xl
+            text-gray-700
+            bg-white
+            focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none
             transition-all duration-200 cursor-pointer pr-10">
             <option value="" class="text-[#00324D]" selected hidden>SELECCIONE LA ZONA</option>
           </select>
-          <img 
-            src="<?= BASE_URL ?>src/assets/img/chevron-down.svg" 
-            alt="arrow" 
-            class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70"/>
+          <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </div>
       </div>
     </div>
@@ -508,7 +584,7 @@ if (isset($conn)) {
     <div id="contenedorGrupoFiltro" class="relative w-full sm:w-auto hidden">
       <label for="inputGrupoTexto" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Filtrar por grupo</label>
       <div class="custom-combobox w-full sm:w-64 lg:w-72 xl:w-80 2xl:w-96">
-        <input type="text" id="inputGrupoTexto" placeholder="Seleccione o escriba número de grupo" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm sm:text-base text-slate-700 font-semibold tracking-wider bg-white shadow-sm hover:bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all duration-200">
+        <input type="text" id="inputGrupoTexto" autocomplete="off" placeholder="Seleccione o escriba número de grupo" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none transition-all duration-200">
         <div id="panelGrupoFiltro" class="custom-combobox-panel hidden">
           <div class="custom-combobox-list"></div>
         </div>
@@ -544,8 +620,17 @@ if (isset($conn)) {
   <!-- Contenido principal -->
   <main class="flex flex-col items-center flex-grow px-2 sm:px-4 pb-6">
     <section id="tabla-horarios"
-  class="w-full sm:w-11/12 shadow-xl rounded-2xl border border-gray-200 p-0 overflow-hidden">
-      <table class="w-full bg-white text-xs min-w-[900px] sm:text-sm border-separate border-spacing-0">
+  class="w-full shadow-xl rounded-2xl border border-gray-200 p-0 overflow-hidden">
+      <table class="w-full text-xs min-w-[900px] sm:text-sm border-separate border-spacing-0">
+        <colgroup>
+          <col style="width: 130px;">
+          <col style="width: calc((100% - 130px)/6);">
+          <col style="width: calc((100% - 130px)/6);">
+          <col style="width: calc((100% - 130px)/6);">
+          <col style="width: calc((100% - 130px)/6);">
+          <col style="width: calc((100% - 130px)/6);">
+          <col style="width: calc((100% - 130px)/6);">
+        </colgroup>
         <thead class="sticky top-0 bg-gray-300 text-gray-700 z-10">
           <tr>
             <th class="border border-gray-400 p-3 sm:p-4 font-semibold text-sm">Hora</th>
@@ -713,7 +798,7 @@ if (isset($conn)) {
           <div class="border-b border-gray-300 mb-3"></div>
 
           <!-- Formulario -->
-          <form id="formTrimestralizacion" action="<?= BASE_URL ?>src/controllers/TrimestralizacionController.php?accion=crear" method="POST" class="trimestralizacion-form space-y-0 text-xs">
+          <form id="formTrimestralizacion" action="<?= BASE_URL ?>src/controllers/TrimestralizacionController.php?accion=crear" method="POST" autocomplete="off" class="trimestralizacion-form space-y-0 text-xs">
             
             <!-- GRID -->
             <div class="form-grid">
@@ -760,8 +845,9 @@ if (isset($conn)) {
                     type="text"
                     name="numero_ficha"
                     id="numero_ficha"
+                    autocomplete="off"
                     placeholder="Seleccione o escriba número de grupo"
-                    class="form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white"/>
+                    class="form-field w-full h-9 px-3 text-sm rounded-xl border border-gray-300 outline-none bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]"/>
                   <div id="panelGrupoCrear" class="custom-combobox-panel hidden">
                     <div class="custom-combobox-list"></div>
                   </div>
@@ -791,6 +877,17 @@ if (isset($conn)) {
                 </select>
               </div>
 
+              <!-- MODALIDAD -->
+              <div class="field">
+                <label for="modalidad" class="block text-xs font-semibold text-gray-800 mb-1">Modalidad</label>
+                <select name="modalidad" id="modalidad"
+                  class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
+                  <option value="presencial" selected>Presencial</option>
+                  <option value="virtual">Virtual</option>
+                  <option value="mixta">Mixta</option>
+                </select>
+              </div>
+
               <!-- AREA + ZONA-->
               <div class="field">
                 <div class="flex flex-minw-0 gap-2">
@@ -800,8 +897,9 @@ if (isset($conn)) {
                       <input
                         type="text"
                         id="id_area_combo"
+                        autocomplete="off"
                         placeholder="Seleccione o escriba el área"
-                        class="form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white" />
+                        class="form-field w-full h-9 px-3 text-sm rounded-xl border border-gray-300 outline-none bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]" />
                       <div id="panelAreaCrear" class="custom-combobox-panel hidden">
                         <div class="custom-combobox-list"></div>
                       </div>
@@ -828,8 +926,9 @@ if (isset($conn)) {
                       <input
                         type="text"
                         id="id_zona_combo"
+                        autocomplete="off"
                         placeholder="Seleccione o escriba la zona"
-                        class="form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white"
+                        class="form-field w-full h-9 px-3 text-sm rounded-xl border border-gray-300 outline-none bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]"
                         disabled />
                       <div id="panelZonaCrear" class="custom-combobox-panel hidden">
                         <div class="custom-combobox-list"></div>
@@ -880,8 +979,6 @@ if (isset($conn)) {
                       <option value="<?= $i ?>:00"><?= $i ?>:00</option>
                     <?php endfor; ?>
                   </select>
-
-                  </select>
                   </div>
                   <div class="flex-1">
                     <label for="hora_fin" class="block text-xs font-semibold text-gray-800 mb-1">Hora de fin</label>
@@ -908,10 +1005,17 @@ if (isset($conn)) {
                       <option disabled>Sin datos disponibles</option>
                     <?php else: ?>
                       <?php foreach ($competencias as $comp): ?>
+                        <?php
+                          $nombreCompFull = (string)($comp['nombre_competencia'] ?? '');
+                          $nombreCompShort = function_exists('mb_strimwidth')
+                            ? mb_strimwidth($nombreCompFull, 0, 58, '…', 'UTF-8')
+                            : (strlen($nombreCompFull) > 58 ? substr($nombreCompFull, 0, 58) . '…' : $nombreCompFull);
+                        ?>
                         <option
                           value="<?= htmlspecialchars($comp['id_competencia']) ?>"
-                          data-programa="<?= htmlspecialchars($comp['id_programa']) ?>">
-                          <?= htmlspecialchars($comp['nombre_competencia']) ?>
+                          data-programa="<?= htmlspecialchars($comp['id_programa']) ?>"
+                          title="<?= htmlspecialchars($nombreCompFull) ?>">
+                          <?= htmlspecialchars($nombreCompShort) ?>
                         </option>
                       <?php endforeach; ?>
                     <?php endif; ?>
@@ -929,6 +1033,7 @@ if (isset($conn)) {
                   rows="5"
                   class="form-field w-full px-3 py-2 text-sm rounded-lg border border-gray-300 outline-none bg-white text-gray-700 resize-none overflow-auto">
                 </textarea>
+              </div>
 
 
               <!-- BOTÓN RAEs + CONTADOR -->
