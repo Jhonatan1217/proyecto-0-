@@ -97,7 +97,8 @@
       dropdownClass: 'combobox-dropdown-filtro',
       optionClass: 'custom-option',
       placeholder: 'Todas las áreas',
-      clearValue: 'todas'
+      clearValue: 'todas',
+      restoreValueOnBlurWhenEmpty: false
     });
   }
 
@@ -124,14 +125,16 @@
       dropdownClass: 'select-zona-dropdown',
       optionClass: 'select-zona-option',
       placeholder: 'Buscar área...',
-      clearValue: ''
+      clearValue: '',
+      restoreValueOnBlurWhenEmpty: true
     });
     // Selects de filas en edición inline (distintos al modal)
     ComboboxComponent.enhance({
       selector: '.select-zona:not(#id_area)',
       dropdownClass: 'select-zona-dropdown',
       optionClass: 'select-zona-option',
-      placeholder: 'Buscar área...'
+      placeholder: 'Buscar área...',
+      restoreValueOnBlurWhenEmpty: true
     });
   }
 
@@ -263,7 +266,7 @@
       </td>
       <td class="col-area">
         <div class="cell-edit-wrap">
-          <select class="cell-edit area select-zona input-enterprise w-full py-2.5 text-sm">${optsArea}</select>
+          <select class="cell-edit area select-zona input-enterprise w-full py-2.5 text-sm" data-initial-value="${(idArea || '').replace(/"/g, '&quot;')}">${optsArea}</select>
         </div>
       </td>
       <td class="col-acciones text-right">
@@ -284,6 +287,14 @@
     });
 
     enhanceSelectsZona();
+
+    // Asegurar persistencia explícita para el combobox de área en modo edición
+    if (typeof ComboboxComponent !== 'undefined' && typeof ComboboxComponent.setInitialValue === 'function') {
+      const selAreaEdit = row.querySelector('.cell-edit.area.select-zona');
+      if (selAreaEdit) {
+        ComboboxComponent.setInitialValue(selAreaEdit, idArea || selAreaEdit.value);
+      }
+    }
 
     row.querySelector('.btn-guardar-zona').addEventListener('click', async () => {
       const nombreNuevo = row.querySelector('.cell-edit.nombre-zona').value.trim();

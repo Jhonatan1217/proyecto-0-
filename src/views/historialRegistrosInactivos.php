@@ -29,7 +29,7 @@
                         <select id="filterArea"
                                 class="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium text-gray-900 
                                        focus:outline-none focus:ring-2 focus:border-transparent cursor-pointer hover:border-gray-400 transition-colors"
-                                style="--tw-ring-color:#39A900;">
+                                style="--tw-ring-color:#39A900;" autocomplete="off">
                             <option value="">Todas las áreas</option>
                         </select>
                     </div>
@@ -40,7 +40,7 @@
                         <select id="filterZona"
                                 class="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium text-gray-900 
                                        focus:outline-none focus:ring-2 focus:border-transparent cursor-pointer hover:border-gray-400 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                style="--tw-ring-color:#39A900;">
+                                style="--tw-ring-color:#39A900;" autocomplete="off">
                             <option value="">Todas las zonas</option>
                         </select>
                     </div>
@@ -51,7 +51,7 @@
                         <select id="filterTrimestre"
                                 class="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium text-gray-900 
                                        focus:outline-none focus:ring-2 focus:border-transparent cursor-pointer hover:border-gray-400 transition-colors"
-                                style="--tw-ring-color:#39A900;">
+                                style="--tw-ring-color:#39A900;" autocomplete="off">
                             <option value="">Todos los trimestres</option>
                             <option value="1">Trimestre 1</option>
                             <option value="2">Trimestre 2</option>
