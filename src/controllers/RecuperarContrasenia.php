@@ -73,7 +73,7 @@ switch ($accion) {
             redirectTo(BASE_URL . "src/views/restablecerContrasenia.php");
         }
         
-        // Buscar usuario por correo (usa correo_electronico en la BD)
+        // Buscar usuario por correo
         $usuario = $usuarioModel->obtenerPorCorreo($correo);
         
         // Por seguridad, no revelamos si el correo existe o no
@@ -168,11 +168,11 @@ switch ($accion) {
             // Marcar token como usado
             $tokenModel->marcarComoUsado($token);
             
-            // Enviar correo de confirmación
-            enviarCorreoConfirmacion(
-                $tokenData['correo_electronico'], 
-                $tokenData['nombre_completo'] ?? 'Usuario'
-            );
+            // // Enviar correo de confirmación
+            // enviarCorreoConfirmacion(
+            //     $tokenData['correo_electronico'], 
+            //     $tokenData['nombre_completo'] ?? 'Usuario'
+            // );
             
             // Limpiar sesión
             unset($_SESSION['reset_token'], $_SESSION['reset_usuario_id'], 
@@ -276,53 +276,53 @@ function enviarCorreoRecuperacion($correo, $nombre, $resetLink) {
     }
 }
 
-function enviarCorreoConfirmacion($correo, $nombre) {
-    $config = require __DIR__ . '/../../config/mail.php';
+// function enviarCorreoConfirmacion($correo, $nombre) {
+//     $config = require __DIR__ . '/../../config/mail.php';
     
-    $mail = new PHPMailer(true);
+//     $mail = new PHPMailer(true);
     
-    try {
-        $mail->isSMTP();
-        $mail->Host       = $config['host'];
-        $mail->SMTPAuth   = true;
-        $mail->Username   = $config['username'];
-        $mail->Password   = $config['password'];
-        $mail->SMTPSecure = $config['encryption'];
-        $mail->Port       = $config['port'];
+//     try {
+//         $mail->isSMTP();
+//         $mail->Host       = $config['host'];
+//         $mail->SMTPAuth   = true;
+//         $mail->Username   = $config['username'];
+//         $mail->Password   = $config['password'];
+//         $mail->SMTPSecure = $config['encryption'];
+//         $mail->Port       = $config['port'];
         
-        $mail->setFrom($config['from_email'], $config['from_name']);
-        $mail->addAddress($correo, $nombre);
+//         $mail->setFrom($config['from_email'], $config['from_name']);
+//         $mail->addAddress($correo, $nombre);
         
-        $mail->isHTML(true);
-        $mail->CharSet = 'UTF-8';
-        $mail->Subject = 'Contraseña actualizada - SENLOCK';
+//         $mail->isHTML(true);
+//         $mail->CharSet = 'UTF-8';
+//         $mail->Subject = 'Contraseña actualizada - SENLOCK';
         
-        // Construir enlace de login
-        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
-        $host = $_SERVER['HTTP_HOST'];
-        $login_link = $protocol . $host . "/ProyectoZ/proyecto-z/src/views/login.php";
+//         // Construir enlace de login
+//         $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+//         $host = $_SERVER['HTTP_HOST'];
+//         $login_link = $protocol . $host . "/ProyectoZ/proyecto-z/src/views/login.php";
         
-        $mail->Body = "
-        <html>
-        <body>
-            <h2>Hola, " . htmlspecialchars($nombre) . "</h2>
-            <p>Tu contraseña ha sido actualizada exitosamente.</p>
-            <p>Puedes iniciar sesión con tu nueva contraseña:</p>
-            <p style='text-align: center;'>
-                <a href='" . htmlspecialchars($login_link) . "' style='background-color: #39A900; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;'>Iniciar sesión</a>
-            </p>
-            <p>Si no realizaste este cambio, contacta al administrador inmediatamente.</p>
-        </body>
-        </html>
-        ";
+//         $mail->Body = "
+//         <html>
+//         <body>
+//             <h2>Hola, " . htmlspecialchars($nombre) . "</h2>
+//             <p>Tu contraseña ha sido actualizada exitosamente.</p>
+//             <p>Puedes iniciar sesión con tu nueva contraseña:</p>
+//             <p style='text-align: center;'>
+//                 <a href='" . htmlspecialchars($login_link) . "' style='background-color: #39A900; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;'>Iniciar sesión</a>
+//             </p>
+//             <p>Si no realizaste este cambio, contacta al administrador inmediatamente.</p>
+//         </body>
+//         </html>
+//         ";
         
-        $mail->AltBody = "Hola " . $nombre . ",\n\nTu contraseña ha sido actualizada exitosamente.\n\nPuedes iniciar sesión en: " . $login_link . "\n\nSi no realizaste este cambio, contacta al administrador inmediatamente.";
+//         $mail->AltBody = "Hola " . $nombre . ",\n\nTu contraseña ha sido actualizada exitosamente.\n\nPuedes iniciar sesión en: " . $login_link . "\n\nSi no realizaste este cambio, contacta al administrador inmediatamente.";
         
-        $mail->send();
-        return true;
+//         $mail->send();
+//         return true;
         
-    } catch (Exception $e) {
-        error_log("Error al enviar correo de confirmación: " . $mail->ErrorInfo);
-        return false;
-    }
-}
+//     } catch (Exception $e) {
+//         error_log("Error al enviar correo de confirmación: " . $mail->ErrorInfo);
+//         return false;
+//     }
+// }

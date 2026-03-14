@@ -88,7 +88,7 @@ include '../includes/header-public.php';
                 <div class="pt-4">
                     <button 
                         type="submit" 
-                        class="inline-flex items-center justify-center gap-2 w-full py-3 text-sm bg-[#9FA0A2] text-white font-medium rounded-2xl hover:bg-[#000000] hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 focus:ring-4 focus:ring-[#39A900] focus:ring-opacity-50"
+                        class="inline-flex items-center justify-center gap-2 w-full py-3 text-sm bg-[#9FA0A2] text-white font-medium rounded-2xl hover:bg-[#000000] hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 focus:ring-4 focus:ring-white focus:ring-opacity-50"
                     >
                         <img src="../assets/img/send.svg" alt="Enviar" class="w-4 h-4">
                         Enviar enlace de restablecimiento
