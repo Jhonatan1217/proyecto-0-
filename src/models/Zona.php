@@ -28,7 +28,14 @@ class Zona {
 
             return ["status" => "success", "message" => "Zona creada correctamente."];
         } catch (PDOException $e) {
-            return ["status" => "error", "message" => "Error al crear zona: " . $e->getMessage()];
+            $msg = $e->getMessage();
+            if ($e->getCode() == 23000 || strpos($msg, '1062') !== false || strpos($msg, 'Duplicate entry') !== false) {
+                return [
+                    "status" => "error",
+                    "message" => "La tabla zonas debe tener solo id_zona como clave primaria (no compuesta con id_area). Revise la estructura de la tabla."
+                ];
+            }
+            return ["status" => "error", "message" => "Error al crear zona: " . $msg];
         }
     }
 
@@ -64,7 +71,14 @@ class Zona {
                 return ["status" => "warning", "message" => "Sin cambios."];
             }
         } catch (PDOException $e) {
-            return ["status" => "error", "message" => "Error al actualizar zona: " . $e->getMessage()];
+            $msg = $e->getMessage();
+            if ($e->getCode() == 23000 || strpos($msg, '1062') !== false || strpos($msg, 'Duplicate entry') !== false) {
+                return [
+                    "status" => "error",
+                    "message" => "La tabla zonas debe tener solo id_zona como clave primaria (no compuesta con id_area). Revise la estructura de la tabla."
+                ];
+            }
+            return ["status" => "error", "message" => "Error al actualizar zona: " . $msg];
         }
     }
 

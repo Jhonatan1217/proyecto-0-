@@ -131,6 +131,67 @@
 
       const optionsData = () => [...select.options].filter(o => !o.disabled).map(o => ({ value: o.value, text: (o.textContent || '').trim() }));
 
+      function getOptionByText(exactText) {
+        const opts = optionsData();
+        const t = (exactText || '').trim();
+        if (!t) return null;
+        const exact = opts.find(o => o.text === t);
+        if (exact) return exact;
+        const singleStarts = opts.filter(o => o.text.toLowerCase().startsWith(t.toLowerCase()));
+        return singleStarts.length === 1 ? singleStarts[0] : null;
+      }
+
+      function storeLastValid() {
+        const opt = select.options[select.selectedIndex];
+        const text = opt ? (opt.textContent || '').trim() : '';
+        const val = select.value;
+        wrapper._cbLastValidValue = val;
+        wrapper._cbLastValidText = (clearValue !== undefined && clearValue !== null && String(val) === String(clearValue)) ? '' : text;
+      }
+
+      function validateAndResetOnClose() {
+        const typed = (input.value || '').trim();
+        const opts = optionsData();
+        const lastVal = wrapper._cbLastValidValue;
+        const beforeClear = wrapper._cbBeforeClearValue;
+        const matched = getOptionByText(typed);
+        if (typed === '') {
+          if (restoreValueOnBlurWhenEmpty && beforeClear !== undefined && beforeClear !== null) {
+            select.value = beforeClear;
+            wrapper._cbBeforeClearValue = undefined;
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+          } else if (clearValue !== undefined && clearValue !== null) {
+            select.value = clearValue;
+            wrapper._cbBeforeClearValue = undefined;
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+          } else {
+            if (lastVal !== undefined && lastVal !== null) select.value = lastVal;
+            else if (opts.length) select.value = opts[0].value;
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          updateInputFromSelect();
+          storeLastValid();
+          return;
+        }
+        if (matched) {
+          select.value = matched.value;
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+          updateInputFromSelect();
+          storeLastValid();
+          return;
+        }
+        const doReset = () => {
+          if (lastVal !== undefined && lastVal !== null) select.value = lastVal;
+          else if (opts.length) select.value = opts[0].value;
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+          updateInputFromSelect();
+          storeLastValid();
+        };
+        input.style.transition = 'opacity 0.12s ease';
+        input.style.opacity = '0';
+        setTimeout(() => { doReset(); input.style.opacity = '1'; }, 120);
+      }
+
       function renderOptions(filterText) {
         const q = (filterText || '').trim().toLowerCase();
         dropdown.innerHTML = '';
@@ -180,7 +241,8 @@
       }
 
       function updateInputFromSelect() {
-        if (clearValue !== undefined && clearValue !== null && String(select.value) === String(clearValue)) {
+        const val = select.value;
+        if (val === '' || (clearValue !== undefined && clearValue !== null && String(val) === String(clearValue))) {
           input.value = '';
         } else {
           const opt = select.options[select.selectedIndex];
@@ -283,6 +345,7 @@
       const maxH = DROPDOWN_MAX_ITEMS * ITEM_HEIGHT_REM * parseFloat(getComputedStyle(document.documentElement).fontSize);
 
       function positionAndShow(forceShowAll) {
+        storeLastValid();
         const filterText = forceShowAll ? '' : input.value;
         renderOptions(filterText);
         if (dropdown.children.length === 0) return;
@@ -344,10 +407,24 @@
         }, 120);
       });
       input.addEventListener('input', () => { renderOptions(input.value); toggleClearVisibility(); });
+      input.addEventListener('blur', () => {
+        setTimeout(() => {
+          if (dropdown.contains(document.activeElement)) return;
+          if (wrapper._cbOptionJustSelected) return;
+          if (!dropdown.classList.contains('hidden')) {
+            dropdown.classList.add('hidden');
+            dropdown.style.cssText = '';
+            if (dropdown.parentNode === document.body && wrapper) wrapper.appendChild(dropdown);
+          }
+          if (typeof wrapper._cbValidateAndResetOnClose === 'function') wrapper._cbValidateAndResetOnClose();
+        }, 120);
+      });
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
           dropdown.classList.add('hidden');
+          dropdown.style.cssText = '';
           if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
+          if (typeof wrapper._cbValidateAndResetOnClose === 'function') wrapper._cbValidateAndResetOnClose();
           input.blur();
         }
       });
@@ -377,12 +454,23 @@
         if (clearValue !== undefined && clearValue !== null) {
           select.value = clearValue;
           select.dispatchEvent(new Event('change', { bubbles: true }));
+        } else if (hasEmptyOption) {
+          select.value = '';
+          select.dispatchEvent(new Event('change', { bubbles: true }));
         } else {
-          const first = Array.from(select.options).find(o => !o.disabled && o.value);
-          if (first) { select.value = first.value; select.dispatchEvent(new Event('change', { bubbles: true })); }
+          input.value = '';
+          toggleClearVisibility();
+          dropdown.classList.add('hidden');
+          if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
+          dropdown.style.cssText = '';
+          positionAndShow(true);
+          setTimeout(() => { try { input.focus({ preventScroll: true }); } catch (_) { input.focus(); } }, 0);
+          return;
         }
         dropdown.classList.add('hidden');
         if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
+        dropdown.style.cssText = '';
+        updateInputFromSelect();
         toggleClearVisibility();
         positionAndShow(true);
         setTimeout(() => { try { input.focus({ preventScroll: true }); } catch (_) { input.focus(); } }, 0);

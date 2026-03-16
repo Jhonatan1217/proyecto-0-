@@ -5,6 +5,7 @@
 const urlParams = new URLSearchParams(window.location.search);
 let id_zona = urlParams.get("id_zona");
 const API_BASE = ((window && window.BASE_URL) || "").replace(/\/+$/, "/");
+const IS_AUTHENTICATED = Boolean(window && window.IS_AUTHENTICATED);
 
 // =======================
 // CONFIG TOAST (SweetAlert2)
@@ -20,11 +21,245 @@ const Toast = Swal.mixin({
 });
 
 let horariosCache = [];
+let gestionHorasCache = { instructores: [], grupos: [] };
+let gestionHorasTabActual = "instructores";
+
+function registroActivo(estado) {
+  if (estado === undefined || estado === null || estado === "") return true;
+  const valor = String(estado).trim().toLowerCase();
+  return valor === "1" || valor === "true" || valor === "activo";
+}
 
 function timeToMinutes(t) {
   if (!t) return null;
   const [h, m] = t.split(":").map(Number);
   return Number.isFinite(h) ? h * 60 + (Number.isFinite(m) ? m : 0) : null;
+}
+
+function formatHourNumber(value) {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n)) return "0";
+  return Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, "");
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function getEstadoExcedente(value) {
+  const n = Number(value || 0);
+  if (n < 0) return "danger";
+  if (n <= 4) return "neutral";
+  return "ok";
+}
+
+function renderExcedentePill(value) {
+  const estado = getEstadoExcedente(value);
+  const texto = Number(value) < 0 ? `${formatHourNumber(value)} h` : `${formatHourNumber(value)} h libres`;
+  return `<span class="gestion-horas-pill gestion-horas-pill--${estado}">${texto}</span>`;
+}
+
+function dispararToastsExcedente(warnings) {
+  const instructores = Array.isArray(warnings?.instructores) ? warnings.instructores : [];
+  const grupos = Array.isArray(warnings?.grupos) ? warnings.grupos : [];
+
+  instructores.forEach((inst) => {
+    Toast.fire({
+      icon: "warning",
+      title: `Atención: El instructor ha superado su límite de carga horaria (${inst.nombre_instructor})`
+    });
+  });
+
+  grupos.forEach((grupo) => {
+    Toast.fire({
+      icon: "info",
+      title: `Aviso: El grupo ${grupo.id_grupo} ha excedido las 30 horas reglamentarias`
+    });
+  });
+}
+
+async function cargarResumenGestionHoras() {
+  const res = await fetch(`${API_BASE}src/controllers/TrimestralizacionController.php?accion=resumenHoras`);
+  const data = await res.json();
+  if (!res.ok || data.status !== "success") {
+    throw new Error(data.mensaje || data.error || "No fue posible cargar el resumen de horas");
+  }
+  gestionHorasCache = {
+    instructores: Array.isArray(data?.data?.instructores) ? data.data.instructores : [],
+    grupos: Array.isArray(data?.data?.grupos) ? data.data.grupos : []
+  };
+}
+
+function getGestionHorasFiltrados() {
+  const search = String(document.getElementById("gestionHorasSearch")?.value || "").trim().toLowerCase();
+  const extra = String(document.getElementById("gestionHorasExtraFiltro")?.value || "").trim().toLowerCase();
+
+  if (gestionHorasTabActual === "instructores") {
+    return gestionHorasCache.instructores.filter((item) => {
+      const bySearch = !search
+        || String(item.nombre_instructor || "").toLowerCase().includes(search)
+        || String(item.id_instructor || "").toLowerCase().includes(search);
+      const byExtra = !extra || String(item.tipo_contrato || "").toLowerCase() === extra;
+      return bySearch && byExtra;
+    });
+  }
+
+  return gestionHorasCache.grupos.filter((item) => {
+    const bySearch = !search
+      || String(item.id_grupo || "").toLowerCase().includes(search)
+      || String(item.id_ficha || "").toLowerCase().includes(search);
+    const byExtra = !extra || String(item.nivel_grupo || "").toLowerCase() === extra;
+    return bySearch && byExtra;
+  });
+}
+
+function renderGestionHorasResumen(rows) {
+  const resumen = document.getElementById("gestionHorasResumen");
+  if (!resumen) return;
+
+  if (gestionHorasTabActual === "instructores") {
+    resumen.innerHTML = `
+      <p class="gh-resumen-title">Instructores</p>
+      <p class="gh-resumen-sub">(Instructores Planta 32h, Instructores Contratista 40h)</p>`;
+  } else {
+    resumen.innerHTML = `
+      <p class="gh-resumen-title">Grupos</p>
+      <p class="gh-resumen-sub">(Cada grupo tiene un máximo de 30 horas semanales)</p>`;
+  }
+}
+
+function renderGestionHoras() {
+  const filtros = document.getElementById("gestionHorasFiltros");
+  const head = document.getElementById("gestionHorasHead");
+  const body = document.getElementById("gestionHorasBody");
+  const tabInst = document.getElementById("tabGestionHorasInstructores");
+  const tabGrupos = document.getElementById("tabGestionHorasGrupos");
+  if (!filtros || !head || !body) return;
+
+  if (tabInst) tabInst.classList.toggle("is-active", gestionHorasTabActual === "instructores");
+  if (tabGrupos) tabGrupos.classList.toggle("is-active", gestionHorasTabActual === "grupos");
+
+  if (gestionHorasTabActual === "instructores") {
+    filtros.innerHTML = `
+      <input id="gestionHorasSearch" type="text" placeholder="Buscar instructores" class="gh-filtros-input" />
+      <select id="gestionHorasExtraFiltro" class="gh-filtros-select">
+        <option value="">Todos los tipos de contrato</option>
+        <option value="planta">Planta</option>
+        <option value="contratista">Contratista</option>
+      </select>`;
+
+    head.innerHTML = `
+      <tr>
+        <th>Instructor</th>
+        <th>Tipo contrato</th>
+        <th class="center">Horas actuales</th>
+        <th class="center">Horas máxima</th>
+        <th class="center">Excedente</th>
+        <th class="center">Acciones</th>
+      </tr>`;
+  } else {
+    filtros.innerHTML = `
+      <input id="gestionHorasSearch" type="text" placeholder="Buscar grupos" class="gh-filtros-input" />
+      <select id="gestionHorasExtraFiltro" class="gh-filtros-select">
+        <option value="">Todos los niveles</option>
+        <option value="técnico">Técnico</option>
+        <option value="tecnólogo">Tecnólogo</option>
+        <option value="sin nivel">Sin nivel</option>
+      </select>`;
+
+    head.innerHTML = `
+      <tr>
+        <th>ID Grupo</th>
+        <th>Nivel de grupo</th>
+        <th class="center">Horas actuales</th>
+        <th class="center">Horas máxima</th>
+        <th class="center">Excedente</th>
+      </tr>`;
+  }
+
+  document.getElementById("gestionHorasSearch")?.addEventListener("input", renderGestionHorasTabla);
+  document.getElementById("gestionHorasExtraFiltro")?.addEventListener("change", renderGestionHorasTabla);
+  renderGestionHorasTabla();
+}
+
+function renderGestionHorasTabla() {
+  const body = document.getElementById("gestionHorasBody");
+  if (!body) return;
+
+  const rows = getGestionHorasFiltrados();
+  const colspan = gestionHorasTabActual === "instructores" ? 6 : 5;
+  renderGestionHorasResumen(rows);
+
+  if (!rows.length) {
+    body.innerHTML = `<tr><td colspan="${colspan}" style="text-align:center;padding:24px;color:#6b7280;">Sin datos disponibles</td></tr>`;
+    return;
+  }
+
+  if (gestionHorasTabActual === "instructores") {
+    body.innerHTML = rows.map((item) => {
+      const exc = Number(item.excedente ?? 0);
+      const excHTML = exc < 0
+        ? `<span class="gh-excedente-neg">${formatHourNumber(exc)}</span>`
+        : `--`;
+      return `
+        <tr>
+          <td>${escapeHtml(item.nombre_instructor || "Sin nombre")}</td>
+          <td>${escapeHtml(item.tipo_contrato || "Contratista")}</td>
+          <td class="center">${formatHourNumber(item.horas_actuales)}</td>
+          <td class="center">${formatHourNumber(item.horas_maximas)}</td>
+          <td class="center">${excHTML}</td>
+          <td class="center">
+            <button type="button" class="gh-action-btn" onclick="window.location.href='${API_BASE}index.php?page=src/views/gestionInstructores'" title="Gestionar instructor">
+              <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M4 20H8L18.5 9.5C19.33 8.67 19.33 7.33 18.5 6.5C17.67 5.67 16.33 5.67 15.5 6.5L5 17V20Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.5 8.5L16.5 11.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </td>
+        </tr>`;
+    }).join("");
+    return;
+  }
+
+  body.innerHTML = rows.map((item) => {
+    const exc = Number(item.excedente ?? 0);
+    const excHTML = exc < 0
+      ? `<span class="gh-excedente-neg">${formatHourNumber(exc)}</span>`
+      : `--`;
+    return `
+      <tr>
+        <td>${escapeHtml(item.id_grupo || "—")}</td>
+        <td>${escapeHtml(item.nivel_grupo || "Sin nivel")}</td>
+        <td class="center">${formatHourNumber(item.horas_actuales)}</td>
+        <td class="center">${formatHourNumber(item.horas_maximas)}</td>
+        <td class="center">${excHTML}</td>
+      </tr>`;
+  }).join("");
+}
+
+async function abrirModalGestionHoras() {
+  const modal = document.getElementById("modalGestionHoras");
+  if (!modal) return;
+  try {
+    await cargarResumenGestionHoras();
+    gestionHorasTabActual = "instructores";
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+    document.body.style.overflow = "hidden";
+    renderGestionHoras();
+  } catch (e) {
+    Toast.fire({ icon: "error", title: e.message || "No se pudo abrir la gestión de horas" });
+  }
+}
+
+function cerrarModalGestionHoras() {
+  const modal = document.getElementById("modalGestionHoras");
+  if (!modal) return;
+  modal.classList.add("hidden");
+  modal.classList.remove("flex");
+  document.body.style.overflow = "";
 }
 
 function hasOverlap({ dia, inicio, fin, excludeId }) {
@@ -84,7 +319,7 @@ async function cargarAreasYZonas() {
 
       dataAreas.data.forEach((a) => {
         // 🔥 SOLO ÁREAS ACTIVAS EN ESTE SELECT
-        if (String(a.estado) !== "1") return;
+        if (!registroActivo(a.estado)) return;
         contadorActivas++;
         const opt = document.createElement("option");
         opt.value = a.id_area;
@@ -152,7 +387,7 @@ async function cargarAreasYZonas() {
         }
 
         // SOLO ZONAS ACTIVAS EN ESTE ÁREA
-        const zonasActivas = zonasArea.filter((z) => String(z.estado) === "1");
+        const zonasActivas = zonasArea.filter((z) => registroActivo(z.estado));
 
         if (!zonasActivas.length) {
           // Dejamos el placeholder seleccionado, pero al desplegar se verá el mensaje
@@ -338,8 +573,8 @@ function renderizarTablaDesdeRegistros(registrosServer, emptyMessage = "No hay r
 
   horas.forEach((hora, idx) => {
     const fila = document.createElement("tr");
-    fila.className = idx % 2 === 0 ? "bg-gray-50" : "bg-white";
-    fila.innerHTML = `<td class="border border-gray-300 p-3 font-bold text-gray-700 text-center bg-gray-100 whitespace-nowrap min-w-[110px] w-[110px]">
+    fila.className = "";
+    fila.innerHTML = `<td class="hora-col p-3 whitespace-nowrap min-w-[110px] w-[110px]">
       ${String(hora).padStart(2, "0")}:00 - ${String(hora + 1).padStart(2, "0")}:00 </td>`;
 
     dias.forEach((dia) => {
@@ -401,7 +636,10 @@ function renderizarTablaDesdeRegistros(registrosServer, emptyMessage = "No hay r
                 </div>
               </div>`;
         } else if (hora > rStart && hora < rEnd) {
-          contenido += `<div class="border-l-4 border-l-green-600 bg-white rounded-md p-2 mb-2 shadow-sm">
+          contenido += `<div class="border-l-[6px] border-l-green-700 border-t-2 border-t-green-300 bg-green-50 rounded-md p-2 mb-2 shadow-sm">
+                <div class="inline-flex items-center gap-1 mb-1 px-2 py-[2px] rounded-full bg-green-100 text-green-800 text-[11px] font-semibold">
+                  ↳ Continuación
+                </div>
                 <div class="flex items-start gap-1 text-xs text-gray-600">
                   <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
@@ -422,7 +660,7 @@ function renderizarTablaDesdeRegistros(registrosServer, emptyMessage = "No hay r
       });
       const isLibre = !contenido;
       fila.innerHTML += `
-          <td class="border border-gray-300 p-2 text-sm text-center leading-tight align-top ${isLibre ? "zona-libre cursor-pointer hover:bg-[#00304D]": ""}"
+            <td class="p-2 text-sm text-center leading-tight align-top ${isLibre ? "zona-libre cursor-pointer": ""}"
               data-dia="${dia}"
               data-hora="${String(hora).padStart(2, "0")}: 00">
               ${contenido || `<span class="text-gray-400 italic">Zona libre</span>`}
@@ -563,7 +801,7 @@ async function cargarFichas() {
 
     if (array.length > 0) {
       // SOLO FICHAS ACTIVAS
-      listaFichas = array.filter((f) => String(f.estado) === "1");
+      listaFichas = array.filter((f) => registroActivo(f.estado));
     }
     
     if (!listaFichas.length) {
@@ -612,9 +850,7 @@ async function cargarCompetencias() {
       : [];
 
     // SOLO COMPETENCIAS ACTIVAS
-    listaCompetencias = array.filter(
-      (c) => String(c.estado) === "1"
-    );
+    listaCompetencias = array.filter((c) => registroActivo(c.estado));
 
     if (!listaCompetencias.length) {
       console.warn("No hay competencias activas");
@@ -660,7 +896,7 @@ async function cargarInstructores() {
     }
 
     // FILTRAR SOLO INSTRUCTORES ACTIVOS (estado = 1)
-    listaInstructores = instructoresArray.filter((i) => String(i.estado) === "1");
+    listaInstructores = instructoresArray.filter((i) => registroActivo(i.estado));
 
     if (listaInstructores.length > 0) {
       llenarSelectInstructores(listaInstructores);
@@ -735,7 +971,7 @@ async function obtenerRoesPorCompetencia(id_competencia) {
 
     let activas = 0;
     (dataAreas?.data || []).forEach((a) => {
-      if (String(a.estado) === "1") {
+      if (registroActivo(a.estado)) {
         activas++;
         selArea.innerHTML += `
                   <option value="${a.id_area}">${a.nombre_area}</option>
@@ -952,6 +1188,7 @@ async function editarTrimestralizacion (reg){
   const esExito = data.success === true || data.success === "true" || data.status === "success";
   
   if (esExito) {
+    dispararToastsExcedente(data.warnings);
     await Swal.fire({
       icon: "success",
       title: "Trimestralización actualizada",
@@ -1244,6 +1481,28 @@ function popupCeldas(){
           console.error("Error con las Raes:", e);
 
         }
+        const accionesPopup = IS_AUTHENTICATED
+          ? `
+              <div class="mt-6 flex justify-end gap-2">
+                <button id="btnEditarRegistro"
+                  class="bg-[#00324d] text-white text-sm px-4 py-2 rounded-lg hover:bg-[#00304D] transition">
+                  Editar
+                </button>
+                <button id="btnCerrarPopup"
+                  class="bg-gray-200 text-gray-800 text-sm px-4 py-2 rounded-lg hover:bg-gray-300 transition">
+                  Aceptar
+                </button>
+              </div>
+            `
+          : `
+              <div class="mt-6 flex justify-end gap-2">
+                <button id="btnCerrarPopup"
+                  class="bg-gray-200 text-gray-800 text-sm px-4 py-2 rounded-lg hover:bg-gray-300 transition">
+                  Cerrar
+                </button>
+              </div>
+            `;
+
         Swal.fire({
           title: "",
           showCloseButton: false,
@@ -1327,17 +1586,7 @@ function popupCeldas(){
                 </div>
               </div>
 
-              <!-- Botones -->
-              <div class="mt-6 flex justify-end gap-2">
-                <button id="btnEditarRegistro"
-                  class="bg-[#00324d] text-white text-sm px-4 py-2 rounded-lg hover:bg-[#00304D] transition">
-                  Editar
-                </button>
-                <button id="btnCerrarPopup"
-                  class="bg-gray-200 text-gray-800 text-sm px-4 py-2 rounded-lg hover:bg-gray-300 transition">
-                  Aceptar
-                </button>
-              </div>
+              ${accionesPopup}
             `,
             showConfirmButton: false,
             didOpen: () => {
@@ -1349,10 +1598,12 @@ function popupCeldas(){
             Swal.close();
           });
         
-          document.getElementById("btnEditarRegistro").addEventListener("click", () => {
-            Swal.close();
-            editarTrimestralizacion(reg);
-          });
+          if (IS_AUTHENTICATED) {
+            document.getElementById("btnEditarRegistro")?.addEventListener("click", () => {
+              Swal.close();
+              editarTrimestralizacion(reg);
+            });
+          }
         },
       });
     });
@@ -1364,6 +1615,21 @@ function popupZonaLibre(){
     td.addEventListener("click", () => {
       const dia = td.getAttribute("data-dia") || "Sin día";
       const hora = td.getAttribute("data-hora") || "Sin hora";
+      const accionesZonaLibre = IS_AUTHENTICATED
+        ? `
+          <div class="mt-8 flex justify-end gap-3">
+            <button id="btnCerrarPopupZonaLibre" class="bg-[#00324d] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">Cerrar</button>
+            <button id="btnAbrirModalZonaLibre" class="bg-[#00324d] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">
+              Agregar Horario
+            </button>
+          </div>
+        `
+        : `
+          <div class="mt-8 flex justify-end gap-3">
+            <button id="btnCerrarPopupZonaLibre" class="bg-[#00324d] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">Cerrar</button>
+          </div>
+        `;
+
       Swal.fire({
         title: "Zona libre",
         html:`
@@ -1372,22 +1638,19 @@ function popupZonaLibre(){
           <p><strong>Hora:</strong> ${hora}</p>
           <p>En esta franja no hay ninguna competencia programada.</p>
           </div>  
-          <div class="mt-8 flex justify-end gap-3">
-            <button id="btnCerrarPopupZonaLibre" class="bg-[#00324d] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">Cerrar</button>
-            <button id="btnAbrirModalZonaLibre" class="bg-[#00324d] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">
-              Agregar Horario
-            </button>
-          </div>
+          ${accionesZonaLibre}
           `,
           showConfirmButton: false,
           didOpen: () => {
             document.getElementById("btnCerrarPopupZonaLibre").addEventListener("click", () => {
               Swal.close();
             });
-            document.getElementById("btnAbrirModalZonaLibre").addEventListener("click", () => {
-              Swal.close();
-              abrirModal();
-            });
+            if (IS_AUTHENTICATED) {
+              document.getElementById("btnAbrirModalZonaLibre")?.addEventListener("click", () => {
+                Swal.close();
+                abrirModal();
+              });
+            }
           }
       });
     });
@@ -1398,11 +1661,11 @@ function popupZonaLibre(){
 // INICIO
 // =======================
 document.addEventListener("DOMContentLoaded", () => {
+  cargarAreasYZonas();
+  configurarFiltros();
   cargarFichas();
   cargarInstructores();
   cargarCompetencias();
-  cargarAreasYZonas();
-  configurarFiltros();
   configurarModalidadFormulario();
   if (id_zona) {
     toggleTabla(true);
@@ -1410,7 +1673,54 @@ document.addEventListener("DOMContentLoaded", () => {
   } else toggleTabla(false);
 
   const btnActualizar = document.getElementById("btn-actualizar");
-  if (btnActualizar && typeof activarEdicion === "function") {
-    btnActualizar.addEventListener("click", activarEdicion);
+  if (btnActualizar) {
+    btnActualizar.addEventListener("click", abrirModalGestionHoras);
   }
+
+  document.getElementById("btnCerrarGestionHoras")?.addEventListener("click", cerrarModalGestionHoras);
+  document.getElementById("btnAceptarGestionHoras")?.addEventListener("click", cerrarModalGestionHoras);
+  document.getElementById("tabGestionHorasInstructores")?.addEventListener("click", () => {
+    gestionHorasTabActual = "instructores";
+    renderGestionHoras();
+  });
+  document.getElementById("tabGestionHorasGrupos")?.addEventListener("click", () => {
+    gestionHorasTabActual = "grupos";
+    renderGestionHoras();
+  });
+  document.querySelector("#modalGestionHoras .gh-backdrop")?.addEventListener("click", cerrarModalGestionHoras);
+  document.getElementById("btnIrGestionInstructores")?.addEventListener("click", () => {
+    window.location.href = `${API_BASE}index.php?page=src/views/gestionInstructores`;
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    const modal = document.getElementById("modalGestionHoras");
+    if (!modal || modal.classList.contains("hidden")) return;
+    cerrarModalGestionHoras();
+  });
+
+  const mostrarAlertaSinConexion = () => {
+    Swal.fire({
+      icon: "error",
+      title: "Sin conexión a la red",
+      text: "No se pudo completar la consulta. Verifica tu conexión e intenta nuevamente.",
+      showCancelButton: true,
+      confirmButtonText: "Volver al inicio",
+      cancelButtonText: "Cerrar"
+    }).then((result) => {
+      if (result.isConfirmed) {
+        window.location.href = `${API_BASE}index.php?page=landing`;
+      }
+    });
+  };
+
+  window.addEventListener("offline", mostrarAlertaSinConexion);
+
+  document.addEventListener("click", (event) => {
+    if (!navigator.onLine) {
+      const objetivo = event.target.closest("button, a, select, input");
+      if (objetivo) {
+        mostrarAlertaSinConexion();
+      }
+    }
+  });
 });

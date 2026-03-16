@@ -8,5 +8,5 @@ return [
     'username' => 'proyectozsenlock@gmail.com', 
     'password' => 'kjop rrbt qptk qnjr', 
     'from_email' => 'proyectozsenlock@gmail.com',
-    'from_name' => 'Sistema de Recuperación'
+    'from_name' => 'Sistema de Recuperacion'
 ];

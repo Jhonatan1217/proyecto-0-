@@ -43,10 +43,10 @@
             Iniciar Sesion
           </a>
 
-          <!-- Boton Ver horario (green, pill) -->
+          <!-- Boton Visualizar horario (green, pill) -->
           <a href="<?= BASE_URL ?>index.php?page=src/views/register_tables"
             class="inline-flex items-center justify-center min-w-[180px] sm:min-w-[200px] px-8 py-3 border-0 text-sm rounded-full text-white font-semibold bg-[#39A900] hover:bg-[#2d8a00] transition-colors duration-200 cursor-pointer shadow-lg shadow-green-300/40">
-            Ver horario
+            Visualizar horario
           </a>
         </div>
       </div>

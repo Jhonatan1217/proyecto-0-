@@ -88,4 +88,4 @@ if (!defined('BASE_URL')) { $base = '/'; define('BASE_URL', $base); }
 window.API_URL = "<?= BASE_URL ?>src/controllers/TrimestreController.php";
 window.ICON_PENCIL_TRIMESTRE = "<?= BASE_URL ?>src/assets/img/pencil-line.svg";
 </script>
-<script src="<?= BASE_URL ?>src/assets/js/gestionTrimestre.js"></script>
+<script src="<?= BASE_URL ?>src/assets/js/gestionTrimestre.js?v=2"></script>

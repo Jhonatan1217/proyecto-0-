@@ -13,6 +13,25 @@ if (!window.TRIMESTRALIZACION_INIT) {
 
     const TOAST_TIME = 2600;
 
+    function dispararToastsExcedente(warnings) {
+      const instructores = Array.isArray(warnings?.instructores) ? warnings.instructores : [];
+      const grupos = Array.isArray(warnings?.grupos) ? warnings.grupos : [];
+
+      instructores.forEach((inst) => {
+        Toast.fire({
+          icon: "warning",
+          title: `Atención: El instructor ha superado su límite de carga horaria (${inst.nombre_instructor})`
+        });
+      });
+
+      grupos.forEach((grupo) => {
+        Toast.fire({
+          icon: "info",
+          title: `Aviso: El grupo ${grupo.id_grupo} ha excedido las 30 horas reglamentarias`
+        });
+      });
+    }
+
     function redirectToHorario() {
       const base = (window.BASE_URL || '');
       const redirect = `${base}index.php?page=src/views/register_tables`;
@@ -527,6 +546,8 @@ if (!window.TRIMESTRALIZACION_INIT) {
             });
             return Toast.fire({ icon: "error", title: mensaje });
           }
+
+          dispararToastsExcedente(data.warnings);
 
           Swal.fire({
             icon: "success",
