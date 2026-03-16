@@ -3,6 +3,7 @@
 if (!defined('BASE_URL')) { $base = '/senlock/'; define('BASE_URL', $base); }
 ?>
 <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/combobox.css">
+<link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/select-styled.css">
 <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/table-edit.css">
 <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/modal-enterprise.css">
 <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/gestionUsuarios-usuario.css">

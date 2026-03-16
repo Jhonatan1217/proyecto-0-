@@ -159,7 +159,7 @@
         if (isNaN(nuevoNumero) || !Number.isInteger(Number(nuevoNumero)) || Number(nuevoNumero) < 1) {
           return toast("Solo números enteros mayores a 0", "warning");
         }
-        if (nuevoNumero === original) return toast("No se detectaron cambios", "warning");
+        if (nuevoNumero === original) return toast("Sin cambios.", "info");
         try {
           const res = await fetch(API_URL, {
             method: "POST",

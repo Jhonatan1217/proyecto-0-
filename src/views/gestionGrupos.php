@@ -6,6 +6,7 @@ if (!defined("BASE_URL")) {
 }
 ?>
 <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/combobox.css">
+<link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/select-styled.css">
 <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/table-edit.css">
 <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/modal-enterprise.css">
 
@@ -28,7 +29,7 @@ if (!defined("BASE_URL")) {
     <div class="px-6 py-4">
       <div class="flex flex-col md:flex-row gap-4">
         <div id="filtroProgramaWrap" class="relative w-full md:w-64">
-          <select id="filtroPrograma" class="select-grupo w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-2.5 pr-10 text-sm focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] outline-none transition">
+          <select id="filtroPrograma" class="select-grupo w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-2.5 pr-10 text-sm focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] outline-none transition" autocomplete="off">
             <option value="">Todos los programas</option>
           </select>
           <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none select-grupo-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -36,7 +37,7 @@ if (!defined("BASE_URL")) {
           </svg>
         </div>
         <div id="buscadorGrupoWrap" class="relative w-full md:w-64">
-          <input type="text" id="buscadorGrupo" placeholder="Buscar grupo..."
+          <input type="text" id="buscadorGrupo" placeholder="Buscar grupo..." autocomplete="off"
             class="w-full rounded-xl border border-gray-300 bg-white pl-10 pr-10 py-2.5 text-sm focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] outline-none transition" />
           <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -77,18 +78,18 @@ if (!defined("BASE_URL")) {
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
       </button>
     </header>
-    <form id="formGrupo" class="flex flex-col flex-1 min-h-0">
+    <form id="formGrupo" class="flex flex-col flex-1 min-h-0" autocomplete="off">
       <div class="modal-grupo-body flex-1">
         <div class="space-y-5">
           <div>
             <label for="inputNumeroFicha" class="label-enterprise">Número de grupo</label>
-            <input type="number" name="numero_ficha" id="inputNumeroFicha" max="999999999" min="1" required placeholder="Ingrese el número" class="input-enterprise">
+            <input type="number" name="numero_ficha" id="inputNumeroFicha" max="999999999" min="1" required placeholder="Ingrese el número" class="input-enterprise" autocomplete="off">
             <p id="errorNumeroFicha" class="text-red-500 text-sm mt-1 hidden"></p>
           </div>
           <div>
             <label for="selectProgramaModal" class="label-enterprise">Programa</label>
             <div class="relative">
-              <select name="id_programa" id="selectProgramaModal" required class="select-grupo input-enterprise pr-10 appearance-none cursor-pointer">
+              <select name="id_programa" id="selectProgramaModal" required class="select-grupo input-enterprise pr-10 appearance-none cursor-pointer" autocomplete="off">
                 <option value="">Seleccione un programa</option>
               </select>
               <span class="select-grupo-chevron pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -99,7 +100,7 @@ if (!defined("BASE_URL")) {
           <div>
             <label for="selectJornada" class="label-enterprise">Jornada</label>
             <div class="relative">
-              <select name="jornada" id="selectJornada" required class="select-grupo input-enterprise pr-10 appearance-none cursor-pointer">
+              <select name="jornada" id="selectJornada" required class="select-styled select-grupo" autocomplete="off">
                 <option value="" disabled selected>Seleccione jornada</option>
                 <option value="DIURNA">Diurna</option>
                 <option value="NOCTURNA">Nocturna</option>
@@ -113,7 +114,7 @@ if (!defined("BASE_URL")) {
           <div>
             <label for="selectModalidad" class="label-enterprise">Modalidad</label>
             <div class="relative">
-              <select name="modalidad" id="selectModalidad" required class="select-grupo input-enterprise pr-10 appearance-none cursor-pointer">
+              <select name="modalidad" id="selectModalidad" required class="select-styled select-grupo" autocomplete="off">
                 <option value="" disabled selected>Seleccione modalidad</option>
                 <option value="PRESENCIAL">Presencial</option>
                 <option value="VIRTUAL">Virtual</option>
@@ -127,7 +128,7 @@ if (!defined("BASE_URL")) {
           <div>
             <label for="selectLiderModal" class="label-enterprise">Líder de grupo</label>
             <div class="relative">
-              <select name="id_lider_grupo" id="selectLiderModal" required class="select-grupo input-enterprise pr-10 appearance-none cursor-pointer">
+              <select name="id_lider_grupo" id="selectLiderModal" required class="select-grupo input-enterprise pr-10 appearance-none cursor-pointer" autocomplete="off">
                 <option value="">Seleccione líder</option>
               </select>
               <span class="select-grupo-chevron pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">

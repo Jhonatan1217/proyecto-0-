@@ -68,7 +68,12 @@
     if (filtroPrograma && !filtroPrograma.dataset.cb) {
       filtroPrograma.dataset.cb = "1";
       if (typeof ComboboxComponent !== "undefined") {
-        ComboboxComponent.enhance({ selector: "#filtroPrograma", placeholder: "Todos los programas", clearValue: "", restoreValueOnBlurWhenEmpty: false });
+        ComboboxComponent.enhance({
+          selector: "#filtroPrograma",
+          placeholder: "Todos los programas",
+          clearValue: "",
+          restoreValueOnBlurWhenEmpty: false
+        });
       }
     }
   }
@@ -76,11 +81,20 @@
   function enhanceSelectsGrupo() {
     if (typeof ComboboxComponent === "undefined") return;
     ComboboxComponent.enhance({
-      selector: ".select-grupo:not(#filtroPrograma)",
+      selector: ".select-grupo:not(#filtroPrograma):not(#selectJornada):not(#selectModalidad):not(.jornada):not(.modalidad)",
       dropdownClass: "custom-select-dropdown",
       optionClass: "custom-option",
-      placeholder: "Buscar..."
+      placeholder: "Buscar...",
+      restoreValueOnBlurWhenEmpty: true
     });
+    if (typeof ComboboxComponent.enhanceSelectStyled === "function") {
+      ComboboxComponent.enhanceSelectStyled({
+        selector: ".select-styled",
+        dropdownClass: "custom-select-dropdown",
+        optionClass: "custom-option",
+        placeholder: "Seleccione..."
+      });
+    }
   }
 
   /* ========== TABLA ========== */
@@ -202,13 +216,16 @@
       return `<option value="${idL}" ${idL == g.id_lider_grupo ? "selected" : ""}>${nombre}</option>`;
     }).join("");
 
+    const idProgramaEsc = String(g.id_programa ?? "").replace(/"/g, "&quot;");
+    const idLiderEsc = String(g.id_lider_grupo ?? "").replace(/"/g, "&quot;");
+
     row.innerHTML = `
       <td class="col-numero"><div class="cell-edit-wrap"><input type="number" class="cell-edit numero input-enterprise w-full" value="${g.numero_ficha ?? ""}" min="1" max="999999999" /></div></td>
-      <td class="col-programa"><div class="cell-edit-wrap"><select class="cell-edit programa select-grupo input-enterprise w-full py-2.5 text-sm">${optsPrograma}</select></div></td>
+      <td class="col-programa"><div class="cell-edit-wrap"><select class="cell-edit programa select-grupo input-enterprise w-full py-2.5 text-sm" data-initial-value="${idProgramaEsc}">${optsPrograma}</select></div></td>
       <td class="col-nivel"><span class="tag-pill cell-nivel-tag">${(g.nivel ?? "—").toString().trim().toUpperCase()}</span></td>
-      <td class="col-jornada"><div class="cell-edit-wrap"><select class="cell-edit jornada select-grupo input-enterprise w-full py-2.5 text-sm">${optsJornada}</select></div></td>
-      <td class="col-modalidad"><div class="cell-edit-wrap"><select class="cell-edit modalidad select-grupo input-enterprise w-full py-2.5 text-sm">${optsModalidad}</select></div></td>
-      <td class="col-lider"><div class="cell-edit-wrap"><select class="cell-edit lider select-grupo input-enterprise w-full py-2.5 text-sm">${optsLider}</select></div></td>
+      <td class="col-jornada"><div class="cell-edit-wrap"><select class="cell-edit jornada select-styled">${optsJornada}</select></div></td>
+      <td class="col-modalidad"><div class="cell-edit-wrap"><select class="cell-edit modalidad select-styled">${optsModalidad}</select></div></td>
+      <td class="col-lider"><div class="cell-edit-wrap"><select class="cell-edit lider select-grupo input-enterprise w-full py-2.5 text-sm" data-initial-value="${idLiderEsc}">${optsLider}</select></div></td>
       <td class="col-acciones text-right">
         <div class="acciones-edit">
           <button type="button" class="btn-guardar-grupo btn-icon-check p-2 rounded-lg transition" title="Guardar" aria-label="Guardar">
@@ -224,6 +241,13 @@
     row.querySelector(".btn-cancelar-grupo").addEventListener("click", () => cargarGrupos());
     enhanceSelectsGrupo();
 
+    if (typeof ComboboxComponent !== "undefined" && typeof ComboboxComponent.setInitialValue === "function") {
+      const selPrograma = row.querySelector(".cell-edit.programa.select-grupo");
+      const selLider = row.querySelector(".cell-edit.lider.select-grupo");
+      if (selPrograma) ComboboxComponent.setInitialValue(selPrograma, g.id_programa ?? selPrograma.value);
+      if (selLider) ComboboxComponent.setInitialValue(selLider, g.id_lider_grupo ?? selLider.value);
+    }
+
     row.querySelector(".btn-guardar-grupo").addEventListener("click", async () => {
       const numero = row.querySelector(".cell-edit.numero").value.trim();
       const idPrograma = row.querySelector(".cell-edit.programa").value;
@@ -233,6 +257,17 @@
 
       if (!numero || !idPrograma || !jornada || !modalidad || !idLider) {
         toast("Complete todos los campos", "warning");
+        return;
+      }
+
+      const sinCambios =
+        String(numero) === String(g.numero_ficha ?? "") &&
+        String(idPrograma) === String(g.id_programa ?? "") &&
+        String(jornada) === String(g.jornada ?? "") &&
+        String(modalidad) === String(g.modalidad ?? "") &&
+        String(idLider) === String(g.id_lider_grupo ?? "");
+      if (sinCambios) {
+        toast("Sin cambios.", "info");
         return;
       }
 
