@@ -40,7 +40,7 @@ if (!defined('BASE_URL')) {
     <div class="px-6 py-4">
       <div class="flex flex-col md:flex-row gap-4">
         <div id="filtroAreaWrap" class="relative w-full md:w-64">
-          <select id="filtroArea" class="w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-2.5 pr-10 text-sm focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] outline-none transition">
+          <select id="filtroArea" class="w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-2.5 pr-10 text-sm focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] outline-none transition" autocomplete="off">
             <option value="todas">Todas las áreas</option>
           </select>
           <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none filtro-area-chevron" viewBox="0 0 20 20" fill="currentColor">
@@ -48,7 +48,7 @@ if (!defined('BASE_URL')) {
           </svg>
         </div>
         <div class="relative w-full md:w-64">
-          <input type="text" id="buscadorZonas" placeholder="Buscar zona..."
+          <input type="text" id="buscadorZonas" placeholder="Buscar zona..." autocomplete="off"
             class="w-full rounded-xl border border-gray-300 bg-white pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] outline-none transition" />
           <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
@@ -86,17 +86,17 @@ if (!defined('BASE_URL')) {
         </svg>
       </button>
     </header>
-    <form id="formNuevaZona" class="flex flex-col flex-1 min-h-0">
+    <form id="formNuevaZona" class="flex flex-col flex-1 min-h-0" autocomplete="off">
       <div class="modal-zona-body flex-1">
         <div class="space-y-5">
           <div>
             <label for="nombre_zona" class="label-enterprise">Nombre de la Zona</label>
-            <input type="text" name="nombre_zona" id="nombre_zona" maxlength="125" required placeholder="Ej: Zona 1" class="input-enterprise" />
+            <input type="text" name="nombre_zona" id="nombre_zona" maxlength="125" required placeholder="Ej: Zona 1" class="input-enterprise" autocomplete="off" />
           </div>
           <div>
             <label for="id_area" class="label-enterprise">Área perteneciente</label>
             <div id="id_areaWrap">
-              <select name="id_area" id="id_area" required class="select-zona input-enterprise w-full">
+              <select name="id_area" id="id_area" required class="select-zona input-enterprise w-full" autocomplete="off">
                 <option disabled selected value="">Seleccione un Área</option>
               </select>
             </div>

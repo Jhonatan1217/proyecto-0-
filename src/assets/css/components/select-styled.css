@@ -1,0 +1,52 @@
+/**
+ * Select estilizado: mismo aspecto que el combobox (borde, radio, foco, chevron)
+ * sin búsqueda ni botón X. Para listas cortas y fijas (jornada, modalidad, cargo, etc.).
+ */
+:root {
+  --select-styled-padding-x: 0.75rem;
+  --select-styled-chevron-zone: 2rem;
+  --select-styled-chevron-size: 1.15rem;
+}
+
+.select-styled {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0.625rem var(--select-styled-chevron-zone) 0.625rem var(--select-styled-padding-x);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #111827;
+  background-color: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 0.75rem;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: var(--select-styled-chevron-size);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.select-styled:hover {
+  border-color: #9ca3af;
+}
+
+.select-styled:focus {
+  outline: none;
+  border-color: #39A900;
+  box-shadow: 0 0 0 2px rgba(57, 169, 0, 0.2);
+}
+
+.select-styled:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Si el select estilizado tiene un chevron hermano (span), ocultarlo */
+.select-styled + .select-grupo-chevron,
+.select-styled + .select-usuario-chevron {
+  display: none;
+}
