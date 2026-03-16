@@ -1,0 +1,12 @@
+---
+name: Ajuste de Diseño / UI
+about: Reportar problemas visuales o de interfaz
+title: '[UI]: '
+labels: design, UI/UX
+assignees: ''
+---
+
+### 🎨 Descripción del ajuste
+### 📱 Dispositivo / Pantalla
+### 📸 Evidencia Visual (Obligatorio)
+### 🎯 Resultado esperado

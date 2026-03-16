@@ -13,9 +13,45 @@ if (!window.TRIMESTRALIZACION_INIT) {
 
     const TOAST_TIME = 2600;
 
-    function redirectToHorario() {
+    function dispararToastsExcedente(warnings) {
+      const instructores = Array.isArray(warnings?.instructores) ? warnings.instructores : [];
+      const grupos = Array.isArray(warnings?.grupos) ? warnings.grupos : [];
+
+      instructores.forEach((inst) => {
+        Toast.fire({
+          icon: "warning",
+          title: `Atención: El instructor ha superado su límite de carga horaria (${inst.nombre_instructor})`
+        });
+      });
+
+      grupos.forEach((grupo) => {
+        Toast.fire({
+          icon: "info",
+          title: `Aviso: El grupo ${grupo.id_grupo} ha excedido las 30 horas reglamentarias`
+        });
+      });
+    }
+
+    function redirectToHorario(filtros = {}) {
       const base = (window.BASE_URL || '');
-      const redirect = `${base}index.php?page=src/views/register_tables`;
+      const params = new URLSearchParams();
+      params.set('page', 'src/views/register_tables');
+
+      const modalidadRaw = String(filtros?.modalidad || 'presencial').trim().toLowerCase();
+      const modalidad = modalidadRaw === 'mixta' ? 'mixto' : modalidadRaw;
+      params.set('modalidad', modalidad || 'presencial');
+
+      if (modalidad === 'virtual' || modalidad === 'mixto') {
+        const numeroFicha = String(filtros?.numero_ficha || filtros?.numeroFicha || '').trim();
+        if (numeroFicha) params.set('numero_ficha', numeroFicha);
+      } else {
+        const idArea = String(filtros?.id_area || '').trim();
+        const idZona = String(filtros?.id_zona || filtros?.zona || '').trim();
+        if (idArea) params.set('id_area', idArea);
+        if (idZona) params.set('id_zona', idZona);
+      }
+
+      const redirect = `${base}index.php?${params.toString()}`;
       window.location.replace(redirect);
     }
 
@@ -37,6 +73,8 @@ if (!window.TRIMESTRALIZACION_INIT) {
     }
 
     function validarFormularioHorario(form, overrideDia = null) {
+      const modalidad = (form.querySelector("[name='modalidad']")?.value || "").trim().toLowerCase();
+      const esPresencial = modalidad === "presencial";
       const zona = form.querySelector("[name='zona']").value.trim();
 
       let areaField = form.querySelector("[name='area']");
@@ -49,7 +87,6 @@ if (!window.TRIMESTRALIZACION_INIT) {
         }
       }
 
-      const nivel = form.querySelector("[name='nivel_ficha']").value.trim();
       const numeroFicha = form.querySelector("[name='numero_ficha']").value.trim();
       const instructor = form.querySelector("[name='nombre_instructor']").value.trim();
 
@@ -68,7 +105,9 @@ if (!window.TRIMESTRALIZACION_INIT) {
       const idRaeField = form.querySelector("[name='id_rae']");
       const id_rae = idRaeField ? idRaeField.value.trim() : "";
 
-      const campos = [zona, nivel, numeroFicha, instructor, dia, horaInicio, horaFin, id_competencia];
+      const campos = esPresencial
+        ? [modalidad, zona, numeroFicha, instructor, dia, horaInicio, horaFin, id_competencia]
+        : [modalidad, numeroFicha, instructor, dia, horaInicio, horaFin, id_competencia];
       const vacios = campos.filter((v) => v === "").length;
 
       if (vacios === campos.length) {
@@ -84,21 +123,21 @@ if (!window.TRIMESTRALIZACION_INIT) {
         return { ok: false };
       }
 
-      if (!zona) {
+      if (!modalidad) {
+        Toast.fire({ icon: "warning", title: "Seleccione la modalidad" });
+        return { ok: false };
+      }
+
+      if (esPresencial && !zona) {
         Toast.fire({ icon: "warning", title: "Seleccione la zona" });
         return { ok: false };
       }
 
-      if (!id_area) {
+      if (esPresencial && !id_area) {
         Toast.fire({
           icon: "warning",
           title: "No se identificó el área. Recarga la página o seleccione un área válida."
         });
-        return { ok: false };
-      }
-
-      if (!nivel) {
-        Toast.fire({ icon: "warning", title: "Seleccione el nivel de la ficha" });
         return { ok: false };
       }
 
@@ -150,9 +189,9 @@ if (!window.TRIMESTRALIZACION_INIT) {
 
       return {
         ok: true,
+        modalidad,
         zona,
         id_area,
-        nivel,
         numeroFicha,
         instructor,
         dia,
@@ -162,7 +201,40 @@ if (!window.TRIMESTRALIZACION_INIT) {
       };
     }
 
+    function configurarModalidadCrear() {
+      const modalidadSel = document.getElementById("modalidad");
+      const contAreaZona = document.getElementById("contenedorAreaZonaCrear");
+      const selArea = document.getElementById("id_area");
+      const selZona = document.getElementById("id_zona");
+      const inpArea = document.getElementById("id_area_combo");
+      const inpZona = document.getElementById("id_zona_combo");
+
+      if (!modalidadSel || !contAreaZona) return;
+
+      const aplicar = () => {
+        const modalidad = String(modalidadSel.value || "").trim().toLowerCase();
+        const ocultar = modalidad === "virtual" || modalidad === "mixto";
+
+        contAreaZona.style.display = ocultar ? "none" : "";
+
+        if (ocultar) {
+          if (selArea) selArea.value = "";
+          if (selZona) selZona.value = "";
+          if (inpArea) inpArea.value = "";
+          if (inpZona) {
+            inpZona.value = "";
+            inpZona.disabled = true;
+          }
+        }
+      };
+
+      modalidadSel.addEventListener("change", aplicar);
+      aplicar();
+    }
+
     // ================== MODAL DUPLICAR ==================
+    configurarModalidadCrear();
+
     const modalDup       = document.getElementById("modalDuplicarHorario");
     const backdropDup    = document.getElementById("modalDuplicarBackdrop");
     const selDiaDup      = document.getElementById("selectDiaDuplicar");
@@ -176,7 +248,10 @@ if (!window.TRIMESTRALIZACION_INIT) {
       form: null,
       diaOriginal: "",
       id_area: "",
-      id_competencia: ""
+      id_competencia: "",
+      modalidad: "presencial",
+      id_zona: "",
+      numero_ficha: ""
     };
 
     function limpiarModalDuplicar() {
@@ -202,7 +277,7 @@ if (!window.TRIMESTRALIZACION_INIT) {
     function abrirModalDuplicar(ctx) {
       if (!modalDup || !selDiaDup) {
         cerrarModalCrear();
-        redirectToHorario();
+        redirectToHorario(ctx || {});
         return;
       }
 
@@ -253,7 +328,7 @@ if (!window.TRIMESTRALIZACION_INIT) {
       }
       if (!soloCerrar) {
         cerrarModalCrear();
-        redirectToHorario();
+        redirectToHorario(duplicacionCtx);
       }
     }
 
@@ -268,13 +343,15 @@ if (!window.TRIMESTRALIZACION_INIT) {
         modalDup.style.visibility = "hidden";
         modalDup.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach((el) => { el.style.pointerEvents = "none"; });
       }
-      Toast.fire({
+      Swal.fire({
         icon: "success",
-        title: "¡Horario creado correctamente!"
+        title: "Trimestralización creada",
+        text: "El horario se guardó correctamente.",
+        confirmButtonText: "Aceptar"
       });
       cerrarModalCrear();
       setTimeout(() => {
-        redirectToHorario();
+        redirectToHorario(duplicacionCtx);
       }, TOAST_TIME);
     }
 
@@ -398,6 +475,12 @@ if (!window.TRIMESTRALIZACION_INIT) {
         }
 
         if (huboError) {
+          Swal.fire({
+            icon: "warning",
+            title: "Creado con observaciones",
+            text: mensajeError || "El horario original se guardó, pero hubo errores al duplicar.",
+            confirmButtonText: "Entendido"
+          });
           Toast.fire({
             icon: "warning",
             title: mensajeError || "El horario original se guardó, pero hubo errores al duplicar."
@@ -405,6 +488,12 @@ if (!window.TRIMESTRALIZACION_INIT) {
           return;
         }
 
+        Swal.fire({
+          icon: "success",
+          title: "Trimestralización creada y duplicada",
+          text: "Se guardó el horario en los días seleccionados.",
+          confirmButtonText: "Aceptar"
+        });
         Toast.fire({
           icon: "success",
           title: "¡Horario creado y duplicado correctamente!"
@@ -413,7 +502,7 @@ if (!window.TRIMESTRALIZACION_INIT) {
         cerrarModalDuplicar(true);
         cerrarModalCrear();
         setTimeout(() => {
-          redirectToHorario();
+          redirectToHorario(duplicacionCtx);
         }, TOAST_TIME);
       });
     }
@@ -431,6 +520,9 @@ if (!window.TRIMESTRALIZACION_INIT) {
         }
 
         const {
+          modalidad,
+          zona,
+          numeroFicha,
           id_area,
           dia,
           id_competencia
@@ -469,18 +561,42 @@ if (!window.TRIMESTRALIZACION_INIT) {
 
           if (!res.ok || data.status === "error" || data.error) {
             const mensaje = data.mensaje || data.error || "Ocurrió un error en el servidor.";
+            Swal.fire({
+              icon: "error",
+              title: "No se pudo crear",
+              text: mensaje,
+              confirmButtonText: "Entendido"
+            });
             return Toast.fire({ icon: "error", title: mensaje });
           }
+
+          dispararToastsExcedente(data.warnings);
+
+          Swal.fire({
+            icon: "success",
+            title: "Trimestralización creada",
+            text: "Ahora puedes decidir si deseas duplicarla en otros días.",
+            confirmButtonText: "Continuar"
+          });
 
           abrirModalDuplicar({
             form,
             diaOriginal: dia,
             id_area,
-            id_competencia
+            id_competencia,
+            modalidad,
+            id_zona: zona,
+            numero_ficha: numeroFicha
           });
 
         } catch (err) {
           console.error("Error de red:", err);
+          Swal.fire({
+            icon: "error",
+            title: "Error de conexión",
+            text: "No fue posible crear la trimestralización. Verifica tu conexión e intenta de nuevo.",
+            confirmButtonText: "Entendido"
+          });
           Toast.fire({
             icon: "error",
             title: "Error de red o respuesta inválida",

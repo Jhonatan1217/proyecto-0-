@@ -118,6 +118,199 @@ function resolveTableName(PDO $conn, array $candidates) {
     return null;
 }
 
+function normalizeContractLabel($raw) {
+    $value = strtoupper(trim((string)($raw ?? '')));
+    if ($value === 'PLANTA') return 'Planta';
+    if ($value === 'CONTRATISTA') return 'Contratista';
+    if ($value === '') return 'Contratista';
+    return ucfirst(strtolower($value));
+}
+
+function getInstructorMaxHours($contractLabel) {
+    return strtoupper(trim((string)$contractLabel)) === 'PLANTA' ? 32 : 40;
+}
+
+function normalizeNivelFichaLabel($raw) {
+    $value = strtoupper(trim((string)($raw ?? '')));
+    if ($value === 'TECNICO' || $value === 'TÉCNICO') return 'Técnico';
+    if ($value === 'TECNOLOGO' || $value === 'TECNÓLOGO') return 'Tecnólogo';
+    if ($value === '') return 'Sin nivel';
+    return ucfirst(strtolower($value));
+}
+
+function buildPlaceholders(array $values, string $prefix) {
+    $params = [];
+    $placeholders = [];
+    foreach (array_values($values) as $index => $value) {
+        $key = ':' . $prefix . $index;
+        $placeholders[] = $key;
+        $params[$key] = $value;
+    }
+    return [$placeholders, $params];
+}
+
+function fetchInstructorHourSummaries(PDO $conn, string $tablaHorario, ?array $ids = null) {
+    $rows = [];
+    $params = [];
+
+    if (hasTable($conn, 'instructores')) {
+        $sql = "
+            SELECT 
+                i.id_instructor AS id_instructor,
+                i.nombre_instructor AS nombre_instructor,
+                COALESCE(NULLIF(i.tipo_contrato, ''), NULLIF(i.tipo_instructor, ''), 'CONTRATISTA') AS tipo_contrato
+            FROM instructores i
+            WHERE COALESCE(i.estado, 1) = 1
+        ";
+
+        if ($ids && count($ids) > 0) {
+            [$placeholders, $paramsIds] = buildPlaceholders($ids, 'inst');
+            $sql .= " AND i.id_instructor IN (" . implode(',', $placeholders) . ")";
+            $params += $paramsIds;
+        }
+
+        $sql .= " ORDER BY i.nombre_instructor ASC";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } else {
+        $sql = "
+            SELECT 
+                u.id_usuario AS id_instructor,
+                u.nombre_completo AS nombre_instructor,
+                COALESCE(NULLIF(u.tipo_contrato, ''), NULLIF(u.tipo_instructor, ''), 'CONTRATISTA') AS tipo_contrato
+            FROM usuarios u
+            WHERE UPPER(COALESCE(u.cargo, '')) = 'INSTRUCTOR'
+              AND COALESCE(u.estado, 1) = 1
+        ";
+
+        if ($ids && count($ids) > 0) {
+            [$placeholders, $paramsIds] = buildPlaceholders($ids, 'usr');
+            $sql .= " AND u.id_usuario IN (" . implode(',', $placeholders) . ")";
+            $params += $paramsIds;
+        }
+
+        $sql .= " ORDER BY u.nombre_completo ASC";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    $sqlHours = "
+        SELECT id_instructor, ROUND(SUM(TIME_TO_SEC(TIMEDIFF(hora_fin, hora_inicio)) / 3600), 2) AS horas_actuales
+        FROM {$tablaHorario}
+        WHERE estado = 1
+          AND id_instructor IS NOT NULL
+    ";
+    $paramsHours = [];
+
+    if ($ids && count($ids) > 0) {
+        [$placeholders, $paramsIds] = buildPlaceholders($ids, 'idh');
+        $sqlHours .= " AND id_instructor IN (" . implode(',', $placeholders) . ")";
+        $paramsHours += $paramsIds;
+    }
+
+    $sqlHours .= " GROUP BY id_instructor";
+    $stmtHours = $conn->prepare($sqlHours);
+    $stmtHours->execute($paramsHours);
+    $hourMap = [];
+    foreach ($stmtHours->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $hourMap[(string)$row['id_instructor']] = (float)$row['horas_actuales'];
+    }
+
+    $result = [];
+    foreach ($rows as $row) {
+        $contract = normalizeContractLabel($row['tipo_contrato'] ?? 'CONTRATISTA');
+        $maxHours = getInstructorMaxHours($contract);
+        $actual = $hourMap[(string)$row['id_instructor']] ?? 0.0;
+        $result[] = [
+            'id_instructor' => (int)$row['id_instructor'],
+            'nombre_instructor' => $row['nombre_instructor'] ?? 'Sin nombre',
+            'tipo_contrato' => $contract,
+            'horas_actuales' => round($actual, 2),
+            'horas_maximas' => $maxHours,
+            'excedente' => round($maxHours - $actual, 2),
+        ];
+    }
+
+    return $result;
+}
+
+function fetchGroupHourSummaries(PDO $conn, string $tablaHorario, ?array $ids = null) {
+    $params = [];
+    $nivelSelect = hasColumn($conn, 'fichas', 'nivel_ficha') ? 'f.nivel_ficha' : "'' AS nivel_ficha";
+    $sql = "
+        SELECT f.id_ficha, f.numero_ficha, {$nivelSelect}
+        FROM fichas f
+        WHERE f.numero_ficha IS NOT NULL
+          AND f.numero_ficha <> ''
+    ";
+
+    if ($ids && count($ids) > 0) {
+        [$placeholders, $paramsIds] = buildPlaceholders($ids, 'grp');
+        $sql .= " AND f.id_ficha IN (" . implode(',', $placeholders) . ")";
+        $params += $paramsIds;
+    }
+
+    $sql .= " ORDER BY f.numero_ficha ASC";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute($params);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $sqlHours = "
+        SELECT id_ficha, ROUND(SUM(TIME_TO_SEC(TIMEDIFF(hora_fin, hora_inicio)) / 3600), 2) AS horas_actuales
+        FROM {$tablaHorario}
+        WHERE estado = 1
+          AND id_ficha IS NOT NULL
+    ";
+    $paramsHours = [];
+
+    if ($ids && count($ids) > 0) {
+        [$placeholders, $paramsIds] = buildPlaceholders($ids, 'grph');
+        $sqlHours .= " AND id_ficha IN (" . implode(',', $placeholders) . ")";
+        $paramsHours += $paramsIds;
+    }
+
+    $sqlHours .= " GROUP BY id_ficha";
+    $stmtHours = $conn->prepare($sqlHours);
+    $stmtHours->execute($paramsHours);
+    $hourMap = [];
+    foreach ($stmtHours->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $hourMap[(string)$row['id_ficha']] = (float)$row['horas_actuales'];
+    }
+
+    $result = [];
+    foreach ($rows as $row) {
+        $actual = $hourMap[(string)$row['id_ficha']] ?? 0.0;
+        $maxHours = 30;
+        $result[] = [
+            'id_ficha' => (int)$row['id_ficha'],
+            'id_grupo' => (string)$row['numero_ficha'],
+            'nivel_grupo' => normalizeNivelFichaLabel($row['nivel_ficha'] ?? ''),
+            'horas_actuales' => round($actual, 2),
+            'horas_maximas' => $maxHours,
+            'excedente' => round($maxHours - $actual, 2),
+        ];
+    }
+
+    return $result;
+}
+
+function extractExceededWarnings(array $instructores, array $grupos) {
+    $warningInstructores = array_values(array_filter($instructores, function ($item) {
+        return isset($item['horas_actuales'], $item['horas_maximas']) && (float)$item['horas_actuales'] > (float)$item['horas_maximas'];
+    }));
+
+    $warningGrupos = array_values(array_filter($grupos, function ($item) {
+        return isset($item['horas_actuales'], $item['horas_maximas']) && (float)$item['horas_actuales'] > (float)$item['horas_maximas'];
+    }));
+
+    return [
+        'instructores' => $warningInstructores,
+        'grupos' => $warningGrupos,
+    ];
+}
+
 $tablaHorario = resolveTableName($conn, ['horarios', 'horario']);
 if (!$tablaHorario) {
     echo json_encode(['status' => 'error', 'mensaje' => 'No existe la tabla de horarios (horario/horarios) en la base de datos']);
@@ -126,12 +319,103 @@ if (!$tablaHorario) {
 
 switch ($accion) {
 
+    case 'resumenHoras':
+        try {
+            $instructores = fetchInstructorHourSummaries($conn, $tablaHorario);
+            $grupos = fetchGroupHourSummaries($conn, $tablaHorario);
+
+            echo json_encode([
+                'status' => 'success',
+                'data' => [
+                    'instructores' => $instructores,
+                    'grupos' => $grupos,
+                ]
+            ]);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['status' => 'error', 'mensaje' => 'Error al calcular resumen de horas: ' . $e->getMessage()]);
+            exit;
+        }
+
+
+// ============================================================
+// LISTAR POR GRUPO (Virtual / Mixto)
+// ============================================================
+case 'listarPorGrupo':
+
+    $numero_ficha = trim((string)($_GET['numero_ficha'] ?? ''));
+
+    if (!$numero_ficha) {
+        echo json_encode(['status' => 'error', 'mensaje' => 'Falta numero_ficha']);
+        exit;
+    }
+
+    try {
+        $joinInstructores = "LEFT JOIN instructores i ON h.id_instructor = i.id_instructor";
+        $selectInstructores = "i.id_instructor, i.nombre_instructor, i.tipo_instructor";
+
+        if (!hasTable($conn, 'instructores')) {
+            $joinInstructores = "LEFT JOIN usuarios i ON h.id_instructor = i.id_usuario";
+            $selectInstructores = "i.id_usuario AS id_instructor, i.nombre_completo AS nombre_instructor, i.tipo_instructor";
+        }
+
+        $sql = "
+            SELECT 
+                h.id_horario,
+                h.modalidad,
+                h.dia,
+                h.hora_inicio,
+                h.hora_fin,
+                h.id_zona,
+                h.id_area,
+                h.numero_trimestre,
+                h.id_programa,
+                h.id_competencia,
+                f.numero_ficha,
+                p.nombre_programa,
+                {$selectInstructores},
+                c.nombre_competencia,
+                r.id_rae,
+                r.descripcion AS descripcion_rae,
+                h.estado
+            FROM {$tablaHorario} h
+            LEFT JOIN fichas f ON h.id_ficha = f.id_ficha
+            LEFT JOIN programas p ON h.id_programa = p.id_programa
+            {$joinInstructores}
+            LEFT JOIN competencias c ON h.id_competencia = c.id_competencia
+            LEFT JOIN raes r ON FIND_IN_SET(r.id_rae, h.id_rae)
+                        WHERE f.numero_ficha LIKE :numero_ficha
+              AND h.estado = 1
+              AND h.modalidad IN ('VIRTUAL','MIXTO')
+            ORDER BY 
+                FIELD(UPPER(h.dia),'LUNES','MARTES','MIERCOLES','JUEVES','VIERNES','SABADO'),
+                h.hora_inicio
+        ";
+
+        $stmt = $conn->prepare($sql);
+        $stmt->bindValue(':numero_ficha', $numero_ficha . '%');
+        $stmt->execute();
+
+        $registros = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode([
+            'status' => 'success',
+            'data' => $registros ?: []
+        ]);
+        exit;
+
+    } catch (PDOException $e) {
+        echo json_encode(['status' => 'error', 'mensaje' => 'Error al listar por grupo: ' . $e->getMessage()]);
+        exit;
+    }
+
     // ============================================================
     // LISTAR POR ZONA (+ opcional AREA)
     // ============================================================
     case 'listar':
         $id_zona = $_GET['id_zona'] ?? null;
         $id_area_supplied = $_GET['id_area'] ?? null;
+        $modalidad = $_GET['modalidad'] ?? 'PRESENCIAL';
 
         if (!$id_zona) {
             echo json_encode(['status' => 'error', 'mensaje' => 'Falta id_zona']);
@@ -174,7 +458,7 @@ switch ($accion) {
                     c.id_competencia,
                     c.nombre_competencia,
                     r.id_rae,
-                    r.descripcion AS descripcion_rae
+                                        r.descripcion AS descripcion_rae
                 FROM {$tablaHorario} h
                 LEFT JOIN fichas f ON h.id_ficha = f.id_ficha
                 LEFT JOIN programas p ON h.id_programa = p.id_programa
@@ -182,6 +466,7 @@ switch ($accion) {
                 LEFT JOIN competencias c ON h.id_competencia = c.id_competencia
                 LEFT JOIN raes r ON FIND_IN_SET(r.id_rae, h.id_rae)
                 WHERE h.id_zona = :id_zona
+                                    AND UPPER(h.modalidad) = :modalidad
             ";
 
             if (!empty($id_area_supplied)) {
@@ -196,6 +481,7 @@ switch ($accion) {
 
             $stmt = $conn->prepare($sql);
             $stmt->bindValue(':id_zona', intval($id_zona), PDO::PARAM_INT);
+            $stmt->bindValue(':modalidad', strtoupper($modalidad));
 
             if (!empty($id_area_supplied)) {
                 $stmt->bindValue(':id_area', intval($id_area_supplied), PDO::PARAM_INT);
@@ -233,6 +519,12 @@ switch ($accion) {
             exit;
         }
 
+        $modalidad_raw     = trim($_POST['modalidad'] ?? 'PRESENCIAL');
+        $modalidad         = strtoupper($modalidad_raw);
+        if ($modalidad === 'MIXTA') {
+            $modalidad = 'MIXTO';
+        }
+
         $dia               = strtoupper(trim($_POST['dia_semana'] ?? ''));
         $hora_inicio_raw   = trim($_POST['hora_inicio'] ?? '');
         $hora_fin_raw      = trim($_POST['hora_fin'] ?? '');
@@ -246,13 +538,13 @@ switch ($accion) {
         $id_programa       = isset($_POST['id_programa']) && $_POST['id_programa'] !== '' ? intval($_POST['id_programa']) : null;
         $id_rae_raw        = trim($_POST['id_rae'] ?? '');
 
-        $id_zona = intval($id_zona_raw);
+        $id_zona = ($id_zona_raw !== null && $id_zona_raw !== '') ? intval($id_zona_raw) : null;
 
         if (empty($dia) || empty($hora_inicio_raw) || empty($hora_fin_raw)) {
             echo json_encode(['status' => 'error', 'mensaje' => 'Día, hora inicio y hora fin son obligatorios.']);
             exit;
         }
-        if ($id_zona <= 0) {
+        if ($modalidad === "PRESENCIAL" && (!$id_zona || $id_zona <= 0)) {
             echo json_encode(['status' => 'error', 'mensaje' => 'Debe seleccionar una zona válida.']);
             exit;
         }
@@ -284,11 +576,34 @@ switch ($accion) {
         try {
             $conn->beginTransaction();
 
-            $id_area = resolveAreaForZona($conn, $id_zona, $id_area_post);
-            if ($id_area === null) {
-                $conn->rollBack();
-                echo json_encode(['status' => 'error', 'mensaje' => 'Ambigüedad en zona: envía también id_area.']);
-                exit;
+            $id_area = null;
+
+            if ($modalidad === 'PRESENCIAL') {
+                $id_area = resolveAreaForZona($conn, $id_zona, $id_area_post);
+                if ($id_area === null) {
+                    $conn->rollBack();
+                    echo json_encode(['status' => 'error', 'mensaje' => 'Ambigüedad en zona: envía también id_area.']);
+                    exit;
+                }
+            } else {
+                if ($id_zona && $id_zona > 0) {
+                    $id_area = resolveAreaForZona($conn, $id_zona, $id_area_post);
+                }
+
+                if (($id_zona === null || $id_zona <= 0) || $id_area === null) {
+                    try {
+                        $fallbackZona = $conn->query("SELECT id_zona, id_area FROM zonas WHERE estado = 1 ORDER BY id_zona ASC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+                        if ($fallbackZona) {
+                            if ($id_zona === null || $id_zona <= 0) {
+                                $id_zona = intval($fallbackZona['id_zona']);
+                            }
+                            if ($id_area === null) {
+                                $id_area = isset($fallbackZona['id_area']) ? intval($fallbackZona['id_area']) : null;
+                            }
+                        }
+                    } catch (Throwable $e) {
+                    }
+                }
             }
 
             if (!$numero_trimestre) {
@@ -334,34 +649,55 @@ switch ($accion) {
             $idsRae = array_filter(array_map('trim', explode(',', $id_rae_raw)));
             $id_rae = implode(',', $idsRae);
 
-            $stmtCruce = $conn->prepare("
-                SELECT COUNT(*) AS cnt FROM {$tablaHorario}
-                WHERE id_zona = :id_zona
-                  AND id_area = :id_area
-                  AND dia = :dia
-                  AND estado = 1
-                  AND NOT (hora_fin <= :hora_inicio OR hora_inicio >= :hora_fin)
-            ");
-            $stmtCruce->execute([
-                ':id_zona' => $id_zona,
-                ':id_area' => $id_area,
-                ':dia' => $dia,
-                ':hora_inicio' => $horaInicio,
-                ':hora_fin' => $horaFin
-            ]);
+            if ($modalidad === 'PRESENCIAL') {
+                $stmtCruce = $conn->prepare(" 
+                    SELECT COUNT(*) AS cnt FROM {$tablaHorario}
+                    WHERE id_zona = :id_zona
+                      AND id_area = :id_area
+                      AND dia = :dia
+                      AND estado = 1
+                      AND NOT (hora_fin <= :hora_inicio OR hora_inicio >= :hora_fin)
+                ");
+                $stmtCruce->execute([
+                    ':id_zona' => $id_zona,
+                    ':id_area' => $id_area,
+                    ':dia' => $dia,
+                    ':hora_inicio' => $horaInicio,
+                    ':hora_fin' => $horaFin
+                ]);
+            } else {
+                $stmtCruce = $conn->prepare(" 
+                    SELECT COUNT(*) AS cnt FROM {$tablaHorario}
+                    WHERE id_instructor = :id_instructor
+                      AND dia = :dia
+                      AND estado = 1
+                      AND NOT (hora_fin <= :hora_inicio OR hora_inicio >= :hora_fin)
+                ");
+                $stmtCruce->execute([
+                    ':id_instructor' => $id_instructor,
+                    ':dia' => $dia,
+                    ':hora_inicio' => $horaInicio,
+                    ':hora_fin' => $horaFin
+                ]);
+            }
+
             if ($stmtCruce->fetchColumn() > 0) {
                 $conn->rollBack();
-                echo json_encode(['status' => 'error', 'mensaje' => 'Ya existe un horario activo que se cruza con el rango seleccionado en esta zona y área.']);
+                $mensajeCruce = $modalidad === 'PRESENCIAL'
+                    ? 'Ya existe un horario activo que se cruza con el rango seleccionado en esta zona y área.'
+                    : 'El instructor ya tiene un horario activo que se cruza en ese rango.';
+                echo json_encode(['status' => 'error', 'mensaje' => $mensajeCruce]);
                 exit;
             }
 
             $insHorario = $conn->prepare("
-                INSERT INTO {$tablaHorario} (id_zona, id_area, dia, hora_inicio, hora_fin, id_ficha, id_instructor, id_competencia, numero_trimestre, estado, id_programa, id_rae)
-                VALUES (:id_zona, :id_area, :dia, :hora_inicio, :hora_fin, :id_ficha, :id_instructor, :id_competencia, :numero_trimestre, 1, :id_programa, :id_rae)
+                INSERT INTO {$tablaHorario} (id_zona, id_area, modalidad, dia, hora_inicio, hora_fin, id_ficha, id_instructor, id_competencia, numero_trimestre, estado, id_programa, id_rae)
+                VALUES (:id_zona, :id_area, :modalidad, :dia, :hora_inicio, :hora_fin, :id_ficha, :id_instructor, :id_competencia, :numero_trimestre, 1, :id_programa, :id_rae)
             ");
             $insHorario->execute([
                 ':id_zona' => $id_zona,
                 ':id_area' => $id_area,
+                ':modalidad' => $modalidad,
                 ':dia' => $dia,
                 ':hora_inicio' => $horaInicio,
                 ':hora_fin' => $horaFin,
@@ -377,8 +713,18 @@ switch ($accion) {
             $insT = $conn->prepare("INSERT INTO trimestralizacion (id_horario) VALUES (:id_horario)");
             $insT->execute([':id_horario' => $newHorarioId]);
 
+            $warningPayload = extractExceededWarnings(
+                fetchInstructorHourSummaries($conn, $tablaHorario, [$id_instructor]),
+                fetchGroupHourSummaries($conn, $tablaHorario, [$id_ficha])
+            );
+
             $conn->commit();
-            echo json_encode(['status' => 'success', 'mensaje' => 'Trimestralización creada correctamente.', 'id_horario' => $newHorarioId]);
+            echo json_encode([
+                'status' => 'success',
+                'mensaje' => 'Trimestralización creada correctamente.',
+                'id_horario' => $newHorarioId,
+                'warnings' => $warningPayload
+            ]);
             exit;
 
         } catch (PDOException $e) {
@@ -407,11 +753,13 @@ switch ($accion) {
         try {
             $conn->beginTransaction();
             $actualizados = 0;
+            $affectedHorarioIds = [];
 
             $hasNivelFicha = hasColumn($conn, 'fichas', 'nivel_ficha');
 
             foreach ($registros as $r) {
                 if (empty($r['id_horario'])) continue;
+                $affectedHorarioIds[] = (int)$r['id_horario'];
 
                 if (!empty($r['numero_ficha']) || !empty($r['nivel_ficha'])) {
                     if ($hasNivelFicha) {
@@ -502,8 +850,29 @@ switch ($accion) {
                 $actualizados++;
             }
 
+            $affectedInstructorIds = [];
+            $affectedFichaIds = [];
+            if (!empty($affectedHorarioIds)) {
+                [$placeholders, $paramsIds] = buildPlaceholders(array_values(array_unique($affectedHorarioIds)), 'hor');
+                $stmtAffected = $conn->prepare("SELECT id_instructor, id_ficha FROM {$tablaHorario} WHERE id_horario IN (" . implode(',', $placeholders) . ")");
+                $stmtAffected->execute($paramsIds);
+                foreach ($stmtAffected->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                    if (!empty($row['id_instructor'])) $affectedInstructorIds[] = (int)$row['id_instructor'];
+                    if (!empty($row['id_ficha'])) $affectedFichaIds[] = (int)$row['id_ficha'];
+                }
+            }
+
+            $warningPayload = extractExceededWarnings(
+                fetchInstructorHourSummaries($conn, $tablaHorario, array_values(array_unique($affectedInstructorIds))),
+                fetchGroupHourSummaries($conn, $tablaHorario, array_values(array_unique($affectedFichaIds)))
+            );
+
             $conn->commit();
-            echo json_encode(['success' => true, 'message' => "$actualizados registros actualizados correctamente."]);
+            echo json_encode([
+                'success' => true,
+                'message' => "$actualizados registros actualizados correctamente.",
+                'warnings' => $warningPayload
+            ]);
         } catch (PDOException $e) {
             $conn->rollBack();
             echo json_encode(['success' => false, 'error' => 'Error SQL: ' . $e->getMessage()]);

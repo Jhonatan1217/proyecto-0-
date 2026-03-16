@@ -4,7 +4,14 @@
 
 const urlParams = new URLSearchParams(window.location.search);
 let id_zona = urlParams.get("id_zona");
+const filtrosIniciales = {
+  modalidad: String(urlParams.get("modalidad") || "").trim().toLowerCase(),
+  id_area: String(urlParams.get("id_area") || "").trim(),
+  id_zona: String(urlParams.get("id_zona") || "").trim(),
+  numero_ficha: String(urlParams.get("numero_ficha") || "").trim(),
+};
 const API_BASE = ((window && window.BASE_URL) || "").replace(/\/+$/, "/");
+const IS_AUTHENTICATED = Boolean(window && window.IS_AUTHENTICATED);
 
 // =======================
 // CONFIG TOAST (SweetAlert2)
@@ -20,11 +27,245 @@ const Toast = Swal.mixin({
 });
 
 let horariosCache = [];
+let gestionHorasCache = { instructores: [], grupos: [] };
+let gestionHorasTabActual = "instructores";
+
+function registroActivo(estado) {
+  if (estado === undefined || estado === null || estado === "") return true;
+  const valor = String(estado).trim().toLowerCase();
+  return valor === "1" || valor === "true" || valor === "activo";
+}
 
 function timeToMinutes(t) {
   if (!t) return null;
   const [h, m] = t.split(":").map(Number);
   return Number.isFinite(h) ? h * 60 + (Number.isFinite(m) ? m : 0) : null;
+}
+
+function formatHourNumber(value) {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n)) return "0";
+  return Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, "");
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function getEstadoExcedente(value) {
+  const n = Number(value || 0);
+  if (n < 0) return "danger";
+  if (n <= 4) return "neutral";
+  return "ok";
+}
+
+function renderExcedentePill(value) {
+  const estado = getEstadoExcedente(value);
+  const texto = Number(value) < 0 ? `${formatHourNumber(value)} h` : `${formatHourNumber(value)} h libres`;
+  return `<span class="gestion-horas-pill gestion-horas-pill--${estado}">${texto}</span>`;
+}
+
+function dispararToastsExcedente(warnings) {
+  const instructores = Array.isArray(warnings?.instructores) ? warnings.instructores : [];
+  const grupos = Array.isArray(warnings?.grupos) ? warnings.grupos : [];
+
+  instructores.forEach((inst) => {
+    Toast.fire({
+      icon: "warning",
+      title: `Atención: El instructor ha superado su límite de carga horaria (${inst.nombre_instructor})`
+    });
+  });
+
+  grupos.forEach((grupo) => {
+    Toast.fire({
+      icon: "info",
+      title: `Aviso: El grupo ${grupo.id_grupo} ha excedido las 30 horas reglamentarias`
+    });
+  });
+}
+
+async function cargarResumenGestionHoras() {
+  const res = await fetch(`${API_BASE}src/controllers/TrimestralizacionController.php?accion=resumenHoras`);
+  const data = await res.json();
+  if (!res.ok || data.status !== "success") {
+    throw new Error(data.mensaje || data.error || "No fue posible cargar el resumen de horas");
+  }
+  gestionHorasCache = {
+    instructores: Array.isArray(data?.data?.instructores) ? data.data.instructores : [],
+    grupos: Array.isArray(data?.data?.grupos) ? data.data.grupos : []
+  };
+}
+
+function getGestionHorasFiltrados() {
+  const search = String(document.getElementById("gestionHorasSearch")?.value || "").trim().toLowerCase();
+  const extra = String(document.getElementById("gestionHorasExtraFiltro")?.value || "").trim().toLowerCase();
+
+  if (gestionHorasTabActual === "instructores") {
+    return gestionHorasCache.instructores.filter((item) => {
+      const bySearch = !search
+        || String(item.nombre_instructor || "").toLowerCase().includes(search)
+        || String(item.id_instructor || "").toLowerCase().includes(search);
+      const byExtra = !extra || String(item.tipo_contrato || "").toLowerCase() === extra;
+      return bySearch && byExtra;
+    });
+  }
+
+  return gestionHorasCache.grupos.filter((item) => {
+    const bySearch = !search
+      || String(item.id_grupo || "").toLowerCase().includes(search)
+      || String(item.id_ficha || "").toLowerCase().includes(search);
+    const byExtra = !extra || String(item.nivel_grupo || "").toLowerCase() === extra;
+    return bySearch && byExtra;
+  });
+}
+
+function renderGestionHorasResumen(rows) {
+  const resumen = document.getElementById("gestionHorasResumen");
+  if (!resumen) return;
+
+  if (gestionHorasTabActual === "instructores") {
+    resumen.innerHTML = `
+      <p class="gh-resumen-title">Instructores</p>
+      <p class="gh-resumen-sub">(Instructores Planta 32h, Instructores Contratista 40h)</p>`;
+  } else {
+    resumen.innerHTML = `
+      <p class="gh-resumen-title">Grupos</p>
+      <p class="gh-resumen-sub">(Cada grupo tiene un máximo de 30 horas semanales)</p>`;
+  }
+}
+
+function renderGestionHoras() {
+  const filtros = document.getElementById("gestionHorasFiltros");
+  const head = document.getElementById("gestionHorasHead");
+  const body = document.getElementById("gestionHorasBody");
+  const tabInst = document.getElementById("tabGestionHorasInstructores");
+  const tabGrupos = document.getElementById("tabGestionHorasGrupos");
+  if (!filtros || !head || !body) return;
+
+  if (tabInst) tabInst.classList.toggle("is-active", gestionHorasTabActual === "instructores");
+  if (tabGrupos) tabGrupos.classList.toggle("is-active", gestionHorasTabActual === "grupos");
+
+  if (gestionHorasTabActual === "instructores") {
+    filtros.innerHTML = `
+      <input id="gestionHorasSearch" type="text" placeholder="Buscar instructores" class="gh-filtros-input" />
+      <select id="gestionHorasExtraFiltro" class="gh-filtros-select">
+        <option value="">Todos los tipos de contrato</option>
+        <option value="planta">Planta</option>
+        <option value="contratista">Contratista</option>
+      </select>`;
+
+    head.innerHTML = `
+      <tr>
+        <th>Instructor</th>
+        <th>Tipo contrato</th>
+        <th class="center">Horas actuales</th>
+        <th class="center">Horas máxima</th>
+        <th class="center">Excedente</th>
+        <th class="center">Acciones</th>
+      </tr>`;
+  } else {
+    filtros.innerHTML = `
+      <input id="gestionHorasSearch" type="text" placeholder="Buscar grupos" class="gh-filtros-input" />
+      <select id="gestionHorasExtraFiltro" class="gh-filtros-select">
+        <option value="">Todos los niveles</option>
+        <option value="técnico">Técnico</option>
+        <option value="tecnólogo">Tecnólogo</option>
+        <option value="sin nivel">Sin nivel</option>
+      </select>`;
+
+    head.innerHTML = `
+      <tr>
+        <th>ID Grupo</th>
+        <th>Nivel de grupo</th>
+        <th class="center">Horas actuales</th>
+        <th class="center">Horas máxima</th>
+        <th class="center">Excedente</th>
+      </tr>`;
+  }
+
+  document.getElementById("gestionHorasSearch")?.addEventListener("input", renderGestionHorasTabla);
+  document.getElementById("gestionHorasExtraFiltro")?.addEventListener("change", renderGestionHorasTabla);
+  renderGestionHorasTabla();
+}
+
+function renderGestionHorasTabla() {
+  const body = document.getElementById("gestionHorasBody");
+  if (!body) return;
+
+  const rows = getGestionHorasFiltrados();
+  const colspan = gestionHorasTabActual === "instructores" ? 6 : 5;
+  renderGestionHorasResumen(rows);
+
+  if (!rows.length) {
+    body.innerHTML = `<tr><td colspan="${colspan}" style="text-align:center;padding:24px;color:#6b7280;">Sin datos disponibles</td></tr>`;
+    return;
+  }
+
+  if (gestionHorasTabActual === "instructores") {
+    body.innerHTML = rows.map((item) => {
+      const exc = Number(item.excedente ?? 0);
+      const excHTML = exc < 0
+        ? `<span class="gh-excedente-neg">${formatHourNumber(exc)}</span>`
+        : `--`;
+      return `
+        <tr>
+          <td>${escapeHtml(item.nombre_instructor || "Sin nombre")}</td>
+          <td>${escapeHtml(item.tipo_contrato || "Contratista")}</td>
+          <td class="center">${formatHourNumber(item.horas_actuales)}</td>
+          <td class="center">${formatHourNumber(item.horas_maximas)}</td>
+          <td class="center">${excHTML}</td>
+          <td class="center">
+            <button type="button" class="gh-action-btn" onclick="window.location.href='${API_BASE}index.php?page=src/views/gestionInstructores'" title="Gestionar instructor">
+              <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M4 20H8L18.5 9.5C19.33 8.67 19.33 7.33 18.5 6.5C17.67 5.67 16.33 5.67 15.5 6.5L5 17V20Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.5 8.5L16.5 11.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </td>
+        </tr>`;
+    }).join("");
+    return;
+  }
+
+  body.innerHTML = rows.map((item) => {
+    const exc = Number(item.excedente ?? 0);
+    const excHTML = exc < 0
+      ? `<span class="gh-excedente-neg">${formatHourNumber(exc)}</span>`
+      : `--`;
+    return `
+      <tr>
+        <td>${escapeHtml(item.id_grupo || "—")}</td>
+        <td>${escapeHtml(item.nivel_grupo || "Sin nivel")}</td>
+        <td class="center">${formatHourNumber(item.horas_actuales)}</td>
+        <td class="center">${formatHourNumber(item.horas_maximas)}</td>
+        <td class="center">${excHTML}</td>
+      </tr>`;
+  }).join("");
+}
+
+async function abrirModalGestionHoras() {
+  const modal = document.getElementById("modalGestionHoras");
+  if (!modal) return;
+  try {
+    await cargarResumenGestionHoras();
+    gestionHorasTabActual = "instructores";
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+    document.body.style.overflow = "hidden";
+    renderGestionHoras();
+  } catch (e) {
+    Toast.fire({ icon: "error", title: e.message || "No se pudo abrir la gestión de horas" });
+  }
+}
+
+function cerrarModalGestionHoras() {
+  const modal = document.getElementById("modalGestionHoras");
+  if (!modal) return;
+  modal.classList.add("hidden");
+  modal.classList.remove("flex");
+  document.body.style.overflow = "";
 }
 
 function hasOverlap({ dia, inicio, fin, excludeId }) {
@@ -84,7 +325,7 @@ async function cargarAreasYZonas() {
 
       dataAreas.data.forEach((a) => {
         // 🔥 SOLO ÁREAS ACTIVAS EN ESTE SELECT
-        if (String(a.estado) !== "1") return;
+        if (!registroActivo(a.estado)) return;
         contadorActivas++;
         const opt = document.createElement("option");
         opt.value = a.id_area;
@@ -96,12 +337,12 @@ async function cargarAreasYZonas() {
       if (contadorActivas === 0) {
         selectArea.innerHTML = `
           <option value="" hidden selected>SELECCIONE EL ÁREA</option>
-          <option value="" disabled>NO HAY ÁREAS DISPONIBLES</option>
+          <option value="" disabled>Sin datos disponibles</option>
         `;
 
         selectZona.innerHTML = `
           <option value="" hidden selected>SELECCIONE LA ZONA</option>
-          <option value="" disabled>NO HAY ZONAS DISPONIBLES</option>
+          <option value="" disabled>Sin datos disponibles</option>
         `;
 
         // NO deshabilitamos los selects para que puedan desplegarse
@@ -112,16 +353,16 @@ async function cargarAreasYZonas() {
       Toast.fire({ icon: "warning", title: "No se encontraron áreas" });
     }
 
-    // Cambiar área → cargar zonas
-    selectArea.addEventListener("change", async (e) => {
-      const id_area = e.target.value;
+    async function cargarZonasPorArea(id_area, opts = {}) {
+      const preselectZona = String(opts.preselectZona || "").trim();
+      const silent = Boolean(opts.silent);
+
       selectZona.innerHTML = `<option value="" hidden selected>SELECCIONE LA ZONA</option>`;
       toggleTabla(false);
 
       if (!id_area) {
-        // Si quitó el área, deshabilitamos zonas y tabla
         selectZona.disabled = true;
-        return;
+        return false;
       }
 
       selectZona.disabled = false;
@@ -152,19 +393,18 @@ async function cargarAreasYZonas() {
         }
 
         // SOLO ZONAS ACTIVAS EN ESTE ÁREA
-        const zonasActivas = zonasArea.filter((z) => String(z.estado) === "1");
+        const zonasActivas = zonasArea.filter((z) => registroActivo(z.estado));
 
         if (!zonasActivas.length) {
-          // Dejamos el placeholder seleccionado, pero al desplegar se verá el mensaje
           selectZona.innerHTML = `
             <option value="" hidden selected>SELECCIONE LA ZONA</option>
-            <option value="" disabled>NO HAY ZONAS DISPONIBLES</option>
+            <option value="" disabled>Sin datos disponibles</option>
           `;
-          Toast.fire({
+          if (!silent) Toast.fire({
             icon: "info",
             title: "No hay zonas activas en esta área",
           });
-          return;
+          return false;
         }
 
         zonasActivas.forEach((z) => {
@@ -174,14 +414,30 @@ async function cargarAreasYZonas() {
           selectZona.appendChild(opt);
         });
 
-        Toast.fire({
+        if (preselectZona) {
+          const existe = Array.from(selectZona.options).some((opt) => String(opt.value) === preselectZona);
+          if (existe) {
+            selectZona.value = preselectZona;
+            id_zona = preselectZona;
+          }
+        }
+
+        if (!silent) Toast.fire({
           icon: "success",
           title: "Zonas activas cargadas correctamente",
         });
+        return true;
       } catch (err) {
         console.error("Error al cargar zonas:", err);
-        Toast.fire({ icon: "error", title: "Error al cargar zonas" });
+        if (!silent) Toast.fire({ icon: "error", title: "Error al cargar zonas" });
+        return false;
       }
+    }
+
+    // Cambiar área → cargar zonas
+    selectArea.addEventListener("change", async (e) => {
+      const id_area = e.target.value;
+      await cargarZonasPorArea(id_area);
     });
 
     selectZona.addEventListener("change", (e) => {
@@ -198,12 +454,343 @@ async function cargarAreasYZonas() {
       cargarTrimestralizacion();
       Toast.fire({ icon: "info", title: `Zona ${id_zona} seleccionada` });
     });
+
+    // Aplicar filtros iniciales (si vienen desde la creación)
+    const modalidadInicial = filtrosIniciales.modalidad === "mixta" ? "mixto" : filtrosIniciales.modalidad;
+    if (modalidadInicial === "presencial" && filtrosIniciales.id_area) {
+      const existeArea = Array.from(selectArea.options).some((opt) => String(opt.value) === filtrosIniciales.id_area);
+      if (existeArea) {
+        selectArea.value = filtrosIniciales.id_area;
+        await cargarZonasPorArea(filtrosIniciales.id_area, {
+          preselectZona: filtrosIniciales.id_zona,
+          silent: true,
+        });
+
+        if (filtrosIniciales.id_zona && selectZona.value === filtrosIniciales.id_zona) {
+          const h1 = document.querySelector("#cabecera-trimestralizacion h1");
+          if (h1) h1.innerHTML = `VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA ${filtrosIniciales.id_zona}`;
+          toggleTabla(true);
+          cargarTrimestralizacion();
+        }
+      }
+    }
   } catch (err) {
     console.error("Error en cargarAreasYZonas:", err);
     Toast.fire({ icon: "error", title: "Error al conectar con el servidor" });
   }
 }
 
+
+// =======================
+// Configurar filtros
+// ======================
+
+function configurarFiltros(){
+  const selectModalidad = document.getElementById("selectModalidad") || document.getElementById("selectModalidadFiltro");
+  const selectArea = document.getElementById("contenedorAreaFiltro") || document.getElementById("selectArea")?.parentElement;
+  const selectZona = document.getElementById("contenedorZonaFiltro") || document.getElementById("selectZona")?.parentElement;
+  const contenedorGrupo = document.getElementById("contenedorGrupoFiltro");
+  const inputGrupo = document.getElementById("inputGrupoTexto");
+
+  if(!selectModalidad) return;
+
+  const normalizarModalidad = (valor) => {
+    const v = String(valor || "").trim().toLowerCase();
+    if (v === "mixta") return "mixto";
+    return v;
+  };
+
+  if(inputGrupo){
+    inputGrupo.addEventListener("input", () => {
+      const modalidadActual = normalizarModalidad(selectModalidad.value);
+      if (modalidadActual !== "virtual" && modalidadActual !== "mixto") return;
+
+      const valor = inputGrupo.value.trim();
+      if(!valor){
+        toggleTabla(false);
+        return;
+      }
+      cargarTrimestralizacionPorGrupo(valor);
+    });
+  }
+  
+  selectModalidad.addEventListener("change", () => {
+    const modalidad = normalizarModalidad(selectModalidad.value);
+    if(modalidad === "presencial"){
+      if(selectArea) selectArea.classList.remove("hidden");
+      if(selectZona) selectZona.classList.remove("hidden");
+      if(contenedorGrupo) contenedorGrupo.classList.add("hidden");
+
+      if (id_zona && document.getElementById("selectArea")?.value) {
+        cargarTrimestralizacion();
+      } else {
+        toggleTabla(false);
+      }
+    } else if (modalidad === "virtual" || modalidad === "mixto"){
+        if(selectArea) selectArea.classList.add("hidden");
+        if(selectZona) selectZona.classList.add("hidden");
+        if(contenedorGrupo) contenedorGrupo.classList.remove("hidden");
+
+        toggleTabla(false);
+
+        const valor = inputGrupo?.value.trim();
+        if (valor) {
+          cargarTrimestralizacionPorGrupo(valor);
+        }
+    } else {
+      toggleTabla(false);
+    }
+  });
+
+  const modalidadInicial = filtrosIniciales.modalidad === "mixta" ? "mixto" : filtrosIniciales.modalidad;
+  if (modalidadInicial) {
+    selectModalidad.value = modalidadInicial;
+    selectModalidad.dispatchEvent(new Event("change", { bubbles: true }));
+
+    if ((modalidadInicial === "virtual" || modalidadInicial === "mixto") && inputGrupo && filtrosIniciales.numero_ficha) {
+      inputGrupo.value = filtrosIniciales.numero_ficha;
+      cargarTrimestralizacionPorGrupo(filtrosIniciales.numero_ficha);
+    }
+  }
+}
+
+function renderizarTablaDesdeRegistros(registrosServer, emptyMessage = "No hay registros activos.") {
+  const tbody = document.getElementById("tbody-horarios");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  const activos = (Array.isArray(registrosServer) ? registrosServer : []).filter(
+    (d) => d && (d.estado === 1 || d.estado === "1")
+  );
+
+  if (!activos.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500 text-center">${emptyMessage}</td></tr>`;
+    toggleTabla(false);
+    return;
+  }
+
+  const mapHorarios = new Map();
+  activos.forEach((r) => {
+    const id = r.id_horario ?? (r.id_horario === 0 ? 0 : null);
+    if (id === null) return;
+
+    if (!mapHorarios.has(id)) {
+      mapHorarios.set(id, {
+        id_horario: id,
+        dia: r.dia,
+        hora_inicio: r.hora_inicio,
+        hora_fin: r.hora_fin,
+        id_zona: r.id_zona,
+        id_area: r.id_area,
+        numero_trimestre: r.numero_trimestre,
+        estado: r.estado,
+        numero_ficha: r.numero_ficha,
+        nivel_ficha: r.nivel_ficha,
+        id_instructor: r.id_instructor,
+        nombre_instructor: r.nombre_instructor,
+        tipo_instructor: r.tipo_instructor,
+        programa_formacion: r.programa_formacion,
+        nombre_programa: r.nombre_programa,
+        id_competencia: r.id_competencia,
+        nombre_competencia: r.nombre_competencia,
+        raesArray: [],
+      });
+    }
+
+    const agr = mapHorarios.get(id);
+    if (r.id_rae) {
+      const textoRae = `${r.id_rae} - ${r.descripcion_rae ?? ""}`.trim();
+      if (textoRae && !agr.raesArray.includes(textoRae)) {
+        agr.raesArray.push(textoRae);
+      }
+    }
+  });
+
+  const horariosAgrupados = Array.from(mapHorarios.values());
+  horariosCache = horariosAgrupados;
+
+  horariosAgrupados.forEach((h) => {
+    if (h.raesArray.length) {
+      h.raesHtml = `<ul class="list-disc ml-5 mt-1">${h.raesArray
+        .map((x) => `<li>${x}</li>`)
+        .join("")}</ul>`;
+    } else {
+      h.raesHtml = `<span class="text-gray-500 italic">Sin especificar</span>`;
+    }
+  });
+
+  const dias = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"];
+  const horas = Array.from({ length: 16 }, (_, i) => i + 6);
+  const horaMin = horas[0];
+  const horaMaxExclusiva = horas[horas.length - 1] + 1;
+
+  const mapaInicioPorDia = {};
+  dias.forEach((dia) => {
+    mapaInicioPorDia[dia] = {};
+  });
+
+  horariosAgrupados.forEach((r) => {
+    const dia = String(r.dia || "").toUpperCase();
+    if (!mapaInicioPorDia[dia]) return;
+
+    const rStartRaw = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
+    const rEndRaw = r.hora_fin
+      ? parseInt(r.hora_fin.split(":")[0], 10)
+      : rStartRaw + 1;
+
+    if (!Number.isFinite(rStartRaw) || !Number.isFinite(rEndRaw)) return;
+
+    const rStart = Math.max(horaMin, rStartRaw);
+    const rEnd = Math.min(horaMaxExclusiva, Math.max(rStart + 1, rEndRaw));
+
+    if (rStart >= horaMaxExclusiva) return;
+
+    if (!mapaInicioPorDia[dia][rStart]) {
+      mapaInicioPorDia[dia][rStart] = [];
+    }
+    mapaInicioPorDia[dia][rStart].push({ ...r, _rowStart: rStart, _rowEnd: rEnd });
+  });
+
+  const omitirFilasPorDia = {};
+  dias.forEach((dia) => {
+    omitirFilasPorDia[dia] = 0;
+  });
+
+  horas.forEach((hora, idx) => {
+    const fila = document.createElement("tr");
+    fila.className = "";
+    fila.innerHTML = `<td class="hora-col p-3 whitespace-nowrap min-w-[110px] w-[110px]">
+      ${String(hora).padStart(2, "0")}:00 - ${String(hora + 1).padStart(2, "0")}:00 </td>`;
+
+    dias.forEach((dia) => {
+      if (omitirFilasPorDia[dia] > 0) {
+        omitirFilasPorDia[dia] -= 1;
+        return;
+      }
+
+      const iniciosEnHora = mapaInicioPorDia[dia][hora] || [];
+
+      if (!iniciosEnHora.length) {
+        fila.innerHTML += `
+            <td class="p-2 text-sm text-center leading-tight align-top zona-libre cursor-pointer"
+              data-dia="${dia}"
+              data-hora="${String(hora).padStart(2, "0")}: 00">
+              <span class="text-gray-400 italic">Zona libre</span>
+          </td>`;
+        return;
+      }
+
+      const r = iniciosEnHora[0];
+      const duracionHoras = Math.max(1, (r._rowEnd || (hora + 1)) - (r._rowStart || hora));
+      const rowspan = Math.max(1, Math.min(duracionHoras, horaMaxExclusiva - hora));
+
+      if (rowspan > 1) {
+        omitirFilasPorDia[dia] = rowspan - 1;
+      }
+
+      const contenido = `
+          <div class="registro border-l-4 border-l-green-600 bg-white rounded-md p-2 mb-2 shadow-sm"
+              data-id="${r.id_horario || ""}"
+              data-id-instructor="${r.id_instructor ?? ""}"
+              data-instructor="${r.nombre_instructor ?? ""}"
+              data-id-competencia="${r.id_competencia ?? ""}"
+              data-competencia="${r.nombre_competencia ?? ""}"
+              data-programa="${r.nombre_programa ?? ""}"
+              data-ficha="${r.numero_ficha ?? ""}"
+              data-nivel-ficha="${r.nivel_ficha ?? ""}"
+              data-dia="${r.dia ?? ""}"
+              data-hora-inicio="${r.hora_inicio ?? ""}"
+              data-hora-fin="${r.hora_fin ?? ""}"
+              data-hora-rango="${r.hora_inicio ?? ""} - ${r.hora_fin ?? ""}"
+              data-raes='${JSON.stringify(r.raesArray)}' >
+            <div class="font-bold text-green-700 text-sm mb-1">Competencia: ${r.nombre_competencia ?? "Sin competencia"}</div>
+            <div class="flex items-start gap-1 text-xs text-gray-600 mb-1">
+              <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+              </svg>
+              <span>${r.nombre_instructor ?? ""}</span>
+            </div>
+            <div class="flex items-start gap-1 text-xs text-gray-600 mb-1">
+              <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+              </svg>
+              <span class="ficha font-medium text-gray-700">
+                ${r.numero_ficha ?? "—"}
+              </span>
+
+            </div>
+            <div class="flex items-start gap-1 text-xs text-gray-500">
+              <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+              </svg>
+              <span>${duracionHoras} hora${duracionHoras > 1 ? "s" : ""}</span>
+            </div>
+          </div>`;
+
+      fila.innerHTML += `
+          <td rowspan="${rowspan}" class="p-2 text-sm text-center leading-tight align-top">
+            ${contenido}
+          </td>`;
+    });
+
+    tbody.appendChild(fila);
+  });
+
+  toggleTabla(true);
+  popupCeldas();
+  popupZonaLibre();
+}
+
+function configurarModalidadFormulario() {
+  const modalidadForm = document.getElementById("modalidad");
+  const areaField = document.getElementById("id_area")?.closest(".field");
+  const zonaField = document.getElementById("id_zona")?.closest(".field");
+
+  if (!modalidadForm) return;
+
+  modalidadForm.addEventListener("change", () => {
+    const modalidad = modalidadForm.value;
+
+    if (modalidad === "presencial") {
+      if (areaField) areaField.style.display = "";
+      if (zonaField) zonaField.style.display = "";
+    } else if (modalidad === "virtual" || modalidad === "mixto") {
+      if (areaField) areaField.style.display = "none";
+      if (zonaField) zonaField.style.display = "none";
+    }
+  });
+}
+
+
+// =====================
+//Cargar trimestralizacion por grupo
+// =====================
+async function cargarTrimestralizacionPorGrupo(grupo) {
+  const tbody = document.getElementById("tbody-horarios");
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500">Cargando datos...</td></tr>`;
+
+  try{
+    const res = await fetch(`${API_BASE}src/controllers/TrimestralizacionController.php?accion=listarPorGrupo&numero_ficha=${grupo}`);
+    const data = await res.json();
+    const registrosServer = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.data)
+      ? data.data
+      : [];
+
+    renderizarTablaDesdeRegistros(
+      registrosServer,
+      `No se encontraron registros para el grupo ${grupo}.`
+    );
+  }catch (e){
+    console.error(e);
+    Toast.fire({ icon: "error", title: "Error al cargar datos por grupo" });
+  }
+}
+  
 // =======================
 // CARGAR TRIMESTRALIZACIÓN
 // =======================
@@ -221,191 +808,30 @@ async function cargarTrimestralizacion() {
   }
 
   try {
+    const modalidad = String(document.getElementById("selectModalidad")?.value || "presencial")
+      .trim()
+      .toLowerCase();
+    const modalidadParam = modalidad === "mixta" ? "MIXTO" : modalidad.toUpperCase();
+
     const res = await fetch(
-      `${API_BASE}src/controllers/TrimestralizacionController.php?accion=listar&id_zona=${id_zona}&id_area=${id_area}`
+      `${API_BASE}src/controllers/TrimestralizacionController.php?accion=listar&id_zona=${id_zona}&id_area=${id_area}&modalidad=${encodeURIComponent(modalidadParam)}`
     );
     const data = await res.json();
-    tbody.innerHTML = "";
-
+    console.log("Datos recibidos del servidor:", data);
     const registrosServer = Array.isArray(data)
       ? data
       : Array.isArray(data.data)
       ? data.data
       : [];
-    const activos = registrosServer.filter(
-      (d) => d && (d.estado === 1 || d.estado === "1")
+    renderizarTablaDesdeRegistros(
+      registrosServer,
+      "No hay registros activos para esta zona y área."
     );
-
-    if (!activos.length) {
-      tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500 text-center">No hay registros activos para esta zona y área.</td></tr>`;
-      Toast.fire({ icon: "info", title: "Sin registros activos" });
-      return;
-    }
-
-    // -------------------------
-    // AGRUPAR POR id_horario
-    // -------------------------
-    const mapHorarios = new Map();
-    activos.forEach((r) => {
-      const id = r.id_horario ?? (r.id_horario === 0 ? 0 : null);
-      if (id === null) return;
-
-      if (!mapHorarios.has(id)) {
-        mapHorarios.set(id, {
-          id_horario: id,
-          dia: r.dia,
-          hora_inicio: r.hora_inicio,
-          hora_fin: r.hora_fin,
-          id_zona: r.id_zona,
-          id_area: r.id_area,
-          numero_trimestre: r.numero_trimestre,
-          estado: r.estado,
-          numero_ficha: r.numero_ficha,
-          nivel_ficha: r.nivel_ficha,
-          nombre_instructor: r.nombre_instructor,
-          tipo_instructor: r.tipo_instructor,
-          programa_formacion: r.programa_formacion,
-          nombre_programa: r.nombre_programa,
-          id_competencia: r.id_competencia,
-          nombre_competencia: r.nombre_competencia,
-          raesArray: [],
-        });
-      }
-
-      const agr = mapHorarios.get(id);
-      if (r.id_rae) {
-        const textoRae = `${r.id_rae} - ${r.descripcion_rae ?? ""}`.trim();
-        if (textoRae && !agr.raesArray.includes(textoRae))
-          agr.raesArray.push(textoRae);
-      }
-    });
-
-    const horariosAgrupados = Array.from(mapHorarios.values());
-
-    horariosCache = horariosAgrupados;
-
-    horariosAgrupados.forEach((h) => {
-      if (h.raesArray.length) {
-        h.raesHtml = `<ul class="list-disc ml-5 mt-1">${h.raesArray
-          .map((x) => `<li>${x}</li>`)
-          .join("")}</ul>`;
-      } else {
-        h.raesHtml = `<span class="text-gray-500 italic">Sin especificar</span>`;
-      }
-    });
-
-    const dias = [
-      "LUNES",
-      "MARTES",
-      "MIERCOLES",
-      "JUEVES",
-      "VIERNES",
-      "SABADO",
-    ];
-    const horas = Array.from({ length: 16 }, (_, i) => i + 6);
-
-    horas.forEach((hora, idx) => {
-      const fila = document.createElement("tr");
-      fila.className = idx % 2 === 0 ? "bg-gray-50" : "bg-white";
-      fila.innerHTML = `<td class="border border-gray-300 p-3 font-bold text-gray-700 text-center bg-gray-100 whitespace-nowrap min-w-[110px] w-[110px]">
-      ${String(hora).padStart(2, "0")}:00 - ${String(hora + 1).padStart(2, "0")}:00 </td>`;
-
-      dias.forEach((dia) => {
-        const registros = horariosAgrupados.filter((r) => {
-          if (!r.dia || r.dia.toUpperCase() !== dia) return false;
-          const rStart = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
-          const rEnd = r.hora_fin
-            ? parseInt(r.hora_fin.split(":")[0], 10)
-            : rStart + 1;
-          return hora >= rStart && hora < rEnd;
-        });
-
-        let contenido = "";
-        registros.forEach((r) => {
-          const rStart = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
-          const rEnd = r.hora_fin
-            ? parseInt(r.hora_fin.split(":")[0], 10)
-            : rStart + 1;
-
-          if (hora === rStart) {
-            const duracionHoras = rEnd - rStart;
-            contenido += `
-              <div class="registro border-l-4 border-l-green-600 bg-white rounded-md p-2 mb-2 shadow-sm"
-                  data-id="${r.id_horario || ""}"
-                  data-id-instructor="${r.id_instructor ?? ""}"
-                  data-instructor="${r.nombre_instructor ?? ""}"
-                  data-id-competencia="${r.id_competencia ?? ""}"
-                  data-competencia="${r.nombre_competencia ?? ""}"
-                  data-programa="${r.nombre_programa ?? ""}"
-                  data-ficha="${r.numero_ficha ?? ""}"
-                  data-nivel-ficha="${r.nivel_ficha ?? ""}"
-                  data-dia="${r.dia ?? ""}"
-                  data-hora-inicio="${r.hora_inicio ?? ""}"
-                  data-hora-fin="${r.hora_fin ?? ""}"
-                  data-hora-rango="${r.hora_inicio ?? ""} - ${r.hora_fin ?? ""}"
-                  data-raes='${JSON.stringify(r.raesArray)}' >
-                <div class="font-bold text-green-700 text-sm mb-1">Competencia: ${r.nombre_competencia ?? "Sin competencia"}</div>
-                <div class="flex items-start gap-1 text-xs text-gray-600 mb-1">
-                  <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
-                  </svg>
-                  <span>${r.nombre_instructor ?? ""}</span>
-                </div>
-                <div class="flex items-start gap-1 text-xs text-gray-600 mb-1">
-                  <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
-                  </svg>
-                  <span class="ficha font-medium text-gray-700">
-                    ${r.numero_ficha ?? "—"}
-                  </span>
-
-                </div>
-                <div class="flex items-start gap-1 text-xs text-gray-500">
-                  <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
-                  </svg>
-                  <span>${duracionHoras} hora${duracionHoras > 1 ? 's' : ''}</span>
-                </div>
-              </div>`;
-          } else if (hora > rStart && hora < rEnd) {
-            contenido += `<div class="border-l-4 border-l-green-600 bg-white rounded-md p-2 mb-2 shadow-sm">
-                <div class="flex items-start gap-1 text-xs text-gray-600">
-                  <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
-                  </svg>
-                  <span>${r.nombre_instructor ?? ""}</span>
-                </div>
-                <div class="flex items-start gap-1 text-xs text-gray-600 mt-1">
-                  <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
-                  </svg>
-                  <span class="ficha font-medium text-gray-700">
-                    ${r.numero_ficha ?? "—"}
-                  </span>
-                </div>
-              </div>`;
-          }
-        });
-        const isLibre = !contenido;
-        fila.innerHTML += `
-          <td class="border border-gray-300 p-2 text-sm text-center leading-tight align-top ${isLibre ? "zona-libre cursor-pointer hover:bg-[#00324D]": ""}"
-              data-dia="${dia}"
-              data-hora="${String(hora).padStart(2, "0")}: 00">
-              ${contenido || `<span class="text-gray-400 italic">Zona libre</span>`}
-          </td>`;
-      });
-
-      tbody.appendChild(fila);
-    });
 
     Toast.fire({
       icon: "success",
       title: "Trimestralización cargada correctamente",
     });
-    popupCeldas();
-    popupZonaLibre();
 
 
   } catch (error) {
@@ -443,7 +869,7 @@ async function cargarFichas() {
 
     if (array.length > 0) {
       // SOLO FICHAS ACTIVAS
-      listaFichas = array.filter((f) => String(f.estado) === "1");
+      listaFichas = array.filter((f) => registroActivo(f.estado));
     }
     
     if (!listaFichas.length) {
@@ -492,9 +918,7 @@ async function cargarCompetencias() {
       : [];
 
     // SOLO COMPETENCIAS ACTIVAS
-    listaCompetencias = array.filter(
-      (c) => String(c.estado) === "1"
-    );
+    listaCompetencias = array.filter((c) => registroActivo(c.estado));
 
     if (!listaCompetencias.length) {
       console.warn("No hay competencias activas");
@@ -540,7 +964,7 @@ async function cargarInstructores() {
     }
 
     // FILTRAR SOLO INSTRUCTORES ACTIVOS (estado = 1)
-    listaInstructores = instructoresArray.filter((i) => String(i.estado) === "1");
+    listaInstructores = instructoresArray.filter((i) => registroActivo(i.estado));
 
     if (listaInstructores.length > 0) {
       llenarSelectInstructores(listaInstructores);
@@ -615,7 +1039,7 @@ async function obtenerRoesPorCompetencia(id_competencia) {
 
     let activas = 0;
     (dataAreas?.data || []).forEach((a) => {
-      if (String(a.estado) === "1") {
+      if (registroActivo(a.estado)) {
         activas++;
         selArea.innerHTML += `
                   <option value="${a.id_area}">${a.nombre_area}</option>
@@ -627,12 +1051,12 @@ async function obtenerRoesPorCompetencia(id_competencia) {
     if (activas === 0) {
       selArea.innerHTML = `
         <option value="" hidden selected>SELECCIONE EL ÁREA</option>
-        <option value="" disabled>NO HAY ÁREAS DISPONIBLES</option>
+        <option value="" disabled>Sin datos disponibles</option>
       `;
 
       selZona.innerHTML = `
         <option value="" hidden selected>SELECCIONE LA ZONA</option>
-        <option value="" disabled>NO HAY ZONAS DISPONIBLES</option>
+        <option value="" disabled>Sin datos disponibles</option>
       `;
 
       // NO deshabilitamos para que puedan desplegar y ver el mensaje
@@ -706,14 +1130,14 @@ async function editarTrimestralizacion (reg){
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
         <div>
           <label class="block text-xs font-semibold text-[#00324D] mb-1">Día</label>
-          <select id="editDia" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324D] focus:border-transparent">
+          <select id="editDia" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324d]/20 focus:border-transparent">
             ${["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"].map(d => `<option value="${d}" ${d === dia ? "selected" : ""}>${d}</option>`).join("")}
           </select>
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-[#00324D] mb-1">Ficha / Grupo</label>
-          <select id="editFicha" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324D] focus:border-transparent">
+          <select id="editFicha" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324d]/20 focus:border-transparent">
             <option value="">Seleccione una ficha</option>
             ${optionFichas}
           </select>
@@ -721,7 +1145,7 @@ async function editarTrimestralizacion (reg){
 
         <div>
           <label class="block text-xs font-semibold text-[#00324D] mb-1">Hora Inicio</label>
-          <select id="editHoraInicio" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324D] focus:border-transparent">
+          <select id="editHoraInicio" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324d]/20 focus:border-transparent">
             <option value="">Seleccionar hora</option>
             ${horaOpcionesInicio}
           </select>
@@ -729,7 +1153,7 @@ async function editarTrimestralizacion (reg){
 
         <div>
           <label class="block text-xs font-semibold text-[#00324D] mb-1">Hora Fin</label>
-          <select id="editHoraFin" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324D] focus:border-transparent">
+          <select id="editHoraFin" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324d]/20 focus:border-transparent">
             <option value="">Seleccionar hora</option>
             ${horaOpcionesFin}
           </select>
@@ -737,7 +1161,7 @@ async function editarTrimestralizacion (reg){
 
         <div>
           <label class="block text-xs font-semibold text-[#00324D] mb-1">Instructor</label>
-          <select id="editInstructor" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324D] focus:border-transparent">
+          <select id="editInstructor" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324d]/20 focus:border-transparent">
             <option value="">Seleccione un instructor</option>
             ${optionInstructors}
           </select>
@@ -745,7 +1169,7 @@ async function editarTrimestralizacion (reg){
 
         <div>
           <label class="block text-xs font-semibold text-[#00324D] mb-1">Competencia</label>
-          <select id="editCompetencia" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324D] focus:border-transparent">
+          <select id="editCompetencia" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324d]/20 focus:border-transparent">
             <option value="">Seleccione una competencia</option>
             ${optionCompetencias}
           </select>
@@ -758,7 +1182,7 @@ async function editarTrimestralizacion (reg){
 
         <div class="md:col-span-2">
           <label class="block text-xs font-semibold text-[#00324D] mb-1">Descripción (Opcional)</label>
-          <textarea id="editDescripcion" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324D] focus:border-transparent" placeholder="Notas adicionales del horario..."></textarea>
+          <textarea id="editDescripcion" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324d]/20 focus:border-transparent" placeholder="Notas adicionales del horario..."></textarea>
         </div>
       </div>
     </div>
@@ -832,6 +1256,13 @@ async function editarTrimestralizacion (reg){
   const esExito = data.success === true || data.success === "true" || data.status === "success";
   
   if (esExito) {
+    dispararToastsExcedente(data.warnings);
+    await Swal.fire({
+      icon: "success",
+      title: "Trimestralización actualizada",
+      text: data.message || data.mensaje || "El horario se editó correctamente.",
+      confirmButtonText: "Aceptar"
+    });
     Toast.fire({
       icon: "success",
       title: "Horario actualizado correctamente"
@@ -839,6 +1270,12 @@ async function editarTrimestralizacion (reg){
     cargarTrimestralizacion();
   } else {
     console.error("Error del servidor:", data);
+    await Swal.fire({
+      icon: "error",
+      title: "No se pudo editar",
+      text: data.error || data.message || data.mensaje || "Error al actualizar el horario.",
+      confirmButtonText: "Entendido"
+    });
     Toast.fire({
       icon: "error",
       title: data.error || data.message || "Error al actualizar el horario"
@@ -846,6 +1283,12 @@ async function editarTrimestralizacion (reg){
   }
 } catch (e) {
   console.error("Error en actualización:", e);
+  await Swal.fire({
+    icon: "error",
+    title: "Error al editar",
+    text: e.message || "Ocurrió un problema de conexión al actualizar.",
+    confirmButtonText: "Entendido"
+  });
   Toast.fire({icon: "error", title: `Error: ${e.message}`});
 }
 });
@@ -1106,6 +1549,28 @@ function popupCeldas(){
           console.error("Error con las Raes:", e);
 
         }
+        const accionesPopup = IS_AUTHENTICATED
+          ? `
+              <div class="mt-6 flex justify-end gap-2">
+                <button id="btnEditarRegistro"
+                  class="bg-[#00324d] text-white text-sm px-4 py-2 rounded-lg hover:bg-[#00304D] transition">
+                  Editar
+                </button>
+                <button id="btnCerrarPopup"
+                  class="bg-gray-200 text-gray-800 text-sm px-4 py-2 rounded-lg hover:bg-gray-300 transition">
+                  Aceptar
+                </button>
+              </div>
+            `
+          : `
+              <div class="mt-6 flex justify-end gap-2">
+                <button id="btnCerrarPopup"
+                  class="bg-gray-200 text-gray-800 text-sm px-4 py-2 rounded-lg hover:bg-gray-300 transition">
+                  Cerrar
+                </button>
+              </div>
+            `;
+
         Swal.fire({
           title: "",
           showCloseButton: false,
@@ -1189,17 +1654,7 @@ function popupCeldas(){
                 </div>
               </div>
 
-              <!-- Botones -->
-              <div class="mt-6 flex justify-end gap-2">
-                <button id="btnEditarRegistro"
-                  class="bg-[#00324D] text-white text-sm px-4 py-2 rounded-lg hover:bg-[#002233] transition">
-                  Editar
-                </button>
-                <button id="btnCerrarPopup"
-                  class="bg-gray-200 text-gray-800 text-sm px-4 py-2 rounded-lg hover:bg-gray-300 transition">
-                  Aceptar
-                </button>
-              </div>
+              ${accionesPopup}
             `,
             showConfirmButton: false,
             didOpen: () => {
@@ -1211,10 +1666,12 @@ function popupCeldas(){
             Swal.close();
           });
         
-          document.getElementById("btnEditarRegistro").addEventListener("click", () => {
-            Swal.close();
-            editarTrimestralizacion(reg);
-          });
+          if (IS_AUTHENTICATED) {
+            document.getElementById("btnEditarRegistro")?.addEventListener("click", () => {
+              Swal.close();
+              editarTrimestralizacion(reg);
+            });
+          }
         },
       });
     });
@@ -1226,6 +1683,21 @@ function popupZonaLibre(){
     td.addEventListener("click", () => {
       const dia = td.getAttribute("data-dia") || "Sin día";
       const hora = td.getAttribute("data-hora") || "Sin hora";
+      const accionesZonaLibre = IS_AUTHENTICATED
+        ? `
+          <div class="mt-8 flex justify-end gap-3">
+            <button id="btnCerrarPopupZonaLibre" class="bg-[#00324d] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">Cerrar</button>
+            <button id="btnAbrirModalZonaLibre" class="bg-[#00324d] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">
+              Agregar Horario
+            </button>
+          </div>
+        `
+        : `
+          <div class="mt-8 flex justify-end gap-3">
+            <button id="btnCerrarPopupZonaLibre" class="bg-[#00324d] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">Cerrar</button>
+          </div>
+        `;
+
       Swal.fire({
         title: "Zona libre",
         html:`
@@ -1234,22 +1706,19 @@ function popupZonaLibre(){
           <p><strong>Hora:</strong> ${hora}</p>
           <p>En esta franja no hay ninguna competencia programada.</p>
           </div>  
-          <div class="mt-8 flex justify-end gap-3">
-            <button id="btnCerrarPopupZonaLibre" class="bg-[#00324D] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#002233] transition flex items-center justify-center w-full sm:w-auto">Cerrar</button>
-            <button id="btnAbrirModalZonaLibre" class="bg-[#00324D] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#002233] transition flex items-center justify-center w-full sm:w-auto">
-              Agregar Horario
-            </button>
-          </div>
+          ${accionesZonaLibre}
           `,
           showConfirmButton: false,
           didOpen: () => {
             document.getElementById("btnCerrarPopupZonaLibre").addEventListener("click", () => {
               Swal.close();
             });
-            document.getElementById("btnAbrirModalZonaLibre").addEventListener("click", () => {
-              Swal.close();
-              abrirModal();
-            });
+            if (IS_AUTHENTICATED) {
+              document.getElementById("btnAbrirModalZonaLibre")?.addEventListener("click", () => {
+                Swal.close();
+                abrirModal();
+              });
+            }
           }
       });
     });
@@ -1260,17 +1729,66 @@ function popupZonaLibre(){
 // INICIO
 // =======================
 document.addEventListener("DOMContentLoaded", () => {
+  cargarAreasYZonas();
+  configurarFiltros();
   cargarFichas();
   cargarInstructores();
   cargarCompetencias();
-  cargarAreasYZonas();
+  configurarModalidadFormulario();
   if (id_zona) {
     toggleTabla(true);
     cargarTrimestralizacion();
   } else toggleTabla(false);
 
   const btnActualizar = document.getElementById("btn-actualizar");
-  if (btnActualizar && typeof activarEdicion === "function") {
-    btnActualizar.addEventListener("click", activarEdicion);
+  if (btnActualizar) {
+    btnActualizar.addEventListener("click", abrirModalGestionHoras);
   }
+
+  document.getElementById("btnCerrarGestionHoras")?.addEventListener("click", cerrarModalGestionHoras);
+  document.getElementById("btnAceptarGestionHoras")?.addEventListener("click", cerrarModalGestionHoras);
+  document.getElementById("tabGestionHorasInstructores")?.addEventListener("click", () => {
+    gestionHorasTabActual = "instructores";
+    renderGestionHoras();
+  });
+  document.getElementById("tabGestionHorasGrupos")?.addEventListener("click", () => {
+    gestionHorasTabActual = "grupos";
+    renderGestionHoras();
+  });
+  document.querySelector("#modalGestionHoras .gh-backdrop")?.addEventListener("click", cerrarModalGestionHoras);
+  document.getElementById("btnIrGestionInstructores")?.addEventListener("click", () => {
+    window.location.href = `${API_BASE}index.php?page=src/views/gestionInstructores`;
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    const modal = document.getElementById("modalGestionHoras");
+    if (!modal || modal.classList.contains("hidden")) return;
+    cerrarModalGestionHoras();
+  });
+
+  const mostrarAlertaSinConexion = () => {
+    Swal.fire({
+      icon: "error",
+      title: "Sin conexión a la red",
+      text: "No se pudo completar la consulta. Verifica tu conexión e intenta nuevamente.",
+      showCancelButton: true,
+      confirmButtonText: "Volver al inicio",
+      cancelButtonText: "Cerrar"
+    }).then((result) => {
+      if (result.isConfirmed) {
+        window.location.href = `${API_BASE}index.php?page=landing`;
+      }
+    });
+  };
+
+  window.addEventListener("offline", mostrarAlertaSinConexion);
+
+  document.addEventListener("click", (event) => {
+    if (!navigator.onLine) {
+      const objetivo = event.target.closest("button, a, select, input");
+      if (objetivo) {
+        mostrarAlertaSinConexion();
+      }
+    }
+  });
 });

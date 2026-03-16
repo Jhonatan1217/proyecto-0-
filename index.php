@@ -33,8 +33,8 @@ $page = basename($page);
    DEFINICIÓN DE RUTAS
 ========================= */
 
-// <<< MODIFICADO >>> Se agrega 'register_tables' a las páginas públicas
-$public_pages = ['landing', 'login', 'register_tables']; 
+$public_pages = ['landing', 'login', 'restablecerContrasenia', 'cambiarContrasenia', 'register_tables'];
+$auth_redirect_pages = ['landing', 'login', 'restablecerContrasenia', 'cambiarContrasenia'];
 $private_default = 'register_tables';
 
 /* =========================
@@ -63,21 +63,19 @@ if ($page === 'logout') {
    CONTROL DE ACCESO
 ========================= */
 
-// 1. Usuario NO autenticado intentando acceder a una página que NO es pública
+// Usuario NO autenticado intentando acceder a privada
 if (!isset($_SESSION['usuario_id']) && !in_array($page, $public_pages)) {
     header("Location: index.php?page=login");
     exit;
 }
 
-// 2. <<< MODIFICADO >>> 
-// Si está logueado e intenta ir a login o landing, lo mandamos a la tabla privada.
-// Se quita 'register_tables' de esta validación para que pueda navegarla estando logueado.
-if (isset($_SESSION['usuario_id']) && ($page === 'landing' || $page === 'login')) {
+// Usuario autenticado intentando ir a login o landing
+if (isset($_SESSION['usuario_id']) && in_array($page, $auth_redirect_pages)) {
     header("Location: index.php?page=$private_default");
     exit;
 }
 
-// Redirección por página eliminada
+// Página "Mi perfil" eliminada: redirigir a la vista por defecto
 if ($page === 'gestion_perfil') {
     header("Location: index.php?page=$private_default");
     exit;
@@ -101,7 +99,6 @@ define('BASE_URL', $protocol . $host . $script_dir);
 
 $file = BASE_PATH . "/src/views/$page.php";
 
-// Si el archivo no existe físicamente, cargamos landing por defecto
 if (!file_exists($file)) {
     $file = BASE_PATH . "/src/views/landing.php";
 }
@@ -111,13 +108,11 @@ if (!file_exists($file)) {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Proyecto Z</title>
     <link rel="icon" type="image/png" href="./src/assets/img/logoSena.png">
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/output.css">
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/fonts.css">
     <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body class="flex flex-col min-h-screen font-sans bg-white text-gray-900">

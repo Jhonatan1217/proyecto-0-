@@ -1,152 +1,91 @@
+<?php /* views/gestionTrimestres.php - Refactorizado: table-edit + modal-enterprise */ ?>
 <?php
 $cargo = $_SESSION['cargo'] ?? '';
-
 if ($cargo === 'INSTRUCTOR') {
     header("Location: index.php?page=register_tables");
     exit;
 }
+if (!defined('BASE_URL')) { $base = '/'; define('BASE_URL', $base); }
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <title>Gestión de Trimestres</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
+<link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/table-edit.css">
+<link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/modal-enterprise.css">
+<style>
+.table-trimestres-wrap table tbody tr { height: 56px; }
+.table-trimestres-wrap table tbody td { height: 56px; }
+.table-trimestres-wrap tr.editando input.cell-edit.numero { width: 10ch; min-width: 8ch; max-width: 12ch; padding: 0.4rem 0.75rem; }
+</style>
 
-  <style>
-    /* Asegurar que el botón de editar nunca se colapse */
-    .btn-editar {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
+<div class="max-w-6xl mx-auto px-4 py-10">
+  <h1 class="text-4xl font-extrabold tracking-tight mb-2 text-[#39A900]">Gestión de Trimestres</h1>
+  <p class="text-gray-500 mb-6">Administra los trimestres</p>
 
-    /* Contenedor de acciones en la última columna
-       (para el <div> donde pones lápiz + switch o lo que sea) */
-    #tablaTrimestres td:last-child > div {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 0.5rem;
-      flex-wrap: nowrap;
-    }
-
-    /* ============================
-       RESPONSIVE EXTRA (SIN CAMBIAR DISEÑO)
-       ============================ */
-    @media (max-width: 640px) {
-      /* Header de la card: título + botón se apilan en columna */
-      .bg-white.border.border-gray-200.rounded-2xl.shadow-sm > .flex {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.75rem;
-      }
-
-      /* Botón "Nuevo Trimestre" ocupa todo el ancho en móvil */
-      #btnAbrirModalTrimestre {
-        width: 100%;
-        justify-content: center;
-      }
-
-      /* Paddings un poco más pequeños en tabla para móvil */
-      #tablaTrimestres th,
-      #tablaTrimestres td {
-        padding-left: 0.75rem;
-        padding-right: 0.75rem;
-      }
-
-      /* Más espacio fijo para la columna Acciones para que no se corte el lápiz */
-      #tablaTrimestres th:last-child,
-      #tablaTrimestres td:last-child {
-        width: 120px;      /* si ves que va justo, sube a 140px */
-        white-space: nowrap;
-      }
-
-      /* Altura máxima del bloque de tabla + scroll vertical interno en móvil */
-      .bg-white.border.border-gray-200.rounded-2xl.shadow-sm > .overflow-x-auto {
-        max-height: 320px;
-        overflow-y: auto;
-      }
-    }
-  </style>
-</head>
-<body class="bg-white text-gray-900 font-sans">
-
-  <div class="max-w-6xl mx-auto px-4 py-10">
-    <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-1 text-[#39a900]">Gestión de Trimestres</h1>
-    <p class="text-gray-600 mb-8">Administra los trimestres</p>
-
-    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm">
-      <div class="flex items-center justify-between p-6 border-b border-gray-200">
-        <h2 class="text-lg font-semibold text-gray-800">Trimestres</h2>
-        <button 
-          id="btnAbrirModalTrimestre"
-          class="bg-[#0a3a57] text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-[#00304D] transition"
-          type="button"
-        >
-          <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/plus.svg" />
-          <span>Nuevo Trimestre</span>
-        </button>
+  <div class="bg-white shadow rounded-2xl border border-gray-200">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-6">
+      <div>
+        <h2 class="text-xl font-semibold text-gray-800">Trimestres</h2>
+        <p class="text-sm text-gray-500">Lista de trimestres registrados</p>
       </div>
+      <button id="btnAbrirModalTrimestre" type="button"
+        class="w-full md:w-auto bg-[#0a3a57] hover:bg-[#00304D] active:scale-95 transition text-white px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-sm">
+        <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/plus.svg" alt="Agregar" />
+        <span>Nuevo Trimestre</span>
+      </button>
+    </div>
 
-      <!-- Tabla -->
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-gray-800" id="tablaTrimestres">
-          <thead>
-            <tr class="border-b bg-gray-50 text-sm text-gray-700">
-              <th class="px-6 py-3 font-semibold">N° Trimestre</th>
-              <th class="px-6 py-3 font-semibold text-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="tbodyTrimestres" class="text-sm">
-            <!-- Se llena dinámicamente -->
-          </tbody>
-        </table>
+    <div class="px-6 py-4">
+      <div class="flex flex-col md:flex-row gap-4">
+        <div id="buscadorTrimestreWrap" class="relative w-full md:w-64">
+          <input type="text" id="buscadorTrimestre" placeholder="Buscar trimestre..."
+            class="w-full rounded-xl border border-gray-300 bg-white pl-10 pr-10 py-2.5 text-sm focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] outline-none transition" />
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
       </div>
     </div>
+
+    <div class="table-trimestres-wrap overflow-x-auto">
+      <table class="w-full text-left" id="tablaTrimestres">
+        <thead class="bg-gray-50 border-b border-gray-200 text-sm text-gray-600">
+          <tr>
+            <th class="px-6 py-3 font-medium">N° Trimestre</th>
+            <th class="px-6 py-3 font-medium text-right" style="min-width:120px">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyTrimestres" class="text-sm divide-y divide-gray-100"></tbody>
+      </table>
+    </div>
   </div>
+</div>
 
-  <!-- Modal: Nuevo Trimestre -->
-  <div id="modalTrimestre" class="fixed inset-0 z-50 hidden">
-    <div id="backdrop" class="absolute inset-0 bg-black/70 opacity-0 transition-opacity duration-200"></div>
-    <div class="absolute inset-0 flex items-center justify-center p-4">
-      <div id="modalPanel" class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 opacity-0 scale-95 transition-all duration-200 relative">
-        <button id="btnCerrarModalTrimestre" class="absolute right-4 top-4 p-2 rounded-full hover:bg-gray-100 transition" type="button">✕</button>
-
-        <h3 class="text-xl font-semibold mb-1">Nuevo Trimestre</h3>
-        <p class="text-sm text-gray-500 mb-5">Ingresa el número de trimestre</p>
-
-        <form id="formNuevoTrimestre" class="space-y-5">
+<!-- Modal Nuevo Trimestre -->
+<div id="modalTrimestre" role="dialog" aria-labelledby="modalTrimestreTitle" aria-modal="true"
+  class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 modal-trimestre-overlay hidden">
+  <div class="modal-trimestre-box bg-white w-full max-w-md rounded-2xl flex flex-col overflow-hidden">
+    <header class="modal-trimestre-header flex items-center justify-between">
+      <h2 id="modalTrimestreTitle" class="text-xl font-bold text-[#39A900] tracking-tight">Nuevo Trimestre</h2>
+      <button type="button" id="btnCerrarModalTrimestre" aria-label="Cerrar"
+        class="p-2 -m-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </header>
+    <form id="formNuevoTrimestre" class="flex flex-col flex-1 min-h-0">
+      <div class="modal-trimestre-body flex-1">
+        <div class="space-y-5">
           <div>
-            <label class="block text-sm font-semibold mb-1">Número de trimestre</label>
-            <input id="inputNumeroTrimestre" type="number" placeholder="Ej: 1"
-              class="w-full rounded-xl border border-gray-300 px-4 py-2 focus:border-[#2a7f00] focus:ring-0 outline-none" required />
+            <label for="inputNumeroTrimestre" class="label-enterprise">Número de trimestre</label>
+            <input type="number" id="inputNumeroTrimestre" min="1" placeholder="Ej: 1" class="input-enterprise" required />
           </div>
-
-          <div class="flex justify-end gap-4 pt-2">
-            <button type="button" id="btnCancelarModalTrimestre"
-              class="px-5 py-2 rounded-xl border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition">
-              Cancelar
-            </button>
-            <button type="submit"
-              class="px-6 py-2 rounded-xl bg-[#0a3a57] text-white hover:bg-[#00304D] transition">
-              Crear Trimestre
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
-    </div>
+      <footer class="modal-trimestre-footer flex justify-end gap-3">
+        <button type="button" id="btnCancelarModalTrimestre" class="btn-modal-secondary">Cancelar</button>
+        <button type="submit" class="btn-modal-primary">Crear Trimestre</button>
+      </footer>
+    </form>
   </div>
+</div>
 
-  <!-- JS -->
-   <script>
-    window.API_URL = "<?= BASE_URL ?>src/controllers/TrimestreController.php";
-  </script>
-
-  <script src="<?= BASE_URL ?>src/assets/js/gestionTrimestre.js"></script>
-
-
-</body>
-</html>
+<script>
+window.API_URL = "<?= BASE_URL ?>src/controllers/TrimestreController.php";
+window.ICON_PENCIL_TRIMESTRE = "<?= BASE_URL ?>src/assets/img/pencil-line.svg";
+</script>
+<script src="<?= BASE_URL ?>src/assets/js/gestionTrimestre.js?v=2"></script>

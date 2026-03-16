@@ -4,6 +4,7 @@
  */
 (function () {
   var API = window.API_USUARIO;
+  var API_SOLICITUD = window.API_SOLICITUD || "";
   var USUARIO_ID = window.USUARIO_ID || 0;
 
   function getEl(id) { return document.getElementById(id); }
@@ -311,12 +312,57 @@
           }
           return;
         }
-        if (window.Swal) {
-          Swal.fire({ toast: true, position: "top-end", icon: "info", title: "Solicitud enviada al administrador.", showConfirmButton: false, timer: 2500 });
-        } else {
-          alert("Solicitud enviada al administrador.");
+        var detalles = [];
+        Object.keys(actual).forEach(function (key) {
+          var vAnt = String(inicial[key] || "").trim();
+          var vNuevo = String(actual[key] || "").trim();
+          if (vNuevo !== vAnt) {
+            detalles.push({ campo_modificado: key, valor_anterior: vAnt || null, valor_nuevo: vNuevo });
+          }
+        });
+        var btnEnviar = formSolicitar.querySelector('button[type="submit"]');
+        var textoOriginal = btnEnviar ? btnEnviar.innerHTML : "";
+        if (btnEnviar) {
+          btnEnviar.disabled = true;
+          btnEnviar.innerHTML = "Enviando...";
         }
-        closeModal("modalSolicitarCambiosPerfil");
+        var fd = new FormData();
+        fd.append("accion", "crear");
+        fd.append("tipo_solicitud", "DATOS");
+        fd.append("id_instructor_solicitante", USUARIO_ID);
+        fd.append("detalles", JSON.stringify(detalles));
+        fetch(API_SOLICITUD, { method: "POST", body: fd })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data && data.status === "success") {
+              if (window.Swal) {
+                Swal.fire({ toast: true, position: "top-end", icon: "success", title: data.message || "Solicitud enviada al administrador.", showConfirmButton: false, timer: 2500 });
+              } else {
+                alert(data.message || "Solicitud enviada al administrador.");
+              }
+              closeModal("modalSolicitarCambiosPerfil");
+              solicitarCambiosValoresIniciales = null;
+            } else {
+              if (window.Swal) {
+                Swal.fire({ toast: true, position: "top-end", icon: "error", title: data.message || data.error || "Error al enviar la solicitud.", showConfirmButton: false, timer: 3000 });
+              } else {
+                alert(data.message || data.error || "Error al enviar la solicitud.");
+              }
+            }
+          })
+          .catch(function () {
+            if (window.Swal) {
+              Swal.fire({ toast: true, position: "top-end", icon: "error", title: "Error de conexión.", showConfirmButton: false, timer: 2500 });
+            } else {
+              alert("Error de conexión.");
+            }
+          })
+          .finally(function () {
+            if (btnEnviar) {
+              btnEnviar.disabled = false;
+              btnEnviar.innerHTML = textoOriginal;
+            }
+          });
       });
     }
 

@@ -51,4 +51,112 @@ if ($cargo === 'INSTRUCTOR') {
             </div>
         </div>
     </div>
+
+    
 </section>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const btn = document.getElementById("btnProcesarExcel");
+    const input = document.getElementById("inputExcel");
+    const select = document.getElementById("upload_program");
+    const errorMsg = document.getElementById("err_upload_program");
+    const fileName = document.getElementById("file-name");
+
+    // ===============================
+    // 🔄 RECARGAR PROGRAMAS AUTOMÁTICAMENTE
+    // ===============================
+    function recargarProgramas() {
+        fetch("src/controllers/ProgramasController.php?accion=listar", {
+            credentials: "same-origin"
+        })
+        .then(res => res.json())
+        .then(data => {
+
+            select.innerHTML = '<option value="">Seleccione un programa</option>';
+
+            if (Array.isArray(data)) {
+                data.forEach(p => {
+                    const option = document.createElement("option");
+                    option.value = p.id_programa;
+                    option.textContent = p.nombre_programa;
+                    select.appendChild(option);
+                });
+            }
+
+        })
+        .catch(err => console.error("Error recargando programas:", err));
+    }
+
+    // 🔥 Se ejecuta apenas carga la vista
+    recargarProgramas();
+
+    // ===============================
+    // Mostrar nombre del archivo
+    // ===============================
+    input.addEventListener("change", function () {
+        if (this.files.length > 0) {
+            fileName.textContent = this.files[0].name;
+            fileName.classList.remove("hidden");
+        }
+    });
+
+    // ===============================
+    // SUBIR EXCEL
+    // ===============================
+    btn.addEventListener("click", function (e) {
+        e.preventDefault();
+
+        const archivo = input.files[0];
+        const programa = select.value;
+
+        if (!programa) {
+            errorMsg.classList.remove("hidden");
+            return;
+        } else {
+            errorMsg.classList.add("hidden");
+        }
+
+        if (!archivo) {
+            alert("Seleccione un archivo Excel");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("archivo", archivo);
+        formData.append("programa", programa);
+
+        btn.disabled = true;
+        btn.innerText = "Procesando...";
+
+        fetch("src/controllers/EtlController.php?accion=subir", {
+            method: "POST",
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+
+            btn.disabled = false;
+            btn.innerText = "Subir y Procesar";
+
+            if (data.success) {
+                alert(
+                    "Importación completada\n\n" +
+                    "Competencias: " + data.competencias + "\n" +
+                    "RAE: " + data.raes
+                );
+            } else {
+                alert(data.error);
+            }
+        })
+        .catch(error => {
+            btn.disabled = false;
+            btn.innerText = "Subir y Procesar";
+            console.error(error);
+            alert("Error en la petición");
+        });
+
+    });
+
+});
+</script>

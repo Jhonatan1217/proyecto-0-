@@ -23,7 +23,7 @@
     /* --- Select con flecha separada del borde --- */
     .select-nice{
       -webkit-appearance:none; appearance:none;
-      background-image:url("../img/chevron-down.svg");
+      background-image:url("../img/icons/Acction/chevron-down.svg");
       background-repeat:no-repeat;
       background-position: right .75rem center;
       background-size: 1rem 1rem;

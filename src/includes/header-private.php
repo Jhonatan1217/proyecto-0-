@@ -22,10 +22,14 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 <style>
-    /* Toasts visibles por encima de los modales de perfil */
+    /* Toast detrás de la sidebar y del widget de usuario (z-50) fuera de modal */
     .swal2-container.swal2-top-end {
       top: 5rem !important;
-      z-index: 9999999 !important;
+      z-index: 40 !important;
+    }
+    /* Cuando un modal está abierto (body overflow:hidden) el toast sube encima del backdrop */
+    body[style*="overflow: hidden"] .swal2-container {
+      z-index: 9999 !important;
     }
     .modal-perfil {
       z-index: 999999 !important;
@@ -315,7 +319,7 @@ document.addEventListener("DOMContentLoaded", function () {
       <div class="rounded-full flex items-center justify-center mb-3 shrink-0" style="background-color: #BFBFBF; width: 32px; height: 32px;">
         <img src="<?= BASE_URL ?>src/assets/img/icons/Security/Shield-Check.svg" alt="" class="w-5 h-5" style="width: 20px; height: 20px;" />
       </div>
-      <p class="modal-perfil-subtitulo text-gray-500 mb-5">Tu correo fue verificado correctamente. Ahora ingresa tu nueva contraseña.</p>
+      <p class="modal-perfil-subtitulo text-gray-500 mb-5">Ingresa tu nueva contraseña.</p>
     </div>
     <div class="mx-auto w-full max-w-sm">
     <form id="formCambiarContrasena" class="space-y-4 w-full">
@@ -349,6 +353,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 <script>
 window.API_USUARIO = "<?= BASE_URL ?>src/controllers/UsuarioController.php";
+window.API_SOLICITUD = "<?= BASE_URL ?>src/controllers/SolicitudController.php";
 window.USUARIO_ID = <?= json_encode((int)($_SESSION['usuario_id'] ?? 0)) ?>;
 window.BASE_URL = <?= json_encode(BASE_URL) ?>;
 </script>
@@ -364,36 +369,32 @@ window.BASE_URL = <?= json_encode(BASE_URL) ?>;
     <ul class="p-4 space-y-4 text-gray-700">
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/calendar-days.svg" alt="Icono de Horarios">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/register_tables">Horarios</a>
+        <a href="<?= BASE_URL ?>index.php?page=register_tables">Horarios</a>
       </li>
 
-      <?php if ($cargo != 'INSTRUCTOR'): ?>
+      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+        <img src="<?= BASE_URL ?>src/assets/img/map-pin.svg" alt="Icono de Áreas">
+        <a href="<?= BASE_URL ?>index.php?page=gestionAreas">Áreas</a>
+      </li>
+      
+      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+        <img src="<?= BASE_URL ?>src/assets/img/house-plus.svg" alt="Icono de Zonas">
+        <a href="<?= BASE_URL ?>index.php?page=gestionZonas">Zonas</a>
+      </li>
 
-        <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-          <img src="<?= BASE_URL ?>src/assets/img/map-pin.svg">
-          <a href="<?= BASE_URL ?>index.php?page=src/views/gestionAreas">Áreas</a>
-        </li>
+      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+        <img src="<?= BASE_URL ?>src/assets/img/layers.svg" alt="Icono de Trimestres">
+        <a href="<?= BASE_URL ?>index.php?page=gestionTrimestres">Trimestres</a>
+      </li>
 
-        <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-          <img src="<?= BASE_URL ?>src/assets/img/house-plus.svg">
-          <a href="<?= BASE_URL ?>index.php?page=src/views/gestionZonas">Zonas</a>
-        </li>
-
-        <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-          <img src="<?= BASE_URL ?>src/assets/img/layers.svg">
-          <a href="<?= BASE_URL ?>index.php?page=src/views/gestionTrimestres">Trimestres</a>
-        </li>
-
-        <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-          <img src="<?= BASE_URL ?>src/assets/img/users.svg">
-          <a href="<?= BASE_URL ?>index.php?page=gestionUsuarios">Usuarios</a>
-        </li>
-
-      <?php endif; ?>
+      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+        <img src="<?= BASE_URL ?>src/assets/img/users.svg" alt="Icono de Usuarios">
+        <a href="<?= BASE_URL ?>index.php?page=gestionUsuarios">Usuarios</a>
+      </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/folder-minus.svg" alt="Icono de Grupos">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionGrupos">Grupos</a>
+        <a href="<?= BASE_URL ?>index.php?page=gestionGrupos">Grupos</a>
       </li>
 
       <li class="relative">
@@ -409,13 +410,10 @@ window.BASE_URL = <?= json_encode(BASE_URL) ?>;
         
         <!-- Submenú de Académicos (inicialmente oculto) -->
         <ul class="pl-12 mt-2 space-y-2 hidden" id="academicos-submenu">
-          <?php if ($cargo != 'INSTRUCTOR'): ?>
-            <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-              <img src="<?= BASE_URL ?>src/assets/img/upload.svg" class="w-5 h-5">
-              <a href="<?= BASE_URL ?>index.php?page=academicos&tab=upload">Carga Excel</a>
-            </li>
-          <?php endif; ?>
-
+          <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+            <img src="<?= BASE_URL ?>src/assets/img/upload.svg" alt="Icono de Carga Excel" class="w-5 h-5">
+            <a href="<?= BASE_URL ?>index.php?page=academicos&tab=upload">Carga Excel</a>
+          </li>
           <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
             <img src="<?= BASE_URL ?>src/assets/img/graduation-cap.svg" alt="Icono de Programas" class="w-5 h-5">
             <a href="<?= BASE_URL ?>index.php?page=academicos&tab=programs">Programas</a>
@@ -433,12 +431,12 @@ window.BASE_URL = <?= json_encode(BASE_URL) ?>;
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/clipboard-list.svg" alt="Icono de Solicitudes">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionSolicitudes">Solicitudes</a>
+        <a href="<?= BASE_URL ?>index.php?page=gestionSolicitudes">Solicitudes</a>
       </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/history.svg" alt="Icono de Trimestres">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/historialRegistrosInactivos">Historial</a>
+        <a href="<?= BASE_URL ?>index.php?page=historialRegistrosInactivos">Historial</a>
       </li>
     </ul>
   </nav>

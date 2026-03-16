@@ -8,6 +8,8 @@ $instructores = [];
 $trimestres   = [];
 $programas    = [];
 $competencias = [];
+$grupos       = [];
+$isAuthenticated = isset($_SESSION['usuario_id']);
 
 if (isset($conn)) {
   try {
@@ -93,6 +95,14 @@ if (isset($conn)) {
       $competencias = [];
     }
   }
+
+  try {
+    $s = $conn->prepare("SELECT DISTINCT numero_ficha FROM fichas WHERE numero_ficha IS NOT NULL AND numero_ficha <> '' ORDER BY numero_ficha ASC");
+    $s->execute();
+    $grupos = $s->fetchAll(PDO::FETCH_ASSOC);
+  } catch (PDOException $e) {
+    $grupos = [];
+  }
 }
 
 ?>
@@ -107,6 +117,7 @@ if (isset($conn)) {
   <link rel="stylesheet" href="<?= BASE_URL ?>public/css/fonts.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/formulario_crear_trimestralizacion.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/register_tables.css">
+  <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/select-styled.css">
   <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
 
   <style>
@@ -114,12 +125,364 @@ if (isset($conn)) {
     display: flex;
     flex-direction: column;
   }
+
+
+
+  .custom-combobox {
+    position: relative;
+  }
+
+  .custom-combobox-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 80;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
+    overflow: hidden;
+  }
+
+  .custom-combobox-panel.hidden {
+    display: none;
+  }
+
+  .custom-combobox-list {
+    max-height: 280px; /* 7 items × 40px */
+    overflow-y: auto;
+    padding: 4px;
+  }
+
+  .custom-combobox-list::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .custom-combobox-list::-webkit-scrollbar-thumb {
+    background: #9ca3af;
+    border-radius: 999px;
+  }
+
+  .custom-combobox-option,
+  .custom-combobox-empty {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.875rem;
+    color: #1f2937;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.4;
+  }
+
+  .custom-combobox-option {
+    cursor: pointer;
+    transition: background-color 0.18s ease, color 0.18s ease;
+  }
+
+  .custom-combobox-option:hover,
+  .custom-combobox-option.is-active {
+    background: #f3f4f6;
+    color: #111827;
+  }
+
+  .custom-combobox-empty {
+    color: #6b7280;
+    cursor: default;
+  }
+
+  /* Fix: select-styled tem padding natural ~40px; form-field forzaba 36px y cortaba el texto */
+  .select-styled.form-field {
+    height: auto;
+  }
+
+  #selectModalidad,
+  #selectArea,
+  #selectZona,
+  #selectModalidad option,
+  #selectArea option,
+  #selectZona option {
+    text-transform: lowercase;
+  }
+
+  /* ===== MODAL GESTIÓN DE HORAS ===== */
+  .gh-backdrop {
+    background: rgba(15, 23, 42, 0.45);
+  }
+
+  .gh-card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 8px 40px rgba(15, 23, 42, 0.18);
+    border: 1px solid #e2e8f0;
+  }
+
+  /* Header */
+  .gh-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .gh-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+  }
+
+  .gh-close {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+
+  .gh-close:hover { color: #111827; }
+
+  /* Tabs */
+  .gh-tabs {
+    display: flex;
+    gap: 8px;
+    border: 1.5px dashed #c4cdd6;
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin: 14px 0;
+  }
+
+  .gh-tab {
+    padding: 6px 20px;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all 0.15s;
+    background: transparent;
+    color: #374151;
+  }
+
+  .gh-tab.is-active {
+    background: #39a900;
+    color: #fff;
+    border-color: #39a900;
+  }
+
+  .gh-tab:not(.is-active) {
+    border-color: #d1d5db;
+    color: #374151;
+  }
+
+  /* Resumen simple */
+  .gh-resumen {
+    margin-bottom: 10px;
+  }
+
+  .gh-resumen-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 2px 0;
+  }
+
+  .gh-resumen-sub {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin: 0;
+  }
+
+  /* Filtros */
+  .gh-filtros {
+    display: flex;
+    gap: 10px;
+    border: 1.5px dashed #c4cdd6;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+  }
+
+  .gh-filtros-input,
+  .gh-filtros-select {
+    flex: 1;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.875rem;
+    color: #374151;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .gh-filtros-input:focus,
+  .gh-filtros-select:focus {
+    border-color: #39a900;
+  }
+
+  .gh-filtros-select {
+    max-width: 220px;
+  }
+
+  /* Tabla */
+  .gh-table-wrapper {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 340px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+  }
+
+  .gh-table-wrapper::-webkit-scrollbar { width: 6px; height: 6px; }
+  .gh-table-wrapper::-webkit-scrollbar-thumb { background: #c4cdd6; border-radius: 99px; }
+
+  .gh-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+
+  .gh-table thead th {
+    background: #f9fafb;
+    color: #374151;
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 0.82rem;
+  }
+
+  .gh-table thead th.center { text-align: center; }
+
+  .gh-table tbody tr {
+    border-bottom: 1px solid #e5e7eb;
+    transition: background 0.1s;
+  }
+
+  .gh-table tbody tr:hover { background: #f9fafb; }
+  .gh-table tbody tr:last-child { border-bottom: none; }
+
+  .gh-table tbody td {
+    padding: 11px 14px;
+    color: #374151;
+    font-size: 0.875rem;
+  }
+
+  .gh-table tbody td.center { text-align: center; }
+
+  .gh-excedente-neg {
+    color: #dc2626;
+    font-weight: 600;
+  }
+
+  .gh-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: 1px solid #d1d5db;
+    border-radius: 7px;
+    background: #fff;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .gh-action-btn:hover {
+    border-color: #39a900;
+    color: #39a900;
+  }
+
+  /* Footer */
+  .gh-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  /* ===== TABLA HORARIO (ESTILO REFERENCIA) ===== */
+  #tabla-horarios {
+    border: 1px solid #b6b6b6;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #ededed;
+  }
+
+  #tabla-horarios table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    background: #ededed;
+  }
+
+  #tabla-horarios thead th {
+    background: #9ea0a3 !important;
+    color: #f3f4f6 !important;
+    border: 1px solid #b6b6b6 !important;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 8px !important;
+    text-align: center;
+  }
+
+  #tabla-horarios tbody td {
+    background: #ffffff;
+    border: 1px solid #c0c0c0;
+    color: #5f5f5f;
+    font-size: 13px;
+    vertical-align: top;
+  }
+
+  #tabla-horarios tbody td.hora-col {
+    background: #e0e0e0 !important;
+    color: #5a5a5a !important;
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  #tabla-horarios .registro {
+    background: #dce8f4 !important;
+    border: 1px solid #c5d3e3;
+    border-left: 3px solid #39a900 !important;
+    border-radius: 0.45rem;
+    box-shadow: none !important;
+    margin-bottom: 4px !important;
+    padding: 6px 7px !important;
+  }
+
+  #tabla-horarios .zona-libre {
+    background: #ffffff !important;
+  }
+
+  #tabla-horarios .zona-libre:hover {
+    background: #f5f7fa !important;
+  }
+
+  @media (max-width: 600px) {
+    .gh-filtros { flex-direction: column; }
+    .gh-filtros-select { max-width: 100%; }
+    .gh-footer { flex-direction: column; }
+  }
   </style>
 </head>
 
 <body class="text-center font-sans min-h-screen flex flex-col bg-gray-50 overflow-x-hidden">
 
-<header class="mt-10 text-center px-4 sm:px-8" id="cabecera-trimestralizacion">
+<header class="mt-10 text-center w-full max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-10" id="cabecera-trimestralizacion">
   <h1 class="inline-block text-2xl sm:text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
     VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA 
     <?php echo isset($_GET['id_zona']) ? htmlspecialchars($_GET['id_zona']) : '—'; ?>
@@ -129,76 +492,58 @@ if (isset($conn)) {
   </h2>
 
   <!-- Contenedor principal de selects y botón -->
-  <div class="flex flex-col md:flex-row justify-between items-center md:items-end w-full px-4 sm:px-8 lg:px-16 my-6 gap-4 md:gap-6">
+  <div class="flex flex-col md:flex-row justify-between items-center md:items-end w-full my-6 gap-4 md:gap-6">
     
     <div class="flex flex-col sm:flex-row gap-4 sm:gap-8 w-full md:w-auto">
 
 
     <!-- Selector de Modalidad -->
-      <div class="relative w-full sm:w-auto">
-        <label for="selectModalidad" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Seleccione la Modalidad</label>
-        <div class="relative">
-          <select id="selectModalidad" name="id_modalidad"
-            class="appearance-none w-full sm:w-64 lg:w-72 xl:w-80 2xl:w-96 px-4 sm:px-5 py-2.5 border border-gray-300 text-sm sm:text-base 
-            rounded-lg
-            text-slate-700 font-semibold tracking-wider
-            bg-white shadow-sm hover:bg-gray-50
-            focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none
-            transition-all duration-200 cursor-pointer pr-10">
-            <option value="" class="text-[#00324D]" selected hidden>SELECCIONE LA MODALIDAD</option>
-          </select>
-          <img 
-            src="<?= BASE_URL ?>src/assets/img/chevron-down.svg" 
-            alt="arrow" 
-            class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70"
-          />
-        </div>
+      <div class="w-full sm:w-64 lg:w-[230px] xl:w-[230px] 2xl:w-[230px]">
+        <label for="selectModalidad" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Modalidad</label>
+        <select id="selectModalidad" name="id_modalidad"
+          class="select-styled w-full">
+          <option value="" class="text-[#00324D]" selected hidden>seleccione la modalidad</option>
+          <option value="presencial"> presencial </option>
+          <option value="virtual"> virtual </option>
+          <option value="mixto"> mixta </option>
+        </select>
       </div>
 
 
 
   
       <!-- Selector de Área -->
-      <div class="relative w-full sm:w-auto">
-        <label for="selectArea" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Seleccione el Área</label>
-        <div class="relative">
-          <select id="selectArea" name="id_area"
-            class="appearance-none w-full sm:w-64 lg:w-72 xl:w-80 2xl:w-96 px-4 sm:px-5 py-2.5 border border-gray-300 text-sm sm:text-base 
-            rounded-lg
-            text-slate-700 font-semibold tracking-wider
-            bg-white shadow-sm hover:bg-gray-50
-            focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none
-            transition-all duration-200 cursor-pointer pr-10">
-            <option value="" class="text-[#00324D]" selected hidden>SELECCIONE EL ÁREA</option>
-          </select>
-          <img 
-            src="<?= BASE_URL ?>src/assets/img/chevron-down.svg" 
-            alt="arrow" 
-            class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70"/>
-        </div>
+      <div id="contenedorAreaFiltro" class="w-full sm:w-64 lg:w-[230px] xl:w-[230px] 2xl:w-[230px]">
+        <label for="selectArea" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Área</label>
+        <select id="selectArea" name="id_area"
+          class="select-styled w-full">
+          <option value="" class="text-[#00324D]" selected hidden>seleccione el área</option>
+        </select>
       </div>
 
 
 
 
       <!-- Selector de Zona -->
-      <div class="relative w-full sm:w-auto">
-        <label for="selectZona" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Seleccione la Zona</label>
-        <div class="relative">
-          <select id="selectZona" name="id_zona"
-            class="appearance-none w-full sm:w-64 lg:w-72 xl:w-80 2xl:w-96 px-4 sm:px-5 py-2.5 border border-gray-300 text-sm sm:text-base 
-            rounded-lg
-            text-slate-700 font-semibold tracking-wider
-            bg-white shadow-sm hover:bg-gray-50
-            focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none
-            transition-all duration-200 cursor-pointer pr-10">
-            <option value="" class="text-[#00324D]" selected hidden>SELECCIONE LA ZONA</option>
-          </select>
-          <img 
-            src="<?= BASE_URL ?>src/assets/img/chevron-down.svg" 
-            alt="arrow" 
-            class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70"
-          />
+      <div id="contenedorZonaFiltro" class="w-full sm:w-64 lg:w-[230px] xl:w-[230px] 2xl:w-[230px]">
+        <label for="selectZona" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Zona</label>
+        <select id="selectZona" name="id_zona"
+          class="select-styled w-full">
+          <option value="" class="text-[#00324D]" selected hidden>seleccione la zona</option>
+        </select>
+      </div>
+    </div>
+
+
+
+
+    <!-- Input para filtrar por grupo -->
+    <div id="contenedorGrupoFiltro" class="relative w-full sm:w-64 lg:w-[230px] xl:w-[230px] 2xl:w-[230px] hidden">
+      <label for="inputGrupoTexto" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Filtrar por grupo</label>
+      <div class="custom-combobox w-full">
+        <input type="text" id="inputGrupoTexto" autocomplete="off" placeholder="seleccione o escriba número de grupo" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none transition-all duration-200">
+        <div id="panelGrupoFiltro" class="custom-combobox-panel hidden">
+          <div class="custom-combobox-list"></div>
         </div>
       </div>
     </div>
@@ -208,19 +553,20 @@ if (isset($conn)) {
     <!-- Botón de crear nueva trimestralización (abre el mismo modal que en la landing) -->
     <button id="btnAbrirModal" 
       class="group flex items-center justify-center gap-2
-         w-full sm:w-60 lg:w-72 xl:w-80 2xl:w-96
-         px-6 py-2.5
+         w-full sm:w-60 lg:w-[230px] xl:w-[230px] 2xl:w-[230px]
+         h-11 px-4
          rounded-xl
          bg-[#00324d]
          text-white font-medium tracking-wider
-         text-sm sm:text-base
+         text-sm sm:text-sm leading-none whitespace-nowrap
          shadow-md hover:shadow-lg
-         hover:bg-[#004a70]
+         hover:bg-[#00304D]
          active:scale-[0.98]
          transition-all duration-200
+         <?= $isAuthenticated ? '' : 'hidden' ?>
          focus:outline-none focus:ring-2 focus:ring-[#00324d]/20">
-        <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/plus.svg" />
-      Nueva trimestralización
+        <img class="w-4 h-4 shrink-0" src="<?= BASE_URL ?>src/assets/img/plus.svg" alt="" aria-hidden="true" />
+        <span class="leading-none">Nueva trimestralización</span>
     </button>
   </div>
 </header>
@@ -229,10 +575,19 @@ if (isset($conn)) {
 
 
   <!-- Contenido principal -->
-  <main class="flex flex-col items-center flex-grow px-2 sm:px-4 pb-6">
+  <main class="flex flex-col items-center flex-grow w-full max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-10 pb-6">
     <section id="tabla-horarios"
-  class="w-full sm:w-11/12 shadow-xl rounded-2xl border border-gray-200 p-0 overflow-hidden">
-      <table class="w-full bg-white text-xs min-w-[900px] sm:text-sm border-separate border-spacing-0">
+  class="w-full shadow-xl rounded-2xl border border-gray-200 p-0 overflow-hidden">
+      <table class="w-full text-xs min-w-[900px] sm:text-sm border-separate border-spacing-0">
+        <colgroup>
+          <col style="width: 130px;">
+          <col style="width: calc((100% - 130px)/6);">
+          <col style="width: calc((100% - 130px)/6);">
+          <col style="width: calc((100% - 130px)/6);">
+          <col style="width: calc((100% - 130px)/6);">
+          <col style="width: calc((100% - 130px)/6);">
+          <col style="width: calc((100% - 130px)/6);">
+        </colgroup>
         <thead class="sticky top-0 bg-gray-300 text-gray-700 z-10">
           <tr>
             <th class="border border-gray-400 p-3 sm:p-4 font-semibold text-sm">Hora</th>
@@ -258,8 +613,7 @@ if (isset($conn)) {
           viewBox="0 0 24 24"
           fill="none"
           class="mb-4 block text-[#00324D] mx-auto"
-          xmlns="http://www.w3.org/2000/svg"
-        >
+          xmlns="http://www.w3.org/2000/svg">
           <rect x="3" y="4" width="18" height="17" rx="2" ry="2" stroke="currentColor" stroke-width="1.5"/>
           <line x1="16" y1="2.5" x2="16" y2="5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           <line x1="8" y1="2.5" x2="8" y2="5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -288,6 +642,7 @@ if (isset($conn)) {
         Descargar PDF
       </button>
 
+      <?php if ($isAuthenticated): ?>
       <button id="btn-actualizar" class="bg-[#39a900] text-white px-6 py-2 rounded-lg hover:bg-[#4ebe15] transition flex items-center justify-center w-full sm:w-auto">
         Gestionar horas
       </button>
@@ -299,7 +654,7 @@ if (isset($conn)) {
       <button onclick="enviarHorario()" class="bg-[#0a3a57] text-white px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">
         Enviar horario
       </button>
-
+      <?php endif; ?>
       
 
       
@@ -307,28 +662,73 @@ if (isset($conn)) {
   </main>
 
   <!-- Modal Eliminar -->
-  <div id="modalEliminar" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
-    <div class="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 max-w-2xl w-full sm:w-11/12 max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-center mb-4">
-        <img class="w-10 h-10" src="<?= BASE_URL ?>src/assets/img/triangle-alert.svg" />
+  <div id="modalEliminar" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-labelledby="tituloModalEliminar">
+    <div class="absolute inset-0" style="background: rgba(0,0,0,.75);"></div>
+    <div class="relative z-10 w-full rounded-3xl shadow-2xl px-6 py-8 sm:px-8" style="max-width: 540px; background:#f3f4f6;">
+      <div class="mx-auto mb-4 flex items-center justify-center rounded-full" style="width:48px;height:48px;background:#fee2e2;">
+        <img class="w-7 h-7" src="<?= BASE_URL ?>src/assets/img/triangle-alert.svg" alt="Alerta" />
       </div>
-      <h2 class="text-xl sm:text-2xl font-bold text-center mb-8 text-gray-900">
-        Limpiar datos de trimestralizacion
+
+      <h2 id="tituloModalEliminar" class="text-center mb-4" style="font-size:24px;line-height:1.15;font-weight:700;color:#111827;">
+        Eliminar trimestralización
       </h2>
-      <p class="text-center mb-8">Esta acción limpiará permanentemente los datos de este día. No podrás recuperarlo después.</p>
-      <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center">
-        <button onclick="cerrarModal()" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition flex items-center justify-center w-full sm:w-auto">
+
+      <p class="mx-auto text-center mb-8" style="max-width:460px;font-size:16px;line-height:1.35;color:#1f2937;">
+        Esta acción eliminará permanentemente el horario actual. No podrás recuperarlo después.
+      </p>
+
+      <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
+        <button onclick="cerrarModal()" class="w-full sm:w-auto rounded-2xl font-semibold transition" style="min-width:150px;height:56px;padding:0 24px;border:2px solid #111827;background:#fff;color:#111827;font-size:17px;">
           Cancelar
         </button>
-        <button onclick="confirmarEliminar()" class="bg-[#39a900] text-white px-6 py-2 rounded-lg hover:bg-[#4ebe15] transition flex items-center justify-center w-full sm:w-auto">
+        <button onclick="confirmarEliminar()" class="w-full sm:w-auto rounded-2xl font-semibold transition" style="min-width:150px;height:56px;padding:0 24px;border:0;background:#dc2626;color:#fff;font-size:17px;">
           Aceptar
         </button>
       </div>
     </div>
   </div>
 
+  <div id="modalGestionHoras" class="hidden fixed inset-0 z-[70] items-center justify-center px-4 py-6">
+    <div class="gh-backdrop absolute inset-0"></div>
+    <div class="gh-card relative z-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+
+      <!-- Header -->
+      <div class="gh-header">
+        <h2 class="gh-title">Gestión de horas</h2>
+        <button type="button" id="btnCerrarGestionHoras" class="gh-close" aria-label="Cerrar modal">×</button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="gh-tabs">
+        <button type="button" id="tabGestionHorasInstructores" class="gh-tab is-active">Instructores</button>
+        <button type="button" id="tabGestionHorasGrupos" class="gh-tab">Grupos</button>
+      </div>
+
+      <!-- Resumen (texto simple) -->
+      <div id="gestionHorasResumen" class="gh-resumen"></div>
+
+      <!-- Filtros -->
+      <div id="gestionHorasFiltros" class="gh-filtros"></div>
+
+      <!-- Tabla -->
+      <div class="gh-table-wrapper">
+        <table class="gh-table">
+          <thead id="gestionHorasHead"></thead>
+          <tbody id="gestionHorasBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Footer -->
+      <div class="gh-footer">
+        <button type="button" id="btnIrGestionInstructores" class="rounded-lg border border-gray-400 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">Gestionar instructores</button>
+        <button type="button" id="btnAceptarGestionHoras" class="rounded-lg bg-[#00324d] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#00263b] transition">Aceptar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     window.BASE_URL = window.BASE_URL || "<?= BASE_URL ?>";
+    window.IS_AUTHENTICATED = <?= $isAuthenticated ? 'true' : 'false' ?>;
   </script>
 
   <!-- Scripts de la vista de tablas (SOLO una vez registerTables.js para evitar el error de urlParams) -->
@@ -361,7 +761,7 @@ if (isset($conn)) {
           <div class="border-b border-gray-300 mb-3"></div>
 
           <!-- Formulario -->
-          <form id="formTrimestralizacion" action="<?= BASE_URL ?>src/controllers/TrimestralizacionController.php?accion=crear" method="POST" class="trimestralizacion-form space-y-0 text-xs">
+          <form id="formTrimestralizacion" action="<?= BASE_URL ?>src/controllers/TrimestralizacionController.php?accion=crear" method="POST" autocomplete="off" class="trimestralizacion-form space-y-0 text-xs">
             
             <!-- GRID -->
             <div class="form-grid">
@@ -370,10 +770,10 @@ if (isset($conn)) {
             <!-- PROGRAMA -->
               <div class="field">
                 <label for="id_programa_select" class="block text-xs font-semibold text-gray-800 mb-1">Programa de formación</label>
-                <select id="id_programa_select" name="id_programa_select" class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
+                <select id="id_programa_select" name="id_programa_select" class="select-styled w-full form-field">
                   <option value="">Ingrese el programa de formación</option>
                   <?php if (empty($programas)): ?>
-                    <option disabled>No se encontraron programas activos</option>
+                    <option disabled>Sin datos disponibles</option>
                   <?php else: ?>
                     <?php foreach ($programas as $prog): ?>
                       <option value="<?= htmlspecialchars($prog['id_programa']) ?>">
@@ -389,7 +789,7 @@ if (isset($conn)) {
                <div class="field">
                 <label for="nombre_instructor" class="block text-xs font-semibold text-gray-800 mb-1">Instructor</label>
                 <select name="nombre_instructor" id="nombre_instructor"
-                  class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
+                  class="select-styled w-full form-field">
                   <option value="">Seleccione el instructor</option>
                   <?php foreach ($instructores as $ins): ?>
                     <option value="<?= htmlspecialchars($ins['id_instructor'] ?? '') ?>" data-tipo="<?= htmlspecialchars($ins['tipo_instructor'] ?? '') ?>">
@@ -403,8 +803,25 @@ if (isset($conn)) {
               <!-- NUMERO DE FICHA -->
                <div class="field">
                 <label for="numero_ficha" class="block text-xs font-semibold text-gray-800 mb-1">Número de grupo</label>
-                <input type="text" name="numero_ficha" id="numero_ficha" placeholder="Ingrese número de grupo" 
-                  class="form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white"/>
+                <div class="custom-combobox w-full">
+                  <input
+                    type="text"
+                    name="numero_ficha"
+                    id="numero_ficha"
+                    autocomplete="off"
+                    placeholder="seleccione o escriba número de grupo"
+                    class="form-field w-full h-9 px-3 text-sm rounded-xl border border-gray-300 outline-none bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]"/>
+                  <div id="panelGrupoCrear" class="custom-combobox-panel hidden">
+                    <div class="custom-combobox-list"></div>
+                  </div>
+                </div>
+                <datalist id="listaGruposData">
+                  <?php foreach ($grupos as $g): ?>
+                    <?php if (!empty($g['numero_ficha'])): ?>
+                      <option value="<?= htmlspecialchars($g['numero_ficha']) ?>"></option>
+                    <?php endif; ?>
+                  <?php endforeach; ?>
+                </datalist>
               </div>
 
 
@@ -413,7 +830,7 @@ if (isset($conn)) {
               <div class="field">
                 <label for="numero_trimestre" class="block text-xs font-semibold text-gray-800 mb-1">Trimestre de grupo</label>
                 <select name="numero_trimestre" id="numero_trimestre"
-                  class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
+                  class="select-styled w-full form-field">
                   <option value="">Seleccione el trimestre que cursa el grupo</option>
                   <?php foreach ($trimestres as $t): ?>
                     <option value="<?= htmlspecialchars($t['numero_trimestre']) ?>">
@@ -423,47 +840,65 @@ if (isset($conn)) {
                 </select>
               </div>
 
-
-
-              <!-- Modalidad -->
-               <div class="field">
-                <label for="modalidad" class="block text-xs font-semibold text-gray-800 mb-1">Modalidad de grupo</label>
-                <select name="modalidad" id="modalidad" 
-                  class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
-                  <option value="">Seleccione la modalidad del grupo</option>
-                  <option value="presencial">Presencial</option>
-                  <option value="virtual">Virtual</option>
-                  <option value="mixto">Mixto</option>
-                </select>
-              </div>
+              <input type="hidden" name="modalidad" id="modalidad" value="presencial">
 
               <!-- AREA + ZONA-->
               <div class="field">
                 <div class="flex flex-minw-0 gap-2">
                   <div class="flex-1">
-                    <label for="id_area" class="block text-xs font-semibold text-gray-800 mb-1">Área</label>
-                    <select name="area" id="id_area" 
-                      class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
-                      <option value="">Seleccione el área</option>
-                    <option value="">Seleccione el area a la que pertenece la ficha</option>
-                    <?php foreach ($areas as $a): ?>
-                      <option value="<?= htmlspecialchars($a['id_area']) ?>"><?= htmlspecialchars($a['nombre_area']) ?></option>
-                    <?php endforeach; ?>
-                  </select>
+                    <label for="id_area_combo" class="block text-xs font-semibold text-gray-800 mb-1">Área</label>
+                    <div class="custom-combobox w-full">
+                      <input
+                        type="text"
+                        id="id_area_combo"
+                        autocomplete="off"
+                        placeholder="seleccione o escriba el área"
+                        class="form-field w-full h-9 px-3 text-sm rounded-xl border border-gray-300 outline-none bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]" />
+                      <div id="panelAreaCrear" class="custom-combobox-panel hidden">
+                        <div class="custom-combobox-list"></div>
+                      </div>
+                    </div>
+                    <datalist id="listaAreasCombo">
+                      <?php foreach ($areas as $a): ?>
+                        <option
+                          value="<?= htmlspecialchars($a['nombre_area']) ?>"
+                          data-id="<?= htmlspecialchars($a['id_area']) ?>"></option>
+                      <?php endforeach; ?>
+                    </datalist>
+
+                    <select name="area" id="id_area" class="hidden" tabindex="-1" aria-hidden="true">
+                      <option value="">seleccione el área</option>
+                      <?php foreach ($areas as $a): ?>
+                        <option value="<?= htmlspecialchars($a['id_area']) ?>"><?= htmlspecialchars($a['nombre_area']) ?></option>
+                      <?php endforeach; ?>
+                    </select>
                   </div>
 
                   <div class="flex-1">
-                    <label for="id_zona" class="block text-xs font-semibold text-gray-800 mb-1">Zona</label>
-                    <select name="zona" id="id_zona" 
-                      class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
-                      <option value="">Seleccione la zona</option>
-                    <?php foreach ($zonas as $z): ?>
-                      <?php $label = isset($z['id_zona']) ? "Zona " . $z['id_zona'] : "Zona"; ?>
-                      <option value="<?= htmlspecialchars($z['id_zona']) ?>" data-area="<?= htmlspecialchars($z['id_area'] ?? '') ?>">
-                        <?= htmlspecialchars($label) ?>
-                      </option>
-                    <?php endforeach; ?>
-                  </select>
+                    <label for="id_zona_combo" class="block text-xs font-semibold text-gray-800 mb-1">Zona</label>
+                    <div class="custom-combobox w-full">
+                      <input
+                        type="text"
+                        id="id_zona_combo"
+                        autocomplete="off"
+                        placeholder="seleccione o escriba la zona"
+                        class="form-field w-full h-9 px-3 text-sm rounded-xl border border-gray-300 outline-none bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]"
+                        disabled />
+                      <div id="panelZonaCrear" class="custom-combobox-panel hidden">
+                        <div class="custom-combobox-list"></div>
+                      </div>
+                    </div>
+                    <datalist id="listaZonasCombo"></datalist>
+
+                    <select name="zona" id="id_zona" class="hidden" tabindex="-1" aria-hidden="true">
+                      <option value="">seleccione la zona</option>
+                      <?php foreach ($zonas as $z): ?>
+                        <?php $label = isset($z['id_zona']) ? "Zona " . $z['id_zona'] : "Zona"; ?>
+                        <option value="<?= htmlspecialchars($z['id_zona']) ?>" data-area="<?= htmlspecialchars($z['id_area'] ?? '') ?>">
+                          <?= htmlspecialchars($label) ?>
+                        </option>
+                      <?php endforeach; ?>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -473,7 +908,7 @@ if (isset($conn)) {
               <div class="field">
                 <label for="dia" class="block text-xs font-semibold text-gray-800 mb-1">Día</label>
                 <select name="dia_semana" id="dia" 
-                  class="select-chev select-cal form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
+                  class="select-styled select-cal w-full form-field">
                   <option value="">Seleccione fecha de inicio</option>
                   <option value="lunes">Lunes</option>
                   <option value="martes">Martes</option>
@@ -492,19 +927,17 @@ if (isset($conn)) {
                   <div class="flex-1">
                     <label for="hora_inicio" class="block text-xs font-semibold text-gray-800 mb-1">Hora de inicio</label>
                     <select name="hora_inicio" id="hora_inicio" 
-                      class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
+                      class="select-styled w-full form-field">
                       <option value="">Seleccione hora de inicio</option>
                     <?php for ($i = 6; $i <= 22; $i++): ?>
                       <option value="<?= $i ?>:00"><?= $i ?>:00</option>
                     <?php endfor; ?>
                   </select>
-
-                  </select>
                   </div>
                   <div class="flex-1">
                     <label for="hora_fin" class="block text-xs font-semibold text-gray-800 mb-1">Hora de fin</label>
                     <select name="hora_fin" id="hora_fin" 
-                      class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
+                      class="select-styled w-full form-field">
                       <option value="">Seleccione hora de fin</option>
                     <?php for ($i = 7; $i <= 22; $i++): ?>
                       <option value="<?= $i ?>:00"><?= $i ?>:00</option>
@@ -518,34 +951,35 @@ if (isset($conn)) {
 
               <!-- COMPETENCIA -->
               <div class="field-full">
-                <label for="id_competencia" class="block text-xs font-semibold text-gray-800 mb-1">Competencia</label>
-                <div class="relative">
-                  <select id="id_competencia" name="id_competencia" class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
-                    <option value="">Seleccione competencia</option>
-                    <?php if (empty($competencias)): ?>
-                      <option disabled>No se encontraron competencias activas</option>
-                    <?php else: ?>
-                      <?php foreach ($competencias as $comp): ?>
-                        <option
-                          value="<?= htmlspecialchars($comp['id_competencia']) ?>"
-                          data-programa="<?= htmlspecialchars($comp['id_programa']) ?>">
-                          <?= htmlspecialchars($comp['nombre_competencia']) ?>
-                        </option>
-                      <?php endforeach; ?>
-                    <?php endif; ?>
-                  </select>
+                <label for="id_competencia_combo" class="block text-xs font-semibold text-gray-800 mb-1">Competencia</label>
+                <!-- Combobox visible -->
+                <div class="custom-combobox w-full">
+                  <input
+                    type="text"
+                    id="id_competencia_combo"
+                    autocomplete="off"
+                    placeholder="seleccione o escriba la competencia"
+                    class="form-field w-full h-9 px-3 text-sm rounded-xl border border-gray-300 outline-none bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]"
+                  />
+                  <div id="panelCompetenciaCrear" class="custom-combobox-panel hidden">
+                    <div class="custom-combobox-list"></div>
+                  </div>
                 </div>
-              </div>
-
-
-              <!-- NIVEL FICHA -->
-              <div class="field">
-                <label for="nivel_ficha" class="block text-xs font-semibold text-gray-800 mb-1">Nivel de ficha</label>
-                <select name="nivel_ficha" id="nivel_ficha" 
-                  class="select-chev form-field w-full h-7 px-2 text-xs rounded-md border border-gray-200 outline-none bg-white shadow-sm">
-                  <option value="">Seleccione el nivel de la ficha</option>
-                  <option value="tecnico">Tecnico</option>
-                  <option value="tecnologo">Tecnologo</option>
+                <!-- Hidden select: retains value/options for all existing JS logic -->
+                <select id="id_competencia" name="id_competencia" class="hidden" tabindex="-1" aria-hidden="true">
+                  <option value="">Seleccione competencia</option>
+                  <?php if (empty($competencias)): ?>
+                    <option disabled>Sin datos disponibles</option>
+                  <?php else: ?>
+                    <?php foreach ($competencias as $comp): ?>
+                      <?php $nombreCompFull = (string)($comp['nombre_competencia'] ?? ''); ?>
+                      <option
+                        value="<?= htmlspecialchars($comp['id_competencia']) ?>"
+                        data-programa="<?= htmlspecialchars($comp['id_programa']) ?>">
+                        <?= htmlspecialchars($nombreCompFull) ?>
+                      </option>
+                    <?php endforeach; ?>
+                  <?php endif; ?>
                 </select>
               </div>
 
@@ -559,6 +993,7 @@ if (isset($conn)) {
                   rows="5"
                   class="form-field w-full px-3 py-2 text-sm rounded-lg border border-gray-300 outline-none bg-white text-gray-700 resize-none overflow-auto">
                 </textarea>
+              </div>
 
 
               <!-- BOTÓN RAEs + CONTADOR -->
@@ -743,34 +1178,240 @@ if (isset($conn)) {
     <script src="<?= BASE_URL ?>src/assets/js/landing.js"></script>
     <script src="<?= BASE_URL ?>src/assets/js/formulario_trimestralizacion.js"></script>
 
-    <!-- Filtrar zonas por área -->
+    <!-- Combobox área/zona en modal crear -->
     <script>
       (function(){
-        const selArea = document.getElementById('id_area');
-        const selZona = document.getElementById('id_zona');
-        if (!selArea || !selZona) return;
+        function initStyledCombobox({ input, panel, getItems, onSelect, getLabel, emptyText = 'Sin datos disponibles' }) {
+          if (!input || !panel || typeof getItems !== 'function') return;
 
-        function filterZonas() {
-          const areaVal = selArea.value;
+          const list = panel.querySelector('.custom-combobox-list');
+          if (!list) return;
 
-          for (const opt of selZona.options) {
-            if (opt.value === "") {
-              opt.hidden = false;
-              opt.disabled = false;
-              continue;
-            }
-            const optArea = opt.dataset.area ?? "";
-            const show = areaVal !== "" ? (String(optArea) === String(areaVal)) : true;
-            opt.hidden = !show;
-            opt.disabled = !show;
+          const normalize = (value) => String(value || '').trim().toLowerCase();
+
+          function closePanel() {
+            panel.classList.add('hidden');
           }
 
-          const selectedOpt = selZona.selectedOptions[0];
-          if (selectedOpt && selectedOpt.hidden) selZona.value = "";
+          function openPanel() {
+            if (input.disabled) return;
+            panel.classList.remove('hidden');
+          }
+
+          function render(query = '') {
+            const search = normalize(query);
+            const items = (getItems() || []).filter((item) => {
+              const label = normalize(getLabel ? getLabel(item) : item.label);
+              return !search || label.includes(search);
+            });
+
+            list.innerHTML = '';
+
+            if (!items.length) {
+              const empty = document.createElement('div');
+              empty.className = 'custom-combobox-empty';
+              empty.textContent = emptyText;
+              list.appendChild(empty);
+              openPanel();
+              return;
+            }
+
+            items.forEach((item) => {
+              const option = document.createElement('button');
+              option.type = 'button';
+              option.className = 'custom-combobox-option';
+              option.textContent = getLabel ? getLabel(item) : item.label;
+              option.addEventListener('click', () => {
+                input.value = getLabel ? getLabel(item) : item.label;
+                if (typeof onSelect === 'function') onSelect(item);
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                closePanel();
+              });
+              list.appendChild(option);
+            });
+
+            openPanel();
+          }
+
+          input.addEventListener('focus', () => render(input.value));
+          input.addEventListener('input', () => render(input.value));
+          input.addEventListener('click', () => render(input.value));
+
+          document.addEventListener('click', (event) => {
+            const wrapper = input.closest('.custom-combobox');
+            if (wrapper && !wrapper.contains(event.target)) {
+              closePanel();
+            }
+          });
+
+          input._styledCombobox = { render, closePanel, openPanel };
         }
 
-        selArea.addEventListener('change', filterZonas);
-        document.addEventListener('DOMContentLoaded', filterZonas);
+        const grupoData = document.getElementById('listaGruposData');
+        const inputGrupoFiltro = document.getElementById('inputGrupoTexto');
+        const panelGrupoFiltro = document.getElementById('panelGrupoFiltro');
+        const inputGrupoCrear = document.getElementById('numero_ficha');
+        const panelGrupoCrear = document.getElementById('panelGrupoCrear');
+        const selArea = document.getElementById('id_area');
+        const selZona = document.getElementById('id_zona');
+        const inpArea = document.getElementById('id_area_combo');
+        const inpZona = document.getElementById('id_zona_combo');
+        const listAreas = document.getElementById('listaAreasCombo');
+        const listZonas = document.getElementById('listaZonasCombo');
+        const panelArea = document.getElementById('panelAreaCrear');
+        const panelZona = document.getElementById('panelZonaCrear');
+
+        if (!selArea || !selZona || !inpArea || !inpZona || !listAreas || !listZonas) return;
+
+        const grupos = grupoData
+          ? Array.from(grupoData.options)
+              .map((opt) => ({ label: String(opt.value || '').trim() }))
+              .filter((item) => item.label !== '')
+          : [];
+
+        function findDatalistOptionByValue(listEl, value) {
+          const target = String(value || '').trim().toLowerCase();
+          if (!target) return null;
+          return Array.from(listEl.options).find((opt) =>
+            String(opt.value || '').trim().toLowerCase() === target
+          ) || null;
+        }
+
+        function cargarZonasSegunArea(idArea) {
+          const allZonas = Array.from(selZona.options).filter((opt) => opt.value !== '');
+          listZonas.innerHTML = '';
+
+          allZonas.forEach((opt) => {
+            const areaOpt = String(opt.dataset.area || '');
+            if (!idArea || areaOpt !== String(idArea)) return;
+
+            const op = document.createElement('option');
+            op.value = String(opt.textContent || '').trim();
+            op.dataset.id = String(opt.value || '');
+            op.dataset.area = areaOpt;
+            listZonas.appendChild(op);
+          });
+
+          if (inpZona._styledCombobox) {
+            inpZona._styledCombobox.render(inpZona.value);
+          }
+        }
+
+        function syncAreaFromInput() {
+          const areaOption = findDatalistOptionByValue(listAreas, inpArea.value);
+          const idArea = areaOption ? String(areaOption.dataset.id || '') : '';
+
+          selArea.value = idArea;
+          inpZona.value = '';
+          selZona.value = '';
+          inpZona.disabled = !idArea;
+
+          cargarZonasSegunArea(idArea);
+        }
+
+        function syncZonaFromInput() {
+          const zonaOption = findDatalistOptionByValue(listZonas, inpZona.value);
+          const idZona = zonaOption ? String(zonaOption.dataset.id || '') : '';
+          selZona.value = idZona;
+        }
+
+        initStyledCombobox({
+          input: inputGrupoFiltro,
+          panel: panelGrupoFiltro,
+          getItems: () => grupos,
+          onSelect: () => {},
+          getLabel: (item) => item.label
+        });
+
+        initStyledCombobox({
+          input: inputGrupoCrear,
+          panel: panelGrupoCrear,
+          getItems: () => grupos,
+          onSelect: () => {},
+          getLabel: (item) => item.label
+        });
+
+        initStyledCombobox({
+          input: inpArea,
+          panel: panelArea,
+          getItems: () => Array.from(listAreas.options).map((opt) => ({
+            label: String(opt.value || '').trim(),
+            id: String(opt.dataset.id || '')
+          })),
+          onSelect: (item) => {
+            selArea.value = item.id || '';
+            inpZona.value = '';
+            selZona.value = '';
+            inpZona.disabled = !item.id;
+            cargarZonasSegunArea(item.id || '');
+          },
+          getLabel: (item) => item.label
+        });
+
+        initStyledCombobox({
+          input: inpZona,
+          panel: panelZona,
+          getItems: () => Array.from(listZonas.options).map((opt) => ({
+            label: String(opt.value || '').trim(),
+            id: String(opt.dataset.id || ''),
+            area: String(opt.dataset.area || '')
+          })),
+          onSelect: (item) => {
+            selZona.value = item.id || '';
+          },
+          getLabel: (item) => item.label
+        });
+
+        // --- Competencia combobox ---
+        const selComp = document.getElementById('id_competencia');
+        const inpComp = document.getElementById('id_competencia_combo');
+        const panelComp = document.getElementById('panelCompetenciaCrear');
+        const selProgForComp = document.getElementById('id_programa_select');
+
+        if (selComp && inpComp && panelComp) {
+          function getCompetenciaItems() {
+            const progVal = selProgForComp ? selProgForComp.value : '';
+            return Array.from(selComp.options)
+              .filter(opt => opt.value !== '' && !opt.disabled &&
+                (progVal === '' || String(opt.dataset.programa || '') === String(progVal)))
+              .map(opt => ({
+                label: String(opt.textContent || '').trim(),
+                id: String(opt.value || '')
+              }));
+          }
+
+          initStyledCombobox({
+            input: inpComp,
+            panel: panelComp,
+            getItems: getCompetenciaItems,
+            onSelect: (item) => {
+              selComp.value = item.id;
+              selComp.dispatchEvent(new Event('change', { bubbles: true }));
+            },
+            getLabel: (item) => item.label,
+            emptyText: 'Sin competencias para este programa'
+          });
+
+          // Reset combobox when programa changes
+          if (selProgForComp) {
+            selProgForComp.addEventListener('change', () => {
+              inpComp.value = '';
+              selComp.value = '';
+              selComp.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+          }
+        }
+
+        inpArea.addEventListener('change', syncAreaFromInput);
+        inpArea.addEventListener('blur', syncAreaFromInput);
+        inpZona.addEventListener('change', syncZonaFromInput);
+        inpZona.addEventListener('blur', syncZonaFromInput);
+
+        document.addEventListener('DOMContentLoaded', () => {
+          inpZona.disabled = true;
+          listZonas.innerHTML = '';
+        });
       })();
     </script>
 
@@ -785,7 +1426,7 @@ if (isset($conn)) {
 
           const yaTieneProgramas = Array.from(selProg.options).some((opt) => {
             if (!opt.value) return false;
-            return !String(opt.textContent || '').toLowerCase().includes('no se encontraron');
+            return !String(opt.textContent || '').toLowerCase().includes('sin datos disponibles');
           });
 
           if (yaTieneProgramas) return;

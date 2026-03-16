@@ -23,7 +23,7 @@
             <?php endif; ?>
         </div>
     </div>
-    <div class="flex flex-col w-min gap-3 sm:flex-row sm:flex-wrap md:flex-nowrap md:justify-end competencias-filtros-wrapper">
+    <div class="flex gap-3 flex-wrap mb-5">
         <select id="programTypeFilter" class="w-full sm:w-60 border border-zinc-300 rounded-xl px-3 py-2 text-sm select-nice">
             <option value="all">Todos los tipos de programa</option>
             <option value="tecnico">Técnico</option>

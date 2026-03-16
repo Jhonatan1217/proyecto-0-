@@ -44,6 +44,24 @@ class Usuario {
     }
 
     /**
+     * Busca un usuario por su correo electrónico (para recuperación de contraseña).
+     * @param string $correo Correo electrónico.
+     * @return array|false Datos del usuario o false si no existe.
+     */
+    public function obtenerPorCorreo($correo) {
+        $sql = "SELECT id_usuario, nombre_completo, correo_electronico, estado 
+                FROM {$this->table} 
+                WHERE correo_electronico = :correo 
+                LIMIT 1";
+        
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(":correo", $correo);
+        $stmt->execute();
+        
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Crea un nuevo usuario.
      * @param array $data Datos del usuario (nombre_completo, tipo_documento, numero_documento, correo_electronico, cargo, password_hash, [id_area], [tipo_instructor], [tipo_contrato]).
      * @return bool|string True si se crea correctamente, o un mensaje de error (ej. duplicado).
@@ -74,13 +92,13 @@ class Usuario {
         $stmt->bindParam(':tipo_instructor', $data['tipo_instructor']); // Puede ser NULL
         $stmt->bindParam(':tipo_contrato', $data['tipo_contrato']);
         $stmt->bindParam(':password_hash', $data['password_hash']);
-        $estado = $data['estado'] ?? 1;
+        $estado = isset($data['estado']) ? (int) $data['estado'] : 0;
         $stmt->bindParam(':estado', $estado, PDO::PARAM_INT);
         $es_sistema = $data['es_sistema'] ?? 0;
         $stmt->bindParam(':es_sistema', $es_sistema, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
-            return true;
+            return (int) $this->conn->lastInsertId();
         }
         return "Error al crear el usuario.";
     }
@@ -191,12 +209,12 @@ class Usuario {
             return false; // O podrías lanzar una excepción
         }
 
-        $sql = "INSERT INTO " . $this->table_roles . " (id_usuario, id_rol, asignado_por) VALUES (:id_usuario, :id_rol, :asignado_por)";
+        $sql = "INSERT INTO " . $this->table_roles . " (id_usuario, id_rol, asignado_por, fecha_asignacion) VALUES (:id_usuario, :id_rol, :asignado_por, NOW())";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
         $stmt->bindParam(':id_rol', $id_rol, PDO::PARAM_INT);
         $stmt->bindParam(':asignado_por', $asignado_por, PDO::PARAM_INT);
-        
+
         return $stmt->execute();
     }
 
@@ -211,6 +229,39 @@ class Usuario {
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
         $stmt->bindParam(':id_rol', $id_rol, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
+
+    /**
+     * Actualiza la contraseña de un usuario (para recuperación de contraseña).
+     * @param int $id_usuario ID del usuario.
+     * @param string $password_hash Hash de la nueva contraseña.
+     * @return bool True si se actualiza correctamente.
+     */
+    public function actualizarPassword($id_usuario, $password_hash) {
+        $sql = "UPDATE {$this->table} 
+                SET password_hash = :password 
+                WHERE id_usuario = :id";
+        
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(":password", $password_hash);
+        $stmt->bindParam(":id", $id_usuario);
+        
+        return $stmt->execute();
+    }
+
+    /**
+     * Deshabilita un usuario (soft delete - establece estado = 0).
+     * @param int $id ID del usuario.
+     * @return bool True si se deshabilita correctamente.
+     */
+    public function deshabilitar($id) {
+        $sql = "UPDATE {$this->table}
+                SET estado = 0
+                WHERE id_usuario = :id";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         return $stmt->execute();
     }
 

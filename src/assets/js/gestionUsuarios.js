@@ -3,6 +3,8 @@
    ========================================================================== */
 
 const API = window.API_USUARIO;
+/** ID del rol funcional "Encargado de trimestralización" (se rellena al cargar roles disponibles). */
+let idRolTrimestralizacion = null;
 
 // Mapeo tipo_documento (DB: CC, CE, TI, PASAPORTE) <-> etiqueta legible
 const TIPO_DOC_LABELS = {
@@ -221,6 +223,21 @@ function abrirModal(id) {
     modal.classList.add('flex');
     modal.style.display = "flex";
     modal.style.zIndex = "60";
+    document.body.style.overflow = 'hidden';
+    // Evitar que el wheel dispare scroll en la tabla de atrás: capturar wheel en el overlay
+    if (!modal._wheelCapture) {
+        modal._wheelCapture = function (e) {
+            var box = modal.querySelector('.modal-usuario-box');
+            var scrollable = box ? (box.querySelector('.modal-usuario-body') || box.querySelector('.flex-1.overflow-y-auto') || box.querySelector('[class*="overflow-y-auto"]')) : null;
+            var target = e.target;
+            if (scrollable && (scrollable === target || scrollable.contains(target))) {
+                scrollable.scrollTop += e.deltaY;
+            }
+            e.preventDefault();
+            e.stopPropagation();
+        };
+        modal.addEventListener('wheel', modal._wheelCapture, { passive: false });
+    }
 }
 
 function cerrarModal(id) {
@@ -230,6 +247,11 @@ function cerrarModal(id) {
     modal.classList.remove('flex');
     modal.style.display = "none";
     modal.style.zIndex = "50";
+    var anyOpen = document.querySelector('#modalNuevoUsuario.flex, #modalEditarUsuario.flex, #modalVerUsuario.flex');
+    if (!anyOpen) {
+        document.body.style.overflow = '';
+        if (typeof ComboboxComponent !== 'undefined') ComboboxComponent.reset();
+    }
 }
 
 function alternarCamposCargo(cargo, contenedorModal) {
@@ -343,98 +365,66 @@ function renderTabla(data) {
    3. INICIALIZACIÓN (ELIMINACIÓN DE BUGS)
    ============================================= */
 
-function enhanceSelectsWithCustomDropdown() {
-    document.querySelectorAll('.select-usuario').forEach(select => {
-        if (select.dataset.customDropdown) return;
-        if (select.id === 'filtroCargos' || select.id === 'filtroRoles') return;
-        select.dataset.customDropdown = '1';
-
-        const wrapper = document.createElement('div');
-        wrapper.className = 'custom-select-wrapper';
-        select.parentNode.insertBefore(wrapper, select);
-        wrapper.appendChild(select);
-        const arrowSib = wrapper.nextElementSibling;
-        if (arrowSib && (arrowSib.classList?.contains('pointer-events-none') || arrowSib.matches?.('svg.absolute'))) arrowSib.style.display = 'none';
-
-        const trigger = document.createElement('div');
-        trigger.className = 'custom-select-trigger ' + (select.classList.contains('py-2.5') ? 'py-2.5 text-sm' : 'py-3') + ' w-full border border-gray-300 rounded-xl px-4 pr-10 bg-white text-gray-700 flex items-center justify-between cursor-pointer hover:border-gray-400 focus-within:ring-2 focus-within:ring-[#39A900]/20 focus-within:border-[#39A900]';
-        trigger.setAttribute('tabindex', '0');
-        trigger.setAttribute('aria-haspopup', 'listbox');
-
-        const dropdown = document.createElement('div');
-        dropdown.className = 'custom-select-dropdown hidden';
-        dropdown.setAttribute('role', 'listbox');
-
-        const updateTrigger = () => {
-            const opt = select.options[select.selectedIndex];
-            span.textContent = opt ? opt.textContent : '';
-        };
-
-        const span = document.createElement('span');
-        span.className = 'truncate';
-        trigger.appendChild(span);
-        const arrow = document.createElement('span');
-        arrow.className = 'shrink-0 text-gray-400';
-        arrow.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>';
-        trigger.appendChild(arrow);
-
-        [...select.options].forEach((opt, i) => {
-            const div = document.createElement('div');
-            div.className = 'custom-option' + (opt.value === select.value ? ' selected' : '');
-            div.textContent = opt.textContent;
-            div.dataset.value = opt.value;
-            div.dataset.index = String(i);
-            div.setAttribute('role', 'option');
-            div.addEventListener('click', (e) => {
-                e.stopPropagation();
-                select.value = opt.value;
-                select.dispatchEvent(new Event('change', { bubbles: true }));
-                dropdown.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
-                div.classList.add('selected');
-                updateTrigger();
-                dropdown.classList.add('hidden');
+function enhanceSelectsUsuarios() {
+    if (typeof ComboboxComponent === 'undefined') return;
+    ['#filtroCargos', '#filtroRoles'].forEach(sel => {
+        const el = document.querySelector(sel);
+        if (el && !el.dataset.comboboxEnhanced) {
+            ComboboxComponent.enhance({
+                selector: sel,
+                dropdownClass: 'custom-select-dropdown',
+                optionClass: 'custom-option',
+                placeholder: sel === '#filtroCargos' ? 'Todos los cargos' : 'Todos los roles',
+                clearValue: '',
+                restoreValueOnBlurWhenEmpty: false
             });
-            dropdown.appendChild(div);
-        });
-
-        updateTrigger();
-
-        select.classList.add('sr-only', 'absolute', 'inset-0', 'w-full', 'h-full', 'opacity-0', 'pointer-events-none');
-        wrapper.appendChild(trigger);
-        wrapper.appendChild(dropdown);
-
-        trigger.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const open = !dropdown.classList.contains('hidden');
-            document.querySelectorAll('.custom-select-dropdown').forEach(d => d.classList.add('hidden'));
-            if (!open) {
-                const rect = wrapper.getBoundingClientRect();
-                const dropdownMaxH = 220;
-                const margin = 12;
-                const modal = wrapper.closest('.modal-usuario-box');
-                const spaceBelow = modal
-                    ? (modal.getBoundingClientRect().bottom - rect.bottom)
-                    : (window.innerHeight - rect.bottom);
-                const needsUp = spaceBelow < dropdownMaxH + margin;
-                dropdown.classList.toggle('dropdown-up', needsUp);
-                dropdown.classList.remove('hidden');
-            } else {
-                dropdown.classList.remove('dropdown-up');
-            }
-        });
-
-        select.addEventListener('change', () => {
-            updateTrigger();
-            dropdown.querySelectorAll('.custom-option').forEach(o => {
-                o.classList.toggle('selected', o.dataset.value === select.value);
-            });
-        });
-
-        document.addEventListener('click', (e) => {
-            if (!wrapper.contains(e.target)) dropdown.classList.add('hidden');
-        }, true);
+        }
     });
+    // Selects estilizados (tipo doc, cargo, modalidad, tipo contrato): mismo desplegable y dropup que combobox, sin búsqueda ni X.
+    if (typeof ComboboxComponent.enhanceSelectStyled === 'function') {
+        ComboboxComponent.enhanceSelectStyled({
+            selector: '.select-styled',
+            dropdownClass: 'custom-select-dropdown',
+            optionClass: 'custom-option',
+            placeholder: 'Seleccione...'
+        });
+    }
+}
+
+function syncComboboxesAfterReset(form) {
+    if (!form) return;
+    form.querySelectorAll('.select-usuario').forEach(sel => {
+        const w = sel.closest('.combobox-wrapper');
+        if (w && typeof w._cbUpdateInput === 'function') w._cbUpdateInput();
+    });
+}
+
+function setupBuscadorConClear() {
+    const wrap = document.getElementById('buscadorUsuarioWrap') || document.getElementById('buscadorUsuario')?.parentElement;
+    const input = document.getElementById('buscadorUsuario');
+    if (!wrap || !input) return;
+    let clearBtn = wrap.querySelector('.btn-clear-buscador');
+    if (!clearBtn) {
+        clearBtn = document.createElement('button');
+        clearBtn.type = 'button';
+        clearBtn.className = 'btn-clear-buscador absolute right-10 top-1/2 -translate-y-1/2 p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 hidden';
+        clearBtn.setAttribute('aria-label', 'Limpiar búsqueda');
+        clearBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+        wrap.appendChild(clearBtn);
+    }
+    function toggleClear() {
+        if (clearBtn) clearBtn.classList.toggle('hidden', !input.value.trim());
+    }
+    input.addEventListener('input', toggleClear);
+    input.addEventListener('focus', toggleClear);
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            input.value = '';
+            input.focus();
+            toggleClear();
+            cargarUsuarios();
+        });
+    }
 }
 
 function aplicarEstadoFiltroRoles() {
@@ -443,13 +433,26 @@ function aplicarEstadoFiltroRoles() {
     if (!filtroRoles) return;
     const esInstructor = /instructor/i.test((filtroCargos?.value || '').trim());
     filtroRoles.disabled = !esInstructor;
-    if (!esInstructor) filtroRoles.value = '';
+    var wrapper = filtroRoles.closest('.combobox-wrapper');
+    if (wrapper) {
+        if (esInstructor) {
+            wrapper.classList.remove('filtro-rol-disabled');
+        } else {
+            wrapper.classList.add('filtro-rol-disabled');
+            filtroRoles.value = '';
+            if (typeof wrapper._cbUpdateInput === 'function') wrapper._cbUpdateInput();
+        }
+    } else if (!esInstructor) {
+        filtroRoles.value = '';
+    }
 }
 
 async function cargarRolesDisponibles() {
     try {
         const roles = await apiRequest("rolesDisponibles");
         if (!Array.isArray(roles)) return;
+        const rTrim = roles.find(r => (r.nombre_rol || r.nombreRol || '').toLowerCase().includes('trimestraliz'));
+        idRolTrimestralizacion = rTrim ? (rTrim.id_rol != null ? parseInt(rTrim.id_rol, 10) : null) : null;
         const sel = document.getElementById('filtroRoles');
         if (!sel) return;
         const valorActual = sel.value;
@@ -457,11 +460,14 @@ async function cargarRolesDisponibles() {
         roles.forEach(r => {
             const opt = document.createElement('option');
             opt.value = r.id_rol;
-            opt.textContent = r.nombre_rol || r.nombreRol || ('Rol ' + r.id_rol);
+            const nombre = (r.nombre_rol || r.nombreRol || '').trim();
+            opt.textContent = nombre.toLowerCase().includes('trimestraliz') ? 'Encargado de trimestralización' : (nombre || ('Rol ' + r.id_rol));
             sel.appendChild(opt);
         });
         if (valorActual) sel.value = valorActual;
         aplicarEstadoFiltroRoles();
+        var w = sel.closest('.combobox-wrapper');
+        if (w && typeof w._cbUpdateInput === 'function') w._cbUpdateInput();
     } catch (e) {
         console.warn('No se pudieron cargar roles para el filtro:', e);
     }
@@ -476,10 +482,11 @@ function debounce(fn, ms) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    aplicarEstadoFiltroRoles();
+    cargarRolesDisponibles().then(() => {
+        enhanceSelectsUsuarios();
+        aplicarEstadoFiltroRoles();
+    });
     cargarUsuarios();
-    cargarRolesDisponibles();
-    enhanceSelectsWithCustomDropdown();
 
     const filtroCargos = document.getElementById('filtroCargos');
     const filtroRoles = document.getElementById('filtroRoles');
@@ -496,6 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (buscadorUsuario) {
         buscadorUsuario.addEventListener('input', debounce(() => cargarUsuarios(), 300));
     }
+    setupBuscadorConClear();
 
     // Única delegación de eventos en body para .btn-editar, .btn-ver y .btn-estado
     document.body.addEventListener("click", (e) => {
@@ -528,14 +536,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('#modalNuevoUsuario [name="numero_documento"]')?.addEventListener('input', limitarNumDoc);
     document.querySelector('#modalEditarUsuario [name="numero_documento"]')?.addEventListener('input', limitarNumDoc);
 
-    // Sincroniza los custom dropdowns tras form.reset() (el reset no dispara change)
-    function syncCustomSelectsAfterReset(form) {
-        if (!form) return;
-        form.querySelectorAll('.select-usuario').forEach(sel => {
-            sel.dispatchEvent(new Event('change', { bubbles: true }));
-        });
-    }
-
     // Abrir Modal Nuevo
     document.getElementById('btnAbrirModalUsuario')?.addEventListener('click', (e) => {
         e.preventDefault();
@@ -544,7 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const form = modal.querySelector('form');
         if (form) {
             form.reset();
-            syncCustomSelectsAfterReset(form);
+            syncComboboxesAfterReset(form);
             limpiarErrores(form);
         }
         alternarCamposCargo('', modal);
@@ -590,6 +590,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const res = await apiRequest("crear", "POST", datos);
         if (res.success) {
+            const idUsuario = res.id_usuario != null ? parseInt(res.id_usuario, 10) : null;
+            const cbTrim = form.querySelector('#rol_trimestralizacion_nuevo');
+            if (idUsuario && idRolTrimestralizacion && cbTrim?.checked && (window.USUARIO_ID || 0) > 0) {
+                const rRol = await apiRequest("asignarRol", "POST", {
+                    id_usuario: idUsuario,
+                    id_rol: idRolTrimestralizacion,
+                    asignado_por: window.USUARIO_ID
+                });
+                if (!rRol.success) toast(rRol.error || "Error al asignar rol de trimestralización", "error");
+            }
             cerrarModal('modalNuevoUsuario');
             toast("Usuario creado satisfactoriamente");
             cargarUsuarios();
@@ -604,17 +614,30 @@ document.addEventListener('DOMContentLoaded', () => {
         const form = e.target;
         if (!validarFormulario(form)) return;
         limpiarErrores(form);
-        const datos = Object.fromEntries(new FormData(form));
-        datos.tipo_documento = datos.tipo_documento || form.querySelector('[name="tipo_documento"]')?.value || '';
-        if (datos.modalidad) { datos.tipo_instructor = datos.modalidad; delete datos.modalidad; }
-        if (String(datos.cargo || '').toLowerCase().includes('coordinador')) {
-            datos.tipo_instructor = null;
-            datos.tipo_contrato = null;
-        } else {
-            datos.area_coordinador = '';
+        const datos = datosEditarDesdeForm(form);
+        if (form._datosIniciales && JSON.stringify(datos) === form._datosIniciales) {
+            toast("Sin cambios.", "info");
+            return;
         }
         const res = await apiRequest("actualizar", "POST", datos);
         if (res.success) {
+            const idUsuario = form.querySelector('[name="id_usuario"]')?.value;
+            const cargo = datos.cargo || '';
+            const cbTrim = form.querySelector('#rol_trimestralizacion_editar');
+            const teniaRol = form.dataset.teniaRolTrimestralizacion === '1';
+            if (String(cargo).toLowerCase().includes('instructor') && idRolTrimestralizacion && idUsuario && (window.USUARIO_ID || 0) > 0) {
+                if (cbTrim?.checked && !teniaRol) {
+                    const rRol = await apiRequest("asignarRol", "POST", {
+                        id_usuario: idUsuario,
+                        id_rol: idRolTrimestralizacion,
+                        asignado_por: window.USUARIO_ID
+                    });
+                    if (!rRol.success) toast(rRol.error || "Error al asignar rol", "error");
+                } else if (!cbTrim?.checked && teniaRol) {
+                    const rRol = await apiRequest("quitarRol", "POST", { id_usuario: idUsuario, id_rol: idRolTrimestralizacion });
+                    if (!rRol.success) toast(rRol.error || "Error al quitar rol", "error");
+                }
+            }
             cerrarModal('modalEditarUsuario');
             toast("Usuario actualizado correctamente");
             cargarUsuarios();
@@ -627,6 +650,22 @@ document.addEventListener('DOMContentLoaded', () => {
 /* =============================================
    4. LOGICA DE CARGA DE DATOS
    ============================================= */
+
+function datosEditarDesdeForm(form) {
+    const datos = Object.fromEntries(new FormData(form));
+    datos.tipo_documento = datos.tipo_documento || form.querySelector('[name="tipo_documento"]')?.value || '';
+    if (datos.modalidad) {
+        datos.tipo_instructor = datos.modalidad;
+        delete datos.modalidad;
+    }
+    if (String(datos.cargo || '').toLowerCase().includes('coordinador')) {
+        datos.tipo_instructor = null;
+        datos.tipo_contrato = null;
+    } else {
+        datos.area_coordinador = datos.area_coordinador || '';
+    }
+    return datos;
+}
 
 async function prepararEdicion(id) {
     try {
@@ -673,10 +712,23 @@ async function prepararEdicion(id) {
                 setSelectValue(selContrato, valorContrato);
                 selModalidad?.dispatchEvent(new Event('change', { bubbles: true }));
                 selContrato?.dispatchEvent(new Event('change', { bubbles: true }));
+                const cbTrim = form.querySelector('#rol_trimestralizacion_editar');
+                if (cbTrim) {
+                    let rolesUsuario = [];
+                    try {
+                        rolesUsuario = await apiRequest("listarRolesUsuario", "GET", { id_usuario: u.id_usuario }) || [];
+                    } catch (_) {}
+                    const tieneTrim = Array.isArray(rolesUsuario) && rolesUsuario.some(r => (String(r.nombre_rol || r.nombreRol || '').toLowerCase().includes('trimestraliz')));
+                    cbTrim.checked = tieneTrim;
+                    form.dataset.teniaRolTrimestralizacion = tieneTrim ? '1' : '0';
+                }
             } else {
                 const inputArea = form.querySelector('[name="area_coordinador"]');
                 if (inputArea) inputArea.value = u.nombre_area || u.area_coordinador || '';
             }
+
+            const datosIniciales = datosEditarDesdeForm(form);
+            form._datosIniciales = datosIniciales ? JSON.stringify(datosIniciales) : '';
 
             abrirModal('modalEditarUsuario');
         } else {
@@ -696,10 +748,13 @@ async function verUsuarioDetalles(id) {
     }
 
     limpiarErrores(document.getElementById('modalVerUsuario'));
-    ['verNombre', 'verAvatar', 'verCargo', 'verEstado', 'verTipoDoc', 'verNumDoc', 'verCorreo', 'verTipoIns', 'verContrato', 'verArea', 'verProgramas'].forEach(idEl => {
-        const el = document.getElementById(idEl);
-        if (el) el.textContent = 'Cargando...';
-    });
+    var loadingEl = document.getElementById('verUsuarioLoading');
+    var contentEl = document.getElementById('verUsuarioContent');
+    if (loadingEl) {
+        loadingEl.classList.remove('hidden');
+        loadingEl.classList.add('flex');
+    }
+    if (contentEl) contentEl.classList.add('hidden');
 
     abrirModal('modalVerUsuario');
 
@@ -707,10 +762,18 @@ async function verUsuarioDetalles(id) {
         const res = await apiRequest("obtener", "GET", { id: id });
         const u = Array.isArray(res) ? res[0] : res;
 
+        if (loadingEl) {
+            loadingEl.classList.add('hidden');
+            loadingEl.classList.remove('flex');
+        }
+
         if (!u || u.error) {
             mostrarError('modalVerUsuario', res?.error || "No se pudo cargar la información del usuario.", null);
+            if (contentEl) contentEl.classList.add('hidden');
             return;
         }
+
+        if (contentEl) contentEl.classList.remove('hidden');
 
         const set = (idEl, val) => {
             const el = document.getElementById(idEl);
@@ -748,8 +811,19 @@ async function verUsuarioDetalles(id) {
         if (String(u.cargo || '').toLowerCase().includes('instructor')) {
             set('verTipoIns', ti);
             set('verContrato', tc);
+            let rolesUsuario = [];
+            try {
+                rolesUsuario = await apiRequest("listarRolesUsuario", "GET", { id_usuario: id }) || [];
+            } catch (_) {}
+            const tieneTrim = Array.isArray(rolesUsuario) && rolesUsuario.some(r => String(r.nombre_rol || r.nombreRol || '').toLowerCase().includes('trimestraliz'));
+            const verBlock = document.getElementById('verRolTrimestralizacion');
+            if (verBlock) {
+                verBlock.classList.toggle('hidden', !tieneTrim);
+            }
         } else {
             set('verArea', u.nombre_area || u.area_coordinador || 'No asignada');
+            const verBlock = document.getElementById('verRolTrimestralizacion');
+            if (verBlock) verBlock.classList.add('hidden');
         }
 
         const progEl = document.getElementById('verProgramas');
@@ -769,6 +843,11 @@ async function verUsuarioDetalles(id) {
         }
     } catch (e) {
         console.error("Error al ver usuario:", e);
+        if (loadingEl) {
+            loadingEl.classList.add('hidden');
+            loadingEl.classList.remove('flex');
+        }
+        if (contentEl) contentEl.classList.add('hidden');
         mostrarError('modalVerUsuario', "Ocurrió un error al cargar los detalles del usuario.", null);
     }
 }

@@ -1,4 +1,4 @@
-.config/database.php
+config/database.php
 node_modules/
 .cursor/
 # Script de desarrollo (no desplegar)
