@@ -124,6 +124,15 @@ select.input-enterprise {
   white-space: nowrap;
 }
 
+/* Selects de filtros (historial, grupos, etc.) */
+.filter-select-enterprise {
+  font-size: 0.8125rem; /* 13px */
+  color: #00324D;
+  height: 42px;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
 .input-enterprise::placeholder {
   color: #9ca3af;
 }
@@ -148,6 +157,12 @@ select.input-enterprise {
 .btn-modal-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.filter-action-secondary {
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .label-enterprise {
@@ -199,4 +214,14 @@ select.input-enterprise {
 .btn-modal-primary:active,
 .btn-modal-secondary:active {
   transform: scale(0.98);
+}
+
+/* Card con hover sutil (listados tipo historial) — DESIGN_SYSTEM.md */
+.card-hover-enterprise {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card-hover-enterprise:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
 }

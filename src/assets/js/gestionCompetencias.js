@@ -2,16 +2,17 @@
 (function () {
   // CONFIG: puntos finales y rutas usadas por el módulo
   const BASE = (window.BASE_URL || '').replace(/\/+$/, '');
-  const API_COMP = (window.API_COMPETENCIAS || (BASE + 'src/controllers/CompetenciaController.php')).replace(/\/+$/, '');
-  const API_PROG = (window.API_PROGRAMAS     || (BASE + 'src/controllers/ProgramasController.php')).replace(/\/+$/, '');
-  const API_RAE  = (window.API_RAES          || (BASE + 'src/controllers/RaeController.php')).replace(/\/+$/, '');
+  const SLASH = BASE ? '/' : '';
+  const API_COMP = (window.API_COMPETENCIAS || (BASE + SLASH + 'src/controllers/CompetenciaController.php')).replace(/\/+$/, '');
+  const API_PROG = (window.API_PROGRAMAS     || (BASE + SLASH + 'src/controllers/ProgramasController.php')).replace(/\/+$/, '');
+  const API_RAE  = (window.API_RAES          || (BASE + SLASH + 'src/controllers/RaeController.php')).replace(/\/+$/, '');
 
-  // Iconos (chevrons en icons/Acction; editar y demás en img)
-  const ICON_DOWN   = `${BASE}src/assets/img/icons/Acction/chevron-down.svg`;
-  const ICON_RIGHT  = `${BASE}src/assets/img/icons/Acction/chevron-right.svg`;
-  const ICON_PENCIL = `${BASE}src/assets/img/icons/Acction/pencil-line.svg`;
-  const ICON_PLUS   = `${BASE}src/assets/img/plus.svg`;
-  const ICON_LIST   = `${BASE}src/assets/img/list-checks.svg`;
+  // Iconos (chevrons en icons/Acction; editar y demás en img) — ruta con barra cuando hay BASE
+  const ICON_DOWN   = BASE + SLASH + 'src/assets/img/icons/Acction/chevron-down.svg';
+  const ICON_RIGHT  = BASE + SLASH + 'src/assets/img/icons/Acction/chevron-right.svg';
+  const ICON_PENCIL = BASE + SLASH + 'src/assets/img/icons/Acction/pencil-line.svg';
+  const ICON_PLUS   = BASE + SLASH + 'src/assets/img/plus.svg';
+  const ICON_LIST   = BASE + SLASH + 'src/assets/img/list-checks.svg';
 
   const INITIAL_RAES_OPEN = false;
 

@@ -10,7 +10,7 @@
   <!-- Alertas -->
   <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
   <!-- Estilos propios (competencias) -->
-  <link rel="stylesheet" href="src/assets/css/gestionCompetencias.css" />
+  <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/gestionCompetencias.css" />
 
   <!-- ✨ Ajustes extra SOLO AÑADIDOS: flecha responsive y wrapper de filtros -->
   <style>
@@ -136,7 +136,7 @@
           data-tab-btn="upload"
           class="tab-btn flex items-center justify-center gap-2 px-4 py-2 rounded-xl w-full sm:w-auto text-zinc-700"
         >
-          <img src="src/assets/img/upload-grey.svg" class="w-4 h-4" alt="icono carga excel">
+          <img src="<?= BASE_URL ?>src/assets/img/upload-grey.svg" class="w-4 h-4" alt="icono carga excel">
           <!-- 🔥 Texto solo en pantallas grandes -->
           <span class="hidden sm:inline nav-label">Carga Excel</span>
         </button> 
@@ -146,7 +146,7 @@
           data-tab-btn="programs"
           class="tab-btn flex items-center justify-center gap-2 px-4 py-2 rounded-xl w-full sm:w-auto text-zinc-700"
         >
-          <img src="src/assets/img/graduation-cap.svg" class="w-4 h-4" alt="icono programas">
+          <img src="<?= BASE_URL ?>src/assets/img/graduation-cap.svg" class="w-4 h-4" alt="icono programas">
           <span class="hidden sm:inline nav-label">Programas</span>
         </button>
 
@@ -155,7 +155,7 @@
           data-tab-btn="competencies"
           class="tab-btn flex items-center justify-center gap-2 px-4 py-2 rounded-xl w-full sm:w-auto text-zinc-700"
         >
-          <img src="src/assets/img/book-open.svg" class="w-4 h-4" alt="icono competencias">
+          <img src="<?= BASE_URL ?>src/assets/img/book-open.svg" class="w-4 h-4" alt="icono competencias">
           <span class="hidden sm:inline nav-label">Competencias</span>
         </button>
 
@@ -164,7 +164,7 @@
           data-tab-btn="raes"
           class="tab-btn flex items-center justify-center gap-2 px-4 py-2 rounded-xl w-full sm:w-auto text-zinc-700"
         >
-          <img src="src/assets/img/target.svg" class="w-4 h-4" alt="icono rae">
+          <img src="<?= BASE_URL ?>src/assets/img/target.svg" class="w-4 h-4" alt="icono rae">
           <span class="hidden sm:inline nav-label">RAE</span>
         </button>
       </div>
@@ -221,6 +221,7 @@
 
   <!-- Endpoints y flags globales que usan los JS -->
   <script>
+    window.BASE_URL = window.BASE_URL || "<?= BASE_URL ?? '' ?>";
     window.API_PROGRAMAS     = encodeURI('<?= BASE_URL ?? '' ?>src/controllers/ProgramasController.php');
     window.PROGRAMS_MANAGED_BY_API = true;
     window.API_COMPETENCIAS  = encodeURI('<?= BASE_URL ?? '' ?>src/controllers/CompetenciaController.php');
@@ -229,7 +230,7 @@
 
   <!-- Módulos: cada uno maneja su CRUD/UX. El ?v= ayuda a romper caché -->
   <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionProgramas.js?v=3"></script>
-  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionCompetencias.js?v=2" defer></script>
+  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionCompetencias.js?v=3" defer></script>
   <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionRaes.js?v=1" defer></script>
 
   <!-- Agregar cargar programas dinámicamente -->
@@ -392,7 +393,7 @@
   <!-- ==========================
        PAGINACIÓN FRONTEND (PROGRAMAS, COMPETENCIAS, RAE)
        ========================== -->
-  <script src="src/assets/js/paginacion.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/paginacion.js"></script>
 
 </body>
 </html>

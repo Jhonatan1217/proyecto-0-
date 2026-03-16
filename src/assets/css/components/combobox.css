@@ -20,6 +20,16 @@
   position: relative;
   width: 100%;
   min-width: 0;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.combobox-wrapper:not(.combobox-empty) .combobox-trigger:hover {
+  border-color: #9ca3af;
+}
+
+.combobox-trigger:focus-within {
+  border-color: #39A900;
+  box-shadow: 0 0 0 2px rgba(57, 169, 0, 0.2);
 }
 
 .combobox-input {
@@ -56,6 +66,7 @@
   color: #6b7280;
   cursor: pointer;
   border-radius: 9999px;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 
 .combobox-wrapper .btn-clear-combobox:hover {
@@ -76,6 +87,27 @@
   height: 1.25rem;
   pointer-events: none;
   color: #6b7280;
+  transition: color 0.15s ease;
+}
+
+.combobox-wrapper:not(.combobox-empty) .combobox-trigger:hover .chevron-combobox {
+  color: #374151;
+}
+
+/* Estado vacío / solo lectura (Empty State — DESIGN_SYSTEM.md) */
+.combobox-wrapper.combobox-empty .combobox-trigger {
+  cursor: not-allowed;
+  background: #f9fafb;
+  border-color: #e5e7eb;
+  color: #9ca3af;
+}
+
+
+.combobox-empty-message {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  cursor: default;
 }
 
 .combobox-wrapper.has-value .chevron-combobox {

@@ -1,12 +1,17 @@
 /**
  * Componente Combobox reutilizable con posicionamiento dinámico (dropup)
- * para evitar que el dropdown se solape con el footer en la última fila.
+ * y Empty State según Design System (DESIGN_SYSTEM.md).
  * Usado por gestionZonas, gestionGrupos y filtros de área.
  */
 (function (global) {
   const DROPDOWN_MAX_ITEMS = 5;
   const ITEM_HEIGHT_REM = 2.5;
   const MARGIN = 8;
+
+  /** Placeholder cuando no hay opciones (Empty State) */
+  const EMPTY_PLACEHOLDER = 'Sin registros disponibles';
+  /** Mensaje en dropdown cuando no hay opciones (Empty State) */
+  const EMPTY_DROPDOWN_MESSAGE = 'No se encontraron opciones. Por favor, configure este parámetro en el módulo correspondiente.';
 
   function applyDropdownPosition(wrapper, dropdown, triggerEl, dropdownMaxH) {
     const rect = triggerEl.getBoundingClientRect();
@@ -101,7 +106,7 @@
       });
 
       const triggerWrap = document.createElement('div');
-      triggerWrap.className = 'combobox-trigger w-full border border-gray-300 rounded-xl bg-white hover:border-gray-400 focus-within:ring-2 focus-within:ring-[#39A900]/20 focus-within:border-[#39A900] py-2.5 text-sm';
+      triggerWrap.className = 'combobox-trigger w-full border border-gray-300 rounded-xl bg-white py-2.5 text-sm';
 
       const input = document.createElement('input');
       input.type = 'text';
@@ -130,6 +135,21 @@
       dropdown._cbWrapper = wrapper;
 
       const optionsData = () => [...select.options].filter(o => !o.disabled).map(o => ({ value: o.value, text: (o.textContent || '').trim() }));
+      const hadInitialOptions = optionsData().length > 0;
+
+      function setEmptyState(isEmpty) {
+        wrapper.classList.toggle('combobox-empty', !!isEmpty);
+        input.readOnly = !!isEmpty;
+        input.disabled = !!isEmpty;
+        input.placeholder = isEmpty ? EMPTY_PLACEHOLDER : placeholder;
+        if (isEmpty) {
+          input.value = '';
+          btnClear.classList.remove('visible');
+          btnClear.disabled = true;
+        } else {
+          btnClear.disabled = false;
+        }
+      }
 
       function getOptionByText(exactText) {
         const opts = optionsData();
@@ -193,9 +213,23 @@
       }
 
       function renderOptions(filterText) {
+        const all = optionsData();
         const q = (filterText || '').trim().toLowerCase();
         dropdown.innerHTML = '';
-        optionsData().forEach(({ value, text }) => {
+
+        if (!all.length) {
+          setEmptyState(true);
+          const msg = document.createElement('div');
+          msg.className = optionClass + ' combobox-empty-message';
+          msg.textContent = EMPTY_DROPDOWN_MESSAGE;
+          dropdown.appendChild(msg);
+          dropdown.classList.remove('hidden');
+          return;
+        }
+
+        setEmptyState(false);
+
+        all.forEach(({ value, text }) => {
           if (q && !text.toLowerCase().includes(q)) return;
           const div = document.createElement('div');
           div.className = optionClass + (value === select.value ? ' selected' : '');
@@ -222,7 +256,14 @@
           });
           dropdown.appendChild(div);
         });
-        dropdown.classList.toggle('hidden', dropdown.children.length === 0);
+
+        if (!dropdown.children.length) {
+          const msg = document.createElement('div');
+          msg.className = optionClass + ' combobox-empty-message';
+          msg.textContent = EMPTY_DROPDOWN_MESSAGE;
+          dropdown.appendChild(msg);
+        }
+        dropdown.classList.remove('hidden');
       }
 
       function toggleClearVisibility() {

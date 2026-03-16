@@ -526,9 +526,17 @@ if (isset($conn)) {
             <option value="virtual"> Virtual </option>
             <option value="mixto"> Mixta </option>
           </select>
+<<<<<<< HEAD
+          <img 
+            src="<?= BASE_URL ?>src/assets/img/icons/Acction/chevron-down.svg" 
+            alt="arrow" 
+            class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70"
+          />
+=======
           <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="none" aria-hidden="true">
             <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
+>>>>>>> develop
         </div>
       </div>
 
