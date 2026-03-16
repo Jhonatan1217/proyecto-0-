@@ -1,6 +1,8 @@
 <?php
-if ($_SESSION['cargo'] === 'Instructor') {
-    header("Location: index.php");
+$cargo = $_SESSION['cargo'] ?? '';
+
+if ($cargo === 'INSTRUCTOR') {
+    header("Location: index.php?page=register_tables");
     exit;
 }
 ?>
