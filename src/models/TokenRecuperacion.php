@@ -45,7 +45,7 @@ class TokenRecuperacion {
     Verifica si un token es válido
     */
     public function verificarToken($token) {
-        $sql = "SELECT t.*, u.correo_electronico, u.nombre_completo, u.id_usuario 
+        $sql = "SELECT t.*, u.correo_electronico, u.nombre_completo, u.id_usuario, u.estado 
                 FROM {$this->table} t
                 JOIN usuarios u ON t.id_usuario = u.id_usuario
                 WHERE t.token = :token 
