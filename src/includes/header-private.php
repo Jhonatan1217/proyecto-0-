@@ -151,34 +151,46 @@ document.addEventListener("DOMContentLoaded", function () {
     </div>
 
     <ul class="p-4 space-y-4 text-gray-700">
-      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/calendar-days.svg" alt="Icono de Horarios">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/register_tables">Horarios</a>
+      <li>
+        <a href="<?= BASE_URL ?>index.php?page=src/views/register_tables" class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+          <img src="<?= BASE_URL ?>src/assets/img/calendar-days.svg" alt="Icono de Horarios">
+          <span>Horarios</span>
+        </a>
       </li>
 
-      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/map-pin.svg" alt="Icono de Áreas">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionAreas">Áreas</a>
+      <li>
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionAreas" class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+          <img src="<?= BASE_URL ?>src/assets/img/map-pin.svg" alt="Icono de Áreas">
+          <span>Áreas</span>
+        </a>
       </li>
       
-      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/house-plus.svg" alt="Icono de Zonas">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionZonas">Zonas</a>
+      <li>
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionZonas" class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+          <img src="<?= BASE_URL ?>src/assets/img/house-plus.svg" alt="Icono de Zonas">
+          <span>Zonas</span>
+        </a>
       </li>
 
-      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/layers.svg" alt="Icono de Trimestres">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionTrimestres">Trimestres</a>
+      <li>
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionTrimestres" class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+          <img src="<?= BASE_URL ?>src/assets/img/layers.svg" alt="Icono de Trimestres">
+          <span>Trimestres</span>
+        </a>
       </li>
 
-      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/users.svg" alt="Icono de Usuarios">
-        <a href="#">Usuarios</a>
+      <li>
+        <a href="#" class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+          <img src="<?= BASE_URL ?>src/assets/img/users.svg" alt="Icono de Usuarios">
+          <span>Usuarios</span>
+        </a>
       </li>
 
-      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/folder-minus.svg" alt="Icono de Grupos">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionGrupos">Grupos</a>
+      <li>
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionGrupos" class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+          <img src="<?= BASE_URL ?>src/assets/img/folder-minus.svg" alt="Icono de Grupos">
+          <span>Grupos</span>
+        </a>
       </li>
 
       <li class="relative">
@@ -194,33 +206,45 @@ document.addEventListener("DOMContentLoaded", function () {
         
         <!-- Submenú de Académicos (inicialmente oculto) -->
         <ul class="pl-12 mt-2 space-y-2 hidden" id="academicos-submenu">
-          <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-            <img src="<?= BASE_URL ?>src/assets/img/upload.svg" alt="Icono de Carga Excel" class="w-5 h-5">
-            <a href="#">Carga Excel</a>
+          <li>
+            <a href="#" class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+              <img src="<?= BASE_URL ?>src/assets/img/upload.svg" alt="Icono de Carga Excel" class="w-5 h-5">
+              <span>Carga Excel</span>
+            </a>
           </li>
-          <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-            <img src="<?= BASE_URL ?>src/assets/img/graduation-cap.svg" alt="Icono de Programas" class="w-5 h-5">
-            <a href="#">Programas</a>
+          <li>
+            <a href="#" class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+              <img src="<?= BASE_URL ?>src/assets/img/graduation-cap.svg" alt="Icono de Programas" class="w-5 h-5">
+              <span>Programas</span>
+            </a>
           </li>
-          <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-            <img src="<?= BASE_URL ?>src/assets/img/book.svg" alt="Icono de Competencias" class="w-5 h-5">
-            <a href="<?= BASE_URL ?>index.php?page=src/views/gestionCompetencias">Competencias</a>
+          <li>
+            <a href="<?= BASE_URL ?>index.php?page=src/views/gestionCompetencias" class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+              <img src="<?= BASE_URL ?>src/assets/img/book.svg" alt="Icono de Competencias" class="w-5 h-5">
+              <span>Competencias</span>
+            </a>
           </li>
-          <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-            <img src="<?= BASE_URL ?>src/assets/img/target.svg" alt="Icono de RAE" class="w-5 h-5">
-            <a href="#">RAE</a>
+          <li>
+            <a href="#" class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+              <img src="<?= BASE_URL ?>src/assets/img/target.svg" alt="Icono de RAE" class="w-5 h-5">
+              <span>RAE</span>
+            </a>
           </li>
         </ul>
       </li>
 
-      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/clipboard-list.svg" alt="Icono de Solicitudes">
-        <a href="#">Solicitudes</a>
+      <li>
+        <a href="#" class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+          <img src="<?= BASE_URL ?>src/assets/img/clipboard-list.svg" alt="Icono de Solicitudes">
+          <span>Solicitudes</span>
+        </a>
       </li>
 
-      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/history.svg" alt="Icono de Trimestres">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/historialRegistrosInactivos">Historial</a>
+      <li>
+        <a href="<?= BASE_URL ?>index.php?page=src/views/historialRegistrosInactivos" class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+          <img src="<?= BASE_URL ?>src/assets/img/history.svg" alt="Icono de Trimestres">
+          <span>Historial</span>
+        </a>
       </li>
     </ul>
   </nav>
