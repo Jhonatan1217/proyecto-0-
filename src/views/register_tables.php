@@ -117,6 +117,7 @@ if (isset($conn)) {
   <link rel="stylesheet" href="<?= BASE_URL ?>public/css/fonts.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/formulario_crear_trimestralizacion.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/register_tables.css">
+  <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/select-styled.css">
   <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
 
   <style>
@@ -125,38 +126,7 @@ if (isset($conn)) {
     flex-direction: column;
   }
 
-  #id_competencia {
-    display: block;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
 
-  #id_competencia option {
-    max-width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* Evita doble flecha (nativa + custom) en los combobox superiores */
-  #selectModalidad,
-  #selectArea,
-  #selectZona {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    background-image: none !important;
-  }
-
-  #selectModalidad::-ms-expand,
-  #selectArea::-ms-expand,
-  #selectZona::-ms-expand {
-    display: none;
-  }
 
   .custom-combobox {
     position: relative;
@@ -180,7 +150,7 @@ if (isset($conn)) {
   }
 
   .custom-combobox-list {
-    max-height: 240px;
+    max-height: 280px; /* 7 items × 40px */
     overflow-y: auto;
     padding: 4px;
   }
@@ -204,6 +174,9 @@ if (isset($conn)) {
     padding: 10px 14px;
     font-size: 0.875rem;
     color: #1f2937;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.4;
   }
 
   .custom-combobox-option {
@@ -220,6 +193,20 @@ if (isset($conn)) {
   .custom-combobox-empty {
     color: #6b7280;
     cursor: default;
+  }
+
+  /* Fix: select-styled tem padding natural ~40px; form-field forzaba 36px y cortaba el texto */
+  .select-styled.form-field {
+    height: auto;
+  }
+
+  #selectModalidad,
+  #selectArea,
+  #selectZona,
+  #selectModalidad option,
+  #selectArea option,
+  #selectZona option {
+    text-transform: lowercase;
   }
 
   /* ===== MODAL GESTIÓN DE HORAS ===== */
@@ -495,7 +482,7 @@ if (isset($conn)) {
 
 <body class="text-center font-sans min-h-screen flex flex-col bg-gray-50 overflow-x-hidden">
 
-<header class="mt-10 text-center px-4 sm:px-8" id="cabecera-trimestralizacion">
+<header class="mt-10 text-center w-full max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-10" id="cabecera-trimestralizacion">
   <h1 class="inline-block text-2xl sm:text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
     VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA 
     <?php echo isset($_GET['id_zona']) ? htmlspecialchars($_GET['id_zona']) : '—'; ?>
@@ -505,83 +492,45 @@ if (isset($conn)) {
   </h2>
 
   <!-- Contenedor principal de selects y botón -->
-  <div class="flex flex-col md:flex-row justify-between items-center md:items-end w-full px-4 sm:px-8 lg:px-16 my-6 gap-4 md:gap-6">
+  <div class="flex flex-col md:flex-row justify-between items-center md:items-end w-full my-6 gap-4 md:gap-6">
     
     <div class="flex flex-col sm:flex-row gap-4 sm:gap-8 w-full md:w-auto">
 
 
     <!-- Selector de Modalidad -->
-      <div class="relative w-full sm:w-auto">
-        <label for="selectModalidad" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Seleccione la Modalidad</label>
-        <div class="relative">
-          <select id="selectModalidad" name="id_modalidad"
-            class="appearance-none w-full sm:w-64 lg:w-72 xl:w-80 2xl:w-96 px-4 py-2.5 border border-gray-300 text-sm 
-            rounded-xl
-            text-gray-700
-            bg-white
-            focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none
-            transition-all duration-200 cursor-pointer pr-10">
-            <option value="" class="text-[#00324D]" selected hidden>SELECCIONE LA MODALIDAD</option>
-            <option value="presencial"> Presencial </option>
-            <option value="virtual"> Virtual </option>
-            <option value="mixto"> Mixta </option>
-          </select>
-<<<<<<< HEAD
-          <img 
-            src="<?= BASE_URL ?>src/assets/img/icons/Acction/chevron-down.svg" 
-            alt="arrow" 
-            class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70"
-          />
-=======
-          <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
->>>>>>> develop
-        </div>
+      <div class="w-full sm:w-64 lg:w-[230px] xl:w-[230px] 2xl:w-[230px]">
+        <label for="selectModalidad" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Modalidad</label>
+        <select id="selectModalidad" name="id_modalidad"
+          class="select-styled w-full">
+          <option value="" class="text-[#00324D]" selected hidden>seleccione la modalidad</option>
+          <option value="presencial"> presencial </option>
+          <option value="virtual"> virtual </option>
+          <option value="mixto"> mixta </option>
+        </select>
       </div>
 
 
 
   
       <!-- Selector de Área -->
-      <div class="relative w-full sm:w-auto">
-        <label for="selectArea" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Seleccione el Área</label>
-        <div class="relative">
-          <select id="selectArea" name="id_area"
-            class="appearance-none w-full sm:w-64 lg:w-72 xl:w-80 2xl:w-96 px-4 py-2.5 border border-gray-300 text-sm 
-            rounded-xl
-            text-gray-700
-            bg-white
-            focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none
-            transition-all duration-200 cursor-pointer pr-10">
-            <option value="" class="text-[#00324D]" selected hidden>SELECCIONE EL ÁREA</option>
-          </select>
-          <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
+      <div id="contenedorAreaFiltro" class="w-full sm:w-64 lg:w-[230px] xl:w-[230px] 2xl:w-[230px]">
+        <label for="selectArea" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Área</label>
+        <select id="selectArea" name="id_area"
+          class="select-styled w-full">
+          <option value="" class="text-[#00324D]" selected hidden>seleccione el área</option>
+        </select>
       </div>
 
 
 
 
       <!-- Selector de Zona -->
-      <div class="relative w-full sm:w-auto">
-        <label for="selectZona" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Seleccione la Zona</label>
-        <div class="relative">
-          <select id="selectZona" name="id_zona"
-            class="appearance-none w-full sm:w-64 lg:w-72 xl:w-80 2xl:w-96 px-4 py-2.5 border border-gray-300 text-sm 
-            rounded-xl
-            text-gray-700
-            bg-white
-            focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none
-            transition-all duration-200 cursor-pointer pr-10">
-            <option value="" class="text-[#00324D]" selected hidden>SELECCIONE LA ZONA</option>
-          </select>
-          <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
+      <div id="contenedorZonaFiltro" class="w-full sm:w-64 lg:w-[230px] xl:w-[230px] 2xl:w-[230px]">
+        <label for="selectZona" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Zona</label>
+        <select id="selectZona" name="id_zona"
+          class="select-styled w-full">
+          <option value="" class="text-[#00324D]" selected hidden>seleccione la zona</option>
+        </select>
       </div>
     </div>
 
@@ -589,10 +538,10 @@ if (isset($conn)) {
 
 
     <!-- Input para filtrar por grupo -->
-    <div id="contenedorGrupoFiltro" class="relative w-full sm:w-auto hidden">
+    <div id="contenedorGrupoFiltro" class="relative w-full sm:w-64 lg:w-[230px] xl:w-[230px] 2xl:w-[230px] hidden">
       <label for="inputGrupoTexto" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Filtrar por grupo</label>
-      <div class="custom-combobox w-full sm:w-64 lg:w-72 xl:w-80 2xl:w-96">
-        <input type="text" id="inputGrupoTexto" autocomplete="off" placeholder="Seleccione o escriba número de grupo" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none transition-all duration-200">
+      <div class="custom-combobox w-full">
+        <input type="text" id="inputGrupoTexto" autocomplete="off" placeholder="seleccione o escriba número de grupo" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none transition-all duration-200">
         <div id="panelGrupoFiltro" class="custom-combobox-panel hidden">
           <div class="custom-combobox-list"></div>
         </div>
@@ -604,20 +553,20 @@ if (isset($conn)) {
     <!-- Botón de crear nueva trimestralización (abre el mismo modal que en la landing) -->
     <button id="btnAbrirModal" 
       class="group flex items-center justify-center gap-2
-         w-full sm:w-60 lg:w-72 xl:w-80 2xl:w-96
-         px-6 py-2.5
+         w-full sm:w-60 lg:w-[230px] xl:w-[230px] 2xl:w-[230px]
+         h-11 px-4
          rounded-xl
          bg-[#00324d]
          text-white font-medium tracking-wider
-         text-sm sm:text-base
+         text-sm sm:text-sm leading-none whitespace-nowrap
          shadow-md hover:shadow-lg
          hover:bg-[#00304D]
          active:scale-[0.98]
          transition-all duration-200
          <?= $isAuthenticated ? '' : 'hidden' ?>
          focus:outline-none focus:ring-2 focus:ring-[#00324d]/20">
-        <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/plus.svg" />
-      Nueva trimestralización
+        <img class="w-4 h-4 shrink-0" src="<?= BASE_URL ?>src/assets/img/plus.svg" alt="" aria-hidden="true" />
+        <span class="leading-none">Nueva trimestralización</span>
     </button>
   </div>
 </header>
@@ -626,7 +575,7 @@ if (isset($conn)) {
 
 
   <!-- Contenido principal -->
-  <main class="flex flex-col items-center flex-grow px-2 sm:px-4 pb-6">
+  <main class="flex flex-col items-center flex-grow w-full max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-10 pb-6">
     <section id="tabla-horarios"
   class="w-full shadow-xl rounded-2xl border border-gray-200 p-0 overflow-hidden">
       <table class="w-full text-xs min-w-[900px] sm:text-sm border-separate border-spacing-0">
@@ -713,20 +662,26 @@ if (isset($conn)) {
   </main>
 
   <!-- Modal Eliminar -->
-  <div id="modalEliminar" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
-    <div class="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 max-w-2xl w-full sm:w-11/12 max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-center mb-4">
-        <img class="w-10 h-10" src="<?= BASE_URL ?>src/assets/img/triangle-alert.svg" />
+  <div id="modalEliminar" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-labelledby="tituloModalEliminar">
+    <div class="absolute inset-0" style="background: rgba(0,0,0,.75);"></div>
+    <div class="relative z-10 w-full rounded-3xl shadow-2xl px-6 py-8 sm:px-8" style="max-width: 540px; background:#f3f4f6;">
+      <div class="mx-auto mb-4 flex items-center justify-center rounded-full" style="width:48px;height:48px;background:#fee2e2;">
+        <img class="w-7 h-7" src="<?= BASE_URL ?>src/assets/img/triangle-alert.svg" alt="Alerta" />
       </div>
-      <h2 class="text-xl sm:text-2xl font-bold text-center mb-8 text-gray-900">
-        Limpiar datos de trimestralizacion
+
+      <h2 id="tituloModalEliminar" class="text-center mb-4" style="font-size:24px;line-height:1.15;font-weight:700;color:#111827;">
+        Eliminar trimestralización
       </h2>
-      <p class="text-center mb-8">Esta acción limpiará permanentemente los datos de este día. No podrás recuperarlo después.</p>
-      <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center">
-        <button onclick="cerrarModal()" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition flex items-center justify-center w-full sm:w-auto">
+
+      <p class="mx-auto text-center mb-8" style="max-width:460px;font-size:16px;line-height:1.35;color:#1f2937;">
+        Esta acción eliminará permanentemente el horario actual. No podrás recuperarlo después.
+      </p>
+
+      <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
+        <button onclick="cerrarModal()" class="w-full sm:w-auto rounded-2xl font-semibold transition" style="min-width:150px;height:56px;padding:0 24px;border:2px solid #111827;background:#fff;color:#111827;font-size:17px;">
           Cancelar
         </button>
-        <button onclick="confirmarEliminar()" class="bg-[#39a900] text-white px-6 py-2 rounded-lg hover:bg-[#4ebe15] transition flex items-center justify-center w-full sm:w-auto">
+        <button onclick="confirmarEliminar()" class="w-full sm:w-auto rounded-2xl font-semibold transition" style="min-width:150px;height:56px;padding:0 24px;border:0;background:#dc2626;color:#fff;font-size:17px;">
           Aceptar
         </button>
       </div>
@@ -815,7 +770,7 @@ if (isset($conn)) {
             <!-- PROGRAMA -->
               <div class="field">
                 <label for="id_programa_select" class="block text-xs font-semibold text-gray-800 mb-1">Programa de formación</label>
-                <select id="id_programa_select" name="id_programa_select" class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
+                <select id="id_programa_select" name="id_programa_select" class="select-styled w-full form-field">
                   <option value="">Ingrese el programa de formación</option>
                   <?php if (empty($programas)): ?>
                     <option disabled>Sin datos disponibles</option>
@@ -834,7 +789,7 @@ if (isset($conn)) {
                <div class="field">
                 <label for="nombre_instructor" class="block text-xs font-semibold text-gray-800 mb-1">Instructor</label>
                 <select name="nombre_instructor" id="nombre_instructor"
-                  class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
+                  class="select-styled w-full form-field">
                   <option value="">Seleccione el instructor</option>
                   <?php foreach ($instructores as $ins): ?>
                     <option value="<?= htmlspecialchars($ins['id_instructor'] ?? '') ?>" data-tipo="<?= htmlspecialchars($ins['tipo_instructor'] ?? '') ?>">
@@ -854,7 +809,7 @@ if (isset($conn)) {
                     name="numero_ficha"
                     id="numero_ficha"
                     autocomplete="off"
-                    placeholder="Seleccione o escriba número de grupo"
+                    placeholder="seleccione o escriba número de grupo"
                     class="form-field w-full h-9 px-3 text-sm rounded-xl border border-gray-300 outline-none bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]"/>
                   <div id="panelGrupoCrear" class="custom-combobox-panel hidden">
                     <div class="custom-combobox-list"></div>
@@ -875,7 +830,7 @@ if (isset($conn)) {
               <div class="field">
                 <label for="numero_trimestre" class="block text-xs font-semibold text-gray-800 mb-1">Trimestre de grupo</label>
                 <select name="numero_trimestre" id="numero_trimestre"
-                  class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
+                  class="select-styled w-full form-field">
                   <option value="">Seleccione el trimestre que cursa el grupo</option>
                   <?php foreach ($trimestres as $t): ?>
                     <option value="<?= htmlspecialchars($t['numero_trimestre']) ?>">
@@ -885,16 +840,7 @@ if (isset($conn)) {
                 </select>
               </div>
 
-              <!-- MODALIDAD -->
-              <div class="field">
-                <label for="modalidad" class="block text-xs font-semibold text-gray-800 mb-1">Modalidad</label>
-                <select name="modalidad" id="modalidad"
-                  class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
-                  <option value="presencial" selected>Presencial</option>
-                  <option value="virtual">Virtual</option>
-                  <option value="mixta">Mixta</option>
-                </select>
-              </div>
+              <input type="hidden" name="modalidad" id="modalidad" value="presencial">
 
               <!-- AREA + ZONA-->
               <div class="field">
@@ -906,7 +852,7 @@ if (isset($conn)) {
                         type="text"
                         id="id_area_combo"
                         autocomplete="off"
-                        placeholder="Seleccione o escriba el área"
+                        placeholder="seleccione o escriba el área"
                         class="form-field w-full h-9 px-3 text-sm rounded-xl border border-gray-300 outline-none bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]" />
                       <div id="panelAreaCrear" class="custom-combobox-panel hidden">
                         <div class="custom-combobox-list"></div>
@@ -921,7 +867,7 @@ if (isset($conn)) {
                     </datalist>
 
                     <select name="area" id="id_area" class="hidden" tabindex="-1" aria-hidden="true">
-                      <option value="">Seleccione el área</option>
+                      <option value="">seleccione el área</option>
                       <?php foreach ($areas as $a): ?>
                         <option value="<?= htmlspecialchars($a['id_area']) ?>"><?= htmlspecialchars($a['nombre_area']) ?></option>
                       <?php endforeach; ?>
@@ -935,7 +881,7 @@ if (isset($conn)) {
                         type="text"
                         id="id_zona_combo"
                         autocomplete="off"
-                        placeholder="Seleccione o escriba la zona"
+                        placeholder="seleccione o escriba la zona"
                         class="form-field w-full h-9 px-3 text-sm rounded-xl border border-gray-300 outline-none bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]"
                         disabled />
                       <div id="panelZonaCrear" class="custom-combobox-panel hidden">
@@ -945,7 +891,7 @@ if (isset($conn)) {
                     <datalist id="listaZonasCombo"></datalist>
 
                     <select name="zona" id="id_zona" class="hidden" tabindex="-1" aria-hidden="true">
-                      <option value="">Seleccione la zona</option>
+                      <option value="">seleccione la zona</option>
                       <?php foreach ($zonas as $z): ?>
                         <?php $label = isset($z['id_zona']) ? "Zona " . $z['id_zona'] : "Zona"; ?>
                         <option value="<?= htmlspecialchars($z['id_zona']) ?>" data-area="<?= htmlspecialchars($z['id_area'] ?? '') ?>">
@@ -962,7 +908,7 @@ if (isset($conn)) {
               <div class="field">
                 <label for="dia" class="block text-xs font-semibold text-gray-800 mb-1">Día</label>
                 <select name="dia_semana" id="dia" 
-                  class="select-chev select-cal form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
+                  class="select-styled select-cal w-full form-field">
                   <option value="">Seleccione fecha de inicio</option>
                   <option value="lunes">Lunes</option>
                   <option value="martes">Martes</option>
@@ -981,7 +927,7 @@ if (isset($conn)) {
                   <div class="flex-1">
                     <label for="hora_inicio" class="block text-xs font-semibold text-gray-800 mb-1">Hora de inicio</label>
                     <select name="hora_inicio" id="hora_inicio" 
-                      class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
+                      class="select-styled w-full form-field">
                       <option value="">Seleccione hora de inicio</option>
                     <?php for ($i = 6; $i <= 22; $i++): ?>
                       <option value="<?= $i ?>:00"><?= $i ?>:00</option>
@@ -991,7 +937,7 @@ if (isset($conn)) {
                   <div class="flex-1">
                     <label for="hora_fin" class="block text-xs font-semibold text-gray-800 mb-1">Hora de fin</label>
                     <select name="hora_fin" id="hora_fin" 
-                      class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
+                      class="select-styled w-full form-field">
                       <option value="">Seleccione hora de fin</option>
                     <?php for ($i = 7; $i <= 22; $i++): ?>
                       <option value="<?= $i ?>:00"><?= $i ?>:00</option>
@@ -1005,30 +951,36 @@ if (isset($conn)) {
 
               <!-- COMPETENCIA -->
               <div class="field-full">
-                <label for="id_competencia" class="block text-xs font-semibold text-gray-800 mb-1">Competencia</label>
-                <div class="relative">
-                  <select id="id_competencia" name="id_competencia" class="select-chev form-field w-full h-9 px-3 text-sm rounded-lg border border-gray-300 outline-none bg-white">
-                    <option value="">Seleccione competencia</option>
-                    <?php if (empty($competencias)): ?>
-                      <option disabled>Sin datos disponibles</option>
-                    <?php else: ?>
-                      <?php foreach ($competencias as $comp): ?>
-                        <?php
-                          $nombreCompFull = (string)($comp['nombre_competencia'] ?? '');
-                          $nombreCompShort = function_exists('mb_strimwidth')
-                            ? mb_strimwidth($nombreCompFull, 0, 58, '…', 'UTF-8')
-                            : (strlen($nombreCompFull) > 58 ? substr($nombreCompFull, 0, 58) . '…' : $nombreCompFull);
-                        ?>
-                        <option
-                          value="<?= htmlspecialchars($comp['id_competencia']) ?>"
-                          data-programa="<?= htmlspecialchars($comp['id_programa']) ?>"
-                          title="<?= htmlspecialchars($nombreCompFull) ?>">
-                          <?= htmlspecialchars($nombreCompShort) ?>
-                        </option>
-                      <?php endforeach; ?>
-                    <?php endif; ?>
-                  </select>
+                <label for="id_competencia_combo" class="block text-xs font-semibold text-gray-800 mb-1">Competencia</label>
+                <!-- Combobox visible -->
+                <div class="custom-combobox w-full">
+                  <input
+                    type="text"
+                    id="id_competencia_combo"
+                    autocomplete="off"
+                    placeholder="seleccione o escriba la competencia"
+                    class="form-field w-full h-9 px-3 text-sm rounded-xl border border-gray-300 outline-none bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]"
+                  />
+                  <div id="panelCompetenciaCrear" class="custom-combobox-panel hidden">
+                    <div class="custom-combobox-list"></div>
+                  </div>
                 </div>
+                <!-- Hidden select: retains value/options for all existing JS logic -->
+                <select id="id_competencia" name="id_competencia" class="hidden" tabindex="-1" aria-hidden="true">
+                  <option value="">Seleccione competencia</option>
+                  <?php if (empty($competencias)): ?>
+                    <option disabled>Sin datos disponibles</option>
+                  <?php else: ?>
+                    <?php foreach ($competencias as $comp): ?>
+                      <?php $nombreCompFull = (string)($comp['nombre_competencia'] ?? ''); ?>
+                      <option
+                        value="<?= htmlspecialchars($comp['id_competencia']) ?>"
+                        data-programa="<?= htmlspecialchars($comp['id_programa']) ?>">
+                        <?= htmlspecialchars($nombreCompFull) ?>
+                      </option>
+                    <?php endforeach; ?>
+                  <?php endif; ?>
+                </select>
               </div>
 
 
@@ -1410,6 +1362,46 @@ if (isset($conn)) {
           },
           getLabel: (item) => item.label
         });
+
+        // --- Competencia combobox ---
+        const selComp = document.getElementById('id_competencia');
+        const inpComp = document.getElementById('id_competencia_combo');
+        const panelComp = document.getElementById('panelCompetenciaCrear');
+        const selProgForComp = document.getElementById('id_programa_select');
+
+        if (selComp && inpComp && panelComp) {
+          function getCompetenciaItems() {
+            const progVal = selProgForComp ? selProgForComp.value : '';
+            return Array.from(selComp.options)
+              .filter(opt => opt.value !== '' && !opt.disabled &&
+                (progVal === '' || String(opt.dataset.programa || '') === String(progVal)))
+              .map(opt => ({
+                label: String(opt.textContent || '').trim(),
+                id: String(opt.value || '')
+              }));
+          }
+
+          initStyledCombobox({
+            input: inpComp,
+            panel: panelComp,
+            getItems: getCompetenciaItems,
+            onSelect: (item) => {
+              selComp.value = item.id;
+              selComp.dispatchEvent(new Event('change', { bubbles: true }));
+            },
+            getLabel: (item) => item.label,
+            emptyText: 'Sin competencias para este programa'
+          });
+
+          // Reset combobox when programa changes
+          if (selProgForComp) {
+            selProgForComp.addEventListener('change', () => {
+              inpComp.value = '';
+              selComp.value = '';
+              selComp.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+          }
+        }
 
         inpArea.addEventListener('change', syncAreaFromInput);
         inpArea.addEventListener('blur', syncAreaFromInput);

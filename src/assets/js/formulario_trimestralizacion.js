@@ -32,9 +32,26 @@ if (!window.TRIMESTRALIZACION_INIT) {
       });
     }
 
-    function redirectToHorario() {
+    function redirectToHorario(filtros = {}) {
       const base = (window.BASE_URL || '');
-      const redirect = `${base}index.php?page=src/views/register_tables`;
+      const params = new URLSearchParams();
+      params.set('page', 'src/views/register_tables');
+
+      const modalidadRaw = String(filtros?.modalidad || 'presencial').trim().toLowerCase();
+      const modalidad = modalidadRaw === 'mixta' ? 'mixto' : modalidadRaw;
+      params.set('modalidad', modalidad || 'presencial');
+
+      if (modalidad === 'virtual' || modalidad === 'mixto') {
+        const numeroFicha = String(filtros?.numero_ficha || filtros?.numeroFicha || '').trim();
+        if (numeroFicha) params.set('numero_ficha', numeroFicha);
+      } else {
+        const idArea = String(filtros?.id_area || '').trim();
+        const idZona = String(filtros?.id_zona || filtros?.zona || '').trim();
+        if (idArea) params.set('id_area', idArea);
+        if (idZona) params.set('id_zona', idZona);
+      }
+
+      const redirect = `${base}index.php?${params.toString()}`;
       window.location.replace(redirect);
     }
 
@@ -231,7 +248,10 @@ if (!window.TRIMESTRALIZACION_INIT) {
       form: null,
       diaOriginal: "",
       id_area: "",
-      id_competencia: ""
+      id_competencia: "",
+      modalidad: "presencial",
+      id_zona: "",
+      numero_ficha: ""
     };
 
     function limpiarModalDuplicar() {
@@ -257,7 +277,7 @@ if (!window.TRIMESTRALIZACION_INIT) {
     function abrirModalDuplicar(ctx) {
       if (!modalDup || !selDiaDup) {
         cerrarModalCrear();
-        redirectToHorario();
+        redirectToHorario(ctx || {});
         return;
       }
 
@@ -308,7 +328,7 @@ if (!window.TRIMESTRALIZACION_INIT) {
       }
       if (!soloCerrar) {
         cerrarModalCrear();
-        redirectToHorario();
+        redirectToHorario(duplicacionCtx);
       }
     }
 
@@ -331,7 +351,7 @@ if (!window.TRIMESTRALIZACION_INIT) {
       });
       cerrarModalCrear();
       setTimeout(() => {
-        redirectToHorario();
+        redirectToHorario(duplicacionCtx);
       }, TOAST_TIME);
     }
 
@@ -482,7 +502,7 @@ if (!window.TRIMESTRALIZACION_INIT) {
         cerrarModalDuplicar(true);
         cerrarModalCrear();
         setTimeout(() => {
-          redirectToHorario();
+          redirectToHorario(duplicacionCtx);
         }, TOAST_TIME);
       });
     }
@@ -500,6 +520,9 @@ if (!window.TRIMESTRALIZACION_INIT) {
         }
 
         const {
+          modalidad,
+          zona,
+          numeroFicha,
           id_area,
           dia,
           id_competencia
@@ -560,7 +583,10 @@ if (!window.TRIMESTRALIZACION_INIT) {
             form,
             diaOriginal: dia,
             id_area,
-            id_competencia
+            id_competencia,
+            modalidad,
+            id_zona: zona,
+            numero_ficha: numeroFicha
           });
 
         } catch (err) {

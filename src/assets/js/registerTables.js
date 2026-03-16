@@ -4,6 +4,12 @@
 
 const urlParams = new URLSearchParams(window.location.search);
 let id_zona = urlParams.get("id_zona");
+const filtrosIniciales = {
+  modalidad: String(urlParams.get("modalidad") || "").trim().toLowerCase(),
+  id_area: String(urlParams.get("id_area") || "").trim(),
+  id_zona: String(urlParams.get("id_zona") || "").trim(),
+  numero_ficha: String(urlParams.get("numero_ficha") || "").trim(),
+};
 const API_BASE = ((window && window.BASE_URL) || "").replace(/\/+$/, "/");
 const IS_AUTHENTICATED = Boolean(window && window.IS_AUTHENTICATED);
 
@@ -347,16 +353,16 @@ async function cargarAreasYZonas() {
       Toast.fire({ icon: "warning", title: "No se encontraron áreas" });
     }
 
-    // Cambiar área → cargar zonas
-    selectArea.addEventListener("change", async (e) => {
-      const id_area = e.target.value;
+    async function cargarZonasPorArea(id_area, opts = {}) {
+      const preselectZona = String(opts.preselectZona || "").trim();
+      const silent = Boolean(opts.silent);
+
       selectZona.innerHTML = `<option value="" hidden selected>SELECCIONE LA ZONA</option>`;
       toggleTabla(false);
 
       if (!id_area) {
-        // Si quitó el área, deshabilitamos zonas y tabla
         selectZona.disabled = true;
-        return;
+        return false;
       }
 
       selectZona.disabled = false;
@@ -390,16 +396,15 @@ async function cargarAreasYZonas() {
         const zonasActivas = zonasArea.filter((z) => registroActivo(z.estado));
 
         if (!zonasActivas.length) {
-          // Dejamos el placeholder seleccionado, pero al desplegar se verá el mensaje
           selectZona.innerHTML = `
             <option value="" hidden selected>SELECCIONE LA ZONA</option>
             <option value="" disabled>Sin datos disponibles</option>
           `;
-          Toast.fire({
+          if (!silent) Toast.fire({
             icon: "info",
             title: "No hay zonas activas en esta área",
           });
-          return;
+          return false;
         }
 
         zonasActivas.forEach((z) => {
@@ -409,14 +414,30 @@ async function cargarAreasYZonas() {
           selectZona.appendChild(opt);
         });
 
-        Toast.fire({
+        if (preselectZona) {
+          const existe = Array.from(selectZona.options).some((opt) => String(opt.value) === preselectZona);
+          if (existe) {
+            selectZona.value = preselectZona;
+            id_zona = preselectZona;
+          }
+        }
+
+        if (!silent) Toast.fire({
           icon: "success",
           title: "Zonas activas cargadas correctamente",
         });
+        return true;
       } catch (err) {
         console.error("Error al cargar zonas:", err);
-        Toast.fire({ icon: "error", title: "Error al cargar zonas" });
+        if (!silent) Toast.fire({ icon: "error", title: "Error al cargar zonas" });
+        return false;
       }
+    }
+
+    // Cambiar área → cargar zonas
+    selectArea.addEventListener("change", async (e) => {
+      const id_area = e.target.value;
+      await cargarZonasPorArea(id_area);
     });
 
     selectZona.addEventListener("change", (e) => {
@@ -433,6 +454,26 @@ async function cargarAreasYZonas() {
       cargarTrimestralizacion();
       Toast.fire({ icon: "info", title: `Zona ${id_zona} seleccionada` });
     });
+
+    // Aplicar filtros iniciales (si vienen desde la creación)
+    const modalidadInicial = filtrosIniciales.modalidad === "mixta" ? "mixto" : filtrosIniciales.modalidad;
+    if (modalidadInicial === "presencial" && filtrosIniciales.id_area) {
+      const existeArea = Array.from(selectArea.options).some((opt) => String(opt.value) === filtrosIniciales.id_area);
+      if (existeArea) {
+        selectArea.value = filtrosIniciales.id_area;
+        await cargarZonasPorArea(filtrosIniciales.id_area, {
+          preselectZona: filtrosIniciales.id_zona,
+          silent: true,
+        });
+
+        if (filtrosIniciales.id_zona && selectZona.value === filtrosIniciales.id_zona) {
+          const h1 = document.querySelector("#cabecera-trimestralizacion h1");
+          if (h1) h1.innerHTML = `VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA ${filtrosIniciales.id_zona}`;
+          toggleTabla(true);
+          cargarTrimestralizacion();
+        }
+      }
+    }
   } catch (err) {
     console.error("Error en cargarAreasYZonas:", err);
     Toast.fire({ icon: "error", title: "Error al conectar con el servidor" });
@@ -500,6 +541,17 @@ function configurarFiltros(){
       toggleTabla(false);
     }
   });
+
+  const modalidadInicial = filtrosIniciales.modalidad === "mixta" ? "mixto" : filtrosIniciales.modalidad;
+  if (modalidadInicial) {
+    selectModalidad.value = modalidadInicial;
+    selectModalidad.dispatchEvent(new Event("change", { bubbles: true }));
+
+    if ((modalidadInicial === "virtual" || modalidadInicial === "mixto") && inputGrupo && filtrosIniciales.numero_ficha) {
+      inputGrupo.value = filtrosIniciales.numero_ficha;
+      cargarTrimestralizacionPorGrupo(filtrosIniciales.numero_ficha);
+    }
+  }
 }
 
 function renderizarTablaDesdeRegistros(registrosServer, emptyMessage = "No hay registros activos.") {
@@ -570,6 +622,40 @@ function renderizarTablaDesdeRegistros(registrosServer, emptyMessage = "No hay r
 
   const dias = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"];
   const horas = Array.from({ length: 16 }, (_, i) => i + 6);
+  const horaMin = horas[0];
+  const horaMaxExclusiva = horas[horas.length - 1] + 1;
+
+  const mapaInicioPorDia = {};
+  dias.forEach((dia) => {
+    mapaInicioPorDia[dia] = {};
+  });
+
+  horariosAgrupados.forEach((r) => {
+    const dia = String(r.dia || "").toUpperCase();
+    if (!mapaInicioPorDia[dia]) return;
+
+    const rStartRaw = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
+    const rEndRaw = r.hora_fin
+      ? parseInt(r.hora_fin.split(":")[0], 10)
+      : rStartRaw + 1;
+
+    if (!Number.isFinite(rStartRaw) || !Number.isFinite(rEndRaw)) return;
+
+    const rStart = Math.max(horaMin, rStartRaw);
+    const rEnd = Math.min(horaMaxExclusiva, Math.max(rStart + 1, rEndRaw));
+
+    if (rStart >= horaMaxExclusiva) return;
+
+    if (!mapaInicioPorDia[dia][rStart]) {
+      mapaInicioPorDia[dia][rStart] = [];
+    }
+    mapaInicioPorDia[dia][rStart].push({ ...r, _rowStart: rStart, _rowEnd: rEnd });
+  });
+
+  const omitirFilasPorDia = {};
+  dias.forEach((dia) => {
+    omitirFilasPorDia[dia] = 0;
+  });
 
   horas.forEach((hora, idx) => {
     const fila = document.createElement("tr");
@@ -578,92 +664,74 @@ function renderizarTablaDesdeRegistros(registrosServer, emptyMessage = "No hay r
       ${String(hora).padStart(2, "0")}:00 - ${String(hora + 1).padStart(2, "0")}:00 </td>`;
 
     dias.forEach((dia) => {
-      const registros = horariosAgrupados.filter((r) => {
-        if (!r.dia || r.dia.toUpperCase() !== dia) return false;
-        const rStart = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
-        const rEnd = r.hora_fin
-          ? parseInt(r.hora_fin.split(":")[0], 10)
-          : rStart + 1;
-        return hora >= rStart && hora < rEnd;
-      });
+      if (omitirFilasPorDia[dia] > 0) {
+        omitirFilasPorDia[dia] -= 1;
+        return;
+      }
 
-      let contenido = "";
-      registros.forEach((r) => {
-        const rStart = parseInt((r.hora_inicio || "0:00").split(":")[0], 10);
-        const rEnd = r.hora_fin
-          ? parseInt(r.hora_fin.split(":")[0], 10)
-          : rStart + 1;
+      const iniciosEnHora = mapaInicioPorDia[dia][hora] || [];
 
-        if (hora === rStart) {
-          const duracionHoras = rEnd - rStart;
-          contenido += `
-              <div class="registro border-l-4 border-l-green-600 bg-white rounded-md p-2 mb-2 shadow-sm"
-                  data-id="${r.id_horario || ""}"
-                  data-id-instructor="${r.id_instructor ?? ""}"
-                  data-instructor="${r.nombre_instructor ?? ""}"
-                  data-id-competencia="${r.id_competencia ?? ""}"
-                  data-competencia="${r.nombre_competencia ?? ""}"
-                  data-programa="${r.nombre_programa ?? ""}"
-                  data-ficha="${r.numero_ficha ?? ""}"
-                  data-nivel-ficha="${r.nivel_ficha ?? ""}"
-                  data-dia="${r.dia ?? ""}"
-                  data-hora-inicio="${r.hora_inicio ?? ""}"
-                  data-hora-fin="${r.hora_fin ?? ""}"
-                  data-hora-rango="${r.hora_inicio ?? ""} - ${r.hora_fin ?? ""}"
-                  data-raes='${JSON.stringify(r.raesArray)}' >
-                <div class="font-bold text-green-700 text-sm mb-1">Competencia: ${r.nombre_competencia ?? "Sin competencia"}</div>
-                <div class="flex items-start gap-1 text-xs text-gray-600 mb-1">
-                  <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
-                  </svg>
-                  <span>${r.nombre_instructor ?? ""}</span>
-                </div>
-                <div class="flex items-start gap-1 text-xs text-gray-600 mb-1">
-                  <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
-                  </svg>
-                  <span class="ficha font-medium text-gray-700">
-                    ${r.numero_ficha ?? "—"}
-                  </span>
-
-                </div>
-                <div class="flex items-start gap-1 text-xs text-gray-500">
-                  <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
-                  </svg>
-                  <span>${duracionHoras} hora${duracionHoras > 1 ? "s" : ""}</span>
-                </div>
-              </div>`;
-        } else if (hora > rStart && hora < rEnd) {
-          contenido += `<div class="border-l-[6px] border-l-green-700 border-t-2 border-t-green-300 bg-green-50 rounded-md p-2 mb-2 shadow-sm">
-                <div class="inline-flex items-center gap-1 mb-1 px-2 py-[2px] rounded-full bg-green-100 text-green-800 text-[11px] font-semibold">
-                  ↳ Continuación
-                </div>
-                <div class="flex items-start gap-1 text-xs text-gray-600">
-                  <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
-                  </svg>
-                  <span>${r.nombre_instructor ?? ""}</span>
-                </div>
-                <div class="flex items-start gap-1 text-xs text-gray-600 mt-1">
-                  <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
-                  </svg>
-                  <span class="ficha font-medium text-gray-700">
-                    ${r.numero_ficha ?? "—"}
-                  </span>
-                </div>
-              </div>`;
-        }
-      });
-      const isLibre = !contenido;
-      fila.innerHTML += `
-            <td class="p-2 text-sm text-center leading-tight align-top ${isLibre ? "zona-libre cursor-pointer": ""}"
+      if (!iniciosEnHora.length) {
+        fila.innerHTML += `
+            <td class="p-2 text-sm text-center leading-tight align-top zona-libre cursor-pointer"
               data-dia="${dia}"
               data-hora="${String(hora).padStart(2, "0")}: 00">
-              ${contenido || `<span class="text-gray-400 italic">Zona libre</span>`}
+              <span class="text-gray-400 italic">Zona libre</span>
+          </td>`;
+        return;
+      }
+
+      const r = iniciosEnHora[0];
+      const duracionHoras = Math.max(1, (r._rowEnd || (hora + 1)) - (r._rowStart || hora));
+      const rowspan = Math.max(1, Math.min(duracionHoras, horaMaxExclusiva - hora));
+
+      if (rowspan > 1) {
+        omitirFilasPorDia[dia] = rowspan - 1;
+      }
+
+      const contenido = `
+          <div class="registro border-l-4 border-l-green-600 bg-white rounded-md p-2 mb-2 shadow-sm"
+              data-id="${r.id_horario || ""}"
+              data-id-instructor="${r.id_instructor ?? ""}"
+              data-instructor="${r.nombre_instructor ?? ""}"
+              data-id-competencia="${r.id_competencia ?? ""}"
+              data-competencia="${r.nombre_competencia ?? ""}"
+              data-programa="${r.nombre_programa ?? ""}"
+              data-ficha="${r.numero_ficha ?? ""}"
+              data-nivel-ficha="${r.nivel_ficha ?? ""}"
+              data-dia="${r.dia ?? ""}"
+              data-hora-inicio="${r.hora_inicio ?? ""}"
+              data-hora-fin="${r.hora_fin ?? ""}"
+              data-hora-rango="${r.hora_inicio ?? ""} - ${r.hora_fin ?? ""}"
+              data-raes='${JSON.stringify(r.raesArray)}' >
+            <div class="font-bold text-green-700 text-sm mb-1">Competencia: ${r.nombre_competencia ?? "Sin competencia"}</div>
+            <div class="flex items-start gap-1 text-xs text-gray-600 mb-1">
+              <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+              </svg>
+              <span>${r.nombre_instructor ?? ""}</span>
+            </div>
+            <div class="flex items-start gap-1 text-xs text-gray-600 mb-1">
+              <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+              </svg>
+              <span class="ficha font-medium text-gray-700">
+                ${r.numero_ficha ?? "—"}
+              </span>
+
+            </div>
+            <div class="flex items-start gap-1 text-xs text-gray-500">
+              <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+              </svg>
+              <span>${duracionHoras} hora${duracionHoras > 1 ? "s" : ""}</span>
+            </div>
+          </div>`;
+
+      fila.innerHTML += `
+          <td rowspan="${rowspan}" class="p-2 text-sm text-center leading-tight align-top">
+            ${contenido}
           </td>`;
     });
 
