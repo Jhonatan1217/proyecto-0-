@@ -144,91 +144,89 @@
 </main>
 <!-- ================= MODAL DETALLE ================= -->
 <div id="modalDetalle" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
-  <div class="bg-white px-60 max-w-2xl rounded-2xl relative shadow-xl border border-gray-300">
 
-   <!-- Cerrar -->
-    
+    <div class="bg-white rounded-2xl shadow-2xl relative" style="width:100%;max-width:520px;">
 
-    <!-- CONTENIDO -->
-    <div class="p-8" style="padding: 3rem !important;">
-      
-      <!-- Header estilo imagen -->
-      <div class="flex items-center justify-between mb-6">
+        <!-- BOTÓN CERRAR -->
+        <button id="cerrarModalDetalle"
+            onclick="(function(){var m=document.getElementById('modalDetalle');m.classList.add('hidden');m.classList.remove('flex');})()"
+            class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-xl font-bold z-10 leading-none"
+            style="line-height:1;padding:4px 8px;">
+            ✕
+        </button>
 
-        <div class="flex items-center gap-4">
-          <div class="w-60 h-60 rounded-full border flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" 
-                width="60" height="60" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                stroke-width="2" 
-                stroke-linecap="round" 
-                stroke-linejoin="round" 
-                class="text-gray-500">
-                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-            </svg>
+        <!-- HEADER: avatar + nombre + estado + tipo badge -->
+        <div class="px-6 pt-6 pb-4">
+
+            <!-- Fila superior: icono + nombre + badges -->
+            <div style="display:flex;align-items:flex-start;gap:14px;">
+
+                <div style="width:40px;height:40px;border-radius:50%;border:2px solid #e5e7eb;display:flex;align-items:center;justify-content:center;background:#f9fafb;flex-shrink:0;">
+                    <i data-lucide="user" style="width:18px;height:18px;color:#9ca3af;"></i>
+                </div>
+
+                <div style="flex:1;min-width:0;">
+                    <!-- Nombre + estado + tipo -->
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <h2 id="modalSolicitante" style="font-size:15px;font-weight:700;color:#1f2937;margin:0;"></h2>
+                        <span id="modalEstado" style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:999px;background:#fef3c7;color:#92400e;"></span>
+                        <span id="modalTipoBadge" style="font-size:11px;font-weight:500;padding:2px 10px;border-radius:999px;background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb;"></span>
+                    </div>
+                    <!-- Código -->
+                    <p id="modalCodigo" style="font-size:13px;color:#3b82f6;font-weight:500;margin:3px 0 0 0;"></p>
+                </div>
+
+            </div>
+
+            <!-- Programa: alineado con el borde izquierdo del icono -->
+            <div style="margin-top:14px;">
+                <p style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 3px 0;">Programa</p>
+                <p id="modalPrograma" style="font-size:13px;font-weight:600;color:#1f2937;margin:0;"></p>
+            </div>
+
         </div>
 
-          <div>
-            <div class="flex items-center gap-3">
-              <h3 id="modalSolicitante" class="text-lg font-semibold"></h3>
+        <!-- SEPARADOR -->
+        <div class="border-t border-gray-100 mx-6"></div>
 
-              <button onclick="cerrarModal()" class="text-2xl px-30 text-gray-400 hover:text-black">
-              &times;
+        <!-- CONTENIDO DINÁMICO (bloque horario o datos) -->
+        <div id="modalContenido" class="px-6 py-4"></div>
+
+        <!-- MOTIVO DEVOLUCIÓN -->
+        <div id="motivoDevolucion" class="px-6 pb-3 hidden">
+            <div class="bg-rose-50 border border-rose-200 rounded-xl p-3 text-sm">
+                <p class="font-semibold text-rose-700 mb-1">Motivo de devolución:</p>
+                <p id="textoMotivoDevolucion" class="text-rose-600"></p>
+            </div>
+        </div>
+
+        <!-- FECHA -->
+        <div class="px-6 pb-4 flex items-center gap-2 text-gray-500">
+            <i data-lucide="calendar" class="w-4 h-4 shrink-0 text-gray-400"></i>
+            <div>
+                <p class="text-xs text-gray-400">Solicitado el</p>
+                <p id="modalFecha" class="text-sm font-semibold text-gray-800"></p>
+            </div>
+        </div>
+
+        <!-- BOTONES (solo PENDIENTE) -->
+        <div id="botonesAccion" class="px-6 pb-6 flex justify-center gap-4 hidden">
+            <button id="btnAprobar"
+                class="bg-[#39A900] hover:bg-[#2d8a00] active:bg-[#257500] text-white px-10 py-2.5 rounded-lg font-semibold transition-colors shadow-sm">
+                Aceptar
             </button>
-            </div>
-
-            <div class="flex items-center gap-3 mb-6">
-              <span id="modalCodigo" class="text-gray-500"></span>
-              <span id="modalEstado" class=" rounded-full text-sm font-medium"></span>
-            </div>
-          </div>
+            <button id="btnDevolver"
+                class="bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white px-10 py-2.5 rounded-lg font-semibold transition-colors shadow-sm">
+                Devolver
+            </button>
         </div>
-      </div>
 
-      <!-- Programa -->
-      <div class="mb-6">
-        <p class="text-gray-500 text-sm">Programa</p>
-        <p id="modalPrograma" class="font-medium"></p>
-      </div>
-
-      <!-- CONTENIDO DINÁMICO - agregamos padding aquí también por si acaso -->
-      <div id="modalContenido" style="padding: 0 !important;"></div>
-
-      <!-- MOTIVO DE DEVOLUCIÓN (solo para estado DEVUELTO) -->
-      <div id="motivoDevolucion" class="mt-6 hidden">
-        <p class="text-gray-500">Motivo de devolución</p>
-        <div id="textoMotivoDevolucion" class="mt-2 p-4 bg-rose-50 border border-rose-200 rounded-lg text-rose-700"></div>
-      </div>
-
-      <div class="mt-6">
-        <p class="text-gray-500">Fecha solicitud</p>
-        <p id="modalFecha" class="font-medium"></p>
-      </div>
-
-      <!-- BOTONES DE ACCIÓN (solo para estado PENDIENTE) -->
-      <div id="botonesAccion" class="mt-10 flex justify-center gap-10 hidden">
-        <button id="btnAprobar" class="px-8 py-3 bg-[#39A900] text-white rounded-xl shadow-md hover:bg-[#2d8a00] transition">
-        Aceptar
-      </button>
-
-      <button id="btnDevolver" 
-              style="background-color: #ce3030; color: white; padding: 0.75rem 2rem; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: all 0.3s; border: none; cursor: pointer;"
-              onmouseover="this.style.backgroundColor='#790604'"
-              onmouseout="this.style.backgroundColor='#ce3030'">
-          Devolver
-      </button>
-      </div>
     </div>
-  </div>
 </div>
-
 <!-- ================= MODAL CONFIRMAR APROBACIÓN ================= -->
 <div id="modalConfirmarAprobacion" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
 
-  <div class="bg-white w-25 rounded-3xl p-8 relative shadow-2xl border border-gray-200" style="padding: 3rem !important;">
+  <div class="bg-white rounded-3xl relative shadow-2xl border border-gray-200" style="width:100%;max-width:540px;padding:3rem;">
 
     <!-- Cerrar -->
     <button onclick="cerrarModalConfirmar()" 
@@ -291,7 +289,7 @@
 
 <!-- ================= MODAL DEVOLVER CON MOTIVO ================= -->
 <div id="modalDevolverMotivo" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
-  <div class="bg-white w-full max-w-md rounded-2xl p-6 relative shadow-xl">
+  <div class="bg-white rounded-2xl p-6 relative shadow-xl" style="width:100%;max-width:448px;">
     <h3 class="text-xl font-bold mb-4">Devolver solicitud</h3>
     <p class="text-gray-600 mb-3">Indica el motivo de la devolución:</p>
     <textarea id="motivoDevolucionInput" rows="4" class="w-full border border-gray-300 rounded-lg p-3 mb-4 focus:outline-none focus:ring-2 focus:ring-[#39A900]"></textarea>
@@ -310,4 +308,3 @@
 </script>
 
 <script src="<?= BASE_URL ?>src/assets/js/gestionarSolicitudes.js?v=2" defer></script>
-
