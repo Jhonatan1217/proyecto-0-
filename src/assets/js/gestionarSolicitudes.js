@@ -34,6 +34,17 @@ document.addEventListener("DOMContentLoaded", () => {
         devolverSolicitud();
     });
 
+    // Botón de cerrar del modal principal
+    document.getElementById("cerrarModalDetalle")?.addEventListener("click", () => {
+        const modal = document.getElementById("modalDetalle");
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+        solicitudActualId   = null;
+        solicitudActualTipo = null;
+        solicitudActualData = null;
+    });
+
+
     // ================================
     // CARGAR DATOS DESDE EL BACKEND
     // ================================
@@ -257,64 +268,85 @@ document.addEventListener("DOMContentLoaded", () => {
 // ================================
 // FUNCIÓN PARA VER DETALLES
 // ================================
-function verSolicitud(id) {
+async function verSolicitud(id) {
     const solicitud = todasLasSolicitudes.find(s => s.id_solicitud == id);
+    if (!solicitud) { console.error("Solicitud no encontrada"); return; }
 
-    if (!solicitud) {
-        console.error("Solicitud no encontrada");
-        return;
+    solicitudActualId = id;
+
+    // Normalizar tipo: acepta "Horario", "HORARIO", "Cambio de horario", etc.
+    const tipoRaw = (solicitud.tipo_solicitud || "").toLowerCase();
+    if (tipoRaw.includes("horario")) {
+        solicitudActualTipo = "horario";
+    } else if (tipoRaw.includes("dato") || tipoRaw.includes("personal")) {
+        solicitudActualTipo = "datos";
+    } else {
+        solicitudActualTipo = tipoRaw;
     }
 
-    // Guardar datos actuales
-    solicitudActualId = id;
-    solicitudActualTipo = solicitud.tipo_solicitud ? solicitud.tipo_solicitud.toLowerCase() : "";
-
-    // Inicializar variables para los detalles
     let nombreAnterior = "", nombreNuevo = "";
-    let docAnterior = "", docNuevo = "";
+    let docAnterior    = "", docNuevo    = "";
     let horarioAnterior = "", horarioNuevo = "";
 
-    // Procesar los detalles si existen
-    if (solicitud.detalles && solicitud.detalles.length > 0) {
-        solicitud.detalles.forEach(detalle => {
-            const campo = detalle.campo_modificado ? detalle.campo_modificado.toLowerCase() : "";
-            
-            if (campo.includes("nombre") || campo.includes("nombres")) {
-                nombreAnterior = detalle.valor_anterior || "";
-                nombreNuevo = detalle.valor_nuevo || "";
+    // Detalles que pueden venir en el listado
+    let detalles = solicitud.detalles || [];
+
+    // Si NO vienen, pedirlos al backend por separado
+    if (detalles.length === 0) {
+        try {
+            const resp = await fetch(`${window.API_URL}?accion=detalle&id=${id}`);
+            const result = await resp.json();
+            if (result.status === "success" && result.data) {
+                detalles = result.data.detalles || (Array.isArray(result.data) ? result.data : []);
+                // Campos planos que algunos backends devuelven directamente
+                if (result.data.horario_anterior !== undefined) horarioAnterior = result.data.horario_anterior || "";
+                if (result.data.horario_nuevo    !== undefined) horarioNuevo    = result.data.horario_nuevo    || "";
+                if (result.data.nombre_anterior  !== undefined) nombreAnterior  = result.data.nombre_anterior  || "";
+                if (result.data.nombre_nuevo     !== undefined) nombreNuevo     = result.data.nombre_nuevo     || "";
             }
-            else if (campo.includes("documento") || campo.includes("doc")) {
-                docAnterior = detalle.valor_anterior || "";
-                docNuevo = detalle.valor_nuevo || "";
-            }
-            else if (campo.includes("horario")) {
-                horarioAnterior = detalle.valor_anterior || "";
-                horarioNuevo = detalle.valor_nuevo || "";
-            }
-        });
+        } catch (e) {
+            console.warn("No se pudieron cargar detalles del backend:", e);
+        }
     }
 
-    // Mapear datos al formato que usa el modal
+    // Procesar array detalles (campo_modificado / valor_anterior / valor_nuevo)
+    detalles.forEach(detalle => {
+        const campo = (detalle.campo_modificado || "").toLowerCase();
+        if (campo.includes("horario")) {
+            horarioAnterior = detalle.valor_anterior || horarioAnterior;
+            horarioNuevo    = detalle.valor_nuevo    || horarioNuevo;
+        } else if (campo.includes("nombre") || campo.includes("nombres")) {
+            nombreAnterior = detalle.valor_anterior || nombreAnterior;
+            nombreNuevo    = detalle.valor_nuevo    || nombreNuevo;
+        } else if (campo.includes("documento") || campo.includes("doc")) {
+            docAnterior = detalle.valor_anterior || docAnterior;
+            docNuevo    = detalle.valor_nuevo    || docNuevo;
+        }
+    });
+
+    // Fallback: leer campos planos de la solicitud si aún están vacíos
+    if (solicitudActualTipo === "horario" && !horarioAnterior && !horarioNuevo) {
+        horarioAnterior = solicitud.horario_anterior || solicitud.valor_anterior || "";
+        horarioNuevo    = solicitud.horario_nuevo    || solicitud.valor_nuevo    || "";
+    }
+
     const dataModal = {
-        id: solicitud.id_solicitud,
-        codigo: solicitud.codigo_solicitud || solicitud.id_solicitud,
-        solicitante: solicitud.nombre_instructor || "N/A",
-        programa: solicitud.programa || "N/A",
-        fecha: solicitud.fecha_solicitud,
-        estado: solicitud.estado,
-        tipo: solicitudActualTipo,
+        id:               solicitud.id_solicitud,
+        codigo:           solicitud.codigo_solicitud || `S-${solicitud.id_solicitud}`,
+        solicitante:      solicitud.nombre_instructor || "N/A",
+        programa:         solicitud.programa || solicitud.nombre_programa || "N/A",
+        fecha:            solicitud.fecha_solicitud || "",
+        estado:           (solicitud.estado || "PENDIENTE").toUpperCase(),
+        tipo:             solicitudActualTipo,
+        tipoRaw:          solicitud.tipo_solicitud || "",   // valor original del backend
         motivoDevolucion: solicitud.observacion_respuesta || "",
-        nombreAnterior: nombreAnterior,
-        nombreNuevo: nombreNuevo,
-        docAnterior: docAnterior,
-        docNuevo: docNuevo,
-        horarioAnterior: horarioAnterior,
-        horarioNuevo: horarioNuevo
+        nombreAnterior, nombreNuevo,
+        docAnterior,    docNuevo,
+        horarioAnterior, horarioNuevo,
     };
 
     console.log("📦 DATOS MAPEADOS:", dataModal);
     solicitudActualData = dataModal;
-
     abrirModal(dataModal);
 }
 
@@ -329,10 +361,22 @@ function abrirModal(data) {
     modal.classList.add("flex");
 
     // Datos básicos
-    document.getElementById("modalCodigo").textContent = data.codigo || "";
-    document.getElementById("modalSolicitante").textContent = data.solicitante || "";
-    document.getElementById("modalPrograma").textContent = data.programa || "";
-    document.getElementById("modalFecha").textContent = data.fecha || "";
+    document.getElementById("modalCodigo").textContent      = data.codigo      || "";
+    document.getElementById("modalSolicitante").textContent = data.solicitante  || "";
+    document.getElementById("modalPrograma").textContent    = data.programa     || "";
+    document.getElementById("modalFecha").textContent       = data.fecha        || "";
+
+    // Badge de tipo — usa el valor normalizado o el raw del backend directamente
+    const tipoBadge = document.getElementById("modalTipoBadge");
+    if (tipoBadge) {
+        const tipoTexto = data.tipo === "horario"  ? "Horario"
+                        : data.tipo === "datos"    ? "Datos personales"
+                        : data.tipoRaw             ? data.tipoRaw   // valor original del backend
+                        : data.tipo                ? data.tipo
+                        : "";
+        tipoBadge.textContent = tipoTexto;
+        tipoBadge.style.display = tipoTexto ? "inline-block" : "none";
+    }
 
     // Guardar ID de la solicitud actual para usarlo en los botones
     modal.dataset.solicitudId = data.id;
@@ -377,81 +421,63 @@ function abrirModal(data) {
     // Contenido dinámico
     const contenedor = document.getElementById("modalContenido");
 
-     if (data.tipo === "datos") {
+    if (data.tipo === "datos") {
         contenedor.innerHTML = `
-            <div class="bg-gray-50 rounded-xl p-6 mt-6" style="border: 1px solid #d1d5db !important;">
-                <!-- Borde forzado con estilo inline -->
-
-                <div class="flex items-center gap-2 mb-4 text-[#39A900] font-semibold">
-                    <i data-lucide="user" class="w-5 h-5"></i>
+            <div class="bg-gray-50 rounded-xl p-4" style="border:1px solid #d1d5db;">
+                <div class="flex items-center gap-2 mb-4 font-semibold" style="color:#39A900;">
+                    <i data-lucide="user" style="width:16px;height:16px;"></i>
                     Cambio de datos personales
                 </div>
-
-                <div class="space-y-6 text-sm">
-                    <!-- Nombre -->
+                <div style="display:flex;flex-direction:column;gap:16px;font-size:14px;">
                     <div>
-                        <p class="text-gray-500 mb-2">Nombre, apellido, etc</p>
-                        <div class="flex items-center gap-4 flex-wrap">
-                            <div class="bg-white rounded px-4 py-2 text-gray-700 min-w-[180px]" style="border: 1px solid #d1d5db !important;">
-                                ${data.nombreAnterior || "<span class='text-gray-400'>No especificado</span>"}
+                        <p style="color:#6b7280;margin-bottom:6px;">Nombre</p>
+                        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                            <div style="padding:6px 14px;background:#f9fafb;border:1px solid #d1d5db;border-radius:6px;color:#374151;">
+                                ${data.nombreAnterior || "<span style='color:#9ca3af'>No especificado</span>"}
                             </div>
-
-                            <span class="text-gray-400 font-semibold">→</span>
-
-                            <div class="bg-green-50 rounded px-4 py-2 text-green-800 min-w-[180px]" style="border: 1px solid #10b981 !important;">
-                                ${data.nombreNuevo || "<span class='text-gray-400'>No especificado</span>"}
+                            <span style="color:#9ca3af;">→</span>
+                            <div style="padding:6px 14px;background:#f0fdf4;border:1px solid #10b981;border-radius:6px;color:#065f46;font-weight:600;">
+                                ${data.nombreNuevo || "<span style='color:#9ca3af'>No especificado</span>"}
                             </div>
                         </div>
                     </div>
-
-                    <!-- Documento -->
                     <div>
-                        <p class="text-gray-500 mb-2">Documento</p>
-                        <div class="flex items-center gap-4 flex-wrap">
-                            <div class="bg-white rounded px-4 py-2 text-gray-700 min-w-[180px]" style="border: 1px solid #d1d5db !important;">
-                                ${data.docAnterior || "<span class='text-gray-400'>No especificado</span>"}
+                        <p style="color:#6b7280;margin-bottom:6px;">Documento</p>
+                        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                            <div style="padding:6px 14px;background:#f9fafb;border:1px solid #d1d5db;border-radius:6px;color:#374151;">
+                                ${data.docAnterior || "<span style='color:#9ca3af'>No especificado</span>"}
                             </div>
-
-                            <span class="text-gray-400 font-semibold">→</span>
-
-                            <div class="bg-green-50 rounded px-4 py-2 text-green-800 min-w-[180px]" style="border: 1px solid #10b981 !important;">
-                                ${data.docNuevo || "<span class='text-gray-400'>No especificado</span>"}
+                            <span style="color:#9ca3af;">→</span>
+                            <div style="padding:6px 14px;background:#f0fdf4;border:1px solid #10b981;border-radius:6px;color:#065f46;font-weight:600;">
+                                ${data.docNuevo || "<span style='color:#9ca3af'>No especificado</span>"}
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        `;
-        lucide.createIcons();
-
-    } else if (data.tipo === "horario") {
-        contenedor.innerHTML = `
-            <div class="bg-gray-50 rounded-xl p-6 mt-6 border border-gray-200">
-
-                <div class="flex items-center gap-2 mb-4 text-[#39A900] font-semibold">
-                    <i data-lucide="clock" class="w-5 h-5"></i>
-                    Cambio de horario
-                </div>
-
-                <div class="flex items-center justify-between gap-3 flex-wrap">
-
-                    <div class="bg-white rounded-lg px-4 py-2 text-gray-700 min-w-[180px] border border-gray-300">
-                        ${data.horarioAnterior || "<span class='text-gray-400'>No especificado</span>"}
-                    </div>
-
-                    <span class="text-gray-400 font-semibold">→</span>
-
-                    <div class="bg-green-100 rounded-lg px-4 py-2 text-green-800 min-w-[180px] border border-green-300 font-medium">
-                        ${data.horarioNuevo || "<span class='text-gray-400'>No especificado</span>"}
-                    </div>
-
                 </div>
             </div>
         `;
         lucide.createIcons();
 
     } else {
-        contenedor.innerHTML = `<p class="text-gray-500 p-4">No hay información adicional para este tipo de solicitud</p>`;
+        // Default: bloque de horario (cubre "horario" y cualquier otro tipo)
+        contenedor.innerHTML = `
+            <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:14px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;color:#16a34a;font-weight:600;font-size:14px;">
+                    <i data-lucide="clock" style="width:16px;height:16px;"></i>
+                    Cambio de horario
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                    <div style="padding:5px 14px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;color:#4b5563;">
+                        ${data.horarioAnterior || "No especificado"}
+                    </div>
+                    <span style="color:#9ca3af;font-size:16px;">→</span>
+                    <div style="padding:5px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:13px;color:#15803d;font-weight:600;">
+                        ${data.horarioNuevo || "No especificado"}
+                    </div>
+                </div>
+            </div>
+        `;
+        lucide.createIcons();
     }
 }
 
