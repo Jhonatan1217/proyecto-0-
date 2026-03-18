@@ -2,6 +2,30 @@
 
 require_once __DIR__ . '/../../config/database.php';
 
+$id_usuario = $_SESSION['usuario_id'] ?? 0;
+$cargo = $_SESSION['usuario_cargo'] ?? '';
+
+$tieneRolEncargado = false;
+
+if ($cargo === 'INSTRUCTOR' && $id_usuario) {
+    require_once __DIR__ . '/../models/Usuario.php';
+    require_once __DIR__ . '/../../config/database.php';
+
+    $usuarioModel = new Usuario($conn);
+    $roles = $usuarioModel->listarRolesFuncionalesPorUsuario($id_usuario);
+
+    foreach ($roles as $r) {
+        if (strtoupper($r['nombre_rol']) === 'ENCARGADO_TRIMESTRALIZACION') {
+            $tieneRolEncargado = true;
+            break;
+        }
+    }
+}
+
+$puedeCrearTrimestralizacion =
+    $cargo === 'COORDINADOR' ||
+    ($cargo === 'INSTRUCTOR' && $tieneRolEncargado);
+
 $areas        = [];
 $zonas        = [];
 $instructores = [];
@@ -526,17 +550,9 @@ if (isset($conn)) {
             <option value="virtual"> Virtual </option>
             <option value="mixto"> Mixta </option>
           </select>
-<<<<<<< HEAD
-          <img 
-            src="<?= BASE_URL ?>src/assets/img/icons/Acction/chevron-down.svg" 
-            alt="arrow" 
-            class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70"
-          />
-=======
           <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="none" aria-hidden="true">
             <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
->>>>>>> develop
         </div>
       </div>
 
@@ -614,7 +630,7 @@ if (isset($conn)) {
          hover:bg-[#00304D]
          active:scale-[0.98]
          transition-all duration-200
-         <?= $isAuthenticated ? '' : 'hidden' ?>
+            <?= ($isAuthenticated && $puedeCrearTrimestralizacion) ? '' : 'hidden' ?>
          focus:outline-none focus:ring-2 focus:ring-[#00324d]/20">
         <img class="w-5 h-5" src="<?= BASE_URL ?>src/assets/img/plus.svg" />
       Nueva trimestralización

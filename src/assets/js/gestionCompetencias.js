@@ -16,6 +16,8 @@
 
   const INITIAL_RAES_OPEN = false;
 
+  const ES_INSTRUCTOR = (window.USER_CARGO || '').toUpperCase() === 'INSTRUCTOR';
+
   const tab = document.querySelector('[data-tab="competencies"]');
   if (!tab) return;
 
@@ -328,11 +330,14 @@
               <p class="text-zinc-500 mb-5 text-sm sm:text-base">
                 No hay competencias registrados
               </p>
-              <button id="btnFirstCompetency"
-                      class="flex items-center gap-2  bg-[#00324d] text-white px-4 py-2 rounded-xl font-medium text-sm">
-                <img src="${ICON_PLUS}" class="w-4 h-4" alt="simbolo de mas" />
-                Crear Primera Competencia
-              </button>
+
+              ${ES_INSTRUCTOR ? '' : `
+                <button id="btnFirstCompetency"
+                  class="flex items-center gap-2 bg-[#00324d] text-white px-4 py-2 rounded-xl font-medium text-sm">
+                  <img src="${ICON_PLUS}" class="w-4 h-4" alt="simbolo de mas" />
+                  Crear Primera Competencia
+                </button>
+              `}
             </div>
           </div>
         `;
@@ -400,10 +405,12 @@
             </div>
 
             <div class="shrink-0 flex items-center gap-3">
-              <button class="btn-edit inline-flex items-center justify-center p-2 text-zinc-600 hover:text-zinc-900" data-id="${e(c.id)}" title="Editar">
-                <img src="${ICON_PENCIL}" class="w-5 h-5" alt="Editar" />
-              </button>
-              ${renderSwitchHtml(c.id, !!c.estado)}
+              ${ES_INSTRUCTOR ? '' : `
+                <button class="btn-edit inline-flex items-center justify-center p-2 text-zinc-600 hover:text-zinc-900" data-id="${e(c.id)}" title="Editar">
+                  <img src="${ICON_PENCIL}" class="w-5 h-5" alt="Editar" />
+                </button>
+                ${renderSwitchHtml(c.id, !!c.estado)}
+              `}
             </div>
           </div>
         </div>
@@ -419,7 +426,9 @@
       list.appendChild(card);
     });
 
-    list.querySelectorAll('.btn-edit').forEach(b => b.addEventListener('click', onEditClick));
+    if (!ES_INSTRUCTOR) {
+  list.querySelectorAll('.btn-edit').forEach(b => b.addEventListener('click', onEditClick));
+}
     list.querySelectorAll('.switch').forEach(sw => {
       paintSwitch(sw);
       const input = sw.querySelector('input');
@@ -444,6 +453,9 @@
   }
 
   // EVENTS
+  if (ES_INSTRUCTOR && btnNew) {
+  btnNew.remove();
+}
   btnNew?.addEventListener('click', () => {
     editingId = null;
     editingSnap = null;
