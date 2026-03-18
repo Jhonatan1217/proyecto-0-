@@ -167,6 +167,11 @@ if (isset($conn)) {
     border-radius: 12px;
     box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
     overflow: hidden;
+    }  
+
+  .custom-combobox-panel-top {
+    top: auto !important;
+    bottom: calc(100% + 6px) !important;
   }
 
   .custom-combobox-panel.hidden {
@@ -471,7 +476,7 @@ if (isset($conn)) {
   }
 
   #tabla-horarios tbody td.hora-col {
-    background: #e0e0e0 !important;
+    background: #f3f4f6 !important;
     color: #5a5a5a !important;
     font-weight: 700;
     text-align: center;
@@ -479,13 +484,11 @@ if (isset($conn)) {
   }
 
   #tabla-horarios .registro {
-    background: #dce8f4 !important;
-    border: 1px solid #c5d3e3;
-    border-left: 3px solid #39a900 !important;
-    border-radius: 0.45rem;
+    background: #ffffff !important;
     box-shadow: none !important;
-    margin-bottom: 4px !important;
-    padding: 6px 7px !important;
+    margin-bottom: 0 !important;
+    padding: 8px 8px 8px 12px !important;
+    height: 100%;
   }
 
   #tabla-horarios .zona-libre {
@@ -506,7 +509,7 @@ if (isset($conn)) {
 
 <body class="text-center font-sans min-h-screen flex flex-col bg-gray-50 overflow-x-hidden">
 
-<header class="mt-10 text-center w-full max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-10" id="cabecera-trimestralizacion">
+<header class="mt-10 text-center w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10" id="cabecera-trimestralizacion">
   <h1 class="inline-block text-2xl sm:text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
     VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA 
     <?php echo isset($_GET['id_zona']) ? htmlspecialchars($_GET['id_zona']) : '—'; ?>
@@ -522,11 +525,11 @@ if (isset($conn)) {
 
 
     <!-- Selector de Modalidad -->
-      <div class="w-full sm:w-64 lg:w-[230px] xl:w-[230px] 2xl:w-[230px]">
+      <div class="w-full sm:w-60">
         <label for="selectModalidad" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Modalidad</label>
         <select id="selectModalidad" name="id_modalidad"
           class="select-styled w-full">
-          <option value="" class="text-[#00324D]" selected hidden>seleccione la modalidad</option>
+          <option value="" class="text-[#00324D]" selected hidden>Seleccione la modalidad</option>
           <option value="presencial"> presencial </option>
           <option value="virtual"> virtual </option>
           <option value="mixto"> mixta </option>
@@ -536,38 +539,45 @@ if (isset($conn)) {
 
 
   
-      <!-- Selector de Área -->
-      <div id="contenedorAreaFiltro" class="w-full sm:w-64 lg:w-[230px] xl:w-[230px] 2xl:w-[230px]">
-        <label for="selectArea" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Área</label>
-        <select id="selectArea" name="id_area"
-          class="select-styled w-full">
-          <option value="" class="text-[#00324D]" selected hidden>seleccione el área</option>
+      <!-- Selector de Área (Combobox) -->
+      <div id="contenedorAreaFiltro" class="w-full sm:w-60">
+        <label for="inputAreaTexto" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Área</label>
+        <div class="custom-combobox w-full">
+          <input type="text" id="inputAreaTexto" autocomplete="off" placeholder="Seleccione o escriba el área" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none transition-all duration-200">
+          <div id="panelAreaFiltro" class="custom-combobox-panel hidden">
+            <div class="custom-combobox-list"></div>
+          </div>
+        </div>
+        <select id="selectArea" name="id_area" class="hidden" tabindex="-1" aria-hidden="true">
+          <option value="">Seleccione el área</option>
         </select>
       </div>
 
 
 
 
-      <!-- Selector de Zona -->
-      <div id="contenedorZonaFiltro" class="w-full sm:w-64 lg:w-[230px] xl:w-[230px] 2xl:w-[230px]">
-        <label for="selectZona" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Zona</label>
-        <select id="selectZona" name="id_zona"
-          class="select-styled w-full">
-          <option value="" class="text-[#00324D]" selected hidden>seleccione la zona</option>
+      <!-- Selector de Zona (Combobox) -->
+      <div id="contenedorZonaFiltro" class="w-full sm:w-60">
+        <label for="inputZonaTexto" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Zona</label>
+        <div class="custom-combobox w-full">
+          <input type="text" id="inputZonaTexto" autocomplete="off" placeholder="Seleccione o escriba la zona" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none transition-all duration-200">
+          <div id="panelZonaFiltro" class="custom-combobox-panel hidden">
+            <div class="custom-combobox-list"></div>
+          </div>
+        </div>
+        <select id="selectZona" name="id_zona" class="hidden" tabindex="-1" aria-hidden="true">
+          <option value="">Seleccione la zona</option>
         </select>
       </div>
-    </div>
 
-
-
-
-    <!-- Input para filtrar por grupo -->
-    <div id="contenedorGrupoFiltro" class="relative w-full sm:w-64 lg:w-[230px] xl:w-[230px] 2xl:w-[230px] hidden">
-      <label for="inputGrupoTexto" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Filtrar por grupo</label>
-      <div class="custom-combobox w-full">
-        <input type="text" id="inputGrupoTexto" autocomplete="off" placeholder="seleccione o escriba número de grupo" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none transition-all duration-200">
-        <div id="panelGrupoFiltro" class="custom-combobox-panel hidden">
-          <div class="custom-combobox-list"></div>
+      <!-- Input para filtrar por grupo -->
+      <div id="contenedorGrupoFiltro" class="w-full sm:w-60 hidden">
+        <label for="inputGrupoTexto" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Filtrar por grupo</label>
+        <div class="custom-combobox w-full">
+          <input type="text" id="inputGrupoTexto" autocomplete="off" placeholder="Seleccione o escriba número de grupo" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none transition-all duration-200">
+          <div id="panelGrupoFiltro" class="custom-combobox-panel hidden">
+            <div class="custom-combobox-list"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -599,7 +609,7 @@ if (isset($conn)) {
 
 
   <!-- Contenido principal -->
-  <main class="flex flex-col items-center flex-grow w-full max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-10 pb-6">
+  <main class="flex flex-col items-center flex-grow w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pb-6">
     <section id="tabla-horarios"
   class="w-full shadow-xl rounded-2xl border border-gray-200 p-0 overflow-hidden">
       <table class="w-full text-xs min-w-[900px] sm:text-sm border-separate border-spacing-0">
@@ -833,7 +843,7 @@ if (isset($conn)) {
                     name="numero_ficha"
                     id="numero_ficha"
                     autocomplete="off"
-                    placeholder="seleccione o escriba número de grupo"
+                    placeholder="Seleccione o escriba número de grupo"
                     class="form-field w-full h-9 px-3 text-sm rounded-xl border border-gray-300 outline-none bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]"/>
                   <div id="panelGrupoCrear" class="custom-combobox-panel hidden">
                     <div class="custom-combobox-list"></div>
@@ -876,7 +886,7 @@ if (isset($conn)) {
                         type="text"
                         id="id_area_combo"
                         autocomplete="off"
-                        placeholder="seleccione o escriba el área"
+                        placeholder="Seleccione o escriba el área"
                         class="form-field w-full h-9 px-3 text-sm rounded-xl border border-gray-300 outline-none bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]" />
                       <div id="panelAreaCrear" class="custom-combobox-panel hidden">
                         <div class="custom-combobox-list"></div>
@@ -905,7 +915,7 @@ if (isset($conn)) {
                         type="text"
                         id="id_zona_combo"
                         autocomplete="off"
-                        placeholder="seleccione o escriba la zona"
+                        placeholder="Seleccione o escriba la zona"
                         class="form-field w-full h-9 px-3 text-sm rounded-xl border border-gray-300 outline-none bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]"
                         disabled />
                       <div id="panelZonaCrear" class="custom-combobox-panel hidden">
@@ -982,10 +992,10 @@ if (isset($conn)) {
                     type="text"
                     id="id_competencia_combo"
                     autocomplete="off"
-                    placeholder="seleccione o escriba la competencia"
+                    placeholder="Seleccione o escriba la competencia"
                     class="form-field w-full h-9 px-3 text-sm rounded-xl border border-gray-300 outline-none bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]"
                   />
-                  <div id="panelCompetenciaCrear" class="custom-combobox-panel hidden">
+                  <div id="panelCompetenciaCrear" class="custom-combobox-panel custom-combobox-panel-top hidden">
                     <div class="custom-combobox-list"></div>
                   </div>
                 </div>
