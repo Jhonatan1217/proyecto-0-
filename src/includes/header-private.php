@@ -309,32 +309,150 @@ document.addEventListener("DOMContentLoaded", function () {
   </div>
 </div>
 
-<div id="modalCambiarContrasena" class="modal-perfil fixed inset-0 hidden items-center justify-center p-4 bg-black/40" aria-modal="true" role="dialog" aria-labelledby="modalCambiarContrasenaTitle">
-  <div class="relative z-10 bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-6 flex flex-col">
-    <div class="modal-perfil-header flex items-center justify-between gap-4 pb-4 border-b border-gray-200 mb-4">
-      <h2 id="modalCambiarContrasenaTitle" class="modal-perfil-titulo text-xl font-bold text-gray-900">Cambiar contraseña</h2>
-      <button type="button" data-close="modalCambiarContrasena" class="btn-cerrar-perfil shrink-0 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition flex items-center justify-center" aria-label="Cerrar"><img src="<?= BASE_URL ?>src/assets/img/icons/Acction/x.svg" alt="" class="w-5 h-5" /></button>
-    </div>
-    <div class="flex flex-col items-center text-center mb-2">
-      <div class="rounded-full flex items-center justify-center mb-3 shrink-0" style="background-color: #BFBFBF; width: 32px; height: 32px;">
-        <img src="<?= BASE_URL ?>src/assets/img/icons/Security/Shield-Check.svg" alt="" class="w-5 h-5" style="width: 20px; height: 20px;" />
+<div id="modalCambiarContrasena"
+class="modal-perfil fixed inset-0 hidden items-center justify-center p-4 bg-black/40 z-50"
+aria-modal="true"
+role="dialog"
+aria-labelledby="modalCambiarContrasenaTitle">
+
+  <div class="relative z-10 bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+
+    <!-- botón cerrar -->
+    <button
+      type="button"
+      data-close="modalCambiarContrasena"
+      class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+      aria-label="Cerrar">
+
+      <img src="<?= BASE_URL ?>src/assets/img/icons/Acction/x.svg" class="w-5 h-5">
+
+    </button>
+
+    <!-- icono -->
+    <div class="flex justify-center mb-3">
+      <div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-200">
+        <img src="<?= BASE_URL ?>src/assets/img/icons/Security/Shield-Check.svg" class="w-5 h-5">
       </div>
-      <p class="modal-perfil-subtitulo text-gray-500 mb-5">Ingresa tu nueva contraseña.</p>
     </div>
-    <div class="mx-auto w-full max-w-sm">
-    <form id="formCambiarContrasena" class="space-y-4 w-full">
-      <div><label class="block text-sm font-medium text-gray-700 mb-1 text-left">Contraseña actual</label><div class="relative"><input type="password" name="password_actual" placeholder="Ingrese su contraseña actual" class="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none" /><button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 toggle-pwd p-1 flex items-center justify-center" tabindex="-1" aria-label="Mostrar contraseña"><img src="<?= BASE_URL ?>src/assets/img/eye.svg" alt="" class="w-5 h-5 icon-eye-open" /><img src="<?= BASE_URL ?>src/assets/img/eye-off.svg" alt="" class="w-5 h-5 icon-eye-closed hidden" /></button></div></div>
-      <div><label class="block text-sm font-medium text-gray-700 mb-1 text-left">Nueva contraseña</label><div class="relative"><input type="password" name="password_nueva" placeholder="Ingrese la nueva contraseña" class="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none" /><button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 toggle-pwd p-1 flex items-center justify-center" tabindex="-1" aria-label="Mostrar contraseña"><img src="<?= BASE_URL ?>src/assets/img/eye.svg" alt="" class="w-5 h-5 icon-eye-open" /><img src="<?= BASE_URL ?>src/assets/img/eye-off.svg" alt="" class="w-5 h-5 icon-eye-closed hidden" /></button></div></div>
-      <div><label class="block text-sm font-medium text-gray-700 mb-1 text-left">Confirmar contraseña</label><div class="relative"><input type="password" name="password_confirmar" placeholder="Ingrese la contraseña de nuevo" class="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none" /><button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 toggle-pwd p-1 flex items-center justify-center" tabindex="-1" aria-label="Mostrar contraseña"><img src="<?= BASE_URL ?>src/assets/img/eye.svg" alt="" class="w-5 h-5 icon-eye-open" /><img src="<?= BASE_URL ?>src/assets/img/eye-off.svg" alt="" class="w-5 h-5 icon-eye-closed hidden" /></button></div></div>
+
+    <!-- titulo -->
+    <h2 id="modalCambiarContrasenaTitle"
+    class="text-lg font-semibold text-gray-900 text-center">
+      Cambiar contraseña
+    </h2>
+
+    <!-- subtitulo -->
+    <p class="text-sm text-gray-500 text-center mt-2 mb-6">
+      Tu correo fue verificado correctamente. Ahora ingresa tu nueva contraseña.
+    </p>
+
+    <!-- formulario -->
+    <form id="formCambiarContrasena" class="space-y-4">
+
+      <!-- actual -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          Contraseña actual
+        </label>
+
+        <div class="relative">
+          <input
+          type="password"
+          name="password_actual"
+          placeholder="Ingrese su contraseña actual"
+          class="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none">
+
+          <button type="button"
+          class="toggle-pwd absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
+
+            <img src="<?= BASE_URL ?>src/assets/img/eye.svg" class="w-5 h-5 icon-eye-open">
+            <img src="<?= BASE_URL ?>src/assets/img/eye-off.svg" class="w-5 h-5 icon-eye-closed hidden">
+
+          </button>
+        </div>
+      </div>
+
+      <!-- nueva -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          Nueva contraseña
+        </label>
+
+        <div class="relative">
+          <input
+          type="password"
+          name="password_nueva"
+          placeholder="Ingrese la nueva contraseña"
+          class="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm">
+
+          <button type="button"
+          class="toggle-pwd absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
+
+            <img src="<?= BASE_URL ?>src/assets/img/eye.svg" class="w-5 h-5 icon-eye-open">
+            <img src="<?= BASE_URL ?>src/assets/img/eye-off.svg" class="w-5 h-5 icon-eye-closed hidden">
+
+          </button>
+        </div>
+      </div>
+
+      <!-- confirmar -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          Confirmar contraseña
+        </label>
+
+        <div class="relative">
+          <input
+          type="password"
+          name="password_confirmar"
+          placeholder="Ingrese la contraseña de nuevo"
+          class="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm">
+
+          <button type="button"
+          class="toggle-pwd absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
+
+            <img src="<?= BASE_URL ?>src/assets/img/eye.svg" class="w-5 h-5 icon-eye-open">
+            <img src="<?= BASE_URL ?>src/assets/img/eye-off.svg" class="w-5 h-5 icon-eye-closed hidden">
+
+          </button>
+        </div>
+      </div>
+
     </form>
-    <div class="mt-8 space-y-3 w-full">
-      <button type="submit" form="formCambiarContrasena" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gray-600 text-white text-sm font-medium hover:bg-gray-700 transition"><img src="<?= BASE_URL ?>src/assets/img/icons/Security/lock.svg" alt="" class="w-5 h-5 btn-cambiar-contrasena-lock" />Cambiar contraseña</button>
-      <button type="button" id="btnVolverEditarPerfil" class="w-full inline-flex items-center justify-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-        Volver editar perfil
-      </button>
+
+    <!-- botones -->
+    <div class="mt-6 space-y-3">
+
+    <!-- botón Cambiar contraseña -->
+    <button
+      type="submit"
+      form="formCambiarContrasena"
+      class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg"
+      style="background-color: #6b7280; color: white;">
+
+      <img src="<?= BASE_URL ?>src/assets/img/icons/Security/lock.svg" class="w-4 h-4 btn-cambiar-contrasena-lock">
+
+      Cambiar contraseña
+
+    </button>
+
+    <!-- botón Volver editar perfil -->
+    <button
+      type="button"
+      id="btnVolverEditarPerfil"
+      class="w-full flex items-center justify-center gap-2 text-gray-400 hover:text-gray-600 text-sm">
+
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+      </svg>
+
+      Volver editar perfil
+
+    </button>
+
     </div>
-    </div>
+
   </div>
 </div>
 
@@ -369,32 +487,36 @@ window.BASE_URL = <?= json_encode(BASE_URL) ?>;
     <ul class="p-4 space-y-4 text-gray-700">
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/calendar-days.svg" alt="Icono de Horarios">
-        <a href="<?= BASE_URL ?>index.php?page=register_tables">Horarios</a>
+        <a href="<?= BASE_URL ?>index.php?page=src/views/register_tables">Horarios</a>
       </li>
 
-      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/map-pin.svg" alt="Icono de Áreas">
-        <a href="<?= BASE_URL ?>index.php?page=gestionAreas">Áreas</a>
-      </li>
-      
-      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/house-plus.svg" alt="Icono de Zonas">
-        <a href="<?= BASE_URL ?>index.php?page=gestionZonas">Zonas</a>
-      </li>
+      <?php if ($cargo != 'INSTRUCTOR'): ?>
 
-      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/layers.svg" alt="Icono de Trimestres">
-        <a href="<?= BASE_URL ?>index.php?page=gestionTrimestres">Trimestres</a>
-      </li>
+        <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+          <img src="<?= BASE_URL ?>src/assets/img/map-pin.svg">
+          <a href="<?= BASE_URL ?>index.php?page=src/views/gestionAreas">Áreas</a>
+        </li>
 
-      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/users.svg" alt="Icono de Usuarios">
-        <a href="<?= BASE_URL ?>index.php?page=gestionUsuarios">Usuarios</a>
-      </li>
+        <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+          <img src="<?= BASE_URL ?>src/assets/img/house-plus.svg">
+          <a href="<?= BASE_URL ?>index.php?page=src/views/gestionZonas">Zonas</a>
+        </li>
+
+        <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+          <img src="<?= BASE_URL ?>src/assets/img/layers.svg">
+          <a href="<?= BASE_URL ?>index.php?page=src/views/gestionTrimestres">Trimestres</a>
+        </li>
+
+        <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+          <img src="<?= BASE_URL ?>src/assets/img/users.svg">
+          <a href="<?= BASE_URL ?>index.php?page=gestionUsuarios">Usuarios</a>
+        </li>
+
+      <?php endif; ?>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/folder-minus.svg" alt="Icono de Grupos">
-        <a href="<?= BASE_URL ?>index.php?page=gestionGrupos">Grupos</a>
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionGrupos">Grupos</a>
       </li>
 
       <li class="relative">
@@ -410,10 +532,13 @@ window.BASE_URL = <?= json_encode(BASE_URL) ?>;
         
         <!-- Submenú de Académicos (inicialmente oculto) -->
         <ul class="pl-12 mt-2 space-y-2 hidden" id="academicos-submenu">
-          <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-            <img src="<?= BASE_URL ?>src/assets/img/upload.svg" alt="Icono de Carga Excel" class="w-5 h-5">
-            <a href="<?= BASE_URL ?>index.php?page=academicos&tab=upload">Carga Excel</a>
-          </li>
+          <?php if ($cargo != 'INSTRUCTOR'): ?>
+            <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+              <img src="<?= BASE_URL ?>src/assets/img/upload.svg" class="w-5 h-5">
+              <a href="<?= BASE_URL ?>index.php?page=academicos&tab=upload">Carga Excel</a>
+            </li>
+          <?php endif; ?>
+
           <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
             <img src="<?= BASE_URL ?>src/assets/img/graduation-cap.svg" alt="Icono de Programas" class="w-5 h-5">
             <a href="<?= BASE_URL ?>index.php?page=academicos&tab=programs">Programas</a>
@@ -431,12 +556,12 @@ window.BASE_URL = <?= json_encode(BASE_URL) ?>;
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/clipboard-list.svg" alt="Icono de Solicitudes">
-        <a href="<?= BASE_URL ?>index.php?page=gestionSolicitudes">Solicitudes</a>
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionSolicitudes">Solicitudes</a>
       </li>
 
       <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
         <img src="<?= BASE_URL ?>src/assets/img/history.svg" alt="Icono de Trimestres">
-        <a href="<?= BASE_URL ?>index.php?page=historialRegistrosInactivos">Historial</a>
+        <a href="<?= BASE_URL ?>index.php?page=src/views/historialRegistrosInactivos">Historial</a>
       </li>
     </ul>
   </nav>

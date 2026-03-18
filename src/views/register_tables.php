@@ -2,6 +2,30 @@
 
 require_once __DIR__ . '/../../config/database.php';
 
+$id_usuario = $_SESSION['usuario_id'] ?? 0;
+$cargo = $_SESSION['usuario_cargo'] ?? '';
+
+$tieneRolEncargado = false;
+
+if ($cargo === 'INSTRUCTOR' && $id_usuario) {
+    require_once __DIR__ . '/../models/Usuario.php';
+    require_once __DIR__ . '/../../config/database.php';
+
+    $usuarioModel = new Usuario($conn);
+    $roles = $usuarioModel->listarRolesFuncionalesPorUsuario($id_usuario);
+
+    foreach ($roles as $r) {
+        if (strtoupper($r['nombre_rol']) === 'ENCARGADO_TRIMESTRALIZACION') {
+            $tieneRolEncargado = true;
+            break;
+        }
+    }
+}
+
+$puedeCrearTrimestralizacion =
+    $cargo === 'COORDINADOR' ||
+    ($cargo === 'INSTRUCTOR' && $tieneRolEncargado);
+
 $areas        = [];
 $zonas        = [];
 $instructores = [];
@@ -563,7 +587,7 @@ if (isset($conn)) {
          hover:bg-[#00304D]
          active:scale-[0.98]
          transition-all duration-200
-         <?= $isAuthenticated ? '' : 'hidden' ?>
+            <?= ($isAuthenticated && $puedeCrearTrimestralizacion) ? '' : 'hidden' ?>
          focus:outline-none focus:ring-2 focus:ring-[#00324d]/20">
         <img class="w-4 h-4 shrink-0" src="<?= BASE_URL ?>src/assets/img/plus.svg" alt="" aria-hidden="true" />
         <span class="leading-none">Nueva trimestralización</span>

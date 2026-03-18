@@ -367,88 +367,182 @@
     }
 
     var formContrasena = getEl("formCambiarContrasena");
-    if (formContrasena) {
-      formContrasena.addEventListener("submit", function (e) {
-        e.preventDefault();
-        var actual = (formContrasena.querySelector("[name='password_actual']") || {}).value || "";
-        var nueva = (formContrasena.querySelector("[name='password_nueva']") || {}).value || "";
-        var confirmar = (formContrasena.querySelector("[name='password_confirmar']") || {}).value || "";
-        if (!actual.trim()) {
-          if (window.Swal) {
-            Swal.fire({ toast: true, position: "top-end", icon: "error", title: "Debe ingresar la contraseña actual.", showConfirmButton: false, timer: 2500 });
-          } else {
-            alert("Debe ingresar la contraseña actual.");
-          }
-          return;
-        }
-        if (nueva !== confirmar) {
-          if (window.Swal) {
-            Swal.fire({ toast: true, position: "top-end", icon: "error", title: "Las contraseñas no coinciden.", showConfirmButton: false, timer: 2500 });
-          } else {
-            alert("Las contraseñas no coinciden.");
-          }
-          return;
-        }
-        if (nueva.length < 6) {
-          if (window.Swal) {
-            Swal.fire({ toast: true, position: "top-end", icon: "error", title: "La nueva contraseña debe tener al menos 6 caracteres.", showConfirmButton: false, timer: 2500 });
-          } else {
-            alert("La nueva contraseña debe tener al menos 6 caracteres.");
-          }
-          return;
-        }
-        if (nueva === actual) {
-          if (window.Swal) {
-            Swal.fire({ toast: true, position: "top-end", icon: "error", title: "La nueva contraseña no puede ser igual a la actual.", showConfirmButton: false, timer: 2500 });
-          } else {
-            alert("La nueva contraseña no puede ser igual a la actual.");
-          }
-          return;
-        }
-        var btn = formContrasena.querySelector('button[type="submit"]');
-        var originalText = btn ? btn.innerHTML : "";
-        if (btn) {
-          btn.disabled = true;
-          btn.innerHTML = '<span class="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span> Procesando...';
-        }
-        var fd = new FormData();
-        fd.append("id_usuario", USUARIO_ID);
-        fd.append("password_actual", actual);
-        fd.append("password_nueva", nueva);
-        fetch(API + "?accion=cambiarContrasena", { method: "POST", body: fd })
-          .then(function (r) { return r.json(); })
-          .then(function (data) {
-            if (data && data.success) {
-              if (window.Swal) {
-                Swal.fire({ toast: true, position: "top-end", icon: "success", title: data.message || "Contraseña actualizada.", showConfirmButton: false, timer: 2500 });
-              } else {
-                alert(data.message || "Contraseña actualizada.");
-              }
-              closeModal("modalCambiarContrasena");
-              formContrasena.reset();
-            } else {
-              if (window.Swal) {
-                Swal.fire({ toast: true, position: "top-end", icon: "error", title: data.error || "Error al cambiar contraseña.", showConfirmButton: false, timer: 2500 });
-              } else {
-                alert(data.error || "Error al cambiar contraseña.");
-              }
-            }
-          })
-          .catch(function () {
-            if (window.Swal) {
-              Swal.fire({ toast: true, position: "top-end", icon: "error", title: "Error de conexión.", showConfirmButton: false, timer: 2500 });
-            } else {
-              alert("Error de conexión.");
-            }
-          })
-          .finally(function () {
-            if (btn) {
-              btn.disabled = false;
-              btn.innerHTML = originalText;
-            }
-          });
-      });
+
+if (formContrasena) {
+
+  formContrasena.addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    var actual = (formContrasena.querySelector("[name='password_actual']") || {}).value || "";
+    var nueva = (formContrasena.querySelector("[name='password_nueva']") || {}).value || "";
+    var confirmar = (formContrasena.querySelector("[name='password_confirmar']") || {}).value || "";
+
+    // Validar contraseña actual
+    if (!actual.trim()) {
+      if (window.Swal) {
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "error",
+          title: "Debe ingresar la contraseña actual.",
+          showConfirmButton: false,
+          timer: 2500,
+          zIndex: 999999
+        });
+      } else {
+        alert("Debe ingresar la contraseña actual.");
+      }
+      return;
     }
+
+    // Validar coincidencia
+    if (nueva !== confirmar) {
+      if (window.Swal) {
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "error",
+          title: "Las contraseñas no coinciden.",
+          showConfirmButton: false,
+          timer: 2500,
+          zIndex: 999999
+        });
+      } else {
+        alert("Las contraseñas no coinciden.");
+      }
+      return;
+    }
+
+    // Validar longitud
+    if (nueva.length < 6) {
+      if (window.Swal) {
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "error",
+          title: "La nueva contraseña debe tener al menos 6 caracteres.",
+          showConfirmButton: false,
+          timer: 2500,
+          zIndex: 999999
+        });
+      } else {
+        alert("La nueva contraseña debe tener al menos 6 caracteres.");
+      }
+      return;
+    }
+
+    // Validar que no sea igual
+    if (nueva === actual) {
+      if (window.Swal) {
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "error",
+          title: "La nueva contraseña no puede ser igual a la actual.",
+          showConfirmButton: false,
+          timer: 2500,
+          zIndex: 999999
+        });
+      } else {
+        alert("La nueva contraseña no puede ser igual a la actual.");
+      }
+      return;
+    }
+
+    // Botón loading
+    var btn = formContrasena.querySelector('button[type="submit"]');
+    var originalText = btn ? btn.innerHTML : "";
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = `
+        <span class="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
+        Procesando...
+      `;
+    }
+
+    // Enviar datos
+    var fd = new FormData();
+    fd.append("id_usuario", USUARIO_ID);
+    fd.append("password_actual", actual);
+    fd.append("password_nueva", nueva);
+
+    fetch(API + "?accion=cambiarContrasena", {
+      method: "POST",
+      body: fd
+    })
+    .then(function (r) {
+      return r.json();
+    })
+    .then(function (data) {
+
+      if (data && data.success) {
+
+        if (window.Swal) {
+          Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: "success",
+            title: data.message || "Contraseña actualizada.",
+            showConfirmButton: false,
+            timer: 2500,
+            zIndex: 999999
+          });
+        } else {
+          alert(data.message || "Contraseña actualizada.");
+        }
+
+        closeModal("modalCambiarContrasena");
+        formContrasena.reset();
+
+      } else {
+
+        if (window.Swal) {
+          Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: "error",
+            title: data.error || "Error al cambiar contraseña.",
+            showConfirmButton: false,
+            timer: 2500,
+            zIndex: 999999
+          });
+        } else {
+          alert(data.error || "Error al cambiar contraseña.");
+        }
+
+      }
+
+    })
+    .catch(function () {
+
+      if (window.Swal) {
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "error",
+          title: "Error de conexión.",
+          showConfirmButton: false,
+          timer: 2500,
+          zIndex: 999999
+        });
+      } else {
+        alert("Error de conexión.");
+      }
+
+    })
+    .finally(function () {
+
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+
+    });
+
+  });
+
+}
 
     initTogglePassword(getEl("modalCambiarContrasena"));
     enhanceSelectsPerfilModal();
