@@ -485,9 +485,11 @@ window.BASE_URL = <?= json_encode(BASE_URL) ?>;
     </div>
 
     <ul class="p-4 space-y-4 text-gray-700">
-      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/calendar-days.svg" alt="Icono de Horarios">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/register_tables">Horarios</a>
+      <li>
+        <a href="<?= BASE_URL ?>index.php?page=src/views/register_tables" class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+          <img src="<?= BASE_URL ?>src/assets/img/calendar-days.svg" alt="Icono de Horarios">
+          <span>Horarios</span>
+        </a>
       </li>
 
       <?php if ($cargo != 'INSTRUCTOR'): ?>
@@ -514,9 +516,11 @@ window.BASE_URL = <?= json_encode(BASE_URL) ?>;
 
       <?php endif; ?>
 
-      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/folder-minus.svg" alt="Icono de Grupos">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionGrupos">Grupos</a>
+      <li>
+        <a href="<?= BASE_URL ?>index.php?page=src/views/gestionGrupos" class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+          <img src="<?= BASE_URL ?>src/assets/img/folder-minus.svg" alt="Icono de Grupos">
+          <span>Grupos</span>
+        </a>
       </li>
 
       <li class="relative">
@@ -559,9 +563,11 @@ window.BASE_URL = <?= json_encode(BASE_URL) ?>;
         <a href="<?= BASE_URL ?>index.php?page=src/views/gestionSolicitudes">Solicitudes</a>
       </li>
 
-      <li class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
-        <img src="<?= BASE_URL ?>src/assets/img/history.svg" alt="Icono de Trimestres">
-        <a href="<?= BASE_URL ?>index.php?page=src/views/historialRegistrosInactivos">Historial</a>
+      <li>
+        <a href="<?= BASE_URL ?>index.php?page=src/views/historialRegistrosInactivos" class="flex items-center space-x-2 hover:text-[#39a900] cursor-pointer p-2">
+          <img src="<?= BASE_URL ?>src/assets/img/history.svg" alt="Icono de Trimestres">
+          <span>Historial</span>
+        </a>
       </li>
     </ul>
   </nav>
