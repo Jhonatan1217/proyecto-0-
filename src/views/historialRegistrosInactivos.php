@@ -103,10 +103,13 @@ $e = static function ($s) { return htmlspecialchars((string) ($s ?? ''), ENT_QUO
           <?php foreach ($horariosInactivos as $row): ?>
             <?php
             $nombreFicha = historial_getNombre($conn, 'fichas', 'id_ficha', 'numero_ficha', $row['id_ficha'] ?? null);
-            $nombreInstructor = historial_getNombre($conn, 'instructores', 'id_instructor', 'nombre_instructor', $row['id_instructor'] ?? null);
+            // El módulo cambió de "instructores" a "usuarios".
+            // En horarios/horario la FK se mantiene como id_instructor, pero apunta a usuarios.id_usuario.
+            $nombreInstructor = historial_getNombre($conn, 'usuarios', 'id_usuario', 'nombre_completo', $row['id_instructor'] ?? null);
             $nombreCompetencia = historial_getNombre($conn, 'competencias', 'id_competencia', 'nombre_competencia', $row['id_competencia'] ?? null);
             $nombrePrograma = historial_getNombre($conn, 'programas', 'id_programa', 'nombre_programa', $row['id_programa'] ?? null);
-            $nombreArea = historial_getNombre($conn, 'areas', 'id_area', 'nombre_area', $row['id_area'] ?? null);
+            // En el sistema la tabla de áreas se llama `area` (no `areas`).
+            $nombreArea = historial_getNombre($conn, 'area', 'id_area', 'nombre_area', $row['id_area'] ?? null);
             $descripcionRae = historial_getNombresMultiple($conn, 'raes', 'id_rae', 'descripcion', $row['id_rae'] ?? null);
             ?>
             <div class="schedule-item card-hover-enterprise bg-white rounded-2xl border border-gray-200 p-5 shadow-sm"
