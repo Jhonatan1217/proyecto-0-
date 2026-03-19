@@ -1,494 +1,463 @@
-(() => {
-  // =======================
-  // CONFIGURACIÓN GLOBAL
-  // =======================
-  const API_URL = "src/controllers/ZonaController.php";
-  const API_AREA_URL = "src/controllers/AreaController.php";
+/**
+ * Gestión de Zonas - usa nombre_zona (texto) + id_area como identificadores.
+ * Usa ComboboxComponent centralizado con dropup para última fila.
+ */
+(function () {
+  const BASE = window.BASE_URL || '';
+  const API_URL = BASE + 'src/controllers/ZonaController.php';
+  const API_AREA_URL = BASE + 'src/controllers/AreaController.php';
 
-  // =======================
-  // ELEMENTOS DEL DOM
-  // =======================
-  const modal = document.getElementById("modalZonas");
-  const formZona = document.getElementById("formNuevaZona");
-  const openBtn = document.getElementById("btnAbrirModalZonas");
-  const closeBtn = document.getElementById("btnCerrarModalZonas");
-  const cancelBtn = document.getElementById("btnCancelarModalZonas");
-  const panel = document.getElementById("modalPanel");
-  const backdrop = document.getElementById("modalBackdrop");
-  const tabla = document.querySelector("#tablaInstructores");
-  const tablaBody = document.querySelector("#tablaInstructores tbody");
-  const inputZona = document.getElementById("id_zona");
-  const wrapTabla = document.getElementById("wrapTablaZonas") || document.getElementById("wrapTabla");
+  let zonas = [];
+  let areas = [];
+  let filaEnEdicion = null;
 
-  // =======================
-  // CONFIGURACIÓN TOAST
-  // =======================
-  const Toast = Swal.mixin({
+  const Toast = Swal?.mixin({
     toast: true,
-    position: "top-end",
+    position: 'top-end',
     showConfirmButton: false,
     timer: 2500,
     timerProgressBar: true,
-    background: "#fff",
-    color: "#333",
-    didOpen: (toast) => {
-      toast.addEventListener("mouseenter", Swal.stopTimer);
-      toast.addEventListener("mouseleave", Swal.resumeTimer);
-    },
-  });
+    background: '#fff',
+    color: '#333',
+    didOpen: (t) => {
+      t.addEventListener('mouseenter', Swal.stopTimer);
+      t.addEventListener('mouseleave', Swal.resumeTimer);
+    }
+  }) || { fire: (o) => alert(o?.title || '') };
 
-  // =======================
-  // FUNCIONES AUXILIARES
-  // =======================
-  function normalizarTexto(texto) {
-    return texto
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .trim();
+  function normalizarTexto(t) {
+    return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
   }
 
-  function esErrorDuplicado(mensajeCrudo = "") {
-    const msg = String(mensajeCrudo).toLowerCase();
-    return (
-      msg.includes("duplicate entry") ||
-      msg.includes("ya existe una zona") ||
-      msg.includes("1062") ||
-      msg.includes("sqlstate[23000]")
-    );
+  function esErrorDuplicado(msg) {
+    const m = String(msg || '').toLowerCase();
+    return m.includes('duplicate') || m.includes('ya existe') || m.includes('1062') || m.includes('23000');
   }
 
-  // =======================
-  // FUNCIONES MODAL
-  // =======================
-  const openModal = () => {
-    modal?.classList.remove("hidden");
-    requestAnimationFrame(() => {
-      panel?.classList.add("opacity-100", "scale-100", "translate-y-0");
-      backdrop?.classList.add("opacity-100");
-    });
-  };
-
-  const closeModal = () => {
-    panel?.classList.remove("opacity-100", "scale-100", "translate-y-0");
-    backdrop?.classList.remove("opacity-100");
-    setTimeout(() => modal?.classList.add("hidden"), 200);
-    formZona?.reset();
-  };
-
-  openBtn?.addEventListener("click", openModal);
-  closeBtn?.addEventListener("click", closeModal);
-  cancelBtn?.addEventListener("click", closeModal);
-  backdrop?.addEventListener("click", (e) => {
-    if (e.target === backdrop) closeModal();
-  });
-
-  inputZona?.addEventListener("input", (e) => {
-    let val = e.target.value;
-    val = val.replace(/[^0-9]/g, "");
-    if (val.length > 1 && val.startsWith("0")) val = val.replace(/^0+/, "");
-    if (val.length > 4) val = val.slice(0, 4);
-    e.target.value = val;
-  });
-
-  function ajustarAltoTablaZonas() {
-    if (!wrapTabla || !tabla) return;
-    const thead = tabla.querySelector("thead");
-    const firstRow = tabla.querySelector("tbody tr");
-    const filas = tabla.querySelectorAll("tbody tr").length;
-    const headH = thead ? thead.getBoundingClientRect().height : 44;
-    const rowH = firstRow ? firstRow.getBoundingClientRect().height : 56;
-    const maxFilas = 5;
-    const maxH = headH + rowH * maxFilas;
-    wrapTabla.style.maxHeight = `${Math.ceil(maxH)}px`;
-    wrapTabla.style.overflowY = filas > maxFilas ? "auto" : "visible";
-    wrapTabla.style.overscrollBehavior = "contain";
+  function apiFetch(url, method, body) {
+    return fetch(url, { method: method || 'GET', body: body }).then(r => r.json());
   }
-  window.addEventListener("resize", ajustarAltoTablaZonas);
 
-  // =======================
-  // CARGAR ÁREAS PARA FILTRO (SOLO LAS QUE TIENEN ZONAS)
-  // =======================
-  async function cargarAreasParaFiltro() {
-    const filtroArea = document.getElementById("filtroArea");
-    if (!filtroArea) return;
-    
+  /* ========== ÁREAS ========== */
+  async function cargarAreas() {
     try {
-      const [resZonas, resAreas] = await Promise.all([
+      const json = await apiFetch(`${API_AREA_URL}?accion=listar`);
+      if (json.status === 'success' && Array.isArray(json.data)) {
+        const unicas = new Set();
+        areas = json.data.filter(a => {
+          const n = (a.nombre_area || '').trim();
+          if (unicas.has(n)) return false;
+          unicas.add(n);
+          return true;
+        });
+        return areas;
+      }
+    } catch (e) { console.error('Error cargar áreas:', e); }
+    return [];
+  }
+
+  async function cargarAreasParaFiltro() {
+    const filtro = document.getElementById('filtroArea');
+    if (!filtro) return;
+    try {
+      const [rZ, rA] = await Promise.all([
         fetch(`${API_URL}?accion=listar`),
         fetch(`${API_AREA_URL}?accion=listar`)
       ]);
-      
-      const jsonZonas = await resZonas.json();
-      const jsonAreas = await resAreas.json();
-
-      if (jsonZonas.status === "success" && Array.isArray(jsonZonas.data) && 
-          jsonAreas.status === "success" && Array.isArray(jsonAreas.data)) {
-        
-        const areasConZonas = new Set(jsonZonas.data.map(z => z.id_area).filter(id => id));
-        const areasFiltradas = jsonAreas.data.filter(area => areasConZonas.has(area.id_area));
-        
-        filtroArea.innerHTML = `<option value="todas">Todas las áreas</option>`;
-        
-        if (areasFiltradas.length > 0) {
-          const areasUnicas = new Set();
-          areasFiltradas.forEach((area) => {
-            const nombreArea = area.nombre_area.trim();
-            if (!areasUnicas.has(nombreArea)) {
-              areasUnicas.add(nombreArea);
-              const option = document.createElement("option");
-              option.value = nombreArea;
-              option.textContent = nombreArea;
-              filtroArea.appendChild(option);
-            }
-          });
+      const jZ = await rZ.json();
+      const jA = await rA.json();
+      const idsConZonas = new Set((jZ.data || []).map(z => String(z.id_area)).filter(Boolean));
+      const areasFilt = (jA.data || []).filter(a => idsConZonas.has(String(a.id_area)));
+      filtro.innerHTML = '<option value="todas">Todas las áreas</option>';
+      const unicas = new Set();
+      areasFilt.forEach(a => {
+        const n = (a.nombre_area || '').trim();
+        if (!unicas.has(n)) {
+          unicas.add(n);
+          const o = document.createElement('option');
+          o.value = a.id_area;
+          o.textContent = n;
+          filtro.appendChild(o);
         }
-      } else {
-        filtroArea.innerHTML = `<option value="todas">Todas las áreas</option>`;
-      }
-    } catch (err) {
-      console.error("Error al cargar áreas para filtro:", err);
-      filtroArea.innerHTML = `<option value="todas">Todas las áreas</option>`;
+      });
+    } catch (e) {
+      console.error('Error áreas filtro:', e);
+      filtro.innerHTML = '<option value="todas">Todas las áreas</option>';
     }
+    enhanceFiltroArea();
   }
 
-  // =======================
-  // CARGAR ÁREAS PARA MODAL (TODAS)
-  // =======================
+  function enhanceFiltroArea() {
+    const select = document.getElementById('filtroArea');
+    if (!select || select.dataset.cb === '1') return;
+    select.dataset.cb = '1';
+    if (typeof ComboboxComponent === 'undefined') return;
+    ComboboxComponent.enhance({
+      selector: '#filtroArea',
+      dropdownClass: 'combobox-dropdown-filtro',
+      optionClass: 'custom-option',
+      placeholder: 'Todas las áreas',
+      clearValue: 'todas',
+      restoreValueOnBlurWhenEmpty: false
+    });
+  }
+
   async function cargarAreasParaModal() {
-    const selectArea = document.getElementById("id_area");
-    if (!selectArea) return;
-    
-    try {
-      const res = await fetch(`${API_AREA_URL}?accion=listar`);
-      const json = await res.json();
-
-      if (json.status === "success" && Array.isArray(json.data) && json.data.length > 0) {
-        selectArea.innerHTML = `<option disabled selected value="">Seleccione un Área</option>`;
-        const areasUnicas = new Set();
-        json.data.forEach((area) => {
-          const nombreArea = area.nombre_area.trim();
-          if (!areasUnicas.has(nombreArea)) {
-            areasUnicas.add(nombreArea);
-            const option = document.createElement("option");
-            option.value = area.id_area;
-            option.textContent = nombreArea;
-            selectArea.appendChild(option);
-          }
-        });
-      } else {
-        selectArea.innerHTML = `<option disabled selected value="">No hay áreas disponibles</option>`;
-      }
-    } catch (err) {
-      console.error("Error al cargar áreas para modal:", err);
-      selectArea.innerHTML = `<option disabled selected value="">Error al cargar áreas</option>`;
-    }
+    const sel = document.getElementById('id_area');
+    if (!sel) return;
+    await cargarAreas();
+    sel.innerHTML = '<option disabled selected value="">Seleccione un Área</option>';
+    areas.forEach(a => {
+      const o = document.createElement('option');
+      o.value = a.id_area;
+      o.textContent = (a.nombre_area || '').trim();
+      sel.appendChild(o);
+    });
+    enhanceSelectsZona();
   }
 
-  // =======================
-  // CARGAR ZONAS
-  // =======================
+  function enhanceSelectsZona() {
+    if (typeof ComboboxComponent === 'undefined') return;
+    // Select del modal "Nueva Zona": clearValue:'' para que el input aparezca vacío
+    // cuando ningún área está seleccionada, mostrando el placeholder y todas las opciones al abrir.
+    ComboboxComponent.enhance({
+      selector: '#id_area',
+      dropdownClass: 'select-zona-dropdown',
+      optionClass: 'select-zona-option',
+      placeholder: 'Buscar área...',
+      clearValue: '',
+      restoreValueOnBlurWhenEmpty: true
+    });
+    // Selects de filas en edición inline (distintos al modal)
+    ComboboxComponent.enhance({
+      selector: '.select-zona:not(#id_area)',
+      dropdownClass: 'select-zona-dropdown',
+      optionClass: 'select-zona-option',
+      placeholder: 'Buscar área...',
+      restoreValueOnBlurWhenEmpty: true
+    });
+  }
+
+  /* ========== TABLA ========== */
+  const ICON_PENCIL = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 21h8"/><path d="m15 5 4 4"/><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>';
+
   async function cargarZonas() {
-    if (!tablaBody) return;
-    tablaBody.innerHTML = `<tr><td colspan="3" class="p-4 text-gray-500 text-center">Cargando zonas...</td></tr>`;
-    
+    const tbody = document.getElementById('tbodyZonas');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-gray-500 text-center">Cargando zonas...</td></tr>';
     try {
-      const res = await fetch(`${API_URL}?accion=listar`);
-      const json = await res.json();
-
-      if (json.status === "success") {
-        if (!Array.isArray(json.data) || json.data.length === 0) {
-          tablaBody.innerHTML = `<tr><td colspan="3" class="text-center p-4 text-gray-500">No hay zonas registradas</td></tr>`;
-          ajustarAltoTablaZonas();
-          return;
+      const json = await apiFetch(`${API_URL}?accion=listar`);
+      if (json.status === 'success') {
+        zonas = json.data || [];
+        if (!zonas.length) {
+          tbody.innerHTML = '<tr><td colspan="3" class="text-center p-4 text-gray-500">No hay zonas registradas</td></tr>';
+        } else {
+          renderTabla(zonas);
+          aplicarFiltros();
         }
-
-        tablaBody.innerHTML = json.data.map((z) => `
-          <tr data-id="${z.id_zona}" data-id-area="${z.id_area ?? ""}" data-area-nombre="${z.nombre_area}" class="border-b">
-            <td class="px-6 py-4">${z.id_zona}</td>
-            <td class="px-6 py-4 text-center">
-              <span class="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-full">
-                ${z.nombre_area || "—"}
-              </span>
-            </td>
-            <td class="px-6 py-4 text-right">
-              <div class="flex justify-end items-center gap-3">
-                <button class="btn-editar p-2 border rounded-xl hover:bg-gray-50 transition" title="Editar">
-                  <img class="w-5 h-5" src="src/assets/img/pencil-line.svg" alt="Editar" />
-                </button>
-                <label class="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" class="sr-only peer" ${Number(z.estado) === 1 ? "checked" : ""}>
-                  <div class="w-11 h-6 bg-gray-200 rounded-full transition peer-checked:bg-[#39A900]"></div>
-                  <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition peer-checked:translate-x-5"></div>
-                </label>
-              </div>
-            </td>
-          </tr>
-        `).join("");
-
-        ajustarAltoTablaZonas();
-        aplicarFiltrosCombinados();
       } else {
-        tablaBody.innerHTML = `<tr><td colspan="3" class="text-center p-4 text-red-500">${json.message || "Error al listar"}</td></tr>`;
-        ajustarAltoTablaZonas();
+        tbody.innerHTML = `<tr><td colspan="3" class="text-center p-4 text-red-500">${json.message || 'Error'}</td></tr>`;
       }
-    } catch (err) {
-      console.error("Error al cargar zonas:", err);
-      tablaBody.innerHTML = `<tr><td colspan="3" class="text-center p-4 text-red-500">Error al cargar zonas</td></tr>`;
-      ajustarAltoTablaZonas();
+    } catch (e) {
+      console.error('Error cargar zonas:', e);
+      tbody.innerHTML = '<tr><td colspan="3" class="text-center p-4 text-red-500">Error al cargar</td></tr>';
     }
+    ajustarAltoTabla();
   }
 
-  // =======================
-  // FILTROS
-  // =======================
-  function aplicarFiltrosCombinados() {
-    const filtroArea = document.getElementById('filtroArea');
-    const buscador = document.getElementById('buscadorZonas');
-    
-    if (!filtroArea && !buscador) return;
-    
-    const areaSeleccionada = filtroArea ? filtroArea.value : 'todas';
-    const terminoBusqueda = buscador ? buscador.value.toLowerCase().trim() : '';
-    const filas = document.querySelectorAll('#tablaInstructores tbody tr');
-    let filasVisibles = 0;
-    
-    const filaNoResultadosExistente = document.getElementById('fila-no-resultados');
-    if (filaNoResultadosExistente) filaNoResultadosExistente.remove();
-    
-    filas.forEach(fila => {
-      if (fila.children.length === 1 && fila.children[0].colSpan === 3) return;
-      
-      const numeroZona = fila.children[0]?.textContent.toLowerCase() || '';
-      const areaSpan = fila.querySelector('td:nth-child(2) span');
-      const areaTexto = areaSpan ? areaSpan.textContent : '';
-      
-      const areaTextoNormalizado = normalizarTexto(areaTexto);
-      const areaSeleccionadaNormalizado = areaSeleccionada !== 'todas' ? normalizarTexto(areaSeleccionada) : 'todas';
-      const coincideArea = areaSeleccionada === 'todas' || areaTextoNormalizado === areaSeleccionadaNormalizado;
-      const coincideBusqueda = terminoBusqueda === '' || numeroZona.includes(terminoBusqueda) || areaTextoNormalizado.includes(terminoBusqueda);
-      
-      const mostrar = coincideArea && coincideBusqueda;
-      fila.style.display = mostrar ? '' : 'none';
-      if (mostrar) filasVisibles++;
+  function renderTabla(data) {
+    const tbody = document.getElementById('tbodyZonas');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    data.forEach(z => {
+      const tr = document.createElement('tr');
+      tr.className = 'border-b hover:bg-gray-50 transition';
+      tr.dataset.id      = z.id_zona;
+      tr.dataset.idArea  = z.id_area ?? '';
+      tr.dataset.nombre  = z.nombre_zona ?? '';
+      tr.innerHTML = `
+        <td class="col-nombre font-medium text-gray-800">${z.nombre_zona || '—'}</td>
+        <td class="col-area text-center">
+          <span class="tag-pill">${z.nombre_area || '—'}</span>
+        </td>
+        <td class="col-acciones text-right">
+          <div class="flex justify-end items-center gap-3">
+            <button type="button" class="btn-editar-zona p-2 border rounded-lg hover:bg-gray-50 transition text-gray-600 hover:text-[#39A900]" title="Editar">
+              <span class="inline-block w-5 h-5">${ICON_PENCIL}</span>
+            </button>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" class="sr-only peer switch-estado-zona"
+                ${Number(z.estado) === 1 ? 'checked' : ''}
+                data-id="${z.id_zona}">
+              <div class="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-[#39A900] transition"></div>
+              <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition peer-checked:translate-x-5"></div>
+            </label>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+    bindEventosTabla();
+  }
+
+  function bindEventosTabla() {
+    const tbody = document.getElementById('tbodyZonas');
+    if (!tbody) return;
+
+    tbody.querySelectorAll('.switch-estado-zona').forEach(sw => {
+      const clone = sw.cloneNode(true);
+      sw.replaceWith(clone);
+      clone.addEventListener('change', async (e) => {
+        const id     = e.target.dataset.id;
+        if (!id) return;
+        const estado = e.target.checked ? 1 : 0;
+        const fd = new FormData();
+        fd.append('accion', 'cambiar_estado');
+        fd.append('id_zona', id);
+        fd.append('estado', String(estado));
+        try {
+          const j = await apiFetch(API_URL, 'POST', fd);
+          Toast.fire({ icon: j.status === 'success' ? 'success' : 'error', title: j.message || (j.status === 'success' ? 'Estado actualizado' : 'Error') });
+          if (j.status === 'success') cargarZonas();
+          else e.target.checked = !e.target.checked;
+        } catch (err) {
+          e.target.checked = !e.target.checked;
+          Toast.fire({ icon: 'error', title: 'Error al cambiar estado' });
+        }
+      });
     });
 
-    if (filasVisibles === 0) {
-      const tbody = document.querySelector('#tablaInstructores tbody');
-      const nuevaFila = document.createElement('tr');
-      nuevaFila.id = 'fila-no-resultados';
-      let mensaje = 'No se encontraron zonas';
-      if (terminoBusqueda && areaSeleccionada !== 'todas') {
-        mensaje = `No se encontraron zonas que coincidan con "${terminoBusqueda}" en el área ${areaSeleccionada}`;
-      } else if (terminoBusqueda) {
-        mensaje = `No se encontraron zonas que coincidan con "${terminoBusqueda}"`;
-      } else if (areaSeleccionada !== 'todas') {
-        mensaje = `No se encontraron zonas en el área ${areaSeleccionada}`;
-      }
-      nuevaFila.innerHTML = `<td colspan="3" class="text-center p-4 text-gray-500">${mensaje}</td>`;
-      tbody.appendChild(nuevaFila);
-    }
+    tbody.querySelectorAll('.btn-editar-zona').forEach(btn => {
+      btn.replaceWith(btn.cloneNode(true));
+    });
+    tbody.querySelectorAll('.btn-editar-zona').forEach(btn => {
+      btn.addEventListener('click', (e) => entrarModoEdicion(e));
+    });
   }
 
-  function inicializarFiltros() {
-    const filtroArea = document.getElementById('filtroArea');
-    const buscador = document.getElementById('buscadorZonas');
-    if (filtroArea) filtroArea.addEventListener('change', aplicarFiltrosCombinados);
-    if (buscador) buscador.addEventListener('input', aplicarFiltrosCombinados);
-  }
-
-  // =======================
-  // CREAR ZONA
-  // =======================
-  formZona?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const id_zona = formZona.id_zona?.value?.trim();
-    const id_area = formZona.id_area?.value?.trim();
-
-    if (!id_zona || !id_area) {
-      Toast.fire({ icon: "warning", title: "Debes ingresar el número de zona y seleccionar un área." });
-      return;
-    }
-    if (isNaN(id_zona) || parseInt(id_zona) <= 0) {
-      Toast.fire({ icon: "warning", title: "El número de zona debe ser un entero positivo." });
+  function entrarModoEdicion(e) {
+    const row = e.target.closest('tr[data-id]');
+    if (!row || row.classList.contains('editando')) return;
+    if (filaEnEdicion && filaEnEdicion !== row) {
+      Toast.fire({ icon: 'info', title: 'Guarda o cancela los cambios actuales.' });
       return;
     }
 
-    const fd = new FormData();
-    fd.append("accion", "crear");
-    fd.append("id_zona", id_zona);
-    fd.append("id_area", id_area);
+    const id          = row.dataset.id;
+    const idArea      = row.dataset.idArea;
+    const nombreActual = row.dataset.nombre;
+    const z = zonas.find(x => String(x.id_zona) === String(id));
+    if (!z) return;
 
-    try {
-      const res = await fetch(API_URL, { method: "POST", body: fd });
-      const json = await res.json();
+    filaEnEdicion = row;
+    row.classList.add('editando', 'bg-gray-50');
 
-      if (json.status === "success") {
-        Toast.fire({ icon: "success", title: json.message || "Zona creada correctamente." });
-        closeModal();
-        await Promise.all([cargarZonas(), cargarAreasParaFiltro()]);
-        ajustarAltoTablaZonas();
-      } else {
-        Toast.fire({
-          icon: esErrorDuplicado(json.message) ? "warning" : "error",
-          title: json.message || "No se pudo crear la zona."
-        });
-      }
-    } catch (err) {
-      console.error("Error al crear zona:", err);
-      Toast.fire({ icon: "error", title: "Error al crear la zona." });
-    }
-  });
+    const optsArea = areas.map(a =>
+      `<option value="${a.id_area}" ${String(a.id_area) === String(idArea) ? 'selected' : ''}>${(a.nombre_area || '').trim()}</option>`
+    ).join('');
 
-  // =======================
-  // CAMBIAR ESTADO
-  // =======================
-  tablaBody?.addEventListener("change", async (e) => {
-    const chk = e.target.closest("input[type=checkbox]");
-    if (!chk) return;
-    
-    const tr = chk.closest("tr");
-    const id_zona = tr?.dataset?.id;
-    const id_area = tr?.dataset?.idArea;
-    const nuevoEstado = chk.checked ? 1 : 0;
-
-    if (!id_zona || !id_area) {
-      Toast.fire({ icon: "error", title: "No se pudo identificar la zona." });
-      return;
-    }
-
-    const fd = new FormData();
-    fd.append("accion", "cambiar_estado");
-    fd.append("id_zona", id_zona);
-    fd.append("id_area", id_area);
-    fd.append("estado", String(nuevoEstado));
-
-    try {
-      const res = await fetch(API_URL, { method: "POST", body: fd });
-      const json = await res.json();
-      Toast.fire({
-        icon: json.status === "success" ? "success" : "error",
-        title: json.message || (json.status === "success" ? "Estado actualizado" : "Error al actualizar")
-      });
-    } catch (err) {
-      console.error("Error al cambiar estado:", err);
-      Toast.fire({ icon: "error", title: "Error al cambiar el estado." });
-    }
-  });
-
-  // =======================
-  // EDITAR ZONA
-  // =======================
-  tablaBody?.addEventListener("click", async (e) => {
-    const btnEditar = e.target.closest(".btn-editar");
-    if (!btnEditar) return;
-
-    const tr = btnEditar.closest("tr");
-    const id_zona_actual = tr?.dataset?.id;
-    const id_area_actual = tr?.dataset?.idArea;
-    const tdZona = tr.children[0];
-    const tdArea = tr.children[1];
-    const tdAcc = tr.children[2];
-    const zonaOriginal = tdZona.textContent.trim();
-    const areaOriginal = tdArea.textContent.trim();
-
-    let opcionesHTML = `<option disabled selected value="">Cargando áreas...</option>`;
-    try {
-      const res = await fetch(`${API_AREA_URL}?accion=listar`);
-      const json = await res.json();
-
-      if (json.status === "success" && Array.isArray(json.data)) {
-        const areasUnicas = new Set();
-        opcionesHTML = json.data
-          .filter(a => {
-            const nombre = a.nombre_area.trim();
-            if (!areasUnicas.has(nombre)) {
-              areasUnicas.add(nombre);
-              return true;
-            }
-            return false;
-          })
-          .map(a => `<option value="${a.id_area}" ${a.nombre_area.trim() === areaOriginal.trim() ? "selected" : ""}>${a.nombre_area.trim()}</option>`)
-          .join("");
-      }
-    } catch (err) {
-      console.error("Error al cargar áreas:", err);
-    }
-
-    tdZona.innerHTML = `<input type="number" value="${zonaOriginal}" class="w-20 rounded-lg border border-gray-200 px-3 py-2 text-center focus:outline-none focus:border-gray-300">`;
-    tdArea.innerHTML = `
-      <div class="relative max-w-[220px] mx-auto">
-        <select class="w-full appearance-none rounded-lg border border-gray-200 bg-white px-3 py-2 pr-8 focus:outline-none focus:border-gray-300">
-          ${opcionesHTML}
-        </select>
-        <svg class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.18l3.71-3.95a.75.75 0 111.08 1.04l-4.24 4.52a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
-        </svg>
-      </div>`;
-    tdAcc.innerHTML = `
-      <button class="btn-guardar inline-flex items-center gap-2 px-5 py-2 rounded-xl border border-green-600 text-green-600 hover:bg-green-50 transition">Guardar</button>
-      <button class="btn-cancelar inline-flex items-center gap-2 px-5 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition">Cancelar</button>
+    row.innerHTML = `
+      <td class="col-nombre">
+        <div class="cell-edit-wrap">
+          <input type="text" class="cell-edit nombre-zona input-enterprise w-full"
+            value="${(z.nombre_zona || '').replace(/"/g, '&quot;')}"
+            maxlength="125" placeholder="Nombre de zona" />
+        </div>
+      </td>
+      <td class="col-area">
+        <div class="cell-edit-wrap">
+          <select class="cell-edit area select-zona input-enterprise w-full py-2.5 text-sm" data-initial-value="${(idArea || '').replace(/"/g, '&quot;')}">${optsArea}</select>
+        </div>
+      </td>
+      <td class="col-acciones text-right">
+        <div class="acciones-edit">
+          <button type="button" class="btn-guardar-zona btn-icon-check p-2 rounded-lg transition" title="Guardar" aria-label="Guardar">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          </button>
+          <button type="button" class="btn-cancelar-zona btn-icon-x p-2 rounded-lg transition" title="Cancelar" aria-label="Cancelar">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </td>
     `;
 
-    tdAcc.querySelector(".btn-cancelar").addEventListener("click", async () => {
-      await cargarZonas();
-      ajustarAltoTablaZonas();
+    row.querySelector('.btn-cancelar-zona').addEventListener('click', () => {
+      filaEnEdicion = null;
+      cargarZonas();
     });
 
-    tdAcc.querySelector(".btn-guardar").addEventListener("click", async () => {
-      const id_zona_nueva = tdZona.querySelector("input").value.trim();
-      const id_area_nueva = tdArea.querySelector("select").value.trim();
+    enhanceSelectsZona();
 
-      if (!id_zona_nueva || !id_area_nueva) {
-        Toast.fire({ icon: "warning", title: "Completa todos los campos." });
+    // Asegurar persistencia explícita para el combobox de área en modo edición
+    if (typeof ComboboxComponent !== 'undefined' && typeof ComboboxComponent.setInitialValue === 'function') {
+      const selAreaEdit = row.querySelector('.cell-edit.area.select-zona');
+      if (selAreaEdit) {
+        ComboboxComponent.setInitialValue(selAreaEdit, idArea || selAreaEdit.value);
+      }
+    }
+
+    row.querySelector('.btn-guardar-zona').addEventListener('click', async () => {
+      const nombreNuevo = row.querySelector('.cell-edit.nombre-zona').value.trim();
+      const areaEl = row.querySelector('.cell-edit.area');
+      const idAreaNueva = areaEl ? areaEl.value : undefined;
+      if (!nombreNuevo || !idAreaNueva) {
+        Toast.fire({ icon: 'warning', title: 'Completa todos los campos.' });
         return;
       }
-
-      if (id_zona_nueva === id_zona_actual && id_area_nueva === id_area_actual) {
-        Toast.fire({ icon: "warning", title: "No se detectaron cambios." });
+      if (normalizarTexto(nombreNuevo) === normalizarTexto(z.nombre_zona) && idAreaNueva === String(idArea)) {
+        Toast.fire({ icon: 'info', title: 'Sin cambios.' });
         return;
       }
-
       const fd = new FormData();
-      fd.append("accion", "actualizar");
-      fd.append("id_zona_actual", id_zona_actual);
-      fd.append("id_area_actual", id_area_actual);
-      fd.append("id_zona_nueva", id_zona_nueva);
-      fd.append("id_area_nueva", id_area_nueva);
-
+      fd.append('accion', 'actualizar');
+      fd.append('id_zona', id);
+      fd.append('nombre_zona_nueva', nombreNuevo);
+      fd.append('id_area_nueva', idAreaNueva);
       try {
-        const res = await fetch(API_URL, { method: "POST", body: fd });
-        const json = await res.json();
-
-        if (json.status === "success") {
-          Toast.fire({ icon: "success", title: "Zona actualizada." });
+        const j = await apiFetch(API_URL, 'POST', fd);
+        if (j.status === 'success') {
+          filaEnEdicion = null;
+          Toast.fire({ icon: 'success', title: 'Zona actualizada.' });
           await Promise.all([cargarZonas(), cargarAreasParaFiltro()]);
-          ajustarAltoTablaZonas();
         } else {
           Toast.fire({
-            icon: esErrorDuplicado(json.message) ? "warning" : "error",
-            title: json.message || "Error al actualizar."
+            icon: esErrorDuplicado(j.message) ? 'warning' : 'error',
+            title: j.message || 'Error al actualizar.'
           });
         }
       } catch (err) {
-        console.error("Error al actualizar:", err);
-        Toast.fire({ icon: "error", title: "Error al actualizar." });
+        Toast.fire({ icon: 'error', title: 'Error al actualizar.' });
       }
     });
-  });
-
-  // =======================
-  // INICIALIZAR
-  // =======================
-  async function inicializar() {
-    await Promise.all([
-      cargarAreasParaFiltro(),
-      cargarAreasParaModal(),
-      cargarZonas()
-    ]);
-    inicializarFiltros();
-    ajustarAltoTablaZonas();
   }
 
-  inicializar();
+  /* ========== FILTROS ========== */
+  function aplicarFiltros() {
+    if (!zonas.length) return;
+    const filtro  = document.getElementById('filtroArea');
+    const buscador = document.getElementById('buscadorZonas');
+    const areaVal  = filtro?.value || 'todas';
+    const term     = (buscador?.value || '').toLowerCase().trim();
+    const filas    = document.querySelectorAll('#tablaZonas tbody tr');
+    document.getElementById('fila-no-resultados')?.remove();
+    let visibles = 0;
+    filas.forEach(tr => {
+      if (tr.children.length === 1) return;
+      const nombre   = normalizarTexto(tr.dataset.nombre || tr.children[0]?.textContent || '');
+      const areaSpan = tr.querySelector('.tag-pill, td:nth-child(2) span');
+      const areaTxt  = areaSpan?.textContent || '';
+      const idAreaFila = tr.dataset.idArea || '';
+      const coincideArea = areaVal === 'todas' || String(idAreaFila) === String(areaVal);
+      const coincideBusq = !term || nombre.includes(normalizarTexto(term)) || normalizarTexto(areaTxt).includes(normalizarTexto(term));
+      const mostrar = coincideArea && coincideBusq;
+      tr.style.display = mostrar ? '' : 'none';
+      if (mostrar) visibles++;
+    });
+    if (visibles === 0) {
+      const tbody = document.querySelector('#tablaZonas tbody');
+      if (tbody) {
+        const tr = document.createElement('tr');
+        tr.id = 'fila-no-resultados';
+        tr.innerHTML = '<td colspan="3" class="text-center p-4 text-gray-500">No se encontraron zonas</td>';
+        tbody.appendChild(tr);
+      }
+    }
+  }
+
+  function ajustarAltoTabla() {
+    const wrap  = document.getElementById('wrapTablaZonas');
+    const tabla = document.getElementById('tablaZonas');
+    if (!wrap || !tabla) return;
+    const thead    = tabla.querySelector('thead');
+    const firstRow = tabla.querySelector('tbody tr');
+    const filas    = tabla.querySelectorAll('tbody tr').length;
+    const headH    = thead    ? thead.getBoundingClientRect().height    : 44;
+    const rowH     = firstRow ? firstRow.getBoundingClientRect().height : 56;
+    const maxFilas = 5;
+    const maxH     = headH + rowH * maxFilas;
+    wrap.style.maxHeight        = filas > maxFilas ? `${Math.ceil(maxH)}px` : '';
+    wrap.style.overflowY        = filas > maxFilas ? 'auto'    : 'visible';
+    wrap.style.overscrollBehavior = filas > maxFilas ? 'contain' : '';
+  }
+
+  /* ========== MODAL ========== */
+  function openModal() {
+    const m = document.getElementById('modalZonas');
+    m?.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    const m    = document.getElementById('modalZonas');
+    const form = document.getElementById('formNuevaZona');
+    m?.classList.add('hidden');
+    document.body.style.overflow = '';
+    filaEnEdicion = null;
+    if (typeof ComboboxComponent !== 'undefined') ComboboxComponent.reset();
+    form?.reset();
+    const w = document.querySelector('#id_areaWrap .combobox-wrapper');
+    if (w && typeof w._cbUpdateInput === 'function') w._cbUpdateInput();
+  }
+
+  /* ========== INIT ========== */
+  document.addEventListener('DOMContentLoaded', async () => {
+    await Promise.all([cargarAreasParaFiltro(), cargarAreasParaModal(), cargarZonas()]);
+
+    const filtro   = document.getElementById('filtroArea');
+    const buscador = document.getElementById('buscadorZonas');
+    if (filtro)   filtro.addEventListener('change', aplicarFiltros);
+    if (buscador) buscador.addEventListener('input', aplicarFiltros);
+
+    document.getElementById('btnAbrirModalZonas')?.addEventListener('click', openModal);
+    document.getElementById('btnCerrarModalZonas')?.addEventListener('click', closeModal);
+    document.getElementById('btnCancelarModalZonas')?.addEventListener('click', closeModal);
+    document.getElementById('modalBackdrop')?.addEventListener('click', (e) => {
+      if (e.target.id === 'modalBackdrop') closeModal();
+    });
+
+    document.getElementById('formNuevaZona')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form       = e.target;
+      const nombre_zona = form.nombre_zona?.value?.trim();
+      const idAreaEl   = form.id_area;
+      const id_area     = idAreaEl ? idAreaEl.value : undefined;
+      const id_area_trim = (id_area || '').trim();
+      if (!nombre_zona || !id_area_trim) {
+        Toast.fire({ icon: 'warning', title: 'Ingresa el nombre y selecciona un área.' });
+        return;
+      }
+      const fd = new FormData();
+      fd.append('accion', 'crear');
+      fd.append('nombre_zona', nombre_zona);
+      fd.append('id_area', id_area_trim);
+      try {
+        const j = await apiFetch(API_URL, 'POST', fd);
+        if (j.status === 'success') {
+          Toast.fire({ icon: 'success', title: j.message || 'Zona creada.' });
+          closeModal();
+          await Promise.all([cargarZonas(), cargarAreasParaFiltro()]);
+        } else {
+          Toast.fire({
+            icon: esErrorDuplicado(j.message) ? 'warning' : 'error',
+            title: j.message || 'No se pudo crear.'
+          });
+        }
+      } catch (err) {
+        Toast.fire({ icon: 'error', title: 'Error al crear.' });
+      }
+    });
+
+    window.addEventListener('resize', ajustarAltoTabla);
+
+    document.getElementById('tablaZonas')?.addEventListener('mousedown', (e) => {
+      const trigger = e.target.closest('.combobox-trigger');
+      if (!trigger) return;
+      const w = trigger.closest('.combobox-wrapper');
+      if (w?.parentNode?.querySelector('.select-zona') && typeof w._cbOpen === 'function') {
+        w._cbOpen(e);
+        e.stopPropagation();
+        e.preventDefault();
+      }
+    }, true);
+  });
 })();

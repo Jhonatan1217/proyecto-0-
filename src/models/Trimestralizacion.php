@@ -71,7 +71,7 @@ class Trimestralizacion {
                         i.id_instructor,
                         i.nombre_instructor,
                         i.tipo_instructor,
-                        c.id_competencia,
+                        c.id_competencia
                     FROM {$this->table} t
                     INNER JOIN horarios h ON t.id_horario = h.id_horario
                     INNER JOIN zonas z ON h.id_zona = z.id_zona

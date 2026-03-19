@@ -2,18 +2,21 @@
 (function () {
   // CONFIG: puntos finales y rutas usadas por el módulo
   const BASE = (window.BASE_URL || '').replace(/\/+$/, '');
-  const API_COMP = (window.API_COMPETENCIAS || (BASE + 'src/controllers/CompetenciaController.php')).replace(/\/+$/, '');
-  const API_PROG = (window.API_PROGRAMAS     || (BASE + 'src/controllers/ProgramasController.php')).replace(/\/+$/, '');
-  const API_RAE  = (window.API_RAES          || (BASE + 'src/controllers/RaeController.php')).replace(/\/+$/, '');
+  const SLASH = BASE ? '/' : '';
+  const API_COMP = (window.API_COMPETENCIAS || (BASE + SLASH + 'src/controllers/CompetenciaController.php')).replace(/\/+$/, '');
+  const API_PROG = (window.API_PROGRAMAS     || (BASE + SLASH + 'src/controllers/ProgramasController.php')).replace(/\/+$/, '');
+  const API_RAE  = (window.API_RAES          || (BASE + SLASH + 'src/controllers/RaeController.php')).replace(/\/+$/, '');
 
-  // Iconos
-  const ICON_DOWN   = `${BASE}src/assets/img/chevron-down.svg`;
-  const ICON_RIGHT  = `${BASE}src/assets/img/chevron-right.svg`;
-  const ICON_PENCIL = `${BASE}src/assets/img/pencil-line.svg`;
-  const ICON_PLUS   = `${BASE}src/assets/img/plus.svg`;
-  const ICON_LIST   = `${BASE}src/assets/img/list-checks.svg`;
+  // Iconos (chevrons en icons/Acction; editar y demás en img) — ruta con barra cuando hay BASE
+  const ICON_DOWN   = BASE + SLASH + 'src/assets/img/icons/Acction/chevron-down.svg';
+  const ICON_RIGHT  = BASE + SLASH + 'src/assets/img/icons/Acction/chevron-right.svg';
+  const ICON_PENCIL = BASE + SLASH + 'src/assets/img/icons/Acction/pencil-line.svg';
+  const ICON_PLUS   = BASE + SLASH + 'src/assets/img/plus.svg';
+  const ICON_LIST   = BASE + SLASH + 'src/assets/img/list-checks.svg';
 
   const INITIAL_RAES_OPEN = false;
+
+  const ES_INSTRUCTOR = (window.USER_CARGO || '').toUpperCase() === 'INSTRUCTOR';
 
   const tab = document.querySelector('[data-tab="competencies"]');
   if (!tab) return;
@@ -327,11 +330,14 @@
               <p class="text-zinc-500 mb-5 text-sm sm:text-base">
                 No hay competencias registrados
               </p>
-              <button id="btnFirstCompetency"
-                      class="flex items-center gap-2  bg-[#00324d] text-white px-4 py-2 rounded-xl font-medium text-sm">
-                <img src="${ICON_PLUS}" class="w-4 h-4" alt="simbolo de mas" />
-                Crear Primera Competencia
-              </button>
+
+              ${ES_INSTRUCTOR ? '' : `
+                <button id="btnFirstCompetency"
+                  class="flex items-center gap-2 bg-[#00324d] text-white px-4 py-2 rounded-xl font-medium text-sm">
+                  <img src="${ICON_PLUS}" class="w-4 h-4" alt="simbolo de mas" />
+                  Crear Primera Competencia
+                </button>
+              `}
             </div>
           </div>
         `;
@@ -399,10 +405,12 @@
             </div>
 
             <div class="shrink-0 flex items-center gap-3">
-              <button class="btn-edit inline-flex items-center justify-center p-2 text-zinc-600 hover:text-zinc-900" data-id="${e(c.id)}" title="Editar">
-                <img src="${ICON_PENCIL}" class="w-5 h-5" alt="Editar" />
-              </button>
-              ${renderSwitchHtml(c.id, !!c.estado)}
+              ${ES_INSTRUCTOR ? '' : `
+                <button class="btn-edit inline-flex items-center justify-center p-2 text-zinc-600 hover:text-zinc-900" data-id="${e(c.id)}" title="Editar">
+                  <img src="${ICON_PENCIL}" class="w-5 h-5" alt="Editar" />
+                </button>
+                ${renderSwitchHtml(c.id, !!c.estado)}
+              `}
             </div>
           </div>
         </div>
@@ -418,7 +426,9 @@
       list.appendChild(card);
     });
 
-    list.querySelectorAll('.btn-edit').forEach(b => b.addEventListener('click', onEditClick));
+    if (!ES_INSTRUCTOR) {
+  list.querySelectorAll('.btn-edit').forEach(b => b.addEventListener('click', onEditClick));
+}
     list.querySelectorAll('.switch').forEach(sw => {
       paintSwitch(sw);
       const input = sw.querySelector('input');
@@ -443,6 +453,9 @@
   }
 
   // EVENTS
+  if (ES_INSTRUCTOR && btnNew) {
+  btnNew.remove();
+}
   btnNew?.addEventListener('click', () => {
     editingId = null;
     editingSnap = null;

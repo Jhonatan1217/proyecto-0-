@@ -33,7 +33,8 @@ $page = basename($page);
    DEFINICIÓN DE RUTAS
 ========================= */
 
-$public_pages = ['landing', 'login', 'restablecerContrasenia', 'cambiarContrasenia'];
+$public_pages = ['landing', 'login', 'restablecerContrasenia', 'cambiarContrasenia', 'register_tables'];
+$auth_redirect_pages = ['landing', 'login', 'restablecerContrasenia', 'cambiarContrasenia'];
 $private_default = 'register_tables';
 
 /* =========================
@@ -69,7 +70,13 @@ if (!isset($_SESSION['usuario_id']) && !in_array($page, $public_pages)) {
 }
 
 // Usuario autenticado intentando ir a login o landing
-if (isset($_SESSION['usuario_id']) && in_array($page, $public_pages)) {
+if (isset($_SESSION['usuario_id']) && in_array($page, $auth_redirect_pages)) {
+    header("Location: index.php?page=$private_default");
+    exit;
+}
+
+// Página "Mi perfil" eliminada: redirigir a la vista por defecto
+if ($page === 'gestion_perfil') {
     header("Location: index.php?page=$private_default");
     exit;
 }

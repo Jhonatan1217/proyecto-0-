@@ -1,5 +1,12 @@
 // src/assets/js/gestionProgramas.js
 // Notas: comentarios ligeros y prácticos, sin reescribir ni tocar el código base.
+
+/** * RESTRICCIÓN DE SEGURIDAD POR CARGO 
+ * Se asume que window.USER_CARGO viene definido desde el PHP (sesión)
+ */
+const USER_CARGO = (window.USER_CARGO || "").toUpperCase();
+const ES_INSTRUCTOR = USER_CARGO === 'INSTRUCTOR';
+
 document.addEventListener('DOMContentLoaded', () => {
   (function () {
     // ===============================
@@ -32,12 +39,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Botón flotante / CTA para abrir modal de creación
     const btnNew = document.getElementById('btnNewProgram');
+    
+    // --- LÓGICA DE BLOQUEO UI PARA INSTRUCTOR ---
+    if (ES_INSTRUCTOR && btnNew) {
+        btnNew.remove(); // Eliminamos el botón de "Nuevo Programa" físicamente del DOM
+    }
+
     // Título del modal: soporta varias variantes de selector
     const modalTitle = modal ? (modal.querySelector('#modalProgramTitle') ||
                                 modal.querySelector('[data-modal-title]') ||
                                 modal.querySelector('.modal-title')) : null;
 
     let editingId = null; // id del programa que se está editando (null si es creación)
+    let allPrograms = []; // lista completa para filtrar/buscar
 
     // ===============================
     // SWEETALERT TOASTS
@@ -112,53 +126,93 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ===============================
+// LISTAR INSTRUCTORES
+// ===============================
+async function loadInstructores() {
+  try {
+    const r = await fetch(`${API}?accion=listar_instructores`, {
+      credentials: 'same-origin'
+    });
+
+    if (!r.ok) throw new Error("Error HTTP " + r.status);
+
+    const data = await r.json();
+
+    const select = document.getElementById('pg_instructor');
+    if (!select) return;
+
+    // Resetear opciones
+    select.innerHTML = '<option value="">Seleccione un instructor</option>';
+
+    if (Array.isArray(data) && data.length > 0) {
+      data.forEach(inst => {
+        const option = document.createElement('option');
+        option.value = inst.id_usuario;
+        option.textContent = inst.nombre_completo;
+        select.appendChild(option);
+      });
+    } else {
+      const option = document.createElement('option');
+      option.value = "";
+      option.textContent = "No hay instructores disponibles";
+      select.appendChild(option);
+    }
+
+  } catch (error) {
+    console.error('Error cargando instructores:', error);
+  }
+}
+
+    // ===============================
     // UI HELPERS
     // ===============================
     // Abre modal en modo crear/editar. También pre-carga datos y guarda "originales" para comparar cambios
-    function openModal(isCreate = true, data = null) {
-      // Guarda si estamos creando o editando
-      editingId = isCreate ? null : (data?.id_programa ?? null);
+   function openModal(isCreate = true, data = null) {
+  // Seguridad adicional: No abrir modal si es instructor
+  if (ES_INSTRUCTOR) return;
 
-      // Carga los datos en los campos
-      if (inpCode)  inpCode.value  = isCreate ? '' : (data?.id_programa ?? '');
-      if (inpName)  inpName.value  = isCreate ? '' : (data?.nombre_programa ?? '');
-      if (inpDesc)  inpDesc.value  = isCreate ? '' : (data?.descripcion ?? '');
-      if (inpHours) inpHours.value = isCreate ? '' : (data?.duracion ?? '');
+  editingId = isCreate ? null : (data?.id_programa ?? null);
 
-      // el código también puede editarse
-      if (inpCode) inpCode.disabled = false;
+  if (inpCode)   inpCode.value  = isCreate ? '' : (data?.id_programa ?? '');
+  if (inpName)   inpName.value  = isCreate ? '' : (data?.nombre_programa ?? '');
+  if (inpDesc)   inpDesc.value  = isCreate ? '' : (data?.descripcion ?? '');
+  if (inpHours)  inpHours.value = isCreate ? '' : (data?.duracion ?? '');
 
-      // Cambia el título del modal según acción
-      if (modalTitle) modalTitle.textContent = isCreate ? 'Nuevo Programa' : 'Editar Programa';
+  // 🔥 AGREGADO (nivel_formacion)
+  const inpNivel = document.getElementById('pg_nivel');
+  if (inpNivel) inpNivel.value = isCreate ? '' : (data?.nivel_formacion ?? '');
 
-      // Si estamos editando, guardamos los valores originales en atributos data-* del formulario
-      if (!isCreate && form) {
-        form.dataset.originalId    = data?.id_programa ?? '';
-        form.dataset.originalName  = data?.nombre_programa ?? '';
-        form.dataset.originalDesc  = data?.descripcion ?? '';
-        form.dataset.originalHours = data?.duracion ?? '';
-      } else if (form) {
-        // Si es un modal nuevo, limpiamos los data-* anteriores
-        delete form.dataset.originalId;
-        delete form.dataset.originalName;
-        delete form.dataset.originalDesc;
-        delete form.dataset.originalHours;
-      }
+  if (inpCode) inpCode.disabled = false;
 
-      // Muestra el modal
-      modal?.classList.remove('hidden');
-      backdrop?.classList.remove('hidden');
+  if (modalTitle) modalTitle.textContent = isCreate ? 'Nuevo Programa' : 'Editar Programa';
 
-      // Animación modal (fade + scale)
-      modal.classList.add('animate-modal');
-      backdrop.classList.add('animate-backdrop');
-      setTimeout(() => {
-        modal.classList.remove('animate-modal');
-        backdrop.classList.remove('animate-backdrop');
-      }, 300);
-    }
+  if (!isCreate && form) {
+    form.dataset.originalId    = data?.id_programa ?? '';
+    form.dataset.originalName  = data?.nombre_programa ?? '';
+    form.dataset.originalDesc  = data?.descripcion ?? '';
+    form.dataset.originalHours = data?.duracion ?? '';
+  } else if (form) {
+    delete form.dataset.originalId;
+    delete form.dataset.originalName;
+    delete form.dataset.originalDesc;
+    delete form.dataset.originalHours;
+  }
 
-    // Cierra y limpia el modal (incluye reset de estados visuales)
+  modal?.classList.remove('hidden');
+  backdrop?.classList.remove('hidden');
+
+  modal.classList.add('animate-modal');
+  backdrop.classList.add('animate-backdrop');
+
+  setTimeout(() => {
+    modal.classList.remove('animate-modal');
+    backdrop.classList.remove('animate-backdrop');
+  }, 300);
+
+  // 🔥 AGREGADO (cargar instructores cuando abre modal)
+  loadInstructores();
+}
+
     function closeModal() {
       modal?.classList.add('hidden');
       backdrop?.classList.add('hidden');
@@ -168,14 +222,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (modalTitle) modalTitle.textContent = 'Nuevo Programa';
     }
 
-    // Escapa HTML para evitar que la descripción/nombre rompan el DOM si traen caracteres raros
     function escapeHtml(s) {
       const t = document.createElement('textarea');
       t.textContent = String(s ?? '');
       return t.innerHTML;
     }
 
-    // Presenta la duración con sufijo "horas" si es numérica
     function formatHours(h) {
       const n = Number(h);
       return Number.isFinite(n) ? `${n} horas` : `${h}`;
@@ -184,7 +236,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================
     // SWITCH ESTILO VERDE #39A900
     // ===============================
-    // Render del toggle accesible; se actualiza con eventos más abajo
     function renderSwitch(active) {
       return `
         <label class="switch relative inline-flex items-center cursor-pointer select-none" title="Cambiar estado" aria-label="Cambiar estado">
@@ -198,74 +249,70 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================
     // CARD
     // ===============================
-    // Crea la tarjeta de un programa con acciones de editar y activar/inhabilitar
     function createCard(p) {
       const activo = String(p.estado) === '1' || String(p.estado).toLowerCase() === 'true';
-
       const card = document.createElement('div');
       card.className = 'rounded-2xl ring-1 ring-zinc-200 shadow-sm bg-white overflow-hidden hover:shadow-md transition p-6 space-y-4';
+
+      // GENERAR BOTONES SOLO SI NO ES INSTRUCTOR
+      const controlesHtml = ES_INSTRUCTOR ? '' : `
+        <div class="flex items-center gap-2">
+          <button class="p-2 rounded-lg hover:bg-zinc-100" title="Editar" data-edit="${escapeHtml(p.id_programa)}">
+            <img src="src/assets/img/pencil-line.svg" alt="Editar" class="w-4 h-4">
+          </button>
+          ${renderSwitch(activo)}
+        </div>
+      `;
 
       card.innerHTML = `
         <div class="flex items-start justify-between gap-4">
           <div class="flex-1 space-y-1.5">
-            <h3
-  class="text-lg font-semibold leading-snug"
-  style="word-break: break-word; overflow-wrap: anywhere;"
->
-  ${escapeHtml(p.nombre_programa || '')}
-</h3>
-
+            <h3 class="text-lg font-semibold leading-snug" style="word-break: break-word; overflow-wrap: anywhere;">
+              ${escapeHtml(p.nombre_programa || '')}
+            </h3>
             <p class="text-sm text-zinc-500">Código: <span class="font-medium">${escapeHtml(p.id_programa || '')}</span></p>
           </div>
-          <div class="flex items-center gap-2">
-            <button class="p-2 rounded-lg hover:bg-zinc-100" title="Editar" data-edit="${escapeHtml(p.id_programa)}">
-              <img src="src/assets/img/pencil-line.svg" alt="Editar" class="w-4 h-4">
-            </button>
-            ${renderSwitch(activo)}
-          </div>
+          ${controlesHtml}
         </div>
-
         <div class="space-y-2 mt-3 text-sm text-zinc-600">
           <p>${escapeHtml(p.descripcion || 'Sin descripción')}</p>
           <p><span class="font-medium">Duración:</span> ${escapeHtml(formatHours(p.duracion || 0))}</p>
           <div>
-            ${activo
-              ? '<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:#eaf7e6;border:1px solid rgba(57,169,0,.22);color:#39a900">Activo</span>'
-              : '<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:#f3f4f6;border:1px solid #e5e7eb;color:#6b7280">Inactivo</span>'
-            }
-
+            ${activo 
+              ? '<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:#eaf7e6;border:1px solid rgba(57,169,0,.22);color:#39a900">Activo</span>' 
+              : '<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:#f3f4f6;border:1px solid #e5e7eb;color:#6b7280">Inactivo</span>'}
           </div>
         </div>
       `;
 
-      // Toggle de estado con manejo de rollback si la API falla
-      const sw = card.querySelector('input[type="checkbox"]');
-      sw?.addEventListener('change', async () => {
-        const checked = sw.checked;
-        try {
-          const res = checked ? await apiActivar(p.id_programa) : await apiInhabilitar(p.id_programa);
-          if (res?.error) {
-            t.err(res.error);
+      // ASIGNAR EVENTOS SOLO SI NO ES INSTRUCTOR
+      if (!ES_INSTRUCTOR) {
+        const sw = card.querySelector('input[type="checkbox"]');
+        sw?.addEventListener('change', async () => {
+          const checked = sw.checked;
+          try {
+            const res = checked ? await apiActivar(p.id_programa) : await apiInhabilitar(p.id_programa);
+            if (res?.error) {
+              t.err(res.error);
+              sw.checked = !checked;
+            } else {
+              t.ok(checked ? 'Programa activado' : 'Programa inhabilitado');
+              notifyProgramsChanged({
+                type: checked ? 'activate' : 'disable',
+                program: { id_programa: p.id_programa }
+              });
+              await loadPrograms();
+              recargarSelectProgramas(); // 👈 AGREGAR AQUÍ
+
+            }
+          } catch {
+            t.err('No se pudo cambiar el estado.');
             sw.checked = !checked;
-          } else {
-            t.ok(checked ? 'Programa activado' : 'Programa inhabilitado');
-
-            // 🔔 Notificar cambio de estado
-            notifyProgramsChanged({
-              type: checked ? 'activate' : 'disable',
-              program: { id_programa: p.id_programa }
-            });
-
-            await loadPrograms();
           }
-        } catch {
-          t.err('No se pudo cambiar el estado.');
-          sw.checked = !checked;
-        }
-      });
+        });
 
-      // Click en editar: reusa openModal en modo edición
-      card.querySelector('[data-edit]')?.addEventListener('click', () => openModal(false, p));
+        card.querySelector('[data-edit]')?.addEventListener('click', () => openModal(false, p));
+      }
 
       return card;
     }
@@ -273,21 +320,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================
     // RENDER LISTA
     // ===============================
-    // Pinta la grilla o muestra el estado vacío con CTA para crear
     function renderList(list) {
       grid.innerHTML = '';
       if (!Array.isArray(list) || list.length === 0) {
         emptyBox.classList.remove('hidden');
-        emptyBox.innerHTML = `
-        <div class="py-12 text-center flex flex-col items-center justify-center">
-          <p class="text-zinc-500 mb-4">No hay programas registrados</p>
+        
+        // No mostrar botón de crear si es instructor
+        const emptyBtnHtml = ES_INSTRUCTOR ? '' : `
           <button class="rounded-xl px-4 py-2 text-sm font-medium bg-[#00324d] text-white flex items-center gap-2" data-empty-new>
             <img src="src/assets/img/plus.svg" class="w-4 h-4" alt="símbolo más" />
             Crear nuevo programa
           </button>
-        </div>
-      `;
-        emptyBox.querySelector('[data-empty-new]')?.addEventListener('click', () => openModal(true));
+        `;
+
+        emptyBox.innerHTML = `
+          <div class="py-12 text-center flex flex-col items-center justify-center">
+            <p class="text-zinc-500 mb-4">No hay programas registrados</p>
+            ${emptyBtnHtml}
+          </div>
+        `;
+        
+        if (!ES_INSTRUCTOR) {
+          emptyBox.querySelector('[data-empty-new]')?.addEventListener('click', () => openModal(true));
+        }
         return;
       }
 
@@ -298,17 +353,77 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ===============================
+    // FILTRO Y BÚSQUEDA
+    // ===============================
+    const programTypeFilter = document.getElementById('programTypeFilter');
+    const programSearchInput = document.getElementById('programSearchInput');
+
+    function applyFilters() {
+      const tipo = (programTypeFilter?.value || 'all').toLowerCase();
+      const busqueda = (programSearchInput?.value || '').trim().toLowerCase();
+      let list = allPrograms;
+      if (tipo !== 'all') {
+        list = list.filter(p => {
+          const nivel = String(p.nivel_formacion || p.nivel || '').toLowerCase().trim();
+          return nivel === tipo;
+        });
+      }
+      if (busqueda) {
+        list = list.filter(p => {
+          const nombre = String(p.nombre_programa || '').toLowerCase();
+          const codigo = String(p.id_programa || '').toLowerCase();
+          return nombre.includes(busqueda) || codigo.includes(busqueda);
+        });
+      }
+      renderList(list);
+    }
+
+
+    function recargarSelectProgramas() {
+  const select = document.getElementById('upload_program');
+  if (!select) return;
+
+  fetch(`${API}?accion=listar`, { credentials: 'same-origin' })
+    .then(res => res.json())
+    .then(data => {
+
+      select.innerHTML = '<option value="">Seleccione un programa</option>';
+
+      if (Array.isArray(data)) {
+        data.forEach(p => {
+          const option = document.createElement('option');
+          option.value = p.id_programa;
+          option.textContent = p.nombre_programa;
+          select.appendChild(option);
+        });
+      }
+
+    })
+    .catch(err => {
+      console.error("Error recargando select:", err);
+    });
+}
+
+
+
+    // ===============================
     // CARGA INICIAL
     // ===============================
-    // Trae los programas y maneja errores de red/servidor
     async function loadPrograms() {
       try {
         const data = await apiListar();
-        if (Array.isArray(data)) renderList(data);
-        else if (data?.error)
+        if (Array.isArray(data)) {
+          allPrograms = data;
+          applyFilters();
+        } else if (data?.error) {
+          emptyBox.classList.remove('hidden');
           emptyBox.innerHTML = `<div class="py-12 text-center text-red-600">${escapeHtml(data.error)}</div>`;
-        else renderList([]);
+        } else {
+          allPrograms = [];
+          renderList([]);
+        }
       } catch {
+        emptyBox.classList.remove('hidden');
         emptyBox.innerHTML = `<div class="py-12 text-center text-red-600">No se pudo cargar la lista de programas.</div>`;
       }
     }
@@ -316,95 +431,125 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================
     // EVENTOS MODAL + FORM
     // ===============================
-    // Apertura/cierre del modal y cancelación sin recargar
-    btnNew?.addEventListener('click', () => openModal(true));
+    // Solo permitir eventos de apertura si no es instructor
+    if (!ES_INSTRUCTOR) {
+        btnNew?.addEventListener('click', () => openModal(true));
+    }
+    
     btnClose?.addEventListener('click', closeModal);
     btnCancel?.addEventListener('click', e => { e.preventDefault(); closeModal(); });
 
-    // Submit del formulario con validaciones separadas por modo (crear/editar)
-    form?.addEventListener('submit', async e => {
-      e.preventDefault();
+form?.addEventListener('submit', async e => {
+  e.preventDefault();
+  if (ES_INSTRUCTOR) return t.err('No tienes permisos para esta acción');
 
-      const id_programa     = (inpCode?.value || '').trim();
-      const nombre_programa = (inpName?.value || '').trim();
-      const descripcion     = (inpDesc?.value || '').trim();
-      const duracion        = (inpHours?.value || '').trim();
+  const id_programa     = (inpCode?.value || '').trim();
+  const nombre_programa = (inpName?.value || '').trim();
+  const descripcion     = (inpDesc?.value || '').trim();
+  const duracion        = (inpHours?.value || '').trim();
+  const nivel_formacion = (document.getElementById('pg_nivel')?.value || '').trim();
 
-      // Validaciones distintas según modo
-      if (!editingId) {
-        // ===== CREAR =====
-        if (!id_programa && !nombre_programa && !descripcion && !duracion)
-          return t.warn('Todos los campos son obligatorios');
+  if (!id_programa || !nombre_programa || !nivel_formacion) {
+    return t.warn('Código, nombre y tipo de programa son obligatorios');
+  }
 
-        if (!id_programa)     return t.warn('El código es obligatorio');
-        if (!nombre_programa) return t.warn('El nombre del programa es obligatorio');
-        if (duracion !== '' && Number.isNaN(Number(duracion))) 
-          return t.warn('La duración debe ser numérica');
-      } else {
-        // ===== EDITAR =====
-        // Guardamos los valores originales en atributos de data-* al abrir el modal
-        const original = {
-          id_programa:     form.dataset.originalId || '',
-          nombre_programa: form.dataset.originalName || '',
-          descripcion:     form.dataset.originalDesc || '',
-          duracion:        form.dataset.originalHours || ''
-        };
+  let payload;
 
-        //  ahora también se compara el código (id_programa)
-        const sinCambios = 
-          original.id_programa === id_programa &&
-          original.nombre_programa === nombre_programa &&
-          original.descripcion === descripcion &&
-          String(original.duracion) === String(duracion);
+  // 🔥 GUARDAMOS EL ESTADO ANTES DE CERRAR EL MODAL
+  const isEditing = !!editingId;
 
-        if (sinCambios) return t.warn('No has editado nada aún');
-      }
+  if (isEditing) {
+    const originalId = form.dataset.originalId || '';
 
-      // Construcción de payload
-      let payload;
-      if (editingId) {
-        // En edición: enviar id original + posible nuevo id (PK)
-        const originalId = form.dataset.originalId || '';
-        payload = {
-          id_programa: originalId,          // id actual en BD
-          nuevo_id_programa: id_programa,   // posible código nuevo desde el input
-          nombre_programa,
-          descripcion,
-          duracion
-        };
-      } else {
-        // En creación: id del input es el id a crear
-        payload = { id_programa, nombre_programa, descripcion, duracion };
-      }
+    payload = {
+      id_programa: originalId,
+      nuevo_id_programa: id_programa,
+      nombre_programa,
+      descripcion,
+      duracion,
+      nivel_formacion
+    };
 
-      try {
-        const res = editingId ? await apiActualizar(payload) : await apiAgregar(payload);
-        if (res?.error) return t.err(res.error);
+  } else {
 
-        closeModal();
-        t.ok(editingId ? 'Programa actualizado correctamente' : 'Programa creado correctamente');
+    payload = {
+      id_programa,
+      nombre_programa,
+      descripcion,
+      duracion,
+      nivel_formacion
+    };
+  }
 
-        //  Notificar creación/actualización (para Competencias)
-        notifyProgramsChanged({
-          type: editingId ? 'update' : 'create',
-          program: { id_programa: payload.nuevo_id_programa || id_programa, nombre_programa, descripcion, duracion }
-        });
+  try {
+    const res = isEditing
+      ? await apiActualizar(payload)
+      : await apiAgregar(payload);
 
-        await loadPrograms();
-      } catch {
-        t.err('No se pudo guardar el programa.');
-      }
+    if (res?.error) return t.err(res.error);
+
+    // 🔥 MOSTRAR MENSAJE ANTES DE RESETEAR editingId
+    t.ok(isEditing 
+      ? 'Programa actualizado correctamente' 
+      : 'Programa creado correctamente'
+    );
+
+    closeModal();
+
+    await loadPrograms();
+    recargarSelectProgramas();
+
+    // 🔔 Notificar a otras vistas
+    notifyProgramsChanged({
+      type: isEditing ? 'update' : 'create',
+      program: { id_programa }
     });
+
+  } catch {
+    t.err('No se pudo guardar el programa.');
+  }
+});
+    // ===============================
+    // EVENTOS FILTRO Y BÚSQUEDA
+    // ===============================
+    if (programTypeFilter) programTypeFilter.addEventListener('change', applyFilters);
+    if (programSearchInput) programSearchInput.addEventListener('input', applyFilters);
 
     // ===============================
     // INIT
     // ===============================
-    // Carga inicial de datos
     loadPrograms();
 
-    // 🔁 NUEVO: recargar programas cuando se procese el Excel sin refrescar la página
     window.addEventListener('excel-subido-ok', () => {
       loadPrograms();
     });
   })();
+  });
+
+// ===============================
+// 🔁 ESCUCHAR CAMBIOS DE PROGRAMAS EN OTRAS VISTAS
+// ===============================
+window.addEventListener('programs:changed', function () {
+  const select = document.getElementById('upload_program');
+  if (!select) return;
+
+  fetch('src/controllers/ProgramasController.php?accion=listar', {
+    credentials: 'same-origin'
+  })
+  .then(res => res.json())
+  .then(data => {
+
+    select.innerHTML = '<option value="">Seleccione un programa</option>';
+
+    if (Array.isArray(data)) {
+      data.forEach(p => {
+        const option = document.createElement('option');
+        option.value = p.id_programa;
+        option.textContent = p.nombre_programa;
+        select.appendChild(option);
+      });
+    }
+
+  })
+  .catch(err => console.error(err));
 });

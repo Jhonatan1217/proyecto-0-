@@ -1,0 +1,227 @@
+/**
+ * Estilos compartidos para modales enterprise (Grupos, Zonas, Usuarios, etc.).
+ */
+
+/* Overlay y contenedor */
+.modal-grupo-overlay,
+.modal-zona-overlay,
+.modal-usuario-overlay,
+.modal-area-overlay,
+.modal-trimestre-overlay,
+.modal-enterprise-overlay {
+  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.modal-grupo-box,
+.modal-zona-box,
+.modal-area-box,
+.modal-trimestre-box,
+.modal-enterprise-box {
+  max-height: calc(100vh - 3rem);
+  margin: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+.modal-usuario-box {
+  width: 480px;
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 10rem);
+  margin: 2rem 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(229, 231, 235, 0.8);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.modal-usuario-overlay {
+  overflow: hidden;
+}
+
+.modal-usuario-form-content {
+  max-width: 400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.modal-usuario-box form.flex {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-usuario-box form.flex .modal-usuario-body {
+  flex: 1 1 0%;
+  min-height: 0;
+}
+
+.modal-grupo-header,
+.modal-zona-header,
+.modal-usuario-header,
+.modal-area-header,
+.modal-trimestre-header,
+.modal-enterprise-header {
+  flex-shrink: 0;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+.modal-grupo-body,
+.modal-zona-body,
+.modal-usuario-body,
+.modal-area-body,
+.modal-trimestre-body,
+.modal-enterprise-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.25rem;
+  min-height: 0;
+}
+
+.modal-grupo-footer,
+.modal-zona-footer,
+.modal-usuario-footer,
+.modal-area-footer,
+.modal-trimestre-footer,
+.modal-enterprise-footer {
+  flex-shrink: 0;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+/* Inputs y selects nativos */
+.input-enterprise {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #1f2937;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+select.input-enterprise {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding-left: var(--select-padding-x, 0.75rem);
+  padding-right: var(--select-chevron-zone, 2rem);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: var(--chevron-size, 1.15rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Selects de filtros (historial, grupos, etc.) */
+.filter-select-enterprise {
+  font-size: 0.8125rem; /* 13px */
+  color: #00324D;
+  height: 42px;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.input-enterprise::placeholder {
+  color: #9ca3af;
+}
+
+.input-enterprise:hover {
+  border-color: #9ca3af;
+}
+
+.input-enterprise:focus {
+  outline: none;
+  border-color: #39A900;
+  box-shadow: 0 0 0 3px rgba(57, 169, 0, 0.2);
+}
+
+.input-enterprise:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.btn-modal-secondary:disabled,
+.btn-modal-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.filter-action-secondary {
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.label-enterprise {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.375rem;
+}
+
+.btn-modal-secondary {
+  padding: 0.625rem 1.25rem;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  font-weight: 500;
+  color: #374151;
+  background: #fff;
+  transition: all 0.15s;
+}
+
+.btn-modal-secondary:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.btn-modal-secondary:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(156, 163, 175, 0.5);
+}
+
+.btn-modal-primary {
+  padding: 0.625rem 1.25rem;
+  border-radius: 12px;
+  font-weight: 500;
+  color: #fff;
+  background: #0a3a57;
+  transition: all 0.15s;
+}
+
+.btn-modal-primary:hover {
+  background: #00304D;
+}
+
+.btn-modal-primary:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(10, 58, 87, 0.4);
+}
+
+.btn-modal-primary:active,
+.btn-modal-secondary:active {
+  transform: scale(0.98);
+}
+
+/* Card con hover sutil (listados tipo historial) — DESIGN_SYSTEM.md */
+.card-hover-enterprise {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card-hover-enterprise:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
