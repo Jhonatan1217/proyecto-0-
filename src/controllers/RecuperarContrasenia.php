@@ -179,7 +179,7 @@ switch ($accion) {
                   $_SESSION['reset_correo'], $_SESSION['reset_nombre']);
             
             $_SESSION['success_recuperacion'] = "Contraseña actualizada correctamente. Ya puedes iniciar sesión.";
-            redirectTo(BASE_URL . "src/views/login.php");
+            redirectTo(BASE_URL . "index.php?page=login");
             
         } else {
             error_log("Error al actualizar contraseña para usuario: " . $tokenData['id_usuario']);

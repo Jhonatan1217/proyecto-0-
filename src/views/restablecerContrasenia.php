@@ -38,7 +38,12 @@ include '../includes/header-public.php';
     
     <div class="w-full max-w-md">
         <!-- Tarjeta de restablecimiento -->
-        <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-[0_0_32px_rgba(0,0,0,0.26)] p-8">
+        <div class="relative bg-white/95 backdrop-blur-sm rounded-2xl shadow-[0_0_32px_rgba(0,0,0,0.26)] p-8">
+            <button onclick="window.location.href='<?= BASE_URL ?>index.php?page=login';" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700" aria-label="Cerrar">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
             <div class="mb-8">
                 <div class="w-12 h-12 bg-[#BFBFBF] rounded-full flex items-center justify-center mx-auto mb-4">
                     <img src="../assets/img/mail2.svg" alt="Correo" class="w-8 h-8">
