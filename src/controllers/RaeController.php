@@ -242,8 +242,19 @@ case 'actualizar':
     // UTILIDADES PARA LA UI (filtros y combos)
     // ============================================================
     case 'programas':
-      // Listar programas
-      $stmt = $conn->query("SELECT id_programa, nombre_programa FROM programas ORDER BY id_programa");
+      // Solo activos para crear RAE; id_programa_incluir permite editar RAE vinculada a programa inactivo.
+      $idIncl = trim((string) inreq('id_programa_incluir'));
+      $sql = "SELECT id_programa, nombre_programa FROM programas WHERE ";
+      $params = [];
+      if ($idIncl !== '') {
+        $sql .= "(COALESCE(estado, 1) = 1 OR id_programa = ?)";
+        $params[] = $idIncl;
+      } else {
+        $sql .= "COALESCE(estado, 1) = 1";
+      }
+      $sql .= " ORDER BY id_programa";
+      $stmt = $conn->prepare($sql);
+      $stmt->execute($params);
       echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
       break;
 

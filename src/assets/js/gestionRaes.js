@@ -84,6 +84,13 @@
     return s === '' ? null : s;
   }
 
+  /** Para incluir en API el programa actual al editar RAE (aunque el programa esté inactivo). */
+  function modalProgPreserveId() {
+    if (!editingRaeId || editingSnap?.prog == null) return null;
+    const s = String(editingSnap.prog).trim();
+    return s === '' ? null : s;
+  }
+
   async function fetchJSON(url, opts) {
     const res = await fetch(url, opts);
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -120,7 +127,9 @@
 
   // ==== Cargar Programas para filtros y modal ====
   async function loadPrograms() {
-    const data  = await fetchJSON(`${API_RAES}?accion=programas`);
+    const pp = modalProgPreserveId();
+    const qs = pp ? `&${q({ id_programa_incluir: pp })}` : '';
+    const data  = await fetchJSON(`${API_RAES}?accion=programas${qs}`);
     const progs = Array.isArray(data) ? data : (data.data || []);
 
     // Filtro de programas

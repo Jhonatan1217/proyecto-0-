@@ -241,8 +241,8 @@
   <script src="<?= BASE_URL ?? '' ?>src/assets/js/components/combobox.js?v=12"></script>
   <!-- Módulos: cada uno maneja su CRUD/UX. El ?v= ayuda a romper caché -->
   <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionProgramas.js?v=7"></script>
-  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionCompetencias.js?v=3" defer></script>
-  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionRaes.js?v=8" defer></script>
+  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionCompetencias.js?v=4" defer></script>
+  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionRaes.js?v=9" defer></script>
   <script>
   document.addEventListener('DOMContentLoaded', function () {
     if (typeof ComboboxComponent === 'undefined') return;

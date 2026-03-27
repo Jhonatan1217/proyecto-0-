@@ -152,12 +152,17 @@
   };
 
   // CARGAS
-  async function loadPrograms({ preserveSelection = true } = {}) {
+  async function loadPrograms({ preserveSelection = true, idProgramaIncluir = null } = {}) {
     try {
       const prevFilterValue = preserveSelection && filterProgram ? filterProgram.value : null;
       const prevSelProg     = preserveSelection && selProg       ? selProg.value       : null;
 
-      const res = await apiGet(`${API_PROG}?accion=listar`);
+      const inc = idProgramaIncluir != null && String(idProgramaIncluir).trim() !== ''
+        ? String(idProgramaIncluir).trim()
+        : '';
+      let progUrl = `${API_PROG}?accion=listar&solo_activos=1`;
+      if (inc) progUrl += `&id_programa_incluir=${encodeURIComponent(inc)}`;
+      const res = await apiGet(progUrl);
       PROGRAMS = Array.isArray(res) ? res : (res?.data || []);
 
       if (filterProgram) filterProgram.querySelectorAll('option:not([value="all"])').forEach(o => o.remove());
@@ -214,6 +219,7 @@
       const arr = Array.isArray(res) ? res : (res?.data || []);
       RAE_MAP = {};
       arr.forEach(r => {
+        if (r.estado != null && Number(r.estado) !== 1) return;
         const idc = String(r.id_competencia ?? r.competencia_id ?? r.idCompetencia ?? '');
         if (!idc) return;
         const codigo = [
@@ -560,6 +566,11 @@
       desc: String(item.desc ?? '')
     };
 
+    await loadPrograms({
+      preserveSelection: true,
+      idProgramaIncluir: String(item.program_id ?? '')
+    });
+
     if (selProg) {
       const target = String(item.program_id ?? '');
       const exists = Array.from(selProg.options).some(o => String(o.value) === target);
@@ -677,7 +688,10 @@
     const prog = ev?.detail?.program || {};
     const pid  = String(prog.id_programa ?? prog.id ?? '');
 
-    await loadPrograms({ preserveSelection: true });
+    await loadPrograms({
+      preserveSelection: true,
+      idProgramaIncluir: editingId && editingSnap?.program_id ? String(editingSnap.program_id).trim() : null
+    });
 
     if (type === 'create' && isModalOpen() && !editingId && pid && selProg) {
       const has = Array.from(selProg.options).some(o => String(o.value) === pid);

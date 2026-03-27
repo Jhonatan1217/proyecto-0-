@@ -43,12 +43,25 @@ function parse_duracion_horas($raw) {
 // ===============================
 if ($accion === 'listar') {
     try {
-        $sql = "SELECT id_programa, nombre_programa, descripcion, duracion, estado, nivel_formacion 
-        FROM programas 
-        ORDER BY id_programa DESC"; 
-        
+        $soloActivos = isset($_GET['solo_activos'])
+            && ($_GET['solo_activos'] === '1' || $_GET['solo_activos'] === 'true');
+        $idIncluir = trim((string) ($_GET['id_programa_incluir'] ?? ''));
+
+        $sql = "SELECT id_programa, nombre_programa, descripcion, duracion, estado, nivel_formacion
+        FROM programas ";
+        $params = [];
+        if ($soloActivos) {
+            if ($idIncluir !== '') {
+                $sql .= "WHERE (COALESCE(estado, 1) = 1 OR id_programa = ?) ";
+                $params[] = $idIncluir;
+            } else {
+                $sql .= "WHERE COALESCE(estado, 1) = 1 ";
+            }
+        }
+        $sql .= "ORDER BY id_programa DESC";
+
         $stmt = $conn->prepare($sql);
-        $stmt->execute();
+        $stmt->execute($params);
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode($data ?: []);
     } catch (Exception $e) {
