@@ -114,5 +114,5 @@ if (!defined('BASE_URL')) {
 <script>
 window.BASE_URL = <?= json_encode(BASE_URL ?? '') ?>;
 </script>
-<script src="<?= BASE_URL ?>src/assets/js/components/combobox.js?v=6"></script>
+<script src="<?= BASE_URL ?>src/assets/js/components/combobox.js?v=8"></script>
 <script src="<?= BASE_URL ?>src/assets/js/gestionZonas.js?v=2"></script>

@@ -64,7 +64,7 @@
   function isInTableOrModal(el) {
     if (!el) return false;
     const inTable = el.closest('table') || el.closest('[id*="wrapTabla"]');
-    const inModal = el.closest('.modal-usuario-box,.modal-grupo-box,.modal-zona-box,.modal-area-box,.modal-trimestre-box,.modal-enterprise-box,#modalProgram');
+    const inModal = el.closest('.modal-usuario-box,.modal-grupo-box,.modal-zona-box,.modal-area-box,.modal-trimestre-box,.modal-enterprise-box,#modalProgram,#modalCompetency,#modalRae');
     return !!(inTable || inModal);
   }
 
@@ -161,6 +161,7 @@
       dropdown._cbWrapper = wrapper;
 
       const optionsData = () => [...select.options].filter(o => !o.disabled).map(o => ({ value: o.value, text: (o.textContent || '').trim() }));
+      const hasEmptyOption = () => [...select.options].some(o => String(o.value) === '');
       const hadInitialOptions = optionsData().length > 0;
 
       function setEmptyState(isEmpty) {
@@ -530,7 +531,7 @@
         if (clearValue !== undefined && clearValue !== null) {
           select.value = clearValue;
           select.dispatchEvent(new Event('change', { bubbles: true }));
-        } else if (hasEmptyOption) {
+        } else if (hasEmptyOption()) {
           select.value = '';
           select.dispatchEvent(new Event('change', { bubbles: true }));
         } else {
@@ -676,16 +677,35 @@
         }
       }
 
-      function openFromTrigger(ev) {
+      function toggleFromTrigger(ev) {
         if (ev) { ev.preventDefault(); ev.stopPropagation(); }
-        if (dropdown.classList.contains('hidden')) positionAndShow();
+        if (!dropdown.classList.contains('hidden')) {
+          dropdown.classList.add('hidden');
+          wrapper.classList.remove('cb-dropdown-open');
+          dropdown.classList.remove('dropdown-over-table', 'dropdown-up');
+          if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
+          dropdown.style.cssText = '';
+          wrapper._cbSkipToggleFocusOpen = true;
+          setTimeout(() => {
+            if (wrapper._cbSkipToggleFocusOpen) wrapper._cbSkipToggleFocusOpen = false;
+          }, 0);
+          return;
+        }
+        positionAndShow();
       }
 
       wrapper._cbUpdateInput = updateTriggerText;
 
-      triggerWrap.addEventListener('mousedown', (e) => { e.preventDefault(); openFromTrigger(e); });
+      triggerWrap.addEventListener('mousedown', (e) => { e.preventDefault(); toggleFromTrigger(e); });
       triggerWrap.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
-      triggerWrap.addEventListener('focus', () => { closeAllDropdowns(); positionAndShow(); });
+      triggerWrap.addEventListener('focus', () => {
+        if (wrapper._cbSkipToggleFocusOpen) {
+          wrapper._cbSkipToggleFocusOpen = false;
+          return;
+        }
+        closeAllDropdowns();
+        positionAndShow();
+      });
       triggerWrap.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
           dropdown.classList.add('hidden');

@@ -28,15 +28,18 @@ if (!defined('BASE_URL')) {
             <?php endif; ?>
         </div>
     </div>
-    <div class="flex gap-3 flex-wrap mb-5">
-        <select id="programTypeFilter" class="select-styled select-programas w-full sm:w-60">
-            <option value="all">Todos los tipos de programa</option>
-            <option value="tecnico">Técnico</option>
-            <option value="tecnologo">Tecnólogo</option>
-        </select>
-        
-        <input id="programSearchInput" type="text" placeholder="Buscar por nombre o código"
-         class="w-full sm:w-72 border border-zinc-300 rounded-xl px-3 py-2 text-sm outline-none placeholder-zinc-400">
+    <div class="flex flex-col md:flex-row gap-4 mb-5">
+        <div class="relative w-full md:w-64 shrink-0">
+            <select id="programTypeFilter" class="select-styled select-programas w-full">
+                <option value="all">Todos los tipos de programa</option>
+                <option value="tecnico">Técnico</option>
+                <option value="tecnologo">Tecnólogo</option>
+            </select>
+        </div>
+        <div class="relative w-full md:w-64 shrink-0">
+            <input id="programSearchInput" type="text" placeholder="Buscar por nombre o código"
+                class="w-full border border-zinc-300 rounded-xl px-3 py-2 text-sm outline-none placeholder-zinc-400">
+        </div>
     </div>
     
 

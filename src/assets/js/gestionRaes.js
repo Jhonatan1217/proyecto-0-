@@ -128,6 +128,7 @@
       }
       const exists = Array.from(selProgFilter.options).some(o => o.value === current);
       selProgFilter.value = exists ? current : 'all';
+      selProgFilter.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
     // Modal: Programas
@@ -142,6 +143,7 @@
       }
       const exists = Array.from(selProgInForm.options).some(o => o.value === current);
       selProgInForm.value = exists ? current : '';
+      selProgInForm.dispatchEvent(new Event('change', { bubbles: true }));
     }
   }
 
@@ -154,6 +156,7 @@ async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
   if (targetSelect === selCompFilter && (!programId || programId === 'all')) {
     targetSelect.innerHTML = `<option value="all">Todas las competencias</option>`;
     targetSelect.disabled = false; // el filtro nunca se bloquea
+    targetSelect.dispatchEvent(new Event('change', { bubbles: true }));
     return;
   }
 
@@ -163,6 +166,7 @@ async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
   if (!programId || programId === 'all') {
     targetSelect.innerHTML = `<option value="">Seleccione una competencia</option>`;
     targetSelect.disabled = true; // 🔴 se bloquea hasta que elijan programa
+    targetSelect.dispatchEvent(new Event('change', { bubbles: true }));
     return;
   }
 
@@ -191,11 +195,13 @@ async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
     // Mantener valor si aún existe
     const exists = Array.from(targetSelect.options).some(o => o.value === current);
     if (exists) targetSelect.value = current;
+    targetSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
   } catch (err) {
     console.error('[RAEs] Error cargando competencias:', err);
     targetSelect.innerHTML = `<option value="">Error cargando competencias</option>`;
     targetSelect.disabled = true;
+    targetSelect.dispatchEvent(new Event('change', { bubbles: true }));
   }
 }
 
@@ -391,6 +397,7 @@ async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
             if (selProgInForm) {
               const hasProg = Array.from(selProgInForm.options).some(o => o.value === String(pid));
               selProgInForm.value = hasProg ? String(pid) : '';
+              selProgInForm.dispatchEvent(new Event('change', { bubbles: true }));
             }
 
             // Cargar competencias del programa y seleccionar
@@ -398,10 +405,12 @@ async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
               await loadCompetenciasFor(selProgInForm.value, selComp, true);
             } else {
               selComp.innerHTML = `<option value="">Seleccione una competencia</option>`;
+              selComp.dispatchEvent(new Event('change', { bubbles: true }));
             }
             if (selComp) {
               const hasComp = Array.from(selComp.options).some(o => o.value === String(cid));
               selComp.value = hasComp ? String(cid) : '';
+              selComp.dispatchEvent(new Event('change', { bubbles: true }));
             }
 
             if (inCode) inCode.value = idRae || '';
@@ -433,7 +442,10 @@ async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
     editingRaeId = null; editingSnap = null;
     if (titleRae) titleRae.textContent = 'Nuevo RAE';
     if (inCode) inCode.value = '';
-    if (selComp) selComp.innerHTML = `<option value="">Seleccione una competencia</option>`;
+    if (selComp) {
+      selComp.innerHTML = `<option value="">Seleccione una competencia</option>`;
+      selComp.dispatchEvent(new Event('change', { bubbles: true }));
+    }
 
     // Mostrar
     backdrop.classList.remove('hidden');
@@ -477,6 +489,8 @@ async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
       await loadCompetenciasFor(pid, selComp, true);
     } else {
       selComp.innerHTML = `<option value=\"\">Seleccione una competencia</option>`;
+      selComp.disabled = true;
+      selComp.dispatchEvent(new Event('change', { bubbles: true }));
     }
   });
 

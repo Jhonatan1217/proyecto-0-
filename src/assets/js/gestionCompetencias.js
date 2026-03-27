@@ -186,6 +186,8 @@
         const exists = Array.from(selProg.options).some(o => o.value === prevSelProg);
         selProg.value = exists ? prevSelProg : '';
       }
+      filterProgram?.dispatchEvent(new Event('change', { bubbles: true }));
+      selProg?.dispatchEvent(new Event('change', { bubbles: true }));
     } catch (err) {
       console.error('[Competencias] loadPrograms:', err);
       t.err('No se pudieron cargar los programas');
@@ -469,7 +471,10 @@
       inpCode.value = '';
       setCodeDuplicateUI(false); // limpiar estado duplicado
     }
-    if (selProg) selProg.value = '';
+    if (selProg) {
+      selProg.value = '';
+      selProg.dispatchEvent(new Event('change', { bubbles: true }));
+    }
     if (inpName) inpName.value = '';
     if (inpDesc) inpDesc.value = '';
 
@@ -505,6 +510,7 @@
   function openModal(withAnim = false) {
     show(backdrop); show(modal);
     if (!editingId) form?.reset();
+    selProg?.dispatchEvent(new Event('change', { bubbles: true }));
 
     if (withAnim) {
       backdrop.classList.add('animate-backdrop');
@@ -521,6 +527,7 @@
   function closeModal() {
     hide(backdrop); hide(modal);
     form?.reset();
+    selProg?.dispatchEvent(new Event('change', { bubbles: true }));
     editingId = null;
     editingSnap = null;
     if (inpCode) {
@@ -557,6 +564,7 @@
       const target = String(item.program_id ?? '');
       const exists = Array.from(selProg.options).some(o => String(o.value) === target);
       selProg.value = exists ? target : '';
+      selProg.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
     if (inpCode) {
@@ -674,6 +682,7 @@
     if (type === 'create' && isModalOpen() && !editingId && pid && selProg) {
       const has = Array.from(selProg.options).some(o => String(o.value) === pid);
       if (has) selProg.value = pid;
+      selProg.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
     renderList();

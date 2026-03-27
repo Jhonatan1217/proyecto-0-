@@ -405,6 +405,8 @@ async function loadInstructores() {
         });
       }
 
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+
     })
     .catch(err => {
       console.error("Error recargando select:", err);
@@ -576,6 +578,8 @@ window.addEventListener('programs:changed', function () {
         select.appendChild(option);
       });
     }
+
+    select.dispatchEvent(new Event('change', { bubbles: true }));
 
   })
   .catch(err => console.error(err));

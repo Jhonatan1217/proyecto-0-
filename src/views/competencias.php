@@ -12,21 +12,23 @@
         </div>
 
         <?php if (($_SESSION['usuario_cargo'] ?? '') !== 'INSTRUCTOR'): ?>
-        <button id="btnNewCompetency" class="w-full sm:w-auto rounded-xl px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 bg-[#0a3a57] text-[#fff]">
+        <button id="btnNewCompetency" class="w-full md:w-auto rounded-xl px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 bg-[#0a3a57] text-[#fff]">
             <img src="src/assets/img/plus.svg" class="w-4 h-4" alt="icono añadir">
             Nueva Competencia
         </button>
         <?php endif; ?>
     </div>
 
-        <div class="flex gap-3 flex-wrap mb-5">
-            <select id="competencyProgramFilter" class="w-full sm:w-60 border border-zinc-300 rounded-xl px-3 py-2 text-sm select-nice">
-                <option value="all">Todos los programas</option>
-            </select>
-            
-            <input id="competencySearch" type="text" placeholder="Buscar por nombre o código"
-            class="w-full sm:w-72 border border-zinc-300 rounded-xl px-3 py-2 text-sm outline-none placeholder-zinc-400">
-            
+        <div class="flex flex-col md:flex-row gap-4 mb-5">
+            <div class="relative w-full md:w-64 shrink-0">
+                <select id="competencyProgramFilter" class="combobox-academicos-filter-programa w-full">
+                    <option value="all">Todos los programas</option>
+                </select>
+            </div>
+            <div class="relative w-full md:w-64 shrink-0">
+                <input id="competencySearch" type="text" placeholder="Buscar por nombre o código"
+                    class="w-full border border-zinc-300 rounded-xl px-3 py-2 text-sm outline-none placeholder-zinc-400">
+            </div>
         </div>
 
     <!-- Lista de competencias (vacía inicialmente) -->
@@ -64,7 +66,7 @@
         <form id="formCompetencyNew" class="p-6 pt-4 space-y-4">
             <div>
                 <label class="block text-sm font-medium mb-1">Programa *</label>
-                <select id="cp_program" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm bg-white select-nice">
+                <select id="cp_program" class="select-styled select-academicos w-full">
                     <option value="">Seleccione el programa de formación asociado</option>
                 </select>
             </div>

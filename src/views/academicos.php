@@ -237,11 +237,50 @@
 </script>
 
   <!-- Combobox / selects estilizados (Programas) -->
-  <script src="<?= BASE_URL ?? '' ?>src/assets/js/components/combobox.js?v=6"></script>
+  <script src="<?= BASE_URL ?? '' ?>src/assets/js/components/combobox.js?v=8"></script>
   <!-- Módulos: cada uno maneja su CRUD/UX. El ?v= ayuda a romper caché -->
-  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionProgramas.js?v=4"></script>
-  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionCompetencias.js?v=2" defer></script>
-  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionRaes.js?v=1" defer></script>
+  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionProgramas.js?v=6"></script>
+  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionCompetencias.js?v=3" defer></script>
+  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionRaes.js?v=2" defer></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (typeof ComboboxComponent === 'undefined') return;
+    if (typeof ComboboxComponent.enhanceSelectStyled === 'function') {
+      ComboboxComponent.enhanceSelectStyled({ selector: '.select-academicos' });
+    }
+    if (typeof ComboboxComponent.enhance === 'function') {
+      ComboboxComponent.enhance({
+        selector: '.combobox-academicos-upload',
+        placeholder: 'Buscar programa…',
+        allowClear: true,
+        restoreValueOnBlurWhenEmpty: true,
+        clearValue: ''
+      });
+      ComboboxComponent.enhance({
+        selector: '.combobox-academicos-filter-programa',
+        placeholder: 'Buscar programa…',
+        allowClear: true,
+        restoreValueOnBlurWhenEmpty: true,
+        clearValue: 'all'
+      });
+      ComboboxComponent.enhance({
+        selector: '.combobox-academicos-filter-rae-comp',
+        placeholder: 'Buscar competencia…',
+        allowClear: true,
+        restoreValueOnBlurWhenEmpty: true,
+        clearValue: 'all'
+      });
+      ComboboxComponent.enhance({
+        selector: '.combobox-rae-competency',
+        placeholder: 'Buscar competencia…',
+        allowClear: true,
+        restoreValueOnBlurWhenEmpty: true,
+        clearValue: '',
+        forceDropup: true
+      });
+    }
+  });
+  </script>
 
   <!-- Agregar cargar programas dinámicamente -->
   <script>
@@ -261,6 +300,7 @@
                 ${p.nombre_programa}
               </option>`;
           });
+          selectProgram.dispatchEvent(new Event('change', { bubbles: true }));
         })
         .catch(err => {
           console.error("Error cargando programas:", err);
