@@ -14,6 +14,38 @@
   min-width: 0;
 }
 
+/**
+ * Input de búsqueda alineado con combobox / select-styled (misma altura y radio).
+ */
+.filter-search-input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #111827;
+  background-color: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 0.75rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.filter-search-input::placeholder {
+  color: #9ca3af;
+}
+
+.filter-search-input:hover {
+  border-color: #9ca3af;
+}
+
+.filter-search-input:focus {
+  border-color: #39a900;
+  box-shadow: 0 0 0 2px rgba(57, 169, 0, 0.2);
+}
+
 /* <select disabled>: bloquea el trigger aunque el input sea visible */
 .combobox-wrapper.combobox-native-disabled .combobox-trigger {
   opacity: 0.65;

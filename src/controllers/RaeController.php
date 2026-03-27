@@ -119,6 +119,16 @@ try {
         echo json_encode(['error' => 'Esta RAE ya existe en esa competencia']);
         exit;
       }
+
+      $chkComp = $conn->prepare(
+        "SELECT COUNT(*) FROM competencias WHERE id_competencia = ? AND COALESCE(estado, 1) = 1"
+      );
+      $chkComp->execute([$id_competencia]);
+      if ((int) $chkComp->fetchColumn() === 0) {
+        echo json_encode(['error' => 'La competencia no existe o está inactiva']);
+        exit;
+      }
+
       // Insertar nueva RAE
       $stmt = $conn->prepare("INSERT INTO raes (id_rae, descripcion, id_competencia, estado) VALUES (?, ?, ?, 1)");
       $ok = $stmt->execute([$id_rae, $descripcion, $id_competencia]);
@@ -161,6 +171,26 @@ case 'actualizar':
     if ($check->fetchColumn() > 0) { // evitar duplicados
       $conn->rollBack();
       echo json_encode(['error' => 'Ya existe una RAE igual en esa competencia']);
+      exit;
+    }
+
+    $prevStmt = $conn->prepare("SELECT id_competencia FROM raes WHERE id_rae = ?");
+    $prevStmt->execute([$id_rae_actual]);
+    $prevComp = $prevStmt->fetchColumn();
+    $sameComp = ((string) $prevComp === (string) $id_competencia);
+    $chkAct = $conn->prepare(
+      "SELECT COALESCE(estado, 1) FROM competencias WHERE id_competencia = ?"
+    );
+    $chkAct->execute([$id_competencia]);
+    $estadoComp = $chkAct->fetchColumn();
+    if ($estadoComp === false) {
+      $conn->rollBack();
+      echo json_encode(['error' => 'La competencia no existe']);
+      exit;
+    }
+    if ((int) $estadoComp !== 1 && !$sameComp) {
+      $conn->rollBack();
+      echo json_encode(['error' => 'No puede asignar una competencia inactiva']);
       exit;
     }
 
@@ -218,15 +248,25 @@ case 'actualizar':
       break;
 
     case 'competenciasPorPrograma':
-      // Listar competencias según programa
+      // Listar competencias activas del programa (para crear RAE / filtros).
+      // Opcional id_competencia_incluir: incluye esa fila aunque esté inactiva (edición de RAE ya vinculada).
       $idp = trim((string) inreq('id_programa'));
       if ($idp === '') {
         echo json_encode(['error' => 'id_programa es obligatorio']);
         exit;
       }
-      // Obtener competencias
-      $stmt = $conn->prepare("SELECT id_competencia, nombre_competencia FROM competencias WHERE id_programa = ? ORDER BY id_competencia");
-      $stmt->execute([$idp]); // Ejecutar consulta
+      $idIncl = trim((string) inreq('id_competencia_incluir'));
+      $sql = "SELECT id_competencia, nombre_competencia FROM competencias
+              WHERE id_programa = ?
+                AND (COALESCE(estado, 1) = 1";
+      $params = [$idp];
+      if ($idIncl !== '') {
+        $sql .= " OR id_competencia = ?";
+        $params[] = $idIncl;
+      }
+      $sql .= ") ORDER BY id_competencia";
+      $stmt = $conn->prepare($sql);
+      $stmt->execute($params);
       echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
       break;
 

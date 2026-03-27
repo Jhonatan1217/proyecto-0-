@@ -535,7 +535,10 @@ form?.addEventListener('submit', async e => {
 
     if (typeof ComboboxComponent !== 'undefined') {
       if (typeof ComboboxComponent.enhanceSelectStyled === 'function') {
-        ComboboxComponent.enhanceSelectStyled({ selector: '.select-programas' });
+        ComboboxComponent.enhanceSelectStyled({
+          selector: '.select-programas',
+          placeholderValues: ['all', '']
+        });
       }
       if (typeof ComboboxComponent.enhance === 'function') {
         ComboboxComponent.enhance({

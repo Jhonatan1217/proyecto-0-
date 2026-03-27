@@ -77,6 +77,13 @@
   let editingRaeId = null;           // si no es null => estamos editando ese id_rae
   let editingSnap  = null;           // {id, prog, comp, desc}
 
+  /** Para incluir en API la competencia actual al editar (aunque esté inactiva). */
+  function modalCompPreserveId() {
+    if (!editingRaeId || editingSnap?.comp == null) return null;
+    const s = String(editingSnap.comp).trim();
+    return s === '' ? null : s;
+  }
+
   async function fetchJSON(url, opts) {
     const res = await fetch(url, opts);
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -154,7 +161,8 @@
   let _modalCompetenciasGen = 0;
 
 // ==== Cargar Competencias por programa (para filtro y modal) ====
-async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
+// idCompetenciaIncluir: al editar RAE, el backend incluye esa competencia aunque esté inactiva.
+async function loadCompetenciasFor(programId, targetSelect, withNames = false, idCompetenciaIncluir = null) {
   const isModalComp = targetSelect === selComp;
   if (isModalComp) _modalCompetenciasGen++;
   const myGen = _modalCompetenciasGen;
@@ -164,7 +172,7 @@ async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
   // ================================
   if (targetSelect === selCompFilter && (!programId || programId === 'all')) {
     targetSelect.innerHTML = `<option value="all">Todas las competencias</option>`;
-    targetSelect.disabled = false; // el filtro nunca se bloquea
+    targetSelect.disabled = true; // hasta elegir un programa concreto
     targetSelect.dispatchEvent(new Event('change', { bubbles: true }));
     return;
   }
@@ -180,7 +188,11 @@ async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
   }
 
   try {
-    const data  = await fetchJSON(`${API_RAES}?accion=competenciasPorPrograma&${q({ id_programa: programId })}`);
+    const fetchParams = { id_programa: programId };
+    if (isModalComp && idCompetenciaIncluir != null && String(idCompetenciaIncluir).trim() !== '') {
+      fetchParams.id_competencia_incluir = String(idCompetenciaIncluir).trim();
+    }
+    const data  = await fetchJSON(`${API_RAES}?accion=competenciasPorPrograma&${q(fetchParams)}`);
     if (isModalComp && myGen !== _modalCompetenciasGen) return;
 
     if (data && typeof data === 'object' && !Array.isArray(data) && data.error) {
@@ -197,9 +209,14 @@ async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
 
     const current = targetSelect.value || '';
 
-    targetSelect.innerHTML = targetSelect === selCompFilter
-      ? `<option value="all">Todas las competencias</option>`
-      : `<option value="">Seleccione una competencia</option>`;
+    if (targetSelect === selCompFilter) {
+      targetSelect.innerHTML = `<option value="all">Todas las competencias</option>`;
+    } else {
+      const modalFirstLabel = comps.length
+        ? 'Seleccione una competencia'
+        : 'Este programa no tiene competencias';
+      targetSelect.innerHTML = `<option value="">${modalFirstLabel}</option>`;
+    }
 
     for (const c of comps) {
       const opt = document.createElement('option');
@@ -210,10 +227,12 @@ async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
       targetSelect.appendChild(opt);
     }
 
-    // HABILITAR porque ya cargó competencias
-    targetSelect.disabled = false;
+    if (targetSelect === selCompFilter) {
+      targetSelect.disabled = false;
+    } else {
+      targetSelect.disabled = comps.length === 0;
+    }
 
-    // Mantener valor si aún existe
     const exists = Array.from(targetSelect.options).some(o => o.value === current);
     if (exists) targetSelect.value = current;
     targetSelect.dispatchEvent(new Event('change', { bubbles: true }));
@@ -424,7 +443,7 @@ async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
 
             // Cargar competencias del programa y seleccionar
             if (selProgInForm && selProgInForm.value) {
-              await loadCompetenciasFor(selProgInForm.value, selComp, true);
+              await loadCompetenciasFor(selProgInForm.value, selComp, true, cid ? String(cid) : null);
             } else {
               selComp.innerHTML = `<option value="">Seleccione una competencia</option>`;
               selComp.dispatchEvent(new Event('change', { bubbles: true }));
@@ -506,7 +525,7 @@ async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
     const pid = selProgInForm.value;
     if (!editingRaeId && inCode) inCode.value = ''; // solo limpiar en modo crear (se mantiene)
     if (pid) {
-      await loadCompetenciasFor(pid, selComp, true);
+      await loadCompetenciasFor(pid, selComp, true, modalCompPreserveId());
     } else {
       selComp.innerHTML = `<option value=\"\">Seleccione una competencia</option>`;
       selComp.disabled = true;
@@ -621,7 +640,7 @@ async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
       await loadCompetenciasFor(selProgFilter.value, selCompFilter, false);
     }
     if (isModalOpen() && selProgInForm && selProgInForm.value) {
-      await loadCompetenciasFor(selProgInForm.value, selComp, true);
+      await loadCompetenciasFor(selProgInForm.value, selComp, true, modalCompPreserveId());
     }
     await loadRaes();
   });
@@ -638,7 +657,7 @@ async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
       await loadCompetenciasFor(selProgFilter.value, selCompFilter, false);
     }
     if (isModalOpen() && selProgInForm && pid && selProgInForm.value === pid) {
-      await loadCompetenciasFor(pid, selComp, true);
+      await loadCompetenciasFor(pid, selComp, true, modalCompPreserveId());
       // <<< MODIFICADO >>> ya no autocompleta si llega una nueva competencia
       if (cid && selComp && AUTOCOMPLETE_RAE) {
         const has = Array.from(selComp.options).some(o => o.value === cid);

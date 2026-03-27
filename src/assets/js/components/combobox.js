@@ -627,6 +627,7 @@
    * Mejora un <select> a desplegable custom: mismo diseño y dropup que el combobox,
    * sin búsqueda ni botón X. Para listas fijas (jornada, modalidad, cargo, etc.).
    * @param {boolean} [opts.forceDropup] - Si true, fuerza apertura hacia arriba cuando usa posición fija.
+   * @param {string|string[]} [opts.placeholderValues] - Valores del select que se muestran en gris (ej. '' y 'all' para filtros).
    */
   function enhanceSelectStyled(opts) {
     const selector = opts.selector || '.select-styled';
@@ -634,6 +635,10 @@
     const optionClass = opts.optionClass || 'custom-option';
     const placeholder = (opts.placeholder != null && opts.placeholder !== '') ? opts.placeholder : 'Seleccione...';
     const forceDropup = opts.forceDropup === true;
+    const rawNeutral = opts.placeholderValues;
+    const neutralValues = rawNeutral != null && rawNeutral !== ''
+      ? (Array.isArray(rawNeutral) ? rawNeutral : [rawNeutral]).map(v => String(v))
+      : [''];
 
     document.querySelectorAll(selector).forEach(select => {
       if (select.dataset.comboboxEnhanced === '1') return;
@@ -674,9 +679,11 @@
 
       function updateTriggerText() {
         const opt = select.options[select.selectedIndex];
-        const text = opt && String(opt.value) !== '' ? (opt.textContent || '').trim() : '';
-        triggerText.textContent = text || placeholder;
-        triggerText.style.color = text ? '#111827' : '#9ca3af';
+        const displayText = opt ? (opt.textContent || '').trim() : '';
+        const val = String(select.value ?? '');
+        const isNeutral = neutralValues.includes(val);
+        triggerText.textContent = displayText || placeholder;
+        triggerText.style.color = isNeutral ? '#9ca3af' : '#111827';
       }
 
       function renderOptions() {

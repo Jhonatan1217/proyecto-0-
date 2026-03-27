@@ -38,7 +38,7 @@ if (!defined('BASE_URL')) {
         </div>
         <div class="relative w-full md:w-64 shrink-0">
             <input id="programSearchInput" type="text" placeholder="Buscar por nombre o código"
-                class="w-full border border-zinc-300 rounded-xl px-3 py-2 text-sm outline-none placeholder-zinc-400">
+                class="filter-search-input w-full" autocomplete="off">
         </div>
     </div>
     
