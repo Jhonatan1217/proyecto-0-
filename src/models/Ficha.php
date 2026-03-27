@@ -98,6 +98,7 @@ class Ficha {
                        id_area
                 FROM usuarios 
                 WHERE estado = 1 AND UPPER(TRIM(cargo)) = 'INSTRUCTOR'
+                AND COALESCE(es_sistema, 0) = 0
                 ORDER BY nombre_completo";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
@@ -119,7 +120,8 @@ class Ficha {
 
         // Verificar que el líder de grupo existe y es instructor
         $sqlCheckInstructor = "SELECT COUNT(*) as total FROM usuarios 
-                               WHERE id_usuario = :id_usuario AND UPPER(TRIM(cargo)) = 'INSTRUCTOR' AND estado = 1";
+                               WHERE id_usuario = :id_usuario AND UPPER(TRIM(cargo)) = 'INSTRUCTOR' AND estado = 1
+                               AND COALESCE(es_sistema, 0) = 0";
         $stmtCheckIns = $this->conn->prepare($sqlCheckInstructor);
         $stmtCheckIns->bindParam(':id_usuario', $id_lider_grupo);
         $stmtCheckIns->execute();
@@ -162,7 +164,8 @@ class Ficha {
         // Verificar que el líder de grupo existe y es instructor (si se proporciona)
         if ($id_lider_grupo) {
             $sqlCheckInstructor = "SELECT COUNT(*) as total FROM usuarios 
-                                   WHERE id_usuario = :id_usuario AND UPPER(TRIM(cargo)) = 'INSTRUCTOR' AND estado = 1";
+                                   WHERE id_usuario = :id_usuario AND UPPER(TRIM(cargo)) = 'INSTRUCTOR' AND estado = 1
+                                   AND COALESCE(es_sistema, 0) = 0";
             $stmtCheckIns = $this->conn->prepare($sqlCheckInstructor);
             $stmtCheckIns->bindParam(':id_usuario', $id_lider_grupo);
             $stmtCheckIns->execute();
@@ -215,7 +218,8 @@ class Ficha {
     public function cambiarLider($id_ficha, $id_usuario) {
         // Verificar que el usuario existe y es instructor
         $sqlCheck = "SELECT COUNT(*) as total FROM usuarios 
-                     WHERE id_usuario = :id_usuario AND UPPER(TRIM(cargo)) = 'INSTRUCTOR' AND estado = 1";
+                     WHERE id_usuario = :id_usuario AND UPPER(TRIM(cargo)) = 'INSTRUCTOR' AND estado = 1
+                     AND COALESCE(es_sistema, 0) = 0";
         $stmtCheck = $this->conn->prepare($sqlCheck);
         $stmtCheck->bindParam(':id_usuario', $id_usuario);
         $stmtCheck->execute();
