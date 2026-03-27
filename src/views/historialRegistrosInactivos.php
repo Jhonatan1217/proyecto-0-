@@ -276,7 +276,7 @@ window.BASE_URL = <?= json_encode(BASE_URL ?? '') ?>;
 })();
 </script>
 
-<script src="<?= BASE_URL ?>src/assets/js/components/combobox.js?v=5"></script>
+<script src="<?= BASE_URL ?>src/assets/js/components/combobox.js?v=6"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   if (typeof ComboboxComponent === 'undefined') return;

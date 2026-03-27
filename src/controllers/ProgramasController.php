@@ -26,6 +26,18 @@ function limpiar($v) {
     return htmlspecialchars(trim($v ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
+/**
+ * Duración en horas: entero >= 1. Devuelve null si es inválida o <= 0.
+ */
+function parse_duracion_horas($raw) {
+    $s = trim((string)($raw ?? ''));
+    if ($s === '' || !ctype_digit($s)) {
+        return null;
+    }
+    $n = (int) $s;
+    return $n >= 1 ? $n : null;
+}
+
 // ===============================
 // LISTAR
 // ===============================
@@ -55,13 +67,18 @@ if ($accion === 'agregar') {
     $id_programa     = limpiar($json['id_programa'] ?? '');
     $nombre_programa = limpiar($json['nombre_programa'] ?? '');
     $descripcion     = limpiar($json['descripcion'] ?? '');
-    $duracion        = limpiar($json['duracion'] ?? '');
     $nivel_formacion = limpiar($json['nivel_formacion'] ?? '');
+    $duracionNum     = parse_duracion_horas($json['duracion'] ?? '');
 
     if (!$id_programa || !$nombre_programa || !$nivel_formacion) {
         echo json_encode(['error' => 'Campos obligatorios faltantes.']);
         exit;
     }
+    if ($duracionNum === null) {
+        echo json_encode(['error' => 'La duración es obligatoria y debe ser un número entero de horas mayor a 0.']);
+        exit;
+    }
+    $duracion = (string) $duracionNum;
 
     try {
         $sql = "INSERT INTO programas 
@@ -102,13 +119,18 @@ if ($accion === 'actualizar') {
 
     $nombre_programa = limpiar($json['nombre_programa'] ?? '');
     $descripcion     = limpiar($json['descripcion'] ?? '');
-    $duracion        = limpiar($json['duracion'] ?? '');
     $nivel_formacion = limpiar($json['nivel_formacion'] ?? '');
+    $duracionNum     = parse_duracion_horas($json['duracion'] ?? '');
 
     if (!$id_programa_actual || !$nombre_programa || !$nivel_formacion) {
         echo json_encode(['error' => 'Datos insuficientes para actualizar.']);
         exit;
     }
+    if ($duracionNum === null) {
+        echo json_encode(['error' => 'La duración es obligatoria y debe ser un número entero de horas mayor a 0.']);
+        exit;
+    }
+    $duracion = (string) $duracionNum;
 
     try {
         $conn->beginTransaction();

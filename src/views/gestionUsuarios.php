@@ -77,5 +77,5 @@ window.API_USUARIO = "<?= BASE_URL ?>src/controllers/UsuarioController.php";
 window.ICON_EDIT_USUARIO = "<?= BASE_URL ?>src/assets/img/pencil.svg";
 window.ICON_VER_USUARIO = "<?= BASE_URL ?>src/assets/img/eye.svg";
 </script>
-<script src="<?= BASE_URL ?>src/assets/js/components/combobox.js?v=5"></script>
+<script src="<?= BASE_URL ?>src/assets/js/components/combobox.js?v=6"></script>
 <script src="<?= BASE_URL ?>src/assets/js/gestionUsuarios.js?v=2"></script>

@@ -236,8 +236,10 @@
     window.API_RAES = encodeURI('<?= BASE_URL ?? '' ?>src/controllers/RaeController.php');
 </script>
 
+  <!-- Combobox / selects estilizados (Programas) -->
+  <script src="<?= BASE_URL ?? '' ?>src/assets/js/components/combobox.js?v=6"></script>
   <!-- Módulos: cada uno maneja su CRUD/UX. El ?v= ayuda a romper caché -->
-  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionProgramas.js?v=3"></script>
+  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionProgramas.js?v=4"></script>
   <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionCompetencias.js?v=2" defer></script>
   <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionRaes.js?v=1" defer></script>
 

@@ -158,6 +158,8 @@ async function loadInstructores() {
       select.appendChild(option);
     }
 
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+
   } catch (error) {
     console.error('Error cargando instructores:', error);
   }
@@ -180,7 +182,10 @@ async function loadInstructores() {
 
   // 🔥 AGREGADO (nivel_formacion)
   const inpNivel = document.getElementById('pg_nivel');
-  if (inpNivel) inpNivel.value = isCreate ? '' : (data?.nivel_formacion ?? '');
+  if (inpNivel) {
+    inpNivel.value = isCreate ? '' : (data?.nivel_formacion ?? '');
+    inpNivel.dispatchEvent(new Event('change', { bubbles: true }));
+  }
 
   if (inpCode) inpCode.disabled = false;
 
@@ -217,6 +222,8 @@ async function loadInstructores() {
       modal?.classList.add('hidden');
       backdrop?.classList.add('hidden');
       form?.reset();
+      document.getElementById('pg_nivel')?.dispatchEvent(new Event('change', { bubbles: true }));
+      document.getElementById('pg_instructor')?.dispatchEvent(new Event('change', { bubbles: true }));
       editingId = null;
       if (inpCode) inpCode.disabled = false;
       if (modalTitle) modalTitle.textContent = 'Nuevo Programa';
@@ -446,12 +453,16 @@ form?.addEventListener('submit', async e => {
   const id_programa     = (inpCode?.value || '').trim();
   const nombre_programa = (inpName?.value || '').trim();
   const descripcion     = (inpDesc?.value || '').trim();
-  const duracion        = (inpHours?.value || '').trim();
+  const duracionRaw = (inpHours?.value || '').trim();
   const nivel_formacion = (document.getElementById('pg_nivel')?.value || '').trim();
 
   if (!id_programa || !nombre_programa || !nivel_formacion) {
     return t.warn('Código, nombre y tipo de programa son obligatorios');
   }
+  if (!/^\d+$/.test(duracionRaw) || parseInt(duracionRaw, 10) < 1) {
+    return t.warn('La duración debe ser un número entero de horas mayor a 0');
+  }
+  const duracion = duracionRaw;
 
   let payload;
 
@@ -519,6 +530,22 @@ form?.addEventListener('submit', async e => {
     // INIT
     // ===============================
     loadPrograms();
+
+    if (typeof ComboboxComponent !== 'undefined') {
+      if (typeof ComboboxComponent.enhanceSelectStyled === 'function') {
+        ComboboxComponent.enhanceSelectStyled({ selector: '.select-programas' });
+      }
+      if (typeof ComboboxComponent.enhance === 'function') {
+        ComboboxComponent.enhance({
+          selector: '.combobox-programa-instructor',
+          placeholder: 'Buscar instructor…',
+          allowClear: true,
+          restoreValueOnBlurWhenEmpty: true,
+          clearValue: '',
+          forceDropup: true
+        });
+      }
+    }
 
     window.addEventListener('excel-subido-ok', () => {
       loadPrograms();

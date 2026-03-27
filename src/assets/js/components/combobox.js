@@ -13,7 +13,7 @@
   /** Mensaje en dropdown cuando no hay opciones (Empty State) */
   const EMPTY_DROPDOWN_MESSAGE = 'No se encontraron opciones. Por favor, configure este parámetro en el módulo correspondiente.';
 
-  function applyDropdownPosition(wrapper, dropdown, triggerEl, dropdownMaxH) {
+  function applyDropdownPosition(wrapper, dropdown, triggerEl, dropdownMaxH, forceDropup) {
     const rect = triggerEl.getBoundingClientRect();
     const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
     const maxH = dropdownMaxH || DROPDOWN_MAX_ITEMS * ITEM_HEIGHT_REM * rem;
@@ -23,7 +23,7 @@
     const tr = wrapper.closest('tr');
     const isLastRow = tbody && tr && tbody.lastElementChild === tr;
     const inBottomThird = rect.top >= window.innerHeight * (2 / 3);
-    const needsUp = spaceBelow < maxH + MARGIN || isLastRow || inBottomThird;
+    const needsUp = !!forceDropup || spaceBelow < maxH + MARGIN || isLastRow || inBottomThird;
 
     dropdown.classList.toggle('dropdown-up', needsUp);
     dropdown.classList.add('dropdown-over-table');
@@ -54,15 +54,40 @@
       d.classList.add('hidden');
       d.classList.remove('dropdown-over-table', 'dropdown-up');
       d.style.cssText = '';
-      if (d._cbWrapper && d.parentNode === document.body) d._cbWrapper.appendChild(d);
+      if (d._cbWrapper) {
+        d._cbWrapper.classList.remove('cb-dropdown-open');
+        if (d.parentNode === document.body) d._cbWrapper.appendChild(d);
+      }
     });
   }
 
   function isInTableOrModal(el) {
     if (!el) return false;
     const inTable = el.closest('table') || el.closest('[id*="wrapTabla"]');
-    const inModal = el.closest('.modal-usuario-box,.modal-grupo-box,.modal-zona-box,.modal-area-box,.modal-trimestre-box,.modal-enterprise-box');
+    const inModal = el.closest('.modal-usuario-box,.modal-grupo-box,.modal-zona-box,.modal-area-box,.modal-trimestre-box,.modal-enterprise-box,#modalProgram');
     return !!(inTable || inModal);
+  }
+
+  /** Cierra al hacer clic fuera; registra el listener una sola vez (combobox + select estilizado). */
+  function ensureComboboxOutsideClick() {
+    if (global._comboboxDocClick) return;
+    global._comboboxDocClick = true;
+    document.addEventListener('click', (e) => {
+      document.querySelectorAll('.combobox-dropdown').forEach(d => {
+        if (d.classList.contains('hidden')) return;
+        const w = d._cbWrapper;
+        if (!w || w.contains(e.target) || d.contains(e.target)) return;
+        if (d._cbJustOpened && (Date.now() - d._cbJustOpened) < 250) return;
+        d.classList.add('hidden');
+        w.classList.remove('cb-dropdown-open');
+        if (d.parentNode === document.body && w) w.appendChild(d);
+        d.style.cssText = '';
+        d.classList.remove('dropdown-over-table', 'dropdown-up');
+        const inp = w.querySelector('.combobox-input');
+        if (inp && typeof w._cbValidateAndResetOnBlur === 'function') w._cbValidateAndResetOnBlur();
+        else if (typeof w._cbUpdateInput === 'function') w._cbUpdateInput();
+      });
+    }, true);
   }
 
   /**
@@ -76,6 +101,7 @@
    * @param {boolean} [opts.allowClear] - Si false, oculta la X y mantiene el chevron visible
    * @param {boolean} [opts.restoreValueOnBlurWhenEmpty] - Si true (modal/fila editar): al salir con input vacío restaura último valor. Si false (filtros): se queda en placeholder.
    * @param {boolean} [opts.inTable] - Si está dentro de tabla (usa position: fixed + dropup)
+   * @param {boolean} [opts.forceDropup] - Si true, el listado abre siempre hacia arriba (útil al final de un modal).
    * @param {Function} [opts.onEnhance] - Callback cuando se enhancea cada select
    */
   function enhanceCombobox(opts) {
@@ -86,7 +112,7 @@
     const clearValue = opts.clearValue;
     const allowClear = opts.allowClear !== false;
     const restoreValueOnBlurWhenEmpty = opts.restoreValueOnBlurWhenEmpty !== false;
-    const isInTable = (el) => el.closest('table') || el.closest('[id*="wrapTabla"]');
+    const forceDropup = opts.forceDropup === true;
 
     document.querySelectorAll(selector).forEach(select => {
       if (select.dataset.comboboxEnhanced === '1') return;
@@ -224,6 +250,7 @@
           msg.textContent = EMPTY_DROPDOWN_MESSAGE;
           dropdown.appendChild(msg);
           dropdown.classList.remove('hidden');
+          wrapper.classList.add('cb-dropdown-open');
           return;
         }
 
@@ -245,6 +272,7 @@
             wrapper._cbClearedAt = 0;
             dropdown.classList.add('hidden');
             dropdown.classList.remove('dropdown-over-table', 'dropdown-up');
+            wrapper.classList.remove('cb-dropdown-open');
             if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
             dropdown.style.cssText = '';
             select.value = value;
@@ -379,10 +407,8 @@
 
       // Contextos que usan position:fixed + applyDropdownPosition:
       // 1) dentro de <table> o wrapTabla (filas editables)
-      // 2) dentro de modal-*-box que tienen overflow:hidden y recortarían el dropdown
-      const inTable = isInTable(wrapper) || !!wrapper.closest(
-        '.modal-usuario-box,.modal-grupo-box,.modal-zona-box,.modal-area-box,.modal-trimestre-box,.modal-enterprise-box'
-      );
+      // 2) dentro de modales con overflow que recortarían el dropdown (#modalProgram, etc.)
+      const useFixedDropdown = isInTableOrModal(wrapper);
       const maxH = DROPDOWN_MAX_ITEMS * ITEM_HEIGHT_REM * parseFloat(getComputedStyle(document.documentElement).fontSize);
 
       function positionAndShow(forceShowAll) {
@@ -391,7 +417,11 @@
         renderOptions(filterText);
         if (dropdown.children.length === 0) return;
 
-        if (inTable) {
+        function markOpen() {
+          wrapper.classList.add('cb-dropdown-open');
+        }
+
+        if (useFixedDropdown) {
           closeAllDropdowns();
           // Fijar position:fixed ANTES de appendear al body para que nunca entre en el
           // flujo normal del documento. Sin esto, durante los 2 rAFs el dropdown queda
@@ -401,16 +431,18 @@
           document.body.appendChild(dropdown);
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-              applyDropdownPosition(wrapper, dropdown, triggerWrap, maxH);
+              applyDropdownPosition(wrapper, dropdown, triggerWrap, maxH, forceDropup);
               dropdown.style.visibility = 'visible';
               dropdown.classList.remove('hidden');
               dropdown._cbJustOpened = Date.now();
+              markOpen();
             });
           });
         } else {
           dropdown.style.maxHeight = maxH + 'px';
           dropdown.classList.remove('hidden');
           dropdown._cbJustOpened = Date.now();
+          markOpen();
         }
       }
 
@@ -442,6 +474,7 @@
           // #endregion
           if (!dropdown.classList.contains('hidden')) {
             dropdown.classList.add('hidden');
+            wrapper.classList.remove('cb-dropdown-open');
             if (dropdown.parentNode === document.body && wrapper) wrapper.appendChild(dropdown);
           }
           if (typeof wrapper._cbValidateAndResetOnBlur === 'function') wrapper._cbValidateAndResetOnBlur();
@@ -455,6 +488,7 @@
           if (!dropdown.classList.contains('hidden')) {
             dropdown.classList.add('hidden');
             dropdown.style.cssText = '';
+            wrapper.classList.remove('cb-dropdown-open');
             if (dropdown.parentNode === document.body && wrapper) wrapper.appendChild(dropdown);
           }
           if (typeof wrapper._cbValidateAndResetOnClose === 'function') wrapper._cbValidateAndResetOnClose();
@@ -464,6 +498,7 @@
         if (e.key === 'Escape') {
           dropdown.classList.add('hidden');
           dropdown.style.cssText = '';
+          wrapper.classList.remove('cb-dropdown-open');
           if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
           if (typeof wrapper._cbValidateAndResetOnClose === 'function') wrapper._cbValidateAndResetOnClose();
           input.blur();
@@ -526,35 +561,19 @@
 
       if (opts.onEnhance) opts.onEnhance(select, wrapper);
     });
-
-    if (!global._comboboxDocClick) {
-      global._comboboxDocClick = true;
-      document.addEventListener('click', (e) => {
-        document.querySelectorAll('.combobox-dropdown').forEach(d => {
-          if (d.classList.contains('hidden')) return;
-          const w = d._cbWrapper;
-          if (!w || w.contains(e.target) || d.contains(e.target)) return;
-          if (d._cbJustOpened && (Date.now() - d._cbJustOpened) < 250) return;
-          d.classList.add('hidden');
-          if (d.parentNode === document.body && w) w.appendChild(d);
-          d.style.cssText = '';
-          const inp = w?.querySelector('.combobox-input');
-          if (inp && typeof w._cbValidateAndResetOnBlur === 'function') w._cbValidateAndResetOnBlur();
-          else if (typeof w._cbUpdateInput === 'function') w._cbUpdateInput();
-        });
-      }, true);
-    }
   }
 
   /**
    * Mejora un <select> a desplegable custom: mismo diseño y dropup que el combobox,
    * sin búsqueda ni botón X. Para listas fijas (jornada, modalidad, cargo, etc.).
+   * @param {boolean} [opts.forceDropup] - Si true, fuerza apertura hacia arriba cuando usa posición fija.
    */
   function enhanceSelectStyled(opts) {
     const selector = opts.selector || '.select-styled';
     const dropdownClass = opts.dropdownClass || 'custom-select-dropdown';
     const optionClass = opts.optionClass || 'custom-option';
     const placeholder = (opts.placeholder != null && opts.placeholder !== '') ? opts.placeholder : 'Seleccione...';
+    const forceDropup = opts.forceDropup === true;
 
     document.querySelectorAll(selector).forEach(select => {
       if (select.dataset.comboboxEnhanced === '1') return;
@@ -615,6 +634,7 @@
             updateTriggerText();
             dropdown.classList.add('hidden');
             dropdown.classList.remove('dropdown-over-table', 'dropdown-up');
+            wrapper.classList.remove('cb-dropdown-open');
             if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
             dropdown.style.cssText = '';
           });
@@ -641,16 +661,18 @@
           document.body.appendChild(dropdown);
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-              applyDropdownPosition(wrapper, dropdown, triggerWrap, maxH);
+              applyDropdownPosition(wrapper, dropdown, triggerWrap, maxH, forceDropup);
               dropdown.style.visibility = 'visible';
               dropdown.classList.remove('hidden');
               dropdown._cbJustOpened = Date.now();
+              wrapper.classList.add('cb-dropdown-open');
             });
           });
         } else {
           dropdown.style.maxHeight = maxH + 'px';
           dropdown.classList.remove('hidden');
           dropdown._cbJustOpened = Date.now();
+          wrapper.classList.add('cb-dropdown-open');
         }
       }
 
@@ -667,6 +689,7 @@
       triggerWrap.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
           dropdown.classList.add('hidden');
+          wrapper.classList.remove('cb-dropdown-open');
           if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
           dropdown.style.cssText = '';
           triggerWrap.blur();
@@ -676,6 +699,8 @@
       select.addEventListener('change', updateTriggerText);
     });
   }
+
+  ensureComboboxOutsideClick();
 
   function resetComboboxes() {
     closeAllDropdowns('.combobox-dropdown');

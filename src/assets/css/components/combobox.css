@@ -87,7 +87,11 @@
   height: 1.25rem;
   pointer-events: none;
   color: #6b7280;
-  transition: color 0.15s ease;
+  transition: transform 0.2s ease, color 0.15s ease;
+}
+
+.combobox-wrapper.cb-dropdown-open .chevron-combobox {
+  transform: translateY(-50%) rotate(180deg);
 }
 
 .combobox-wrapper:not(.combobox-empty) .combobox-trigger:hover .chevron-combobox {
