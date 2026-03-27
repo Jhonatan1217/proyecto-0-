@@ -5,6 +5,14 @@ class Usuario {
     private $table = "usuarios";
     private $table_roles = "usuarios_roles_funcionales";
 
+    /**
+     * Usuarios con es_sistema = 1 son cuentas administrativas internas:
+     * no deben aparecer en listados ni ser consultables vía API de gestión.
+     */
+    private function sqlExcluirUsuarioSistema(string $alias = 'u'): string {
+        return " AND (COALESCE({$alias}.es_sistema, 0) = 0) ";
+    }
+
     public function __construct($db) {
         $this->conn = $db;
     }
@@ -21,6 +29,7 @@ class Usuario {
         $sql = "SELECT u.*, a.nombre_area 
                 FROM " . $this->table . " u
                 LEFT JOIN area a ON u.id_area = a.id_area
+                WHERE 1=1 " . $this->sqlExcluirUsuarioSistema('u') . "
                 ORDER BY u.id_usuario DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
@@ -30,13 +39,17 @@ class Usuario {
     /**
      * Obtiene un usuario por su ID.
      * @param int $id ID del usuario.
+     * @param bool $incluirSistema Si true, incluye usuarios con es_sistema = 1 (solo uso interno, ej. cambio de contraseña).
      * @return array|false Datos del usuario o false si no existe.
      */
-    public function obtenerPorId($id) {
+    public function obtenerPorId($id, $incluirSistema = false) {
         $sql = "SELECT u.*, a.nombre_area 
                 FROM " . $this->table . " u
                 LEFT JOIN area a ON u.id_area = a.id_area
                 WHERE u.id_usuario = :id";
+        if (!$incluirSistema) {
+            $sql .= $this->sqlExcluirUsuarioSistema('u');
+        }
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -321,7 +334,7 @@ class Usuario {
                 FROM " . $this->table . " u
                 LEFT JOIN area a ON u.id_area = a.id_area
                 " . $joinRol . "
-                WHERE 1=1 ";
+                WHERE 1=1 " . $this->sqlExcluirUsuarioSistema('u');
         $params = [];
 
         if ($cargo !== '') {
@@ -357,7 +370,7 @@ class Usuario {
         $sql = "SELECT u.*, a.nombre_area 
                 FROM " . $this->table . " u
                 LEFT JOIN area a ON u.id_area = a.id_area
-                WHERE u.cargo = :cargo
+                WHERE u.cargo = :cargo " . $this->sqlExcluirUsuarioSistema('u') . "
                 ORDER BY u.nombre_completo ASC";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':cargo', $cargo);
@@ -376,7 +389,7 @@ class Usuario {
                 INNER JOIN " . $this->table_roles . " urf ON u.id_usuario = urf.id_usuario
                 LEFT JOIN area a ON u.id_area = a.id_area
                 LEFT JOIN usuarios u_asignador ON urf.asignado_por = u_asignador.id_usuario
-                WHERE urf.id_rol = :id_rol AND u.estado = 1
+                WHERE urf.id_rol = :id_rol AND u.estado = 1 " . $this->sqlExcluirUsuarioSistema('u') . "
                 ORDER BY u.nombre_completo ASC";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':id_rol', $id_rol, PDO::PARAM_INT);
@@ -436,7 +449,7 @@ class Usuario {
      * @return bool|string True si se actualiza correctamente, o mensaje de error.
      */
     public function cambiarContrasena($id_usuario, $password_actual, $password_nueva) {
-        $usuario = $this->obtenerPorId($id_usuario);
+        $usuario = $this->obtenerPorId($id_usuario, true);
         if (!$usuario) {
             return "Usuario no encontrado.";
         }

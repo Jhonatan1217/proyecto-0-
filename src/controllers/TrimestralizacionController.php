@@ -61,7 +61,7 @@ function resolveInstructorId(PDO $conn, $instructorInput) {
     }
 
     try {
-        $s = $conn->prepare("SELECT id_usuario FROM usuarios WHERE cargo = 'INSTRUCTOR' AND nombre_completo = :nom LIMIT 1");
+        $s = $conn->prepare("SELECT id_usuario FROM usuarios WHERE cargo = 'INSTRUCTOR' AND nombre_completo = :nom AND COALESCE(es_sistema, 0) = 0 LIMIT 1");
         $s->execute([':nom' => $raw]);
         $r = $s->fetch(PDO::FETCH_ASSOC);
         if ($r && isset($r['id_usuario'])) {
@@ -182,6 +182,7 @@ function fetchInstructorHourSummaries(PDO $conn, string $tablaHorario, ?array $i
             FROM usuarios u
             WHERE UPPER(COALESCE(u.cargo, '')) = 'INSTRUCTOR'
               AND COALESCE(u.estado, 1) = 1
+              AND COALESCE(u.es_sistema, 0) = 0
         ";
 
         if ($ids && count($ids) > 0) {

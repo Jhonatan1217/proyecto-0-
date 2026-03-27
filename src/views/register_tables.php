@@ -64,7 +64,7 @@ if (isset($conn)) {
     $instructores = $s->fetchAll(PDO::FETCH_ASSOC);
   } catch (PDOException $e) {
     try {
-      $s = $conn->prepare("SELECT id_usuario AS id_instructor, nombre_completo AS nombre_instructor, tipo_instructor FROM usuarios WHERE cargo = 'INSTRUCTOR' AND estado = 1 ORDER BY nombre_completo ASC");
+      $s = $conn->prepare("SELECT id_usuario AS id_instructor, nombre_completo AS nombre_instructor, tipo_instructor FROM usuarios WHERE cargo = 'INSTRUCTOR' AND estado = 1 AND COALESCE(es_sistema, 0) = 0 ORDER BY nombre_completo ASC");
       $s->execute();
       $instructores = $s->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e2) {

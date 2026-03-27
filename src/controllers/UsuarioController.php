@@ -202,6 +202,11 @@ try {
                 exit;
             }
 
+            if (!$usuarioModel->obtenerPorId($id_usuario)) {
+                echo json_encode(['error' => 'Usuario no encontrado']);
+                exit;
+            }
+
             $resultado = $usuarioModel->cambiarEstado($id_usuario, $estado);
             if ($resultado === true) {
                 $mensaje = $estado ? 'Usuario activado correctamente' : 'Usuario inhabilitado correctamente';
@@ -222,6 +227,10 @@ try {
                 echo json_encode(['error' => 'ID de usuario no proporcionado']);
                 exit;
             }
+            if (!$usuarioModel->obtenerPorId($id_usuario)) {
+                echo json_encode(['error' => 'Usuario no encontrado']);
+                exit;
+            }
             $roles = $usuarioModel->listarRolesFuncionalesPorUsuario($id_usuario);
             echo json_encode($roles);
             break;
@@ -234,6 +243,11 @@ try {
 
             if (!$id_usuario || !$id_rol || !$asignado_por) {
                 echo json_encode(['error' => 'Faltan parámetros (id_usuario, id_rol, asignado_por)']);
+                exit;
+            }
+
+            if (!$usuarioModel->obtenerPorId($id_usuario)) {
+                echo json_encode(['error' => 'Usuario no encontrado']);
                 exit;
             }
 
@@ -252,6 +266,11 @@ try {
 
             if (!$id_usuario || !$id_rol) {
                 echo json_encode(['error' => 'Faltan parámetros (id_usuario, id_rol)']);
+                exit;
+            }
+
+            if (!$usuarioModel->obtenerPorId($id_usuario)) {
+                echo json_encode(['error' => 'Usuario no encontrado']);
                 exit;
             }
 

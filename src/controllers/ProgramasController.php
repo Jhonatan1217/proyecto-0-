@@ -239,6 +239,7 @@ if ($accion === 'listar_instructores') {
                 FROM usuarios 
                 WHERE cargo = 'INSTRUCTOR' 
                 AND estado = 1
+                AND COALESCE(es_sistema, 0) = 0
                 ORDER BY nombre_completo ASC";
 
         $stmt = $conn->prepare($sql);
