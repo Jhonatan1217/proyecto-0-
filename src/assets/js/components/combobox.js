@@ -11,7 +11,7 @@
   /** Placeholder cuando no hay opciones (Empty State) */
   const EMPTY_PLACEHOLDER = 'Sin registros disponibles';
   /** Mensaje en dropdown cuando no hay opciones (Empty State) */
-  const EMPTY_DROPDOWN_MESSAGE = 'No se encontraron opciones. Por favor, configure este parámetro en el módulo correspondiente.';
+  const EMPTY_DROPDOWN_MESSAGE = 'No se encontraron opciones.';
 
   function applyDropdownPosition(wrapper, dropdown, triggerEl, dropdownMaxH, forceDropup) {
     const rect = triggerEl.getBoundingClientRect();
@@ -23,15 +23,25 @@
     const tr = wrapper.closest('tr');
     const isLastRow = tbody && tr && tbody.lastElementChild === tr;
     const inBottomThird = rect.top >= window.innerHeight * (2 / 3);
-    const needsUp = !!forceDropup || spaceBelow < maxH + MARGIN || isLastRow || inBottomThird;
+    const inAcademicosModal = !!(wrapper.closest && wrapper.closest('#modalRae,#modalCompetency,#modalProgram'));
+    // En modales centrados el trigger suele caer en el tercio inferior del viewport sin que falte espacio debajo dentro del modal: no forzar dropup por inBottomThird.
+    const needsUp = !!forceDropup || spaceBelow < maxH + MARGIN || (!inAcademicosModal && (isLastRow || inBottomThird));
 
     dropdown.classList.toggle('dropdown-up', needsUp);
     dropdown.classList.add('dropdown-over-table');
-    dropdown.style.minWidth = rect.width + 'px';
+    const panelW = Math.min(rect.width, window.innerWidth - 2 * MARGIN);
+    let leftPx = rect.left;
+    if (leftPx + panelW > window.innerWidth - MARGIN) {
+      leftPx = Math.max(MARGIN, window.innerWidth - MARGIN - panelW);
+    }
+    if (leftPx < MARGIN) leftPx = MARGIN;
+    dropdown.style.minWidth = panelW + 'px';
+    dropdown.style.maxWidth = panelW + 'px';
+    dropdown.style.boxSizing = 'border-box';
     dropdown.style.maxHeight = maxH + 'px';
     dropdown.style.position = 'fixed';
     dropdown.style.zIndex = '9999';
-    dropdown.style.left = rect.left + 'px';
+    dropdown.style.left = leftPx + 'px';
     dropdown.style.marginTop = '';
     dropdown.style.marginBottom = '';
 
@@ -266,9 +276,6 @@
           div.setAttribute('role', 'option');
           div.addEventListener('click', (e) => {
             e.stopPropagation();
-            // #region agent log
-            fetch('http://127.0.0.1:7412/ingest/d3fa9f59-7c34-4dda-a4b8-3b180194f8ae',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'96d9bc'},body:JSON.stringify({sessionId:'96d9bc',runId:'select-check',hypothesisId:'H2',location:'combobox.js:optionClick',message:'option clicked',data:{selector,allowClear,value,text,inBody:dropdown.parentNode===document.body},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             wrapper._cbOptionJustSelected = true;
             wrapper._cbClearedAt = 0;
             dropdown.classList.add('hidden');
@@ -412,7 +419,46 @@
       const useFixedDropdown = isInTableOrModal(wrapper);
       const maxH = DROPDOWN_MAX_ITEMS * ITEM_HEIGHT_REM * parseFloat(getComputedStyle(document.documentElement).fontSize);
 
+      function closeDropdownLocal() {
+        dropdown.classList.add('hidden');
+        dropdown.style.cssText = '';
+        wrapper.classList.remove('cb-dropdown-open');
+        dropdown.classList.remove('dropdown-over-table', 'dropdown-up');
+        if (dropdown.parentNode === document.body && wrapper) wrapper.appendChild(dropdown);
+      }
+
+      /** Sincroniza la UI con <select disabled> (p. ej. competencia hasta elegir programa). */
+      function applyNativeDisabledState() {
+        const off = select.disabled;
+        wrapper.classList.toggle('combobox-native-disabled', off);
+        triggerWrap.setAttribute('aria-disabled', off ? 'true' : 'false');
+        if (off) {
+          closeDropdownLocal();
+          input.disabled = true;
+          input.readOnly = true;
+          input.setAttribute('tabindex', '-1');
+          btnClear.disabled = true;
+          btnClear.classList.remove('visible');
+          wrapper.classList.remove('has-value');
+        } else {
+          input.removeAttribute('tabindex');
+          const all = optionsData();
+          if (!all.length) {
+            setEmptyState(true);
+          } else {
+            setEmptyState(false);
+            input.disabled = false;
+            input.readOnly = false;
+            btnClear.disabled = false;
+          }
+          updateInputFromSelect();
+          toggleClearVisibility();
+          storeLastValid();
+        }
+      }
+
       function positionAndShow(forceShowAll) {
+        if (select.disabled) return;
         storeLastValid();
         const filterText = forceShowAll ? '' : input.value;
         renderOptions(filterText);
@@ -448,10 +494,8 @@
       }
 
       function openFromTrigger(ev) {
+        if (select.disabled) return;
         if (ev) { ev.preventDefault(); ev.stopPropagation(); }
-        // #region agent log
-        fetch('http://127.0.0.1:7412/ingest/d3fa9f59-7c34-4dda-a4b8-3b180194f8ae',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'96d9bc'},body:JSON.stringify({sessionId:'96d9bc',runId:'select-check',hypothesisId:'H1',location:'combobox.js:openFromTrigger',message:'open requested',data:{selector,allowClear,selectValue:select.value,inputValue:input.value,hidden:dropdown.classList.contains('hidden')},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
         if (dropdown.classList.contains('hidden')) {
           positionAndShow();
           setTimeout(() => { try { input.focus({ preventScroll: true }); } catch (_) { input.focus(); } }, 0);
@@ -459,9 +503,17 @@
       }
       wrapper._cbOpen = openFromTrigger;
 
-      triggerWrap.addEventListener('mousedown', (e) => { if (e.target !== input) openFromTrigger(e); });
+      triggerWrap.addEventListener('mousedown', (e) => {
+        if (select.disabled) return;
+        if (e.target !== input) openFromTrigger(e);
+      });
       triggerWrap.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
       input.addEventListener('focus', (e) => {
+        if (select.disabled) {
+          try { input.blur(); } catch (_) {}
+          e?.preventDefault?.();
+          return;
+        }
         closeAllDropdowns();
         positionAndShow();
         e?.preventDefault?.();
@@ -470,9 +522,6 @@
         setTimeout(() => {
           if (dropdown.contains(document.activeElement)) return;
           if (wrapper._cbOptionJustSelected) return;
-          // #region agent log
-          fetch('http://127.0.0.1:7412/ingest/d3fa9f59-7c34-4dda-a4b8-3b180194f8ae',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'96d9bc'},body:JSON.stringify({sessionId:'96d9bc',runId:'select-check',hypothesisId:'H3',location:'combobox.js:inputBlur',message:'blur handling',data:{selector,allowClear,inputValue:input.value,selectValue:select.value,dropdownHidden:dropdown.classList.contains('hidden')},timestamp:Date.now()})}).catch(()=>{});
-          // #endregion
           if (!dropdown.classList.contains('hidden')) {
             dropdown.classList.add('hidden');
             wrapper.classList.remove('cb-dropdown-open');
@@ -481,7 +530,11 @@
           if (typeof wrapper._cbValidateAndResetOnBlur === 'function') wrapper._cbValidateAndResetOnBlur();
         }, 120);
       });
-      input.addEventListener('input', () => { renderOptions(input.value); toggleClearVisibility(); });
+      input.addEventListener('input', () => {
+        if (select.disabled) return;
+        renderOptions(input.value);
+        toggleClearVisibility();
+      });
       input.addEventListener('blur', () => {
         setTimeout(() => {
           if (dropdown.contains(document.activeElement)) return;
@@ -507,6 +560,7 @@
       });
 
       btnClear.addEventListener('click', (e) => {
+        if (select.disabled) return;
         e.stopPropagation();
         e.preventDefault();
         wrapper._cbBeforeClearValue = select.value;
@@ -554,11 +608,16 @@
       });
 
       select.addEventListener('change', () => {
-        // #region agent log
-        fetch('http://127.0.0.1:7412/ingest/d3fa9f59-7c34-4dda-a4b8-3b180194f8ae',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'96d9bc'},body:JSON.stringify({sessionId:'96d9bc',runId:'select-check',hypothesisId:'H4',location:'combobox.js:selectChange',message:'select change',data:{selector,allowClear,newValue:select.value},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
         updateInputFromSelect();
+        applyNativeDisabledState();
       });
+
+      try {
+        const mo = new MutationObserver(() => applyNativeDisabledState());
+        mo.observe(select, { attributes: true, attributeFilter: ['disabled'] });
+      } catch (_) {}
+
+      applyNativeDisabledState();
 
       if (opts.onEnhance) opts.onEnhance(select, wrapper);
     });

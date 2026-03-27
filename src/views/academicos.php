@@ -8,6 +8,7 @@
   <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
   <!-- Estilos propios (competencias) -->
   <link rel="stylesheet" href="src/assets/css/gestionCompetencias.css" />
+  <link rel="stylesheet" href="src/assets/css/components/combobox.css" />
 
   <!-- ✨ Ajustes extra SOLO AÑADIDOS: flecha responsive y wrapper de filtros -->
   <style>
@@ -237,11 +238,11 @@
 </script>
 
   <!-- Combobox / selects estilizados (Programas) -->
-  <script src="<?= BASE_URL ?? '' ?>src/assets/js/components/combobox.js?v=8"></script>
+  <script src="<?= BASE_URL ?? '' ?>src/assets/js/components/combobox.js?v=11"></script>
   <!-- Módulos: cada uno maneja su CRUD/UX. El ?v= ayuda a romper caché -->
   <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionProgramas.js?v=6"></script>
   <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionCompetencias.js?v=3" defer></script>
-  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionRaes.js?v=2" defer></script>
+  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionRaes.js?v=5" defer></script>
   <script>
   document.addEventListener('DOMContentLoaded', function () {
     if (typeof ComboboxComponent === 'undefined') return;
@@ -251,6 +252,13 @@
     if (typeof ComboboxComponent.enhance === 'function') {
       ComboboxComponent.enhance({
         selector: '.combobox-academicos-upload',
+        placeholder: 'Buscar programa…',
+        allowClear: true,
+        restoreValueOnBlurWhenEmpty: true,
+        clearValue: ''
+      });
+      ComboboxComponent.enhance({
+        selector: '.combobox-academicos-modal-programa',
         placeholder: 'Buscar programa…',
         allowClear: true,
         restoreValueOnBlurWhenEmpty: true,
@@ -275,8 +283,7 @@
         placeholder: 'Buscar competencia…',
         allowClear: true,
         restoreValueOnBlurWhenEmpty: true,
-        clearValue: '',
-        forceDropup: true
+        clearValue: ''
       });
     }
   });

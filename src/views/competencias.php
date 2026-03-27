@@ -60,13 +60,13 @@
                 <h3 id="titleCompetency" class="text-2xl font-bold">Nueva Competencia</h3>
                 <p class="text-sm text-zinc-500">Complete la información de la competencia</p>
             </div>
-            <button id="btnCloseCompetency" class="p-2 rounded-lg hover:bg-zinc-100">X</button>
+            <button id="btnCloseCompetency" type="button" class="p-2 rounded-lg hover:bg-zinc-100 transition text-zinc-500 hover:text-zinc-700" aria-label="Cerrar">✕</button>
         </div>
 
         <form id="formCompetencyNew" class="p-6 pt-4 space-y-4">
             <div>
                 <label class="block text-sm font-medium mb-1">Programa *</label>
-                <select id="cp_program" class="select-styled select-academicos w-full">
+                <select id="cp_program" class="combobox-academicos-modal-programa w-full">
                     <option value="">Seleccione el programa de formación asociado</option>
                 </select>
             </div>

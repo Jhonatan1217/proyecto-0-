@@ -24,7 +24,7 @@ if ($cargo === 'INSTRUCTOR') {
 
             <div class="px-6 mt-4">
                 <label class="block text-sm font-medium mb-1">Programa de formación <span class="text-red-500">*</span></label>
-                <div class="relative w-full md:w-64 shrink-0">
+                <div class="relative w-full">
                 <select id="upload_program" class="combobox-academicos-upload w-full">
                     <option value="">Seleccione un programa</option>
                     <?php foreach($programas as $p): ?>

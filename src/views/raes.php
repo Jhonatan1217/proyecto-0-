@@ -55,14 +55,14 @@
                 <h3 id="modalRaeTitle" class="text-2xl font-bold">Nuevo RAE</h3>
                 <p class="text-sm text-zinc-500">Complete la información del Resultado de Aprendizaje Esperado</p>
             </div>
-            <button id="btnCloseRae" class="p-2 rounded-lg hover:bg-zinc-100" aria-label="Cerrar modal">✕</button>
+            <button id="btnCloseRae" type="button" class="p-2 rounded-lg hover:bg-zinc-100 transition text-zinc-500 hover:text-zinc-700" aria-label="Cerrar modal">✕</button>
         </div>
 
         <form id="formRaeNew" class="p-6 pt-4 space-y-4">
             <!-- PROGRAMA DE FORMACIÓN (nuevo) -->
             <div>
                 <label class="block text-sm font-medium mb-1">Programa de formación *</label>
-                <select id="rae_program" class="select-styled select-academicos w-full">
+                <select id="rae_program" class="combobox-academicos-modal-programa w-full">
                     <option value="">Seleccione programa</option>
                 </select>
             </div>

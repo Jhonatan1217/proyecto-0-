@@ -147,8 +147,17 @@
     }
   }
 
+  /**
+   * Evita que una petición antigua de competencias (p. ej. la del change tras abrir el modal
+   * con programa vacío) sobrescriba una carga más reciente cuando el usuario ya eligió programa.
+   */
+  let _modalCompetenciasGen = 0;
+
 // ==== Cargar Competencias por programa (para filtro y modal) ====
 async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
+  const isModalComp = targetSelect === selComp;
+  if (isModalComp) _modalCompetenciasGen++;
+  const myGen = _modalCompetenciasGen;
 
   // ================================
   // CASO 1: Es el filtro y no hay programa
@@ -172,7 +181,19 @@ async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
 
   try {
     const data  = await fetchJSON(`${API_RAES}?accion=competenciasPorPrograma&${q({ id_programa: programId })}`);
+    if (isModalComp && myGen !== _modalCompetenciasGen) return;
+
+    if (data && typeof data === 'object' && !Array.isArray(data) && data.error) {
+      console.warn('[RAEs] competenciasPorPrograma:', data.error);
+      if (isModalComp && myGen !== _modalCompetenciasGen) return;
+      targetSelect.innerHTML = `<option value="">Error: ${String(data.error)}</option>`;
+      targetSelect.disabled = true;
+      targetSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      return;
+    }
+
     const comps = Array.isArray(data) ? data : (data.data || []);
+    if (isModalComp && myGen !== _modalCompetenciasGen) return;
 
     const current = targetSelect.value || '';
 
@@ -198,6 +219,7 @@ async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
     targetSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
   } catch (err) {
+    if (isModalComp && myGen !== _modalCompetenciasGen) return;
     console.error('[RAEs] Error cargando competencias:', err);
     targetSelect.innerHTML = `<option value="">Error cargando competencias</option>`;
     targetSelect.disabled = true;
@@ -276,7 +298,7 @@ async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
           btnCreate.dataset.bound = '1';
           btnCreate.addEventListener('click', () => {
             // reutilizamos el mismo flujo del botón "+ Nuevo RAE"
-            openModal();
+            void openModal();
           });
         }
       } else {
@@ -436,16 +458,14 @@ async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
 
 
   // ==== Abrir / Cerrar modal ====
-  function openModal() {
+  async function openModal() {
     if (ES_INSTRUCTOR) return; // Bloqueo funcional
-    if (form) form.reset();
     editingRaeId = null; editingSnap = null;
     if (titleRae) titleRae.textContent = 'Nuevo RAE';
     if (inCode) inCode.value = '';
-    if (selComp) {
-      selComp.innerHTML = `<option value="">Seleccione una competencia</option>`;
-      selComp.dispatchEvent(new Event('change', { bubbles: true }));
-    }
+    if (form) form.reset();
+    await loadPrograms();
+    // loadPrograms repuebla #rae_program y dispara change → loadCompetenciasFor sin programa
 
     // Mostrar
     backdrop.classList.remove('hidden');
@@ -467,7 +487,7 @@ async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
   }
 
   // ==== Eventos UI ====
-  btnNew    && btnNew.addEventListener('click', openModal);
+  btnNew    && btnNew.addEventListener('click', () => { void openModal(); });
   btnClose  && btnClose.addEventListener('click', closeModal);
   btnCancel && btnCancel.addEventListener('click', closeModal);
   backdrop?.addEventListener('click', closeModal);
