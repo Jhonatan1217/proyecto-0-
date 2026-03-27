@@ -14,7 +14,8 @@
         prevBtnId,
         nextBtnId,
         infoId,
-        perPage
+        perPage,
+        scrollAnchorId = null
       } = opts;
   
       const container = document.getElementById(containerId);
@@ -27,6 +28,7 @@
   
       let page = 1;
       let children = [];
+      let userPageNav = false;
   
       function refreshChildren() {
         // get live children (only element nodes)
@@ -57,10 +59,20 @@
         info.textContent = `Página ${page} de ${totalPages} · ${total} items`;
         prev.disabled = page === 1;
         next.disabled = page === totalPages;
-  
+
         wrapper.classList.remove('hidden');
+
+        if (userPageNav && scrollAnchorId) {
+          const runScroll = () => {
+            const anchor = document.getElementById(scrollAnchorId);
+            if (!anchor) return;
+            anchor.scrollIntoView({ block: 'start', behavior: 'auto' });
+          };
+          requestAnimationFrame(() => requestAnimationFrame(runScroll));
+        }
+        userPageNav = false;
       }
-  
+
       // Observe container for child list changes (rebuilds)
       const mo = new MutationObserver((mutations) => {
         // if children added/removed, reset page to 1 for UX and render
@@ -75,8 +87,22 @@
       });
       mo.observe(container, { childList: true, subtree: false });
   
-      prev.addEventListener('click', () => { if (page>1) { page--; render(); } });
-      next.addEventListener('click', () => { page++; render(); });
+      prev.addEventListener('click', () => {
+        if (page > 1) {
+          page--;
+          userPageNav = true;
+          render();
+        }
+      });
+      next.addEventListener('click', () => {
+        refreshChildren();
+        const totalPages = Math.max(1, Math.ceil(children.length / perPage));
+        if (page < totalPages) {
+          page++;
+          userPageNav = true;
+          render();
+        }
+      });
   
       // initial render (in case items already present)
       setTimeout(render, 50);
@@ -91,7 +117,8 @@
         prevBtnId: 'pgPrev',
         nextBtnId: 'pgNext',
         infoId: 'pgInfo',
-        perPage: CONFIG.programsPerPage
+        perPage: CONFIG.programsPerPage,
+        scrollAnchorId: 'programsFilters'
       });
   
       // Competencias (note: this paginates the list of competencia cards in #competenciesList)
@@ -101,7 +128,8 @@
         prevBtnId: 'cpPrev',
         nextBtnId: 'cpNext',
         infoId: 'cpInfo',
-        perPage: CONFIG.competenciesPerPage
+        perPage: CONFIG.competenciesPerPage,
+        scrollAnchorId: 'competenciesFilters'
       });
   
       // RAE (paginar items dentro de #raesList)
@@ -111,7 +139,8 @@
         prevBtnId: 'raePrev',
         nextBtnId: 'raeNext',
         infoId: 'raeInfo',
-        perPage: CONFIG.raePerPage
+        perPage: CONFIG.raePerPage,
+        scrollAnchorId: 'raesFilters'
       });
     });
   })();

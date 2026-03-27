@@ -450,7 +450,7 @@
   <!-- ==========================
        PAGINACIÓN FRONTEND (PROGRAMAS, COMPETENCIAS, RAE)
        ========================== -->
-  <script src="src/assets/js/paginacion.js"></script>
+  <script src="src/assets/js/paginacion.js?v=3"></script>
 
 </body>
 </html>

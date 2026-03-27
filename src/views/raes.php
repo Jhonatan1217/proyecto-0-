@@ -15,7 +15,7 @@
         </button>
     </div>
 
-    <div class="flex flex-col md:flex-row gap-4 mb-5">
+    <div id="raesFilters" class="flex flex-col md:flex-row gap-4 mb-5">
         <div class="relative w-full md:w-64 shrink-0">
             <select id="raeProgramFilter" class="combobox-academicos-filter-programa w-full">
                 <option value="all">Todos los programas</option>
