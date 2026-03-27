@@ -2,7 +2,12 @@
 /* ==========================================
    VISTA DE PROGRAMAS
    ========================================== */
+if (!defined('BASE_URL')) {
+    define('BASE_URL', '/');
+}
 ?>
+<link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/combobox.css">
+<link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/select-styled.css">
 <!-- ========== PROGRAMAS ========== -->
 <section data-tab="programs" class="tab-pane hidden mt-8">
     <div class="flex items-center justify-between flex-wrap gap-4 mb-6">
@@ -23,15 +28,18 @@
             <?php endif; ?>
         </div>
     </div>
-    <div class="flex gap-3 flex-wrap mb-5">
-        <select id="programTypeFilter" class="w-full sm:w-60 border border-zinc-300 rounded-xl px-3 py-2 text-sm select-nice">
-            <option value="all">Todos los tipos de programa</option>
-            <option value="tecnico">Técnico</option>
-            <option value="tecnologo">Tecnólogo</option>
-        </select>
-        
-        <input id="programSearchInput" type="text" placeholder="Buscar por nombre o código"
-         class="w-full sm:w-72 border border-zinc-300 rounded-xl px-3 py-2 text-sm outline-none placeholder-zinc-400">
+    <div id="programsFilters" class="flex flex-col md:flex-row gap-4 mb-5">
+        <div class="relative w-full md:w-64 shrink-0">
+            <select id="programTypeFilter" class="select-styled select-programas w-full">
+                <option value="all">Todos los tipos de programa</option>
+                <option value="tecnico">Técnico</option>
+                <option value="tecnologo">Tecnólogo</option>
+            </select>
+        </div>
+        <div class="relative w-full md:w-64 shrink-0">
+            <input id="programSearchInput" type="text" placeholder="Buscar por nombre o código"
+                class="filter-search-input w-full" autocomplete="off">
+        </div>
     </div>
     
 
@@ -73,7 +81,7 @@
 
                 <div>
                     <label class="block text-sm font-medium mb-1">Tipo de programa <span class="text-red-500">*</span></label>
-                    <select id="pg_nivel" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm bg-white focus:border-[#0a3a57] focus:ring-1 focus:ring-[#0a3a57] transition" required>
+                    <select id="pg_nivel" name="pg_nivel" required class="select-styled select-programas w-full">
                         <option value="">Seleccione tipo de programa</option>
                         <option value="tecnico">Técnico</option>
                         <option value="tecnologo">Tecnólogo</option>
@@ -87,14 +95,14 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium mb-1">Duración (horas)</label>
-                    <input id="pg_hours" type="number" min="0" placeholder="Ej: 2640"
+                    <label class="block text-sm font-medium mb-1">Duración (horas) <span class="text-red-500">*</span></label>
+                    <input id="pg_hours" name="pg_hours" type="number" min="1" step="1" inputmode="numeric" placeholder="Ej: 2640" required
                         class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none focus:border-[#0a3a57] focus:ring-1 focus:ring-[#0a3a57] transition">
                 </div>
                 
                 <div>
                     <label class="block text-sm font-medium mb-1">Instructor asignado</label>
-                    <select id="pg_instructor" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm bg-white focus:border-[#0a3a57] focus:ring-1 focus:ring-[#0a3a57] transition">
+                    <select id="pg_instructor" name="pg_instructor" class="combobox-programa-instructor w-full">
                         <option value="">Seleccione un instructor</option>
                     </select>
                 </div>

@@ -8,12 +8,58 @@
   const ITEM_HEIGHT_REM = 2.5;
   const MARGIN = 8;
 
-  /** Placeholder cuando no hay opciones (Empty State) */
   const EMPTY_PLACEHOLDER = 'Sin registros disponibles';
-  /** Mensaje en dropdown cuando no hay opciones (Empty State) */
-  const EMPTY_DROPDOWN_MESSAGE = 'No se encontraron opciones. Por favor, configure este parámetro en el módulo correspondiente.';
+  const EMPTY_DROPDOWN_MESSAGE = 'No se encontraron opciones.';
 
-  function applyDropdownPosition(wrapper, dropdown, triggerEl, dropdownMaxH) {
+  const MODAL_IDS = '#modalRae,#modalCompetency,#modalProgram';
+  const TABLE_OR_MODAL_SELECTOR = 'table,[id*="wrapTabla"],.modal-usuario-box,.modal-grupo-box,.modal-zona-box,.modal-area-box,.modal-trimestre-box,.modal-enterprise-box,#modalProgram,#modalCompetency,#modalRae';
+
+  function cbFireChange(select) {
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  function cbFocusInput(input) {
+    setTimeout(() => { try { input.focus({ preventScroll: true }); } catch (_) { input.focus(); } }, 0);
+  }
+
+  function optionsFromSelect(select) {
+    return [...select.options].filter(o => !o.disabled).map(o => ({ value: o.value, text: (o.textContent || '').trim() }));
+  }
+
+  function applySrOnly(select) {
+    select.classList.add('sr-only');
+    select.style.cssText = 'position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;clip:rect(0,0,0,0);';
+  }
+
+  function appendEmptyDropdownMessage(dropdown, optionClass) {
+    const msg = document.createElement('div');
+    msg.className = optionClass + ' combobox-empty-message';
+    msg.textContent = EMPTY_DROPDOWN_MESSAGE;
+    dropdown.appendChild(msg);
+  }
+
+  /** Mismo orden que el antiguo closeAllDropdowns (closeAll / reset global). */
+  function cbResetDropdownNode(d) {
+    const w = d._cbWrapper;
+    d.classList.add('hidden');
+    d.classList.remove('dropdown-over-table', 'dropdown-up');
+    d.style.cssText = '';
+    if (w) {
+      w.classList.remove('cb-dropdown-open');
+      if (d.parentNode === document.body) w.appendChild(d);
+    }
+  }
+
+  /** Mismo orden que el listener de clic en documento (fuera del combobox). */
+  function cbResetDropdownOutsideClick(d, w) {
+    d.classList.add('hidden');
+    w.classList.remove('cb-dropdown-open');
+    if (d.parentNode === document.body && w) w.appendChild(d);
+    d.style.cssText = '';
+    d.classList.remove('dropdown-over-table', 'dropdown-up');
+  }
+
+  function applyDropdownPosition(wrapper, dropdown, triggerEl, dropdownMaxH, forceDropup) {
     const rect = triggerEl.getBoundingClientRect();
     const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
     const maxH = dropdownMaxH || DROPDOWN_MAX_ITEMS * ITEM_HEIGHT_REM * rem;
@@ -23,15 +69,22 @@
     const tr = wrapper.closest('tr');
     const isLastRow = tbody && tr && tbody.lastElementChild === tr;
     const inBottomThird = rect.top >= window.innerHeight * (2 / 3);
-    const needsUp = spaceBelow < maxH + MARGIN || isLastRow || inBottomThird;
+    const inAcademicosModal = !!(wrapper.closest && wrapper.closest(MODAL_IDS));
+    const needsUp = !!forceDropup || spaceBelow < maxH + MARGIN || (!inAcademicosModal && (isLastRow || inBottomThird));
 
     dropdown.classList.toggle('dropdown-up', needsUp);
     dropdown.classList.add('dropdown-over-table');
-    dropdown.style.minWidth = rect.width + 'px';
+    const panelW = Math.min(rect.width, window.innerWidth - 2 * MARGIN);
+    let leftPx = rect.left;
+    if (leftPx + panelW > window.innerWidth - MARGIN) leftPx = Math.max(MARGIN, window.innerWidth - MARGIN - panelW);
+    if (leftPx < MARGIN) leftPx = MARGIN;
+    dropdown.style.minWidth = panelW + 'px';
+    dropdown.style.maxWidth = panelW + 'px';
+    dropdown.style.boxSizing = 'border-box';
     dropdown.style.maxHeight = maxH + 'px';
     dropdown.style.position = 'fixed';
     dropdown.style.zIndex = '9999';
-    dropdown.style.left = rect.left + 'px';
+    dropdown.style.left = leftPx + 'px';
     dropdown.style.marginTop = '';
     dropdown.style.marginBottom = '';
 
@@ -49,20 +102,44 @@
   }
 
   function closeAllDropdowns(sel) {
-    const selector = sel || '.combobox-dropdown';
-    document.querySelectorAll(selector).forEach(d => {
-      d.classList.add('hidden');
-      d.classList.remove('dropdown-over-table', 'dropdown-up');
-      d.style.cssText = '';
-      if (d._cbWrapper && d.parentNode === document.body) d._cbWrapper.appendChild(d);
-    });
+    document.querySelectorAll(sel || '.combobox-dropdown').forEach(cbResetDropdownNode);
   }
 
   function isInTableOrModal(el) {
     if (!el) return false;
-    const inTable = el.closest('table') || el.closest('[id*="wrapTabla"]');
-    const inModal = el.closest('.modal-usuario-box,.modal-grupo-box,.modal-zona-box,.modal-area-box,.modal-trimestre-box,.modal-enterprise-box');
-    return !!(inTable || inModal);
+    return !!el.closest(TABLE_OR_MODAL_SELECTOR);
+  }
+
+  function ensureComboboxOutsideClick() {
+    if (global._comboboxDocClick) return;
+    global._comboboxDocClick = true;
+    document.addEventListener('click', (e) => {
+      document.querySelectorAll('.combobox-dropdown').forEach(d => {
+        if (d.classList.contains('hidden')) return;
+        const w = d._cbWrapper;
+        if (!w || w.contains(e.target) || d.contains(e.target)) return;
+        if (d._cbJustOpened && (Date.now() - d._cbJustOpened) < 250) return;
+        cbResetDropdownOutsideClick(d, w);
+        const inp = w.querySelector('.combobox-input');
+        if (inp && typeof w._cbValidateAndResetOnBlur === 'function') w._cbValidateAndResetOnBlur();
+        else if (typeof w._cbUpdateInput === 'function') w._cbUpdateInput();
+      });
+    }, true);
+  }
+
+  function openDropdownFixed(wrapper, dropdown, triggerEl, maxH, forceDropup, onOpen) {
+    closeAllDropdowns();
+    dropdown.style.cssText = 'position:fixed;visibility:hidden;top:-9999px;left:0;display:block;';
+    document.body.appendChild(dropdown);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        applyDropdownPosition(wrapper, dropdown, triggerEl, maxH, forceDropup);
+        dropdown.style.visibility = 'visible';
+        dropdown.classList.remove('hidden');
+        dropdown._cbJustOpened = Date.now();
+        onOpen();
+      });
+    });
   }
 
   /**
@@ -76,6 +153,7 @@
    * @param {boolean} [opts.allowClear] - Si false, oculta la X y mantiene el chevron visible
    * @param {boolean} [opts.restoreValueOnBlurWhenEmpty] - Si true (modal/fila editar): al salir con input vacío restaura último valor. Si false (filtros): se queda en placeholder.
    * @param {boolean} [opts.inTable] - Si está dentro de tabla (usa position: fixed + dropup)
+   * @param {boolean} [opts.forceDropup] - Si true, el listado abre siempre hacia arriba (útil al final de un modal).
    * @param {Function} [opts.onEnhance] - Callback cuando se enhancea cada select
    */
   function enhanceCombobox(opts) {
@@ -86,7 +164,8 @@
     const clearValue = opts.clearValue;
     const allowClear = opts.allowClear !== false;
     const restoreValueOnBlurWhenEmpty = opts.restoreValueOnBlurWhenEmpty !== false;
-    const isInTable = (el) => el.closest('table') || el.closest('[id*="wrapTabla"]');
+    const forceDropup = opts.forceDropup === true;
+    const isClearVal = (val) => clearValue !== undefined && clearValue !== null && String(val) === String(clearValue);
 
     document.querySelectorAll(selector).forEach(select => {
       if (select.dataset.comboboxEnhanced === '1') return;
@@ -101,7 +180,7 @@
       var initialFromAttr = select.getAttribute('data-initial-value');
       wrapper.dataset.initialValue = (initialFromAttr != null ? initialFromAttr : '').trim();
 
-      [' .select-zona-chevron', ' .filtro-area-chevron', ' .select-grupo-chevron', ' .select-usuario-chevron' ].forEach(s => {
+      [' .select-zona-chevron', ' .filtro-area-chevron', ' .select-grupo-chevron', ' .select-usuario-chevron'].forEach(s => {
         container.querySelectorAll(s).forEach(el => { el.style.display = 'none'; });
       });
 
@@ -110,7 +189,6 @@
 
       const input = document.createElement('input');
       input.type = 'text';
-      /* Evitar autocompletado del navegador: one-time-code para que no muestre sugerencias (algunos ignoran "off") */
       input.setAttribute('autocomplete', 'one-time-code');
       input.className = 'combobox-input w-full bg-transparent py-0 border-0 focus:ring-0 text-gray-900 placeholder:text-gray-400';
       input.placeholder = placeholder;
@@ -134,8 +212,8 @@
       dropdown.setAttribute('role', 'listbox');
       dropdown._cbWrapper = wrapper;
 
-      const optionsData = () => [...select.options].filter(o => !o.disabled).map(o => ({ value: o.value, text: (o.textContent || '').trim() }));
-      const hadInitialOptions = optionsData().length > 0;
+      const optionsData = () => optionsFromSelect(select);
+      const hasEmptyOption = () => [...select.options].some(o => String(o.value) === '');
 
       function setEmptyState(isEmpty) {
         wrapper.classList.toggle('combobox-empty', !!isEmpty);
@@ -162,11 +240,11 @@
       }
 
       function storeLastValid() {
+        const val = select.value;
         const opt = select.options[select.selectedIndex];
         const text = opt ? (opt.textContent || '').trim() : '';
-        const val = select.value;
         wrapper._cbLastValidValue = val;
-        wrapper._cbLastValidText = (clearValue !== undefined && clearValue !== null && String(val) === String(clearValue)) ? '' : text;
+        wrapper._cbLastValidText = isClearVal(val) ? '' : text;
       }
 
       function validateAndResetOnClose() {
@@ -179,15 +257,15 @@
           if (restoreValueOnBlurWhenEmpty && beforeClear !== undefined && beforeClear !== null) {
             select.value = beforeClear;
             wrapper._cbBeforeClearValue = undefined;
-            select.dispatchEvent(new Event('change', { bubbles: true }));
+            cbFireChange(select);
           } else if (clearValue !== undefined && clearValue !== null) {
             select.value = clearValue;
             wrapper._cbBeforeClearValue = undefined;
-            select.dispatchEvent(new Event('change', { bubbles: true }));
+            cbFireChange(select);
           } else {
             if (lastVal !== undefined && lastVal !== null) select.value = lastVal;
             else if (opts.length) select.value = opts[0].value;
-            select.dispatchEvent(new Event('change', { bubbles: true }));
+            cbFireChange(select);
           }
           updateInputFromSelect();
           storeLastValid();
@@ -195,7 +273,7 @@
         }
         if (matched) {
           select.value = matched.value;
-          select.dispatchEvent(new Event('change', { bubbles: true }));
+          cbFireChange(select);
           updateInputFromSelect();
           storeLastValid();
           return;
@@ -203,7 +281,7 @@
         const doReset = () => {
           if (lastVal !== undefined && lastVal !== null) select.value = lastVal;
           else if (opts.length) select.value = opts[0].value;
-          select.dispatchEvent(new Event('change', { bubbles: true }));
+          cbFireChange(select);
           updateInputFromSelect();
           storeLastValid();
         };
@@ -219,11 +297,9 @@
 
         if (!all.length) {
           setEmptyState(true);
-          const msg = document.createElement('div');
-          msg.className = optionClass + ' combobox-empty-message';
-          msg.textContent = EMPTY_DROPDOWN_MESSAGE;
-          dropdown.appendChild(msg);
+          appendEmptyDropdownMessage(dropdown, optionClass);
           dropdown.classList.remove('hidden');
+          wrapper.classList.add('cb-dropdown-open');
           return;
         }
 
@@ -238,18 +314,16 @@
           div.setAttribute('role', 'option');
           div.addEventListener('click', (e) => {
             e.stopPropagation();
-            // #region agent log
-            fetch('http://127.0.0.1:7412/ingest/d3fa9f59-7c34-4dda-a4b8-3b180194f8ae',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'96d9bc'},body:JSON.stringify({sessionId:'96d9bc',runId:'select-check',hypothesisId:'H2',location:'combobox.js:optionClick',message:'option clicked',data:{selector,allowClear,value,text,inBody:dropdown.parentNode===document.body},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             wrapper._cbOptionJustSelected = true;
             wrapper._cbClearedAt = 0;
             dropdown.classList.add('hidden');
             dropdown.classList.remove('dropdown-over-table', 'dropdown-up');
+            wrapper.classList.remove('cb-dropdown-open');
             if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
             dropdown.style.cssText = '';
             select.value = value;
-            select.dispatchEvent(new Event('change', { bubbles: true }));
-            input.value = (clearValue !== undefined && clearValue !== null && String(value) === String(clearValue)) ? '' : text;
+            cbFireChange(select);
+            input.value = isClearVal(value) ? '' : text;
             toggleClearVisibility();
             storeLastValid();
             setTimeout(() => { wrapper._cbOptionJustSelected = false; }, 150);
@@ -257,12 +331,7 @@
           dropdown.appendChild(div);
         });
 
-        if (!dropdown.children.length) {
-          const msg = document.createElement('div');
-          msg.className = optionClass + ' combobox-empty-message';
-          msg.textContent = EMPTY_DROPDOWN_MESSAGE;
-          dropdown.appendChild(msg);
-        }
+        if (!dropdown.children.length) appendEmptyDropdownMessage(dropdown, optionClass);
         dropdown.classList.remove('hidden');
       }
 
@@ -273,19 +342,10 @@
         btnClear.classList.toggle('visible', showClear);
       }
 
-      function storeLastValid() {
-        const val = select.value;
-        const opt = select.options[select.selectedIndex];
-        const text = opt ? (opt.textContent || '').trim() : '';
-        wrapper._cbLastValidValue = val;
-        wrapper._cbLastValidText = (clearValue !== undefined && clearValue !== null && String(val) === String(clearValue)) ? '' : text;
-      }
-
       function updateInputFromSelect() {
         const val = select.value;
-        if (val === '' || (clearValue !== undefined && clearValue !== null && String(val) === String(clearValue))) {
-          input.value = '';
-        } else {
+        if (val === '' || isClearVal(val)) input.value = '';
+        else {
           const opt = select.options[select.selectedIndex];
           input.value = opt ? (opt.textContent || '').trim() : '';
         }
@@ -303,37 +363,31 @@
         if (typed === '') {
           wrapper._cbBeforeClearValue = undefined;
 
-          // Caso especial: blur inmediatamente después de pulsar X
           if (restoreValueOnBlurWhenEmpty && wrapper._cbClearedAt && (Date.now() - wrapper._cbClearedAt) < 400) {
             if (hasInitial) {
-              // En modo Editar (con valor inicial) no tocamos ni el select ni el input:
-              // mantenemos el placeholder visible tras pulsar X.
               wrapper._cbClearedAt = 0;
               return;
             }
-            // En Crear/Filtro mantenemos el comportamiento estándar: limpiar selección real.
             wrapper._cbClearedAt = 0;
             if (clearValue !== undefined && clearValue !== null) select.value = clearValue;
             else if (opts.length) select.value = opts[0].value;
-            select.dispatchEvent(new Event('change', { bubbles: true }));
+            cbFireChange(select);
             updateInputFromSelect();
             storeLastValid();
             return;
           }
 
-          // Modo Editar: si hay valor inicial, restaurarlo al salir con el input vacío
           if (hasInitial) {
             const optInit = opts.find(o => String(o.value) === String(initialVal));
             if (optInit) {
               select.value = optInit.value;
-              select.dispatchEvent(new Event('change', { bubbles: true }));
+              cbFireChange(select);
               updateInputFromSelect();
               storeLastValid();
               return;
             }
           }
 
-          // Resto de casos: fallback estándar
           if (restoreValueOnBlurWhenEmpty) {
             const toRestore = (beforeClear !== undefined && beforeClear !== null) ? beforeClear : lastVal;
             if (toRestore !== undefined && toRestore !== null) select.value = toRestore;
@@ -344,7 +398,7 @@
             else if (opts.length) select.value = opts[0].value;
           }
           wrapper._cbClearedAt = 0;
-          select.dispatchEvent(new Event('change', { bubbles: true }));
+          cbFireChange(select);
           updateInputFromSelect();
           storeLastValid();
           return;
@@ -354,15 +408,15 @@
         const matched = exact || (single.length === 1 ? single[0] : null);
         if (matched) {
           select.value = matched.value;
-          select.dispatchEvent(new Event('change', { bubbles: true }));
-          input.value = (clearValue !== undefined && clearValue !== null && String(matched.value) === String(clearValue)) ? '' : matched.text;
+          cbFireChange(select);
+          input.value = isClearVal(matched.value) ? '' : matched.text;
           toggleClearVisibility();
           storeLastValid();
           return;
         }
         if (lastVal !== undefined && lastVal !== null) select.value = lastVal;
         else if (opts.length) select.value = opts[0].value;
-        select.dispatchEvent(new Event('change', { bubbles: true }));
+        cbFireChange(select);
         updateInputFromSelect();
         storeLastValid();
       }
@@ -372,63 +426,88 @@
       wrapper._cbUpdateInput = updateInputFromSelect;
       wrapper._cbValidateAndResetOnBlur = validateAndResetOnBlur;
 
-      select.classList.add('sr-only');
-      select.style.cssText = 'position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;clip:rect(0,0,0,0);';
+      applySrOnly(select);
       wrapper.appendChild(triggerWrap);
       wrapper.appendChild(dropdown);
 
-      // Contextos que usan position:fixed + applyDropdownPosition:
-      // 1) dentro de <table> o wrapTabla (filas editables)
-      // 2) dentro de modal-*-box que tienen overflow:hidden y recortarían el dropdown
-      const inTable = isInTable(wrapper) || !!wrapper.closest(
-        '.modal-usuario-box,.modal-grupo-box,.modal-zona-box,.modal-area-box,.modal-trimestre-box,.modal-enterprise-box'
-      );
+      const useFixedDropdown = isInTableOrModal(wrapper);
       const maxH = DROPDOWN_MAX_ITEMS * ITEM_HEIGHT_REM * parseFloat(getComputedStyle(document.documentElement).fontSize);
 
+      function closeDropdownLocal() {
+        dropdown.classList.add('hidden');
+        dropdown.style.cssText = '';
+        wrapper.classList.remove('cb-dropdown-open');
+        dropdown.classList.remove('dropdown-over-table', 'dropdown-up');
+        if (dropdown.parentNode === document.body && wrapper) wrapper.appendChild(dropdown);
+      }
+
+      function applyNativeDisabledState() {
+        const off = select.disabled;
+        wrapper.classList.toggle('combobox-native-disabled', off);
+        triggerWrap.setAttribute('aria-disabled', off ? 'true' : 'false');
+        if (off) {
+          closeDropdownLocal();
+          input.disabled = true;
+          input.readOnly = true;
+          input.setAttribute('tabindex', '-1');
+          btnClear.disabled = true;
+          btnClear.classList.remove('visible');
+          wrapper.classList.remove('has-value');
+        } else {
+          input.removeAttribute('tabindex');
+          const all = optionsData();
+          if (!all.length) setEmptyState(true);
+          else {
+            setEmptyState(false);
+            input.disabled = false;
+            input.readOnly = false;
+            btnClear.disabled = false;
+          }
+          updateInputFromSelect();
+          toggleClearVisibility();
+          storeLastValid();
+        }
+      }
+
       function positionAndShow(forceShowAll) {
+        if (select.disabled) return;
         storeLastValid();
-        const filterText = forceShowAll ? '' : input.value;
-        renderOptions(filterText);
+        renderOptions(forceShowAll ? '' : input.value);
         if (dropdown.children.length === 0) return;
 
-        if (inTable) {
-          closeAllDropdowns();
-          // Fijar position:fixed ANTES de appendear al body para que nunca entre en el
-          // flujo normal del documento. Sin esto, durante los 2 rAFs el dropdown queda
-          // como position:absolute hijo directo de <body>, extiende el alto de la página
-          // y hace aparecer/desaparecer la scrollbar de Windows (layout shift).
-          dropdown.style.cssText = 'position:fixed;visibility:hidden;top:-9999px;left:0;display:block;';
-          document.body.appendChild(dropdown);
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              applyDropdownPosition(wrapper, dropdown, triggerWrap, maxH);
-              dropdown.style.visibility = 'visible';
-              dropdown.classList.remove('hidden');
-              dropdown._cbJustOpened = Date.now();
-            });
-          });
+        const markOpen = () => { wrapper.classList.add('cb-dropdown-open'); };
+
+        if (useFixedDropdown) {
+          openDropdownFixed(wrapper, dropdown, triggerWrap, maxH, forceDropup, markOpen);
         } else {
           dropdown.style.maxHeight = maxH + 'px';
           dropdown.classList.remove('hidden');
           dropdown._cbJustOpened = Date.now();
+          markOpen();
         }
       }
 
       function openFromTrigger(ev) {
+        if (select.disabled) return;
         if (ev) { ev.preventDefault(); ev.stopPropagation(); }
-        // #region agent log
-        fetch('http://127.0.0.1:7412/ingest/d3fa9f59-7c34-4dda-a4b8-3b180194f8ae',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'96d9bc'},body:JSON.stringify({sessionId:'96d9bc',runId:'select-check',hypothesisId:'H1',location:'combobox.js:openFromTrigger',message:'open requested',data:{selector,allowClear,selectValue:select.value,inputValue:input.value,hidden:dropdown.classList.contains('hidden')},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
         if (dropdown.classList.contains('hidden')) {
           positionAndShow();
-          setTimeout(() => { try { input.focus({ preventScroll: true }); } catch (_) { input.focus(); } }, 0);
+          cbFocusInput(input);
         }
       }
       wrapper._cbOpen = openFromTrigger;
 
-      triggerWrap.addEventListener('mousedown', (e) => { if (e.target !== input) openFromTrigger(e); });
+      triggerWrap.addEventListener('mousedown', (e) => {
+        if (select.disabled) return;
+        if (e.target !== input) openFromTrigger(e);
+      });
       triggerWrap.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
       input.addEventListener('focus', (e) => {
+        if (select.disabled) {
+          try { input.blur(); } catch (_) {}
+          e?.preventDefault?.();
+          return;
+        }
         closeAllDropdowns();
         positionAndShow();
         e?.preventDefault?.();
@@ -437,33 +516,26 @@
         setTimeout(() => {
           if (dropdown.contains(document.activeElement)) return;
           if (wrapper._cbOptionJustSelected) return;
-          // #region agent log
-          fetch('http://127.0.0.1:7412/ingest/d3fa9f59-7c34-4dda-a4b8-3b180194f8ae',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'96d9bc'},body:JSON.stringify({sessionId:'96d9bc',runId:'select-check',hypothesisId:'H3',location:'combobox.js:inputBlur',message:'blur handling',data:{selector,allowClear,inputValue:input.value,selectValue:select.value,dropdownHidden:dropdown.classList.contains('hidden')},timestamp:Date.now()})}).catch(()=>{});
-          // #endregion
-          if (!dropdown.classList.contains('hidden')) {
-            dropdown.classList.add('hidden');
-            if (dropdown.parentNode === document.body && wrapper) wrapper.appendChild(dropdown);
-          }
-          if (typeof wrapper._cbValidateAndResetOnBlur === 'function') wrapper._cbValidateAndResetOnBlur();
-        }, 120);
-      });
-      input.addEventListener('input', () => { renderOptions(input.value); toggleClearVisibility(); });
-      input.addEventListener('blur', () => {
-        setTimeout(() => {
-          if (dropdown.contains(document.activeElement)) return;
-          if (wrapper._cbOptionJustSelected) return;
           if (!dropdown.classList.contains('hidden')) {
             dropdown.classList.add('hidden');
             dropdown.style.cssText = '';
+            wrapper.classList.remove('cb-dropdown-open');
             if (dropdown.parentNode === document.body && wrapper) wrapper.appendChild(dropdown);
           }
+          if (typeof wrapper._cbValidateAndResetOnBlur === 'function') wrapper._cbValidateAndResetOnBlur();
           if (typeof wrapper._cbValidateAndResetOnClose === 'function') wrapper._cbValidateAndResetOnClose();
         }, 120);
+      });
+      input.addEventListener('input', () => {
+        if (select.disabled) return;
+        renderOptions(input.value);
+        toggleClearVisibility();
       });
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
           dropdown.classList.add('hidden');
           dropdown.style.cssText = '';
+          wrapper.classList.remove('cb-dropdown-open');
           if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
           if (typeof wrapper._cbValidateAndResetOnClose === 'function') wrapper._cbValidateAndResetOnClose();
           input.blur();
@@ -471,13 +543,12 @@
       });
 
       btnClear.addEventListener('click', (e) => {
+        if (select.disabled) return;
         e.stopPropagation();
         e.preventDefault();
         wrapper._cbBeforeClearValue = select.value;
 
         const hasInitial = !!(wrapper.dataset.initialValue || '').trim();
-        // Modo Editar con persistencia (ej: editar zona): la X sólo limpia el input y muestra placeholder,
-        // sin tocar el value real del select. Si luego sales en blanco, el blur restaurará el initialValue.
         if (restoreValueOnBlurWhenEmpty && hasInitial) {
           wrapper._cbClearedAt = Date.now();
           input.value = '';
@@ -485,19 +556,18 @@
           dropdown.classList.add('hidden');
           if (dropdown.parentNode === document.body && wrapper) wrapper.appendChild(dropdown);
           positionAndShow(true);
-          setTimeout(() => { try { input.focus({ preventScroll: true }); } catch (_) { input.focus(); } }, 0);
+          cbFocusInput(input);
           return;
         }
 
-        // Comportamiento estándar (Crear / Filtros): la X limpia realmente la selección
         if (restoreValueOnBlurWhenEmpty) wrapper._cbClearedAt = Date.now();
         input.value = '';
         if (clearValue !== undefined && clearValue !== null) {
           select.value = clearValue;
-          select.dispatchEvent(new Event('change', { bubbles: true }));
-        } else if (hasEmptyOption) {
+          cbFireChange(select);
+        } else if (hasEmptyOption()) {
           select.value = '';
-          select.dispatchEvent(new Event('change', { bubbles: true }));
+          cbFireChange(select);
         } else {
           input.value = '';
           toggleClearVisibility();
@@ -505,7 +575,7 @@
           if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
           dropdown.style.cssText = '';
           positionAndShow(true);
-          setTimeout(() => { try { input.focus({ preventScroll: true }); } catch (_) { input.focus(); } }, 0);
+          cbFocusInput(input);
           return;
         }
         dropdown.classList.add('hidden');
@@ -514,47 +584,41 @@
         updateInputFromSelect();
         toggleClearVisibility();
         positionAndShow(true);
-        setTimeout(() => { try { input.focus({ preventScroll: true }); } catch (_) { input.focus(); } }, 0);
+        cbFocusInput(input);
       });
 
       select.addEventListener('change', () => {
-        // #region agent log
-        fetch('http://127.0.0.1:7412/ingest/d3fa9f59-7c34-4dda-a4b8-3b180194f8ae',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'96d9bc'},body:JSON.stringify({sessionId:'96d9bc',runId:'select-check',hypothesisId:'H4',location:'combobox.js:selectChange',message:'select change',data:{selector,allowClear,newValue:select.value},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
         updateInputFromSelect();
+        applyNativeDisabledState();
       });
+
+      try {
+        const mo = new MutationObserver(() => applyNativeDisabledState());
+        mo.observe(select, { attributes: true, attributeFilter: ['disabled'] });
+      } catch (_) {}
+
+      applyNativeDisabledState();
 
       if (opts.onEnhance) opts.onEnhance(select, wrapper);
     });
-
-    if (!global._comboboxDocClick) {
-      global._comboboxDocClick = true;
-      document.addEventListener('click', (e) => {
-        document.querySelectorAll('.combobox-dropdown').forEach(d => {
-          if (d.classList.contains('hidden')) return;
-          const w = d._cbWrapper;
-          if (!w || w.contains(e.target) || d.contains(e.target)) return;
-          if (d._cbJustOpened && (Date.now() - d._cbJustOpened) < 250) return;
-          d.classList.add('hidden');
-          if (d.parentNode === document.body && w) w.appendChild(d);
-          d.style.cssText = '';
-          const inp = w?.querySelector('.combobox-input');
-          if (inp && typeof w._cbValidateAndResetOnBlur === 'function') w._cbValidateAndResetOnBlur();
-          else if (typeof w._cbUpdateInput === 'function') w._cbUpdateInput();
-        });
-      }, true);
-    }
   }
 
   /**
    * Mejora un <select> a desplegable custom: mismo diseño y dropup que el combobox,
    * sin búsqueda ni botón X. Para listas fijas (jornada, modalidad, cargo, etc.).
+   * @param {boolean} [opts.forceDropup] - Si true, fuerza apertura hacia arriba cuando usa posición fija.
+   * @param {string|string[]} [opts.placeholderValues] - Valores del select que se muestran en gris (ej. '' y 'all' para filtros).
    */
   function enhanceSelectStyled(opts) {
     const selector = opts.selector || '.select-styled';
     const dropdownClass = opts.dropdownClass || 'custom-select-dropdown';
     const optionClass = opts.optionClass || 'custom-option';
     const placeholder = (opts.placeholder != null && opts.placeholder !== '') ? opts.placeholder : 'Seleccione...';
+    const forceDropup = opts.forceDropup === true;
+    const rawNeutral = opts.placeholderValues;
+    const neutralValues = rawNeutral != null && rawNeutral !== ''
+      ? (Array.isArray(rawNeutral) ? rawNeutral : [rawNeutral]).map(v => String(v))
+      : [''];
 
     document.querySelectorAll(selector).forEach(select => {
       if (select.dataset.comboboxEnhanced === '1') return;
@@ -573,13 +637,7 @@
       triggerWrap.setAttribute('tabindex', '0');
       const triggerText = document.createElement('span');
       triggerText.className = 'select-styled-trigger-text';
-      triggerText.style.paddingLeft = '0.75rem';
-      triggerText.style.flex = '1';
-      triggerText.style.minWidth = '0';
-      triggerText.style.overflow = 'hidden';
-      triggerText.style.textOverflow = 'ellipsis';
-      triggerText.style.whiteSpace = 'nowrap';
-      triggerText.style.textAlign = 'left';
+      triggerText.style.cssText = 'padding-left:0.75rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left';
       const chevron = document.createElement('span');
       chevron.className = 'chevron-combobox';
       chevron.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>';
@@ -591,13 +649,15 @@
       dropdown.setAttribute('role', 'listbox');
       dropdown._cbWrapper = wrapper;
 
-      const optionsData = () => [...select.options].filter(o => !o.disabled).map(o => ({ value: o.value, text: (o.textContent || '').trim() }));
+      const optionsData = () => optionsFromSelect(select);
 
       function updateTriggerText() {
         const opt = select.options[select.selectedIndex];
-        const text = opt && String(opt.value) !== '' ? (opt.textContent || '').trim() : '';
-        triggerText.textContent = text || placeholder;
-        triggerText.style.color = text ? '#111827' : '#9ca3af';
+        const displayText = opt ? (opt.textContent || '').trim() : '';
+        const val = String(select.value ?? '');
+        const isNeutral = neutralValues.includes(val);
+        triggerText.textContent = displayText || placeholder;
+        triggerText.style.color = isNeutral ? '#9ca3af' : '#111827';
       }
 
       function renderOptions() {
@@ -611,10 +671,11 @@
           div.addEventListener('click', (e) => {
             e.stopPropagation();
             select.value = value;
-            select.dispatchEvent(new Event('change', { bubbles: true }));
+            cbFireChange(select);
             updateTriggerText();
             dropdown.classList.add('hidden');
             dropdown.classList.remove('dropdown-over-table', 'dropdown-up');
+            wrapper.classList.remove('cb-dropdown-open');
             if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
             dropdown.style.cssText = '';
           });
@@ -624,8 +685,7 @@
       }
 
       updateTriggerText();
-      select.classList.add('sr-only');
-      select.style.cssText = 'position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;clip:rect(0,0,0,0);';
+      applySrOnly(select);
       wrapper.appendChild(triggerWrap);
       wrapper.appendChild(dropdown);
 
@@ -636,37 +696,50 @@
         renderOptions();
         if (dropdown.children.length === 0) return;
         if (inTable) {
-          closeAllDropdowns();
-          dropdown.style.cssText = 'position:fixed;visibility:hidden;top:-9999px;left:0;display:block;';
-          document.body.appendChild(dropdown);
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              applyDropdownPosition(wrapper, dropdown, triggerWrap, maxH);
-              dropdown.style.visibility = 'visible';
-              dropdown.classList.remove('hidden');
-              dropdown._cbJustOpened = Date.now();
-            });
+          openDropdownFixed(wrapper, dropdown, triggerWrap, maxH, forceDropup, () => {
+            wrapper.classList.add('cb-dropdown-open');
           });
         } else {
           dropdown.style.maxHeight = maxH + 'px';
           dropdown.classList.remove('hidden');
           dropdown._cbJustOpened = Date.now();
+          wrapper.classList.add('cb-dropdown-open');
         }
       }
 
-      function openFromTrigger(ev) {
+      function toggleFromTrigger(ev) {
         if (ev) { ev.preventDefault(); ev.stopPropagation(); }
-        if (dropdown.classList.contains('hidden')) positionAndShow();
+        if (!dropdown.classList.contains('hidden')) {
+          dropdown.classList.add('hidden');
+          wrapper.classList.remove('cb-dropdown-open');
+          dropdown.classList.remove('dropdown-over-table', 'dropdown-up');
+          if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
+          dropdown.style.cssText = '';
+          wrapper._cbSkipToggleFocusOpen = true;
+          setTimeout(() => {
+            if (wrapper._cbSkipToggleFocusOpen) wrapper._cbSkipToggleFocusOpen = false;
+          }, 0);
+          return;
+        }
+        positionAndShow();
       }
 
       wrapper._cbUpdateInput = updateTriggerText;
 
-      triggerWrap.addEventListener('mousedown', (e) => { e.preventDefault(); openFromTrigger(e); });
+      triggerWrap.addEventListener('mousedown', (e) => { e.preventDefault(); toggleFromTrigger(e); });
       triggerWrap.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
-      triggerWrap.addEventListener('focus', () => { closeAllDropdowns(); positionAndShow(); });
+      triggerWrap.addEventListener('focus', () => {
+        if (wrapper._cbSkipToggleFocusOpen) {
+          wrapper._cbSkipToggleFocusOpen = false;
+          return;
+        }
+        closeAllDropdowns();
+        positionAndShow();
+      });
       triggerWrap.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
           dropdown.classList.add('hidden');
+          wrapper.classList.remove('cb-dropdown-open');
           if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
           dropdown.style.cssText = '';
           triggerWrap.blur();
@@ -676,6 +749,8 @@
       select.addEventListener('change', updateTriggerText);
     });
   }
+
+  ensureComboboxOutsideClick();
 
   function resetComboboxes() {
     closeAllDropdowns('.combobox-dropdown');

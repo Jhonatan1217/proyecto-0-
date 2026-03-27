@@ -14,6 +14,55 @@
   min-width: 0;
 }
 
+/**
+ * Input de búsqueda alineado con combobox / select-styled (misma altura y radio).
+ */
+.filter-search-input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #111827;
+  background-color: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 0.75rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.filter-search-input::placeholder {
+  color: #9ca3af;
+}
+
+.filter-search-input:hover {
+  border-color: #9ca3af;
+}
+
+.filter-search-input:focus {
+  border-color: #39a900;
+  box-shadow: 0 0 0 2px rgba(57, 169, 0, 0.2);
+}
+
+/* <select disabled>: bloquea el trigger aunque el input sea visible */
+.combobox-wrapper.combobox-native-disabled .combobox-trigger {
+  opacity: 0.65;
+  cursor: not-allowed;
+  pointer-events: none;
+  background: #f9fafb;
+}
+
+.combobox-wrapper.combobox-native-disabled .combobox-input::placeholder {
+  color: #9ca3af;
+}
+
+.combobox-wrapper.combobox-native-disabled .combobox-trigger:focus-within {
+  border-color: #d1d5db;
+  box-shadow: none;
+}
+
 .combobox-trigger {
   display: flex;
   align-items: center;
@@ -85,9 +134,24 @@
   transform: translateY(-50%);
   width: 1.25rem;
   height: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   pointer-events: none;
   color: #6b7280;
   transition: color 0.15s ease;
+}
+
+/* Rotar solo el SVG: si se rota el span entero junto con translateY(-50%), el trazo del icono parece bajar */
+.combobox-wrapper .chevron-combobox svg {
+  display: block;
+  flex-shrink: 0;
+  transform-origin: 50% 50%;
+  transition: transform 0.2s ease;
+}
+
+.combobox-wrapper.cb-dropdown-open .chevron-combobox svg {
+  transform: rotate(180deg);
 }
 
 .combobox-wrapper:not(.combobox-empty) .combobox-trigger:hover .chevron-combobox {
@@ -146,6 +210,16 @@
   min-width: 0;
   margin-top: 0;
   margin-bottom: 0;
+  overflow-x: hidden;
+}
+
+.combobox-dropdown.dropdown-over-table .custom-option,
+.combobox-dropdown.dropdown-over-table .combobox-zona-option,
+.combobox-dropdown.dropdown-over-table .select-zona-option {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .combobox-dropdown .custom-option,

@@ -26,17 +26,42 @@ function limpiar($v) {
     return htmlspecialchars(trim($v ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
+/**
+ * Duración en horas: entero >= 1. Devuelve null si es inválida o <= 0.
+ */
+function parse_duracion_horas($raw) {
+    $s = trim((string)($raw ?? ''));
+    if ($s === '' || !ctype_digit($s)) {
+        return null;
+    }
+    $n = (int) $s;
+    return $n >= 1 ? $n : null;
+}
+
 // ===============================
 // LISTAR
 // ===============================
 if ($accion === 'listar') {
     try {
-        $sql = "SELECT id_programa, nombre_programa, descripcion, duracion, estado, nivel_formacion 
-        FROM programas 
-        ORDER BY id_programa DESC"; 
-        
+        $soloActivos = isset($_GET['solo_activos'])
+            && ($_GET['solo_activos'] === '1' || $_GET['solo_activos'] === 'true');
+        $idIncluir = trim((string) ($_GET['id_programa_incluir'] ?? ''));
+
+        $sql = "SELECT id_programa, nombre_programa, descripcion, duracion, estado, nivel_formacion
+        FROM programas ";
+        $params = [];
+        if ($soloActivos) {
+            if ($idIncluir !== '') {
+                $sql .= "WHERE (COALESCE(estado, 1) = 1 OR id_programa = ?) ";
+                $params[] = $idIncluir;
+            } else {
+                $sql .= "WHERE COALESCE(estado, 1) = 1 ";
+            }
+        }
+        $sql .= "ORDER BY id_programa DESC";
+
         $stmt = $conn->prepare($sql);
-        $stmt->execute();
+        $stmt->execute($params);
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode($data ?: []);
     } catch (Exception $e) {
@@ -55,13 +80,18 @@ if ($accion === 'agregar') {
     $id_programa     = limpiar($json['id_programa'] ?? '');
     $nombre_programa = limpiar($json['nombre_programa'] ?? '');
     $descripcion     = limpiar($json['descripcion'] ?? '');
-    $duracion        = limpiar($json['duracion'] ?? '');
     $nivel_formacion = limpiar($json['nivel_formacion'] ?? '');
+    $duracionNum     = parse_duracion_horas($json['duracion'] ?? '');
 
     if (!$id_programa || !$nombre_programa || !$nivel_formacion) {
         echo json_encode(['error' => 'Campos obligatorios faltantes.']);
         exit;
     }
+    if ($duracionNum === null) {
+        echo json_encode(['error' => 'La duración es obligatoria y debe ser un número entero de horas mayor a 0.']);
+        exit;
+    }
+    $duracion = (string) $duracionNum;
 
     try {
         $sql = "INSERT INTO programas 
@@ -102,13 +132,18 @@ if ($accion === 'actualizar') {
 
     $nombre_programa = limpiar($json['nombre_programa'] ?? '');
     $descripcion     = limpiar($json['descripcion'] ?? '');
-    $duracion        = limpiar($json['duracion'] ?? '');
     $nivel_formacion = limpiar($json['nivel_formacion'] ?? '');
+    $duracionNum     = parse_duracion_horas($json['duracion'] ?? '');
 
     if (!$id_programa_actual || !$nombre_programa || !$nivel_formacion) {
         echo json_encode(['error' => 'Datos insuficientes para actualizar.']);
         exit;
     }
+    if ($duracionNum === null) {
+        echo json_encode(['error' => 'La duración es obligatoria y debe ser un número entero de horas mayor a 0.']);
+        exit;
+    }
+    $duracion = (string) $duracionNum;
 
     try {
         $conn->beginTransaction();

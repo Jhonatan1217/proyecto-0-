@@ -152,5 +152,5 @@ if (!defined("BASE_URL")) {
 </div>
 
 <script>window.API_FICHA = <?= json_encode(BASE_URL . "src/controllers/fichaController.php") ?>;</script>
-<script src="<?= BASE_URL ?>src/assets/js/components/combobox.js?v=5"></script>
+<script src="<?= BASE_URL ?>src/assets/js/components/combobox.js?v=8"></script>
 <script src="<?= BASE_URL ?>src/assets/js/gestionGrupos.js?v=2"></script>

@@ -87,6 +87,15 @@ switch ($accion) {
     if (!$nombre_competencia || trim($nombre_competencia) === '') {
       fail('Debe enviar nombre_competencia.');
     }
+    $chkP = $conn->prepare('SELECT COALESCE(estado, 1) FROM programas WHERE id_programa = ?');
+    $chkP->execute([$id_programa]);
+    $estP = $chkP->fetchColumn();
+    if ($estP === false) {
+      fail('El programa no existe.');
+    }
+    if ((int) $estP !== 1) {
+      fail('El programa está inactivo. No se pueden crear competencias en programas inactivos.');
+    }
 // Crear competencia
     ok($competencia->crear(
       $id_competencia,
@@ -132,6 +141,23 @@ switch ($accion) {
     }
 
     if (!$sets) ok(['ok' => true, 'noop' => true]); // nada que actualizar
+
+    if (isset($params[':id_programa'])) {
+      $curStmt = $conn->prepare('SELECT id_programa FROM competencias WHERE id_competencia = ?');
+      $curStmt->execute([$id_original]);
+      $prevProg = $curStmt->fetchColumn();
+      $newProg = $params[':id_programa'];
+      $chkAct = $conn->prepare('SELECT COALESCE(estado, 1) FROM programas WHERE id_programa = ?');
+      $chkAct->execute([$newProg]);
+      $estProg = $chkAct->fetchColumn();
+      if ($estProg === false) {
+        fail('El programa no existe.');
+      }
+      if ((int) $estProg !== 1 && (string) $newProg !== (string) $prevProg) {
+        fail('No puede asignar un programa inactivo.');
+      }
+    }
+
     // Ejecutar actualización
     try {
       $sql  = 'UPDATE competencias SET '.implode(', ', $sets).' WHERE id_competencia = :id_original';

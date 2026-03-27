@@ -24,7 +24,8 @@ if ($cargo === 'INSTRUCTOR') {
 
             <div class="px-6 mt-4">
                 <label class="block text-sm font-medium mb-1">Programa de formación <span class="text-red-500">*</span></label>
-                <select id="upload_program" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm outline-none bg-white select-nice">
+                <div class="relative w-full">
+                <select id="upload_program" class="combobox-academicos-upload w-full">
                     <option value="">Seleccione un programa</option>
                     <?php foreach($programas as $p): ?>
                         <option value="<?= $p['id_programa'] ?>">
@@ -32,6 +33,7 @@ if ($cargo === 'INSTRUCTOR') {
                         </option>
                     <?php endforeach; ?>
                 </select>
+                </div>
 
                 <p id="err_upload_program" class="hidden mt-1 text-xs" style="color:#dc2626">Seleccione un programa para asociar la carga.</p>
             </div>
@@ -83,6 +85,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     select.appendChild(option);
                 });
             }
+
+            select.dispatchEvent(new Event("change", { bubbles: true }));
 
         })
         .catch(err => console.error("Error recargando programas:", err));

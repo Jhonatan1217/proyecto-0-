@@ -8,6 +8,7 @@
   <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
   <!-- Estilos propios (competencias) -->
   <link rel="stylesheet" href="src/assets/css/gestionCompetencias.css" />
+  <link rel="stylesheet" href="src/assets/css/components/combobox.css" />
 
   <!-- ✨ Ajustes extra SOLO AÑADIDOS: flecha responsive y wrapper de filtros -->
   <style>
@@ -236,10 +237,57 @@
     window.API_RAES = encodeURI('<?= BASE_URL ?? '' ?>src/controllers/RaeController.php');
 </script>
 
+  <!-- Combobox / selects estilizados (Programas) -->
+  <script src="<?= BASE_URL ?? '' ?>src/assets/js/components/combobox.js?v=12"></script>
   <!-- Módulos: cada uno maneja su CRUD/UX. El ?v= ayuda a romper caché -->
-  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionProgramas.js?v=3"></script>
-  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionCompetencias.js?v=2" defer></script>
-  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionRaes.js?v=1" defer></script>
+  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionProgramas.js?v=7"></script>
+  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionCompetencias.js?v=4" defer></script>
+  <script src="<?= BASE_URL ?? '' ?>src/assets/js/gestionRaes.js?v=9" defer></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (typeof ComboboxComponent === 'undefined') return;
+    if (typeof ComboboxComponent.enhanceSelectStyled === 'function') {
+      ComboboxComponent.enhanceSelectStyled({ selector: '.select-academicos' });
+    }
+    if (typeof ComboboxComponent.enhance === 'function') {
+      ComboboxComponent.enhance({
+        selector: '.combobox-academicos-upload',
+        placeholder: 'Buscar programa…',
+        allowClear: true,
+        restoreValueOnBlurWhenEmpty: true,
+        clearValue: ''
+      });
+      ComboboxComponent.enhance({
+        selector: '.combobox-academicos-modal-programa',
+        placeholder: 'Buscar programa…',
+        allowClear: true,
+        restoreValueOnBlurWhenEmpty: true,
+        clearValue: ''
+      });
+      ComboboxComponent.enhance({
+        selector: '.combobox-academicos-filter-programa',
+        placeholder: 'Buscar programa…',
+        allowClear: true,
+        restoreValueOnBlurWhenEmpty: true,
+        clearValue: 'all'
+      });
+      ComboboxComponent.enhance({
+        selector: '.combobox-academicos-filter-rae-comp',
+        placeholder: 'Buscar competencia…',
+        allowClear: true,
+        restoreValueOnBlurWhenEmpty: true,
+        clearValue: 'all'
+      });
+      ComboboxComponent.enhance({
+        selector: '.combobox-rae-competency',
+        placeholder: 'Buscar competencia…',
+        allowClear: true,
+        restoreValueOnBlurWhenEmpty: true,
+        clearValue: ''
+      });
+    }
+  });
+  </script>
 
   <!-- Agregar cargar programas dinámicamente -->
   <script>
@@ -259,6 +307,7 @@
                 ${p.nombre_programa}
               </option>`;
           });
+          selectProgram.dispatchEvent(new Event('change', { bubbles: true }));
         })
         .catch(err => {
           console.error("Error cargando programas:", err);
@@ -401,7 +450,7 @@
   <!-- ==========================
        PAGINACIÓN FRONTEND (PROGRAMAS, COMPETENCIAS, RAE)
        ========================== -->
-  <script src="src/assets/js/paginacion.js"></script>
+  <script src="src/assets/js/paginacion.js?v=3"></script>
 
 </body>
 </html>

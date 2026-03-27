@@ -15,13 +15,17 @@
         </button>
     </div>
 
-    <div class="flex gap-3 flex-wrap mb-5">
-        <select id="raeProgramFilter" class="w-[260px] border border-zinc-300 rounded-xl px-3 py-2 text-sm bg-white select-nice">
-            <option value="all">Todos los programas</option>
-        </select>
-        <select id="raeCompetencyFilter" class="w-[260px] border border-zinc-300 rounded-xl px-3 py-2 text-sm bg-white select-nice">
-            <option value="all">Todas las competencias</option>
-        </select>
+    <div id="raesFilters" class="flex flex-col md:flex-row gap-4 mb-5">
+        <div class="relative w-full md:w-64 shrink-0">
+            <select id="raeProgramFilter" class="combobox-academicos-filter-programa w-full">
+                <option value="all">Todos los programas</option>
+            </select>
+        </div>
+        <div class="relative w-full md:w-64 shrink-0">
+            <select id="raeCompetencyFilter" class="combobox-academicos-filter-rae-comp w-full">
+                <option value="all">Todas las competencias</option>
+            </select>
+        </div>
     </div>
 
     <!-- Lista de RAEs -->
@@ -51,14 +55,14 @@
                 <h3 id="modalRaeTitle" class="text-2xl font-bold">Nuevo RAE</h3>
                 <p class="text-sm text-zinc-500">Complete la información del Resultado de Aprendizaje Esperado</p>
             </div>
-            <button id="btnCloseRae" class="p-2 rounded-lg hover:bg-zinc-100" aria-label="Cerrar modal">✕</button>
+            <button id="btnCloseRae" type="button" class="p-2 rounded-lg hover:bg-zinc-100 transition text-zinc-500 hover:text-zinc-700" aria-label="Cerrar modal">✕</button>
         </div>
 
         <form id="formRaeNew" class="p-6 pt-4 space-y-4">
             <!-- PROGRAMA DE FORMACIÓN (nuevo) -->
             <div>
                 <label class="block text-sm font-medium mb-1">Programa de formación *</label>
-                <select id="rae_program" class="select-nice w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm bg-white outline-none">
+                <select id="rae_program" class="combobox-academicos-modal-programa w-full">
                     <option value="">Seleccione programa</option>
                 </select>
             </div>
@@ -66,7 +70,7 @@
             <!-- COMPETENCIA -->
             <div>
                 <label class="block text-sm font-medium mb-1">Competencia *</label>
-                <select id="rae_competency" class="select-nice w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm bg-white outline-none" disabled>
+                <select id="rae_competency" class="combobox-rae-competency w-full" disabled>
                     <option value="">Primero seleccione un programa</option>
                 </select>
             </div>
