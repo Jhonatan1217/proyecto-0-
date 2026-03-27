@@ -20,7 +20,7 @@ th {
 	font-weight: 600;
 }
 
-/* Estilos para las celdas de competencias */
+/* Celdas de competencias */
 .registro {
 	position: relative;
 }
@@ -51,7 +51,6 @@ th {
 	transition: box-shadow .15s ease, border-color .15s ease;
 }
 
-
 .celda:focus {
 	outline: none;
 	border-color: #16a34a;
@@ -62,7 +61,7 @@ th {
 	min-height: 60px;
 }
 
-/* Modal styles */
+/* Modal overlay heredado */
 .modal-overlay {
 	display: none;
 	position: fixed;
@@ -84,4 +83,343 @@ th {
 	width: 80px;
 	height: 80px;
 	margin: 0 auto 20px;
+}
+
+/* ── Combobox local (filtros cabecera + modal crear) ─────────────────── */
+.custom-combobox {
+	position: relative;
+}
+
+.custom-combobox-panel {
+	position: absolute;
+	top: calc(100% + 6px);
+	left: 0;
+	right: 0;
+	z-index: 80;
+	background: #ffffff;
+	border: 1px solid #e5e7eb;
+	border-radius: 12px;
+	box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
+	overflow: hidden;
+}
+
+.custom-combobox-panel-top {
+	top: auto !important;
+	bottom: calc(100% + 6px) !important;
+}
+
+.custom-combobox-panel.hidden {
+	display: none;
+}
+
+.custom-combobox-list {
+	max-height: 280px;
+	overflow-y: auto;
+	padding: 4px;
+}
+
+.custom-combobox-list::-webkit-scrollbar { width: 8px; }
+.custom-combobox-list::-webkit-scrollbar-thumb {
+	background: #9ca3af;
+	border-radius: 999px;
+}
+
+.custom-combobox-option,
+.custom-combobox-empty {
+	width: 100%;
+	border: 0;
+	background: transparent;
+	text-align: left;
+	border-radius: 10px;
+	padding: 10px 14px;
+	font-size: 0.875rem;
+	color: #1f2937;
+	white-space: normal;
+	word-break: break-word;
+	line-height: 1.4;
+}
+
+.custom-combobox-option {
+	cursor: pointer;
+	transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.custom-combobox-option:hover,
+.custom-combobox-option.is-active {
+	background: #f3f4f6;
+	color: #111827;
+}
+
+.custom-combobox-empty {
+	color: #6b7280;
+	cursor: default;
+}
+
+/* Fix: select-styled con .form-field no recorta el texto */
+.select-styled.form-field {
+	height: auto;
+}
+
+/* Selects de cabecera en minúsculas */
+#selectModalidad,
+#selectArea,
+#selectZona,
+#selectModalidad option,
+#selectArea option,
+#selectZona option {
+	text-transform: lowercase;
+}
+
+/* Modal formulario: campos en columna */
+#modalCard .form-grid {
+	display: flex;
+	flex-direction: column;
+}
+
+/* ── Modal Gestión de Horas ──────────────────────────────────────────── */
+.gh-backdrop { background: rgba(15, 23, 42, 0.45); }
+
+.gh-card {
+	background: #ffffff;
+	border-radius: 16px;
+	box-shadow: 0 8px 40px rgba(15, 23, 42, 0.18);
+	border: 1px solid #e2e8f0;
+}
+
+.gh-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding-bottom: 14px;
+	border-bottom: 1px solid #e5e7eb;
+}
+
+.gh-title {
+	font-size: 1.35rem;
+	font-weight: 700;
+	color: #111827;
+	margin: 0;
+}
+
+.gh-close {
+	background: none;
+	border: none;
+	font-size: 1.4rem;
+	color: #6b7280;
+	cursor: pointer;
+	padding: 4px 8px;
+	border-radius: 6px;
+	line-height: 1;
+	transition: color 0.15s;
+}
+
+.gh-close:hover { color: #111827; }
+
+.gh-tabs {
+	display: flex;
+	gap: 8px;
+	border: 1.5px dashed #c4cdd6;
+	border-radius: 10px;
+	padding: 8px 10px;
+	margin: 14px 0;
+}
+
+.gh-tab {
+	padding: 6px 20px;
+	border-radius: 20px;
+	font-size: 0.875rem;
+	font-weight: 600;
+	cursor: pointer;
+	border: 1.5px solid transparent;
+	transition: all 0.15s;
+	background: transparent;
+	color: #374151;
+}
+
+.gh-tab.is-active {
+	background: #39a900;
+	color: #fff;
+	border-color: #39a900;
+}
+
+.gh-tab:not(.is-active) {
+	border-color: #d1d5db;
+	color: #374151;
+}
+
+.gh-resumen { margin-bottom: 10px; }
+
+.gh-resumen-title {
+	font-size: 0.95rem;
+	font-weight: 700;
+	color: #111827;
+	margin: 0 0 2px 0;
+}
+
+.gh-resumen-sub {
+	font-size: 0.8rem;
+	color: #6b7280;
+	margin: 0;
+}
+
+.gh-filtros {
+	display: flex;
+	gap: 10px;
+	border: 1.5px dashed #c4cdd6;
+	border-radius: 10px;
+	padding: 10px 12px;
+	margin-bottom: 14px;
+}
+
+.gh-filtros-input,
+.gh-filtros-select {
+	flex: 1;
+	border: 1px solid #d1d5db;
+	border-radius: 8px;
+	padding: 8px 12px;
+	font-size: 0.875rem;
+	color: #374151;
+	background: #fff;
+	outline: none;
+	transition: border-color 0.15s;
+}
+
+.gh-filtros-input:focus,
+.gh-filtros-select:focus { border-color: #39a900; }
+
+.gh-filtros-select { max-width: 220px; }
+
+.gh-table-wrapper {
+	overflow-x: auto;
+	overflow-y: auto;
+	max-height: 340px;
+	border: 1px solid #e5e7eb;
+	border-radius: 10px;
+}
+
+.gh-table-wrapper::-webkit-scrollbar { width: 6px; height: 6px; }
+.gh-table-wrapper::-webkit-scrollbar-thumb { background: #c4cdd6; border-radius: 99px; }
+
+.gh-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.875rem;
+	white-space: nowrap;
+}
+
+.gh-table thead th {
+	background: #f9fafb;
+	color: #374151;
+	font-weight: 600;
+	text-align: left;
+	padding: 10px 14px;
+	border-bottom: 1px solid #e5e7eb;
+	font-size: 0.82rem;
+}
+
+.gh-table thead th.center { text-align: center; }
+
+.gh-table tbody tr {
+	border-bottom: 1px solid #e5e7eb;
+	transition: background 0.1s;
+}
+
+.gh-table tbody tr:hover { background: #f9fafb; }
+.gh-table tbody tr:last-child { border-bottom: none; }
+
+.gh-table tbody td {
+	padding: 11px 14px;
+	color: #374151;
+	font-size: 0.875rem;
+}
+
+.gh-table tbody td.center { text-align: center; }
+
+.gh-excedente-neg {
+	color: #dc2626;
+	font-weight: 600;
+}
+
+.gh-action-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	border: 1px solid #d1d5db;
+	border-radius: 7px;
+	background: #fff;
+	color: #374151;
+	cursor: pointer;
+	transition: all 0.15s;
+}
+
+.gh-action-btn:hover {
+	border-color: #39a900;
+	color: #39a900;
+}
+
+.gh-footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	margin-top: 16px;
+}
+
+/* ── Tabla horario (cuadrícula semanal) ──────────────────────────────── */
+#tabla-horarios {
+	border: 1px solid #b6b6b6;
+	border-radius: 10px;
+	overflow: hidden;
+	background: #ededed;
+}
+
+#tabla-horarios table {
+	width: 100%;
+	table-layout: fixed;
+	border-collapse: collapse;
+	background: #ededed;
+}
+
+#tabla-horarios thead th {
+	background: #9ea0a3 !important;
+	color: #f3f4f6 !important;
+	border: 1px solid #b6b6b6 !important;
+	font-weight: 700;
+	font-size: 14px;
+	padding: 10px 8px !important;
+	text-align: center;
+}
+
+#tabla-horarios tbody td {
+	background: #ffffff;
+	border: 1px solid #c0c0c0;
+	color: #5f5f5f;
+	font-size: 13px;
+	vertical-align: top;
+}
+
+#tabla-horarios tbody td.hora-col {
+	background: #f3f4f6 !important;
+	color: #5a5a5a !important;
+	font-weight: 700;
+	text-align: center;
+	white-space: nowrap;
+}
+
+#tabla-horarios .registro {
+	background: #ffffff !important;
+	box-shadow: none !important;
+	margin-bottom: 0 !important;
+	padding: 8px 8px 8px 12px !important;
+	height: 100%;
+}
+
+#tabla-horarios .zona-libre { background: #ffffff !important; }
+#tabla-horarios .zona-libre:hover { background: #f5f7fa !important; }
+
+@media (max-width: 600px) {
+	.gh-filtros { flex-direction: column; }
+	.gh-filtros-select { max-width: 100%; }
+	.gh-footer { flex-direction: column; }
 }
