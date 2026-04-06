@@ -11,8 +11,8 @@
   const EMPTY_PLACEHOLDER = 'Sin registros disponibles';
   const EMPTY_DROPDOWN_MESSAGE = 'No se encontraron opciones.';
 
-  const MODAL_IDS = '#modalRae,#modalCompetency,#modalProgram';
-  const TABLE_OR_MODAL_SELECTOR = 'table,[id*="wrapTabla"],.modal-usuario-box,.modal-grupo-box,.modal-zona-box,.modal-area-box,.modal-trimestre-box,.modal-enterprise-box,#modalProgram,#modalCompetency,#modalRae,#modalCrearLanding';
+  const MODAL_IDS = '#modalRae,#modalCompetency,#modalProgram,#modalEditarHorario';
+  const TABLE_OR_MODAL_SELECTOR = 'table,[id*="wrapTabla"],.modal-usuario-box,.modal-grupo-box,.modal-zona-box,.modal-area-box,.modal-trimestre-box,.modal-enterprise-box,#modalProgram,#modalCompetency,#modalRae,#modalCrearLanding,#modalEditarHorario';
 
   function cbFireChange(select) {
     select.dispatchEvent(new Event('change', { bubbles: true }));
@@ -83,7 +83,7 @@
     dropdown.style.boxSizing = 'border-box';
     dropdown.style.maxHeight = maxH + 'px';
     dropdown.style.position = 'fixed';
-    dropdown.style.zIndex = '9999';
+    dropdown.style.zIndex = wrapper.closest('#modalEditarHorario') ? '1000000' : '9999';
     dropdown.style.left = leftPx + 'px';
     dropdown.style.marginTop = '';
     dropdown.style.marginBottom = '';
@@ -165,6 +165,10 @@
     const allowClear = opts.allowClear !== false;
     const restoreValueOnBlurWhenEmpty = opts.restoreValueOnBlurWhenEmpty !== false;
     const forceDropup = opts.forceDropup === true;
+    const maxItems =
+      opts.maxDropdownItems != null && Number(opts.maxDropdownItems) > 0
+        ? Number(opts.maxDropdownItems)
+        : DROPDOWN_MAX_ITEMS;
     const isClearVal = (val) => clearValue !== undefined && clearValue !== null && String(val) === String(clearValue);
 
     document.querySelectorAll(selector).forEach(select => {
@@ -431,7 +435,7 @@
       wrapper.appendChild(dropdown);
 
       const useFixedDropdown = isInTableOrModal(wrapper);
-      const maxH = DROPDOWN_MAX_ITEMS * ITEM_HEIGHT_REM * parseFloat(getComputedStyle(document.documentElement).fontSize);
+      const maxH = maxItems * ITEM_HEIGHT_REM * parseFloat(getComputedStyle(document.documentElement).fontSize);
 
       function closeDropdownLocal() {
         dropdown.classList.add('hidden');
@@ -608,6 +612,8 @@
    * sin búsqueda ni botón X. Para listas fijas (jornada, modalidad, cargo, etc.).
    * @param {boolean} [opts.forceDropup] - Si true, fuerza apertura hacia arriba cuando usa posición fija.
    * @param {string|string[]} [opts.placeholderValues] - Valores del select que se muestran en gris (ej. '' y 'all' para filtros).
+   * @param {number} [opts.maxDropdownItems] - Máximo de filas visibles en el panel (por defecto 5).
+   * @param {boolean} [opts.allowClear] - Si true, muestra botón X para volver a la opción vacía (placeholder).
    */
   function enhanceSelectStyled(opts) {
     const selector = opts.selector || '.select-styled';
@@ -615,6 +621,7 @@
     const optionClass = opts.optionClass || 'custom-option';
     const placeholder = (opts.placeholder != null && opts.placeholder !== '') ? opts.placeholder : 'Seleccione...';
     const forceDropup = opts.forceDropup === true;
+    const allowClear = opts.allowClear === true;
     const rawNeutral = opts.placeholderValues;
     const neutralValues = rawNeutral != null && rawNeutral !== ''
       ? (Array.isArray(rawNeutral) ? rawNeutral : [rawNeutral]).map(v => String(v))
@@ -623,6 +630,13 @@
     document.querySelectorAll(selector).forEach(select => {
       if (select.dataset.comboboxEnhanced === '1') return;
       select.dataset.comboboxEnhanced = '1';
+
+      const maxItems =
+        opts.maxDropdownItems != null && Number(opts.maxDropdownItems) > 0
+          ? Number(opts.maxDropdownItems)
+          : DROPDOWN_MAX_ITEMS;
+      const remPx = parseFloat(getComputedStyle(document.documentElement).fontSize);
+      const maxH = maxItems * ITEM_HEIGHT_REM * remPx;
 
       const container = select.parentNode;
       const wrapper = document.createElement('div');
@@ -638,10 +652,19 @@
       const triggerText = document.createElement('span');
       triggerText.className = 'select-styled-trigger-text';
       triggerText.style.cssText = 'padding-left:0.75rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left';
+      let btnClearStyled = null;
       const chevron = document.createElement('span');
       chevron.className = 'chevron-combobox';
       chevron.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>';
       triggerWrap.appendChild(triggerText);
+      if (allowClear) {
+        btnClearStyled = document.createElement('button');
+        btnClearStyled.type = 'button';
+        btnClearStyled.className = 'btn-clear-combobox';
+        btnClearStyled.setAttribute('aria-label', 'Limpiar');
+        btnClearStyled.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+        triggerWrap.appendChild(btnClearStyled);
+      }
       triggerWrap.appendChild(chevron);
 
       const dropdown = document.createElement('div');
@@ -658,6 +681,11 @@
         const isNeutral = neutralValues.includes(val);
         triggerText.textContent = displayText || placeholder;
         triggerText.style.color = isNeutral ? '#9ca3af' : '#111827';
+        if (allowClear && btnClearStyled) {
+          const showClear = !isNeutral;
+          btnClearStyled.classList.toggle('visible', showClear);
+          wrapper.classList.toggle('has-value', showClear);
+        }
       }
 
       function renderOptions() {
@@ -690,7 +718,6 @@
       wrapper.appendChild(dropdown);
 
       const inTable = isInTableOrModal(wrapper);
-      const maxH = DROPDOWN_MAX_ITEMS * ITEM_HEIGHT_REM * parseFloat(getComputedStyle(document.documentElement).fontSize);
 
       function positionAndShow() {
         renderOptions();
@@ -726,8 +753,28 @@
 
       wrapper._cbUpdateInput = updateTriggerText;
 
-      triggerWrap.addEventListener('mousedown', (e) => { e.preventDefault(); toggleFromTrigger(e); });
+      triggerWrap.addEventListener('mousedown', (e) => {
+        if (allowClear && e.target.closest && e.target.closest('.btn-clear-combobox')) return;
+        e.preventDefault();
+        toggleFromTrigger(e);
+      });
       triggerWrap.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
+      if (allowClear && btnClearStyled) {
+        btnClearStyled.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const emptyOpt = [...select.options].find((o) => neutralValues.includes(String(o.value)));
+          if (emptyOpt) select.value = emptyOpt.value;
+          else if (select.options.length) select.value = select.options[0].value;
+          cbFireChange(select);
+          updateTriggerText();
+          dropdown.classList.add('hidden');
+          dropdown.classList.remove('dropdown-over-table', 'dropdown-up');
+          wrapper.classList.remove('cb-dropdown-open');
+          if (dropdown.parentNode === document.body) wrapper.appendChild(dropdown);
+          dropdown.style.cssText = '';
+        });
+      }
       triggerWrap.addEventListener('focus', () => {
         if (wrapper._cbSkipToggleFocusOpen) {
           wrapper._cbSkipToggleFocusOpen = false;

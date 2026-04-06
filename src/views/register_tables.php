@@ -325,29 +325,87 @@ if (isset($conn)) {
     </div>
   </main>
 
-  <!-- Modal Eliminar -->
-  <div id="modalEliminar" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-labelledby="tituloModalEliminar">
-    <div class="absolute inset-0" style="background: rgba(0,0,0,.75);"></div>
-    <div class="relative z-10 w-full rounded-3xl shadow-2xl px-6 py-8 sm:px-8" style="max-width: 540px; background:#f3f4f6;">
-      <div class="mx-auto mb-4 flex items-center justify-center rounded-full" style="width:48px;height:48px;background:#fee2e2;">
-        <img class="w-7 h-7" src="<?= BASE_URL ?>src/assets/img/triangle-alert.svg" alt="Alerta" />
+  <!-- Modal Eliminar (mismo patrón visual que #modalCerrarSesión en header-private) -->
+  <div id="modalEliminar" class="modal-perfil fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/40" role="dialog" aria-modal="true" aria-labelledby="tituloModalEliminar">
+    <div class="relative z-10 bg-white rounded-2xl shadow-xl max-w-sm w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-6 flex flex-col items-center text-center">
+      <img src="<?= BASE_URL ?>src/assets/img/triangle-alert.svg" alt="" class="w-14 h-14 mb-4 shrink-0" aria-hidden="true" />
+      <h2 id="tituloModalEliminar" class="modal-perfil-titulo text-gray-900 mb-2">Eliminar trimestralización</h2>
+      <p class="text-sm text-gray-600 mb-6">Esta acción eliminará permanentemente el horario actual. No podrás recuperarlo después.</p>
+      <div class="flex gap-3 w-full">
+        <button type="button" data-close="modalEliminar" class="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition">Cancelar</button>
+        <button type="button" id="btnConfirmarEliminarTrimestral" class="flex-1 px-4 py-2.5 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition">Aceptar</button>
       </div>
+    </div>
+  </div>
 
-      <h2 id="tituloModalEliminar" class="text-center mb-4" style="font-size:24px;line-height:1.15;font-weight:700;color:#111827;">
-        Eliminar trimestralización
-      </h2>
-
-      <p class="mx-auto text-center mb-8" style="max-width:460px;font-size:16px;line-height:1.35;color:#1f2937;">
-        Esta acción eliminará permanentemente el horario actual. No podrás recuperarlo después.
-      </p>
-
-      <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
-        <button onclick="cerrarModal()" class="w-full sm:w-auto rounded-2xl font-semibold transition" style="min-width:150px;height:56px;padding:0 24px;border:2px solid #111827;background:#fff;color:#111827;font-size:17px;">
-          Cancelar
-        </button>
-        <button onclick="confirmarEliminar()" class="w-full sm:w-auto rounded-2xl font-semibold transition" style="min-width:150px;height:56px;padding:0 24px;border:0;background:#dc2626;color:#fff;font-size:17px;">
-          Aceptar
-        </button>
+  <!-- Modal editar horario (mismo patrón que modal-perfil + formulario trimestralización) -->
+  <div id="modalEditarHorario" class="modal-perfil fixed inset-0 z-50 hidden items-center justify-center bg-black/40" style="padding: 6rem 1rem;" role="dialog" aria-modal="true" aria-labelledby="tituloModalEditarHorario">
+    <div class="relative z-10 mx-auto w-full bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col border border-gray-100" style="max-width:32em;max-height:min(30rem,calc(100vh - 13rem));min-height:0;flex-shrink:0;">
+      <div class="modal-perfil-header flex-shrink-0 px-5 pt-4 pb-3 border-b border-gray-200">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0 pr-2">
+            <h2 id="tituloModalEditarHorario" class="modal-perfil-titulo text-gray-900">Editar horario</h2>
+            <p id="subtituloModalEditarHorario" class="text-sm text-gray-500 mt-1 truncate"></p>
+          </div>
+          <button type="button" data-close="modalEditarHorario" class="shrink-0 p-2 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition" aria-label="Cerrar">✕</button>
+        </div>
+      </div>
+      <div class="px-5 py-3 overflow-y-auto overflow-x-hidden flex-1 min-h-0 text-left overscroll-contain">
+        <p id="editHorarioValidation" class="hidden mb-3 text-sm text-red-600 rounded-lg bg-red-50 border border-red-100 px-3 py-2" role="alert"></p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="field">
+            <label for="editDia" class="block text-xs font-semibold text-gray-800 mb-1">Día</label>
+            <select id="editDia" class="js-edit-horario-native select-styled w-full form-field" autocomplete="off"></select>
+          </div>
+          <div class="field">
+            <label for="editFicha" class="block text-xs font-semibold text-gray-800 mb-1">Grupo</label>
+            <div class="cell-edit-wrap text-left">
+              <select id="editFicha" class="js-edit-horario-combo select-grupo input-enterprise w-full py-2.5 text-sm" autocomplete="off">
+                <option value="">Seleccione un grupo</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="editHoraInicio" class="block text-xs font-semibold text-gray-800 mb-1">Hora inicio</label>
+            <select id="editHoraInicio" class="js-edit-horario-native select-styled w-full form-field" autocomplete="off">
+              <option value="">Seleccionar hora</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="editHoraFin" class="block text-xs font-semibold text-gray-800 mb-1">Hora fin</label>
+            <select id="editHoraFin" class="js-edit-horario-native select-styled w-full form-field" autocomplete="off">
+              <option value="">Seleccionar hora</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="editInstructor" class="block text-xs font-semibold text-gray-800 mb-1">Instructor</label>
+            <div class="cell-edit-wrap text-left">
+              <select id="editInstructor" class="js-edit-horario-combo select-grupo input-enterprise w-full py-2.5 text-sm" autocomplete="off">
+                <option value="">Seleccione un instructor</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="editCompetencia" class="block text-xs font-semibold text-gray-800 mb-1">Competencia</label>
+            <div class="cell-edit-wrap text-left">
+              <select id="editCompetencia" class="js-edit-horario-combo select-grupo input-enterprise w-full py-2.5 text-sm" autocomplete="off">
+                <option value="">Seleccione una competencia</option>
+              </select>
+            </div>
+          </div>
+          <div class="field sm:col-span-2">
+            <span class="block text-xs font-semibold text-gray-800 mb-1">RAEs</span>
+            <div id="editRAEs" class="overflow-y-auto border border-gray-200 rounded-xl p-3 text-sm bg-gray-50 text-gray-700" style="max-height:9rem;overscroll-behavior:contain;"></div>
+          </div>
+          <div class="field sm:col-span-2">
+            <label for="editDescripcion" class="block text-xs font-semibold text-gray-800 mb-1">Descripción <span class="font-normal text-gray-500">(opcional)</span></label>
+            <textarea id="editDescripcion" rows="3" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/20" placeholder="Notas adicionales del horario…"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="flex-shrink-0 px-5 py-3 border-t border-gray-200 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end bg-gray-50/90">
+        <button type="button" data-close="modalEditarHorario" class="w-full sm:w-auto px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-white transition">Cancelar</button>
+        <button type="button" id="btnGuardarEditarHorario" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-[#00324d] text-white text-sm font-medium hover:bg-[#00263b] transition">Guardar cambios</button>
       </div>
     </div>
   </div>

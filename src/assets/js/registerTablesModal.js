@@ -609,6 +609,49 @@
     });
   }
 
+  /**
+   * Rellena #nombre_instructor vía API si el PHP no trajo opciones (mismo criterio que cargarProgramasFallback).
+   * Debe ejecutarse antes de initModalProgramaInstructorCombos.
+   */
+  async function cargarInstructoresFallback() {
+    const sel = document.getElementById('nombre_instructor');
+    if (!sel) return;
+    const yaTiene = Array.from(sel.options).some(
+      (opt) => opt.value && !String(opt.textContent || '').toLowerCase().includes('sin datos disponibles')
+    );
+    if (yaTiene) return;
+
+    const base = (window.BASE_URL || '').replace(/\/+$/, '/');
+    try {
+      const res = await fetch(base + 'src/controllers/InstructorController.php?accion=listar');
+      if (!res.ok) return;
+      const data = await res.json();
+      const arr = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
+      if (!arr.length) return;
+
+      const activos = arr.filter((i) => {
+        const e = i.estado;
+        return e === undefined || e === null || String(e) === '1' || e === 1;
+      });
+      const lista = activos.length ? activos : arr;
+
+      sel.innerHTML = '<option value="">Seleccione el instructor</option>';
+      lista.forEach((i) => {
+        const id = i.id_instructor ?? i.id_usuario ?? '';
+        const nombre = i.nombre_instructor ?? i.nombre_completo ?? '';
+        const tipo = i.tipo_instructor ?? i.tipo_contrato ?? '';
+        if (!id) return;
+        const opt = document.createElement('option');
+        opt.value = String(id);
+        if (tipo) opt.setAttribute('data-tipo', String(tipo));
+        opt.textContent = nombre + (tipo ? ' — ' + tipo : '');
+        sel.appendChild(opt);
+      });
+    } catch (e) {
+      console.warn('No se pudieron cargar instructores (fallback):', e);
+    }
+  }
+
   /** Selects del modal Crear trimestralización: mismo componente global que el resto del sistema */
   function initEnhanceModalTrimestralSelects() {
     if (typeof ComboboxComponent === 'undefined' || typeof ComboboxComponent.enhanceSelectStyled !== 'function') return;
@@ -630,4 +673,9 @@
     initProgramasYCompetencias();
     initModalRaes();
   });
+
+  /** Expuesto para registerTables.js (modal editar horario: combobox filtrable). */
+  window.registerTablesModalHelpers = {
+    initStyledCombobox: initStyledCombobox
+  };
 })();

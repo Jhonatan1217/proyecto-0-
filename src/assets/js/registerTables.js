@@ -470,7 +470,8 @@ async function cargarAreasYZonas() {
           const areaLabel = Array.from(selectArea.options).find(opt => opt.value === id_area)?.textContent || '';
           inputArea.value = areaLabel;
         }
-        inputArea.dispatchEvent(new Event("input", { bubbles: true }));
+        // 'change' actualiza el botón X; 'input' reabriría el panel vía actualizarPanelArea
+        inputArea.dispatchEvent(new Event("change", { bubbles: true }));
       }
       await cargarZonasPorArea(id_area);
       // Reconfigurar combobox de zona después de cargar nuevas zonas
@@ -487,7 +488,7 @@ async function cargarAreasYZonas() {
           const zonaLabel = Array.from(selectZona.options).find(opt => opt.value === id_zona)?.textContent || '';
           inputZona.value = zonaLabel;
         }
-        inputZona.dispatchEvent(new Event("input", { bubbles: true }));
+        inputZona.dispatchEvent(new Event("change", { bubbles: true }));
       }
       const id_area = selectArea.value;
       if (!id_zona || !id_area) {
@@ -621,7 +622,6 @@ function configurarComboboxArea(){
         inputArea.value = opt.textContent;
         panelArea.classList.add("hidden");
         selectArea.dispatchEvent(new Event("change", { bubbles: true }));
-        inputArea.dispatchEvent(new Event("input", { bubbles: true }));
       });
       listaArea.appendChild(div);
     });
@@ -678,7 +678,6 @@ function configurarComboboxZona(){
         inputZona.value = opt.textContent;
         panelZona.classList.add("hidden");
         selectZona.dispatchEvent(new Event("change", { bubbles: true }));
-        inputZona.dispatchEvent(new Event("input", { bubbles: true }));
       });
       listaZona.appendChild(div);
     });
@@ -1307,10 +1306,201 @@ async function obtenerRoesPorCompetencia(id_competencia) {
 // Funcion de editar
 // ======================
 
-async function editarTrimestralizacion (reg){
+let editarHorarioContext = { idHorario: "", id_zona_val: "", id_area_val: "" };
+
+/** Día y horas: desplegable estilo sistema (chevron, X opcional, máx. 6 filas, encima del modal). */
+function ensureEditarHorarioNativeSelectsEnhanced() {
+  if (window._editModalNativeEnhanced) return;
+  if (typeof ComboboxComponent === "undefined" || typeof ComboboxComponent.enhanceSelectStyled !== "function") return;
+  if (!document.getElementById("modalEditarHorario")) return;
+  ComboboxComponent.enhanceSelectStyled({
+    selector: "#modalEditarHorario select.js-edit-horario-native",
+    placeholder: "Seleccione…",
+    placeholderValues: [""],
+    maxDropdownItems: 6,
+    forceDropup: true,
+    allowClear: true,
+  });
+  window._editModalNativeEnhanced = true;
+}
+
+/** Mismo ComboboxComponent.enhance que edición de grupos (búsqueda, X, restaurar valor al blur si queda vacío/inválido). */
+function ensureEditarHorarioComboBusquedaEnhance() {
+  if (typeof ComboboxComponent === "undefined" || typeof ComboboxComponent.enhance !== "function") return;
+  ["#editFicha", "#editInstructor", "#editCompetencia"].forEach((selector) => {
+    const el = document.querySelector(selector);
+    if (!el || el.dataset.comboboxEnhanced === "1") return;
+    ComboboxComponent.enhance({
+      selector,
+      dropdownClass: "custom-select-dropdown",
+      optionClass: "custom-option",
+      placeholder: "Buscar...",
+      restoreValueOnBlurWhenEmpty: true,
+      forceDropup: true,
+      maxDropdownItems: 6,
+    });
+  });
+}
+
+function refreshEditarHorarioComboBusquedaUi() {
+  ["#editFicha", "#editInstructor", "#editCompetencia"].forEach((selector) => {
+    const el = document.querySelector(selector);
+    if (!el) return;
+    const w = el.closest(".combobox-wrapper");
+    if (w && typeof w._cbUpdateInput === "function") w._cbUpdateInput();
+    if (typeof ComboboxComponent !== "undefined" && typeof ComboboxComponent.setInitialValue === "function") {
+      ComboboxComponent.setInitialValue(el, el.value);
+    }
+  });
+}
+
+function setEditHorarioValidation(msg) {
+  const el = document.getElementById("editHorarioValidation");
+  if (!el) return;
+  if (msg) {
+    el.textContent = msg;
+    el.classList.remove("hidden");
+  } else {
+    el.textContent = "";
+    el.classList.add("hidden");
+  }
+}
+
+function abrirModalEditarHorario() {
+  const modal = document.getElementById("modalEditarHorario");
+  if (!modal) return;
+  setEditHorarioValidation("");
+  modal.classList.remove("hidden");
+  modal.classList.add("flex", "items-center", "justify-center");
+  modal.style.display = "";
+  modal.style.pointerEvents = "";
+  modal.style.visibility = "";
+  modal.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach((el) => {
+    el.style.pointerEvents = "";
+  });
+  document.body.classList.add("overflow-hidden");
+  document.body.style.overflow = "hidden";
+  if (typeof ComboboxComponent !== "undefined" && typeof ComboboxComponent.closeAll === "function") {
+    ComboboxComponent.closeAll();
+  }
+  queueMicrotask(() => {
+    if (typeof ComboboxComponent !== "undefined" && typeof ComboboxComponent.closeAll === "function") {
+      ComboboxComponent.closeAll();
+    }
+  });
+}
+
+function cerrarModalEditarHorario() {
+  const modal = document.getElementById("modalEditarHorario");
+  if (!modal) return;
+  const activeEl = document.activeElement;
+  if (activeEl && modal.contains(activeEl)) activeEl.blur();
+  modal.classList.add("hidden");
+  modal.classList.remove("flex", "block", "items-center", "justify-center");
+  modal.style.display = "none";
+  modal.style.pointerEvents = "none";
+  modal.style.visibility = "hidden";
+  modal.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach((el) => {
+    el.style.pointerEvents = "none";
+  });
+  document.body.style.overflow = "";
+  document.body.classList.remove("overflow-hidden");
+}
+
+function recolectarPayloadEdicionHorario() {
+  const idHorario = editarHorarioContext.idHorario;
+  const id_zona_val = editarHorarioContext.id_zona_val;
+  const id_area_val = editarHorarioContext.id_area_val;
+
+  const dia = document.getElementById("editDia")?.value;
+  const horaInicio = document.getElementById("editHoraInicio")?.value;
+  const horaFin = document.getElementById("editHoraFin")?.value;
+  const ficha = document.getElementById("editFicha")?.value;
+  const idInstructor = document.getElementById("editInstructor")?.value;
+  const idCompetencia = document.getElementById("editCompetencia")?.value;
+  const raes = [...document.querySelectorAll("#editRAEs input:checked")].map((chk) => chk.value);
+
+  if (!dia || !horaInicio || !horaFin || !ficha || !idInstructor || !idCompetencia || raes.length === 0) {
+    return { error: "Completa todos los campos y selecciona al menos un RA." };
+  }
+  if (timeToMinutes(horaFin) <= timeToMinutes(horaInicio)) {
+    return { error: "Hora fin debe ser posterior a hora inicio." };
+  }
+  if (hasOverlap({ dia, inicio: horaInicio, fin: horaFin, excludeId: idHorario })) {
+    return { error: "Esta franja ya está ocupada en ese día." };
+  }
+  return {
+    value: {
+      id_horario: idHorario,
+      dia,
+      numero_ficha: ficha,
+      hora_inicio: horaInicio,
+      hora_fin: horaFin,
+      id_instructor: idInstructor,
+      id_competencia: idCompetencia,
+      raes,
+      id_zona: id_zona_val,
+      id_area: id_area_val,
+      descripcion: document.getElementById("editDescripcion")?.value || "",
+    },
+  };
+}
+
+async function enviarEdicionHorarioDesdeModal() {
+  setEditHorarioValidation("");
+  const out = recolectarPayloadEdicionHorario();
+  if (out.error) {
+    setEditHorarioValidation(out.error);
+    return;
+  }
+
+  try {
+    const payload = [out.value];
+    const resUpdate = await fetch(`${API_BASE}src/controllers/TrimestralizacionController.php?accion=actualizar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!resUpdate.ok) {
+      throw new Error(`HTTP error! status: ${resUpdate.status}`);
+    }
+
+    const data = await resUpdate.json();
+    const esExito = data.success === true || data.success === "true" || data.status === "success";
+
+    if (esExito) {
+      dispararToastsExcedente(data.warnings);
+      cerrarModalEditarHorario();
+      Toast.fire({
+        icon: "success",
+        title: data.message || data.mensaje || "Horario actualizado correctamente",
+      });
+      cargarTrimestralizacion();
+    } else {
+      console.error("Error del servidor:", data);
+      const msg = data.error || data.message || data.mensaje || "Error al actualizar el horario.";
+      setEditHorarioValidation(msg);
+      Toast.fire({ icon: "error", title: msg });
+    }
+  } catch (e) {
+    console.error("Error en actualización:", e);
+    const msg = e.message || "Ocurrió un problema de conexión al actualizar.";
+    setEditHorarioValidation(msg);
+    Toast.fire({ icon: "error", title: msg });
+  }
+}
+
+async function editarTrimestralizacion(reg) {
   await cargarInstructores();
   await cargarCompetencias();
   await cargarFichas();
+
+  const modal = document.getElementById("modalEditarHorario");
+  if (!modal) {
+    console.error("No existe #modalEditarHorario");
+    return;
+  }
 
   const dia = reg.getAttribute("data-dia") || "Sin día";
   const horaInicio = reg.getAttribute("data-hora-inicio") || "";
@@ -1322,199 +1512,97 @@ async function editarTrimestralizacion (reg){
   const idHorario = reg.getAttribute("data-id") || "";
   const id_zona_val = document.getElementById("selectZona")?.value || id_zona;
   const id_area_val = document.getElementById("selectArea")?.value;
+  const nombreCompetencia = reg.getAttribute("data-competencia") || "";
 
-  const optionInstructors = listaInstructores.map(i =>
-  `<option value="${i.id_instructor}" ${String(i.id_instructor) === String(idInstructorActual) ? "selected" : ""}>
+  editarHorarioContext = { idHorario, id_zona_val, id_area_val };
+
+  const optionInstructors = listaInstructores
+    .map(
+      (i) =>
+        `<option value="${i.id_instructor}" ${String(i.id_instructor) === String(idInstructorActual) ? "selected" : ""}>
     ${i.nombre_instructor} - ${i.tipo_instructor}
   </option>`
-  ).join("");
+    )
+    .join("");
 
-  const optionCompetencias = listaCompetencias.map(c =>
-  `<option value="${c.id_competencia}" ${String(c.id_competencia) === String(idCompetenciaActual) ? "selected" : ""}>
+  const optionCompetencias = listaCompetencias
+    .map(
+      (c) =>
+        `<option value="${c.id_competencia}" ${String(c.id_competencia) === String(idCompetenciaActual) ? "selected" : ""}>
     ${c.nombre_competencia}
   </option>`
-  ).join("");
+    )
+    .join("");
 
-  const optionFichas = listaFichas.map(f => {
-    const nivel = f.nivel_formacion || f.nivel_ficha || "Sin nivel";
-    return `<option value="${f.numero_ficha}" ${String(f.numero_ficha) === String(ficha) ? "selected" : ""}>
+  const optionFichas = listaFichas
+    .map((f) => {
+      const nivel = f.nivel_formacion || f.nivel_ficha || "Sin nivel";
+      return `<option value="${f.numero_ficha}" ${String(f.numero_ficha) === String(ficha) ? "selected" : ""}>
       ${f.numero_ficha} - Nivel ${nivel}
     </option>`;
-  }).join("");
+    })
+    .join("");
 
   const horas = Array.from({ length: 16 }, (_, i) => i + 6);
-  const horaOpcionesInicio = horas.map(h => `<option value="${String(h).padStart(2, "0")}:00" ${String(h).padStart(2, "0") + ":00" === horaInicio ? "selected" : ""}>${String(h).padStart(2, "0")}:00</option>`).join("");
-  const horaOpcionesFin = horas.map(h => `<option value="${String(h).padStart(2, "0")}:00" ${String(h).padStart(2, "0") + ":00" === horaFin ? "selected" : ""}>${String(h).padStart(2, "0")}:00</option>`).join("");
+  const horaOpcionesInicio = horas
+    .map(
+      (h) =>
+        `<option value="${String(h).padStart(2, "0")}:00" ${String(h).padStart(2, "0") + ":00" === horaInicio ? "selected" : ""}>${String(h).padStart(2, "0")}:00</option>`
+    )
+    .join("");
+  const horaOpcionesFin = horas
+    .map(
+      (h) =>
+        `<option value="${String(h).padStart(2, "0")}:00" ${String(h).padStart(2, "0") + ":00" === horaFin ? "selected" : ""}>${String(h).padStart(2, "0")}:00</option>`
+    )
+    .join("");
 
-  Swal.fire({
-    title: "✏️ Editar Horario",
-    html: `
-    <div class="bg-white p-2 rounded-lg">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-        <div>
-          <label class="block text-xs font-semibold text-[#00324D] mb-1">Día</label>
-          <select id="editDia" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324d]/20 focus:border-transparent">
-            ${["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"].map(d => `<option value="${d}" ${d === dia ? "selected" : ""}>${d}</option>`).join("")}
-          </select>
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-[#00324D] mb-1">Ficha / Grupo</label>
-          <select id="editFicha" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324d]/20 focus:border-transparent">
-            <option value="">Seleccione una ficha</option>
-            ${optionFichas}
-          </select>
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-[#00324D] mb-1">Hora Inicio</label>
-          <select id="editHoraInicio" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324d]/20 focus:border-transparent">
-            <option value="">Seleccionar hora</option>
-            ${horaOpcionesInicio}
-          </select>
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-[#00324D] mb-1">Hora Fin</label>
-          <select id="editHoraFin" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324d]/20 focus:border-transparent">
-            <option value="">Seleccionar hora</option>
-            ${horaOpcionesFin}
-          </select>
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-[#00324D] mb-1">Instructor</label>
-          <select id="editInstructor" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324d]/20 focus:border-transparent">
-            <option value="">Seleccione un instructor</option>
-            ${optionInstructors}
-          </select>
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-[#00324D] mb-1">Competencia</label>
-          <select id="editCompetencia" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324d]/20 focus:border-transparent">
-            <option value="">Seleccione una competencia</option>
-            ${optionCompetencias}
-          </select>
-        </div>
-
-        <div class="md:col-span-2">
-          <label class="block text-xs font-semibold text-[#00324D] mb-1">RAEs</label>
-          <div id="editRAEs" class="max-h-48 overflow-auto border border-gray-300 p-3 rounded-md text-sm bg-gray-50"></div>
-        </div>
-
-        <div class="md:col-span-2">
-          <label class="block text-xs font-semibold text-[#00324D] mb-1">Descripción (Opcional)</label>
-          <textarea id="editDescripcion" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00324d]/20 focus:border-transparent" placeholder="Notas adicionales del horario..."></textarea>
-        </div>
-      </div>
-    </div>
-    `,
-    showCancelButton: true,
-    confirmButtonText: "Guardar cambios",
-    cancelButtonText: "Cancelar",
-    didOpen: async () => {
-      await renderRAEsPopup(idCompetenciaActual, raesActuales);
-
-      document.getElementById("editCompetencia").addEventListener("change", (e) => {
-        renderRAEsPopup(e.target.value, []);
-      });
-    }, 
-    preConfirm: () => {
-      const dia = document.getElementById("editDia").value;
-      const horaInicio = document.getElementById("editHoraInicio").value;
-      const horaFin = document.getElementById("editHoraFin").value;
-      const ficha = document.getElementById("editFicha").value;
-      const idInstructor = document.getElementById("editInstructor").value;
-      const idCompetencia = document.getElementById("editCompetencia").value;
-
-      const raes = [...document.querySelectorAll("#editRAEs input:checked")].map(chk => chk.value);
-
-      if (!dia || !horaInicio || !horaFin || !ficha || !idInstructor || !idCompetencia || raes.length === 0) {
-        Swal.showValidationMessage("⚠️ Completa todos los campos y selecciona al menos un RA.");
-        return false;
-      }
-      if (timeToMinutes(horaFin) <= timeToMinutes(horaInicio)) {
-        Swal.showValidationMessage("⏰ Hora fin debe ser posterior a hora inicio.");
-        return false;
-      }
-      if (hasOverlap({ dia, inicio: horaInicio, fin: horaFin, excludeId: idHorario })) {
-        Swal.showValidationMessage("⚠️ Esta franja ya está ocupada en ese día.");
-        return false;
-      }
-      return {
-        id_horario: idHorario,
-        dia,
-        numero_ficha: ficha,
-        hora_inicio: horaInicio,
-        hora_fin: horaFin,
-        id_instructor: idInstructor,
-        id_competencia: idCompetencia,
-        raes: raes,
-        id_zona: id_zona_val,
-        id_area: id_area_val,
-        descripcion: document.getElementById("editDescripcion").value || ""
-      };
-    }
-}). then (async (res) => {
-  if(!res.isConfirmed) return;
-  
-  try{
-    // El backend espera un ARRAY de registros
-    const payload = [res.value];
-
-    const resUpdate = await fetch(`${API_BASE}src/controllers/TrimestralizacionController.php?accion=actualizar`, {
-      method: "POST",
-      headers: {"Content-Type" : "application/json"},
-      body: JSON.stringify(payload)
-  });
-  
-  if (!resUpdate.ok) {
-    throw new Error(`HTTP error! status: ${resUpdate.status}`);
+  const diasSemana = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"];
+  const selDia = document.getElementById("editDia");
+  if (selDia) {
+    selDia.innerHTML = diasSemana.map((d) => `<option value="${d}" ${d === dia ? "selected" : ""}>${d}</option>`).join("");
   }
-  
-  const data = await resUpdate.json();
 
-  // El backend retorna {success: true} o {success: false}
-  const esExito = data.success === true || data.success === "true" || data.status === "success";
-  
-  if (esExito) {
-    dispararToastsExcedente(data.warnings);
-    await Swal.fire({
-      icon: "success",
-      title: "Trimestralización actualizada",
-      text: data.message || data.mensaje || "El horario se editó correctamente.",
-      confirmButtonText: "Aceptar"
-    });
-    Toast.fire({
-      icon: "success",
-      title: "Horario actualizado correctamente"
-    });
-    cargarTrimestralizacion();
-  } else {
-    console.error("Error del servidor:", data);
-    await Swal.fire({
-      icon: "error",
-      title: "No se pudo editar",
-      text: data.error || data.message || data.mensaje || "Error al actualizar el horario.",
-      confirmButtonText: "Entendido"
-    });
-    Toast.fire({
-      icon: "error",
-      title: data.error || data.message || "Error al actualizar el horario"
-    });
+  const selFicha = document.getElementById("editFicha");
+  if (selFicha) {
+    selFicha.innerHTML = `<option value="">Seleccione un grupo</option>${optionFichas}`;
   }
-} catch (e) {
-  console.error("Error en actualización:", e);
-  await Swal.fire({
-    icon: "error",
-    title: "Error al editar",
-    text: e.message || "Ocurrió un problema de conexión al actualizar.",
-    confirmButtonText: "Entendido"
+  const selHi = document.getElementById("editHoraInicio");
+  if (selHi) {
+    selHi.innerHTML = `<option value="">Seleccionar hora</option>${horaOpcionesInicio}`;
+  }
+  const selHf = document.getElementById("editHoraFin");
+  if (selHf) {
+    selHf.innerHTML = `<option value="">Seleccionar hora</option>${horaOpcionesFin}`;
+  }
+  const selIns = document.getElementById("editInstructor");
+  if (selIns) {
+    selIns.innerHTML = `<option value="">Seleccione un instructor</option>${optionInstructors}`;
+  }
+  const selComp = document.getElementById("editCompetencia");
+  if (selComp) {
+    selComp.innerHTML = `<option value="">Seleccione una competencia</option>${optionCompetencias}`;
+  }
+
+  const ta = document.getElementById("editDescripcion");
+  if (ta) ta.value = "";
+
+  const sub = document.getElementById("subtituloModalEditarHorario");
+  if (sub) {
+    const rango = horaInicio && horaFin ? `${horaInicio} – ${horaFin}` : "";
+    sub.textContent = [dia, rango, nombreCompetencia].filter(Boolean).join(" · ");
+  }
+
+  ensureEditarHorarioComboBusquedaEnhance();
+  refreshEditarHorarioComboBusquedaUi();
+
+  ["editDia", "editHoraInicio", "editHoraFin"].forEach((id) => {
+    const s = document.getElementById(id);
+    if (s) s.dispatchEvent(new Event("change", { bubbles: true }));
   });
-  Toast.fire({icon: "error", title: `Error: ${e.message}`});
-}
-});
+
+  abrirModalEditarHorario();
+  await renderRAEsPopup(idCompetenciaActual, raesActuales);
 }
 
 
@@ -1522,25 +1610,27 @@ async function editarTrimestralizacion (reg){
 async function renderRAEsPopup(idCompetencia, raesMarcados = []) {
   const cont = document.getElementById("editRAEs");
   if (!cont) return;
-  cont.innerHTML = "<p class='text-gray-400 italic'>Cargando RAEs...</p>";
+  cont.innerHTML = "<p class=\"text-sm text-gray-500 italic\">Cargando RAEs…</p>";
 
   if (!idCompetencia) {
-    cont.innerHTML = "<p class='text-gray-400 italic'>Seleccione una competencia</p>";
+    cont.innerHTML = "<p class=\"text-sm text-gray-500 italic\">Seleccione una competencia</p>";
     return;
   }
 
   const raes = await obtenerRoesPorCompetencia(idCompetencia);
 
-  cont.innerHTML = raes.map(rae => {
-    const desc = (rae.descripcion || rae.descripcion_rae || "").trim();
-    const checked = raesMarcados.includes(`${rae.id_rae} - ${desc}`) ? "checked" : "";
-    return `
-      <label class="flex items-center gap-2 mb-1">
-        <input type="checkbox" value="${rae.id_rae}" ${checked}>
-        ${rae.id_rae} - ${desc}
+  cont.innerHTML = raes
+    .map((rae) => {
+      const desc = (rae.descripcion || rae.descripcion_rae || "").trim();
+      const checked = raesMarcados.includes(`${rae.id_rae} - ${desc}`) ? "checked" : "";
+      return `
+      <label class="flex items-start gap-2 mb-1 py-1.5 px-2 rounded-lg hover:bg-white/80 cursor-pointer border border-transparent hover:border-gray-200/80">
+        <input type="checkbox" class="mt-0.5 rounded border-gray-300 text-[#39A900] focus:ring-[#39A900] focus:ring-offset-0" value="${rae.id_rae}" ${checked}>
+        <span class="text-sm text-gray-800 leading-snug">${rae.id_rae} - ${desc}</span>
       </label>
     `;
-  }).join("");
+    })
+    .join("");
 }
 
 
@@ -1582,13 +1672,18 @@ async function confirmarEliminar() {
 
 function mostrarModalEliminar() {
   const modal = document.getElementById("modalEliminar");
-  if (modal) {
-    modal.classList.remove("hidden");
-    modal.style.display = "";
-    modal.style.pointerEvents = "";
-    modal.style.visibility = "";
-    modal.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach((el) => { el.style.pointerEvents = ""; });
-  }
+  if (!modal) return;
+  // Mismo criterio que openModal() en gestionPerfil.js: sin flex el overlay queda arriba-izquierda tras cerrar.
+  modal.classList.remove("hidden");
+  modal.classList.add("flex", "items-center", "justify-center");
+  modal.style.display = "";
+  modal.style.pointerEvents = "";
+  modal.style.visibility = "";
+  modal.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach((el) => {
+    el.style.pointerEvents = "";
+  });
+  document.body.classList.add("overflow-hidden");
+  document.body.style.overflow = "hidden";
 }
 function cerrarModal() {
   const modal = document.getElementById("modalEliminar");
@@ -1600,7 +1695,9 @@ function cerrarModal() {
   modal.style.display = "none";
   modal.style.pointerEvents = "none";
   modal.style.visibility = "hidden";
-  modal.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach((el) => { el.style.pointerEvents = "none"; });
+  modal.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach((el) => {
+    el.style.pointerEvents = "none";
+  });
   document.body.style.overflow = "";
   document.body.classList.remove("overflow-hidden");
 }
@@ -1747,6 +1844,32 @@ document.addEventListener("DOMContentLoaded", () => {
   if (backdrop) {
     backdrop.addEventListener("click", cerrarModalCrear);
   }
+
+  const btnConfElimTrim = document.getElementById("btnConfirmarEliminarTrimestral");
+  if (btnConfElimTrim) {
+    btnConfElimTrim.addEventListener("click", () => {
+      confirmarEliminar();
+    });
+  }
+
+  const modalEditar = document.getElementById("modalEditarHorario");
+  if (modalEditar) {
+    modalEditar.addEventListener("change", (e) => {
+      const t = e.target;
+      if (t && t.id === "editCompetencia") {
+        renderRAEsPopup(t.value, []);
+      }
+    });
+  }
+
+  const btnGuardarEdit = document.getElementById("btnGuardarEditarHorario");
+  if (btnGuardarEdit) {
+    btnGuardarEdit.addEventListener("click", () => {
+      enviarEdicionHorarioDesdeModal();
+    });
+  }
+
+  ensureEditarHorarioNativeSelectsEnhanced();
 });
 
 
@@ -1796,10 +1919,11 @@ function popupCeldas(){
 
         Swal.fire({
           title: "",
+          width: "32em",
           showCloseButton: false,
           showConfirmButton: false,
           html: `
-              <div class="text-left" style="max-height: 420px; overflow-y: auto;">
+              <div class="text-left" style="max-height: min(26rem, calc(100vh - 14rem)); overflow-y: auto;">
                 <div class="mb-4 pb-2 flex items-center justify-between gap-3">
                   <h2 class="text-xl font-bold text-[#00324D]">Datos de Trimestralización</h2>
                   <button id="btnCerrarXPopup" type="button" class="text-gray-400 hover:text-gray-700 focus:outline-none text-2xl w-8 h-8 flex items-center justify-center leading-none">&times;</button>
