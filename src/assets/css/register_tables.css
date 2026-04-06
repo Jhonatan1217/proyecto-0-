@@ -159,6 +159,10 @@ th {
 	padding: 4px;
 }
 
+.custom-combobox-list.custom-combobox-list--max-rows-6 {
+	max-height: calc(6 * (20px + 0.875rem * 1.4) + 8px);
+}
+
 .custom-combobox-list::-webkit-scrollbar { width: 8px; }
 .custom-combobox-list::-webkit-scrollbar-thumb {
 	background: #9ca3af;
@@ -205,7 +209,7 @@ th {
  * Cabecera register_tables: placeholders más suaves (modalidad vía select estilizado + área/zona/grupo).
  * El antiguo text-transform:lowercase en #selectModalidad hacía ver "seleccione" en lugar de "Seleccione".
  */
-#cabecera-trimestralizacion .input-filtro-register::placeholder {
+#cabecera-trimestralizacion .filter-search-input::placeholder {
 	opacity: 0.55;
 }
 

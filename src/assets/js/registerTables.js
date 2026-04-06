@@ -632,11 +632,12 @@ function configurarComboboxArea(){
   inputArea.addEventListener("input", actualizarPanelArea);
   inputArea.addEventListener("focus", actualizarPanelArea);
 
+  const hostArea = inputArea.closest(".custom-combobox");
   document.addEventListener("click", (e) => {
-    if (!inputArea.contains(e.target) && !panelArea.contains(e.target)) {
+    if (hostArea && !hostArea.contains(e.target)) {
       panelArea.classList.add("hidden");
     }
-  });
+  }, true);
 }
 
 function configurarComboboxZona(){
@@ -688,11 +689,12 @@ function configurarComboboxZona(){
   inputZona.addEventListener("input", actualizarPanelZona);
   inputZona.addEventListener("focus", actualizarPanelZona);
 
+  const hostZona = inputZona.closest(".custom-combobox");
   document.addEventListener("click", (e) => {
-    if (!inputZona.contains(e.target) && !panelZona.contains(e.target)) {
+    if (hostZona && !hostZona.contains(e.target)) {
       panelZona.classList.add("hidden");
     }
-  });
+  }, true);
 }
 
 function configurarFiltros(){

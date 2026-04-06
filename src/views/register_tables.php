@@ -58,13 +58,18 @@ if (isset($conn)) {
     $zonas = [];
   }
 
+  $instructores = [];
   try {
     $s = $conn->prepare("SELECT id_instructor, nombre_instructor, tipo_instructor FROM instructores WHERE estado = 1 ORDER BY nombre_instructor ASC");
     $s->execute();
     $instructores = $s->fetchAll(PDO::FETCH_ASSOC);
   } catch (PDOException $e) {
+    $instructores = [];
+  }
+  // Si la tabla instructores existe pero está vacía, antes no se listaba nadie; los datos suelen estar en usuarios.
+  if (empty($instructores)) {
     try {
-      $s = $conn->prepare("SELECT id_usuario AS id_instructor, nombre_completo AS nombre_instructor, tipo_instructor FROM usuarios WHERE cargo = 'INSTRUCTOR' AND estado = 1 AND COALESCE(es_sistema, 0) = 0 ORDER BY nombre_completo ASC");
+      $s = $conn->prepare("SELECT id_usuario AS id_instructor, nombre_completo AS nombre_instructor, tipo_instructor FROM usuarios WHERE UPPER(TRIM(cargo)) = 'INSTRUCTOR' AND estado = 1 AND COALESCE(es_sistema, 0) = 0 ORDER BY nombre_completo ASC");
       $s->execute();
       $instructores = $s->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e2) {
@@ -180,7 +185,7 @@ if (isset($conn)) {
       <div id="contenedorAreaFiltro" class="w-full sm:w-60">
         <label for="inputAreaTexto" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Área</label>
         <div class="custom-combobox w-full">
-          <input type="text" id="inputAreaTexto" autocomplete="off" placeholder="Seleccione o escriba el área" class="input-filtro-register w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none transition-all duration-200">
+          <input type="text" id="inputAreaTexto" autocomplete="off" placeholder="Seleccione o escriba el área" class="filter-search-input w-full">
           <div id="panelAreaFiltro" class="custom-combobox-panel hidden">
             <div class="custom-combobox-list"></div>
           </div>
@@ -194,7 +199,7 @@ if (isset($conn)) {
       <div id="contenedorZonaFiltro" class="w-full sm:w-60">
         <label for="inputZonaTexto" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Zona</label>
         <div class="custom-combobox w-full">
-          <input type="text" id="inputZonaTexto" autocomplete="off" placeholder="Seleccione o escriba la zona" class="input-filtro-register w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none transition-all duration-200">
+          <input type="text" id="inputZonaTexto" autocomplete="off" placeholder="Seleccione o escriba la zona" class="filter-search-input w-full">
           <div id="panelZonaFiltro" class="custom-combobox-panel hidden">
             <div class="custom-combobox-list"></div>
           </div>
@@ -208,7 +213,7 @@ if (isset($conn)) {
       <div id="contenedorGrupoFiltro" class="w-full sm:w-60 hidden">
         <label for="inputGrupoTexto" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Filtrar por grupo</label>
         <div class="custom-combobox w-full">
-          <input type="text" id="inputGrupoTexto" autocomplete="off" placeholder="Buscar número de grupo" class="input-filtro-register w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none transition-all duration-200">
+          <input type="text" id="inputGrupoTexto" autocomplete="off" placeholder="Buscar número de grupo" class="filter-search-input w-full">
           <div id="panelGrupoFiltro" class="custom-combobox-panel hidden">
             <div class="custom-combobox-list"></div>
           </div>
@@ -424,10 +429,21 @@ if (isset($conn)) {
             <!-- GRID -->
             <div class="form-grid">
 
-            <!-- PROGRAMA -->
+            <!-- PROGRAMA (combobox + select oculto para filtro de competencias / lógica JS) -->
               <div class="field">
-                <label for="id_programa_select" class="block text-xs font-semibold text-gray-800 mb-1">Programa de formación</label>
-                <select id="id_programa_select" name="id_programa_select" class="select-styled w-full form-field" autocomplete="off">
+                <label for="id_programa_combo" class="block text-xs font-semibold text-gray-800 mb-1">Programa de formación</label>
+                <div class="custom-combobox w-full">
+                  <input
+                    type="text"
+                    id="id_programa_combo"
+                    autocomplete="off"
+                    placeholder="Seleccione el programa"
+                    class="filter-search-input w-full" />
+                  <div id="panelProgramaCrear" class="custom-combobox-panel hidden">
+                    <div class="custom-combobox-list"></div>
+                  </div>
+                </div>
+                <select id="id_programa_select" class="hidden" tabindex="-1" aria-hidden="true">
                   <option value="">Ingrese el programa de formación</option>
                   <?php if (empty($programas)): ?>
                     <option disabled>Sin datos disponibles</option>
@@ -443,9 +459,19 @@ if (isset($conn)) {
 
               <!-- INSTRUCTOR -->
                <div class="field">
-                <label for="nombre_instructor" class="block text-xs font-semibold text-gray-800 mb-1">Instructor</label>
-                <select name="nombre_instructor" id="nombre_instructor"
-                  class="select-styled w-full form-field" autocomplete="off">
+                <label for="id_instructor_combo" class="block text-xs font-semibold text-gray-800 mb-1">Instructor</label>
+                <div class="custom-combobox w-full">
+                  <input
+                    type="text"
+                    id="id_instructor_combo"
+                    autocomplete="off"
+                    placeholder="Seleccione el instructor"
+                    class="filter-search-input w-full" />
+                  <div id="panelInstructorCrear" class="custom-combobox-panel hidden">
+                    <div class="custom-combobox-list"></div>
+                  </div>
+                </div>
+                <select name="nombre_instructor" id="nombre_instructor" class="hidden" tabindex="-1" aria-hidden="true">
                   <option value="">Seleccione el instructor</option>
                   <?php foreach ($instructores as $ins): ?>
                     <option value="<?= htmlspecialchars($ins['id_instructor'] ?? '') ?>" data-tipo="<?= htmlspecialchars($ins['tipo_instructor'] ?? '') ?>">
@@ -464,7 +490,7 @@ if (isset($conn)) {
                     name="numero_ficha"
                     id="numero_ficha"
                     autocomplete="off"
-                    placeholder="Seleccione o escriba número de grupo"
+                    placeholder="Seleccione el número de grupo"
                     class="filter-search-input w-full"/>
                   <div id="panelGrupoCrear" class="custom-combobox-panel hidden">
                     <div class="custom-combobox-list"></div>
@@ -505,7 +531,7 @@ if (isset($conn)) {
                         type="text"
                         id="id_area_combo"
                         autocomplete="off"
-                        placeholder="Seleccione o escriba el área"
+                        placeholder="Seleccione el área"
                         class="filter-search-input w-full" />
                       <div id="panelAreaCrear" class="custom-combobox-panel hidden">
                         <div class="custom-combobox-list"></div>
@@ -534,7 +560,7 @@ if (isset($conn)) {
                         type="text"
                         id="id_zona_combo"
                         autocomplete="off"
-                        placeholder="Seleccione o escriba la zona"
+                        placeholder="Seleccione la zona"
                         class="filter-search-input w-full"
                         disabled />
                       <div id="panelZonaCrear" class="custom-combobox-panel hidden">
@@ -606,7 +632,7 @@ if (isset($conn)) {
                     type="text"
                     id="id_competencia_combo"
                     autocomplete="off"
-                    placeholder="Seleccione o escriba la competencia"
+                    placeholder="Seleccione la competencia"
                     class="filter-search-input w-full"
                   />
                   <div id="panelCompetenciaCrear" class="custom-combobox-panel custom-combobox-panel-top hidden">
@@ -634,7 +660,7 @@ if (isset($conn)) {
               <!-- Descripción de la competencia (solo informativa, no se guarda) -->
               <div class="field-full">
                 <label for="descripcion_competencia" class="block text-xs font-semibold text-gray-800 mb-1">Descripción de la competencia</label>
-                <textarea id="descripcion_competencia" name="descripcion_competencia" rows="5" class="w-full min-h-[7.5rem] px-3 py-2 text-sm rounded-lg border border-gray-300 outline-none bg-white text-gray-700 resize-none overflow-auto focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]"></textarea>
+                <textarea id="descripcion_competencia" name="descripcion_competencia" rows="2" class="w-full min-h-[3.75rem] max-h-[4.5rem] px-3 py-2 text-sm rounded-lg border border-gray-300 outline-none bg-white text-gray-700 resize-none overflow-auto focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]"></textarea>
               </div>
 
               <!-- BOTÓN RAEs + CONTADOR -->

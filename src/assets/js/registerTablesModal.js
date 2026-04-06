@@ -53,11 +53,15 @@
     updateClearBtn();
   }
 
-  function initStyledCombobox({ input, panel, getItems, onSelect, getLabel, emptyText = 'Sin datos disponibles', onClear }) {
+  function initStyledCombobox({ input, panel, getItems, onSelect, getLabel, emptyText = 'Sin datos disponibles', onClear, maxVisibleRows }) {
     if (!input || !panel || typeof getItems !== 'function') return;
 
     const list = panel.querySelector('.custom-combobox-list');
     if (!list) return;
+
+    if (maxVisibleRows === 6) {
+      list.classList.add('custom-combobox-list--max-rows-6');
+    }
 
     attachClearButton(input, panel, onClear);
 
@@ -109,14 +113,107 @@
     document.addEventListener('click', (e) => {
       const wrapper = input.closest('.custom-combobox');
       if (wrapper && !wrapper.contains(e.target)) closePanel();
-    });
+    }, true);
 
     input._styledCombobox = { render, closePanel, openPanel };
   }
 
+  /** Programa e instructor del modal crear: input + panel + select oculto (listado filtrable). */
+  function initModalProgramaInstructorCombos() {
+    const selProg   = document.getElementById('id_programa_select');
+    const inpProg   = document.getElementById('id_programa_combo');
+    const panelProg = document.getElementById('panelProgramaCrear');
+    const selIns    = document.getElementById('nombre_instructor');
+    const inpIns    = document.getElementById('id_instructor_combo');
+    const panelIns  = document.getElementById('panelInstructorCrear');
+
+    if (!selProg || !inpProg || !panelProg || !selIns || !inpIns || !panelIns) return;
+
+    function getProgramaItems() {
+      return Array.from(selProg.options)
+        .filter((opt) => opt.value !== '' && !opt.disabled)
+        .map((opt) => ({
+          label: String(opt.textContent || '').trim(),
+          id: String(opt.value || '')
+        }))
+        .filter((item) => item.id);
+    }
+
+    initStyledCombobox({
+      input: inpProg,
+      panel: panelProg,
+      getItems: getProgramaItems,
+      onSelect: (item) => {
+        selProg.value = item.id || '';
+        selProg.dispatchEvent(new Event('change', { bubbles: true }));
+      },
+      getLabel: (item) => item.label,
+      emptyText: 'Sin programas disponibles',
+      onClear: () => {
+        selProg.value = '';
+        selProg.dispatchEvent(new Event('change', { bubbles: true }));
+      },
+      maxVisibleRows: 6
+    });
+
+    function getInstructorItems() {
+      return Array.from(selIns.options)
+        .filter((opt) => opt.value !== '' && !opt.disabled)
+        .map((opt) => ({
+          label: String(opt.textContent || '').trim(),
+          id: String(opt.value || '')
+        }))
+        .filter((item) => item.id);
+    }
+
+    initStyledCombobox({
+      input: inpIns,
+      panel: panelIns,
+      getItems: getInstructorItems,
+      onSelect: (item) => {
+        selIns.value = item.id || '';
+        selIns.dispatchEvent(new Event('change', { bubbles: true }));
+      },
+      getLabel: (item) => item.label,
+      emptyText: 'Sin instructores disponibles',
+      onClear: () => {
+        selIns.value = '';
+        selIns.dispatchEvent(new Event('change', { bubbles: true }));
+      },
+      maxVisibleRows: 6
+    });
+
+    function syncProgInputFromSelect() {
+      const v = selProg.value;
+      if (!v) {
+        inpProg.value = '';
+      } else {
+        const opt = Array.from(selProg.options).find((o) => String(o.value) === String(v));
+        inpProg.value = opt ? String(opt.textContent || '').trim() : '';
+      }
+      inpProg.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    function syncInsInputFromSelect() {
+      const v = selIns.value;
+      if (!v) {
+        inpIns.value = '';
+      } else {
+        const opt = Array.from(selIns.options).find((o) => String(o.value) === String(v));
+        inpIns.value = opt ? String(opt.textContent || '').trim() : '';
+      }
+      inpIns.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    selProg.addEventListener('change', syncProgInputFromSelect);
+    selIns.addEventListener('change', syncInsInputFromSelect);
+    syncProgInputFromSelect();
+    syncInsInputFromSelect();
+  }
+
   // ── Init comboboxes (cabecera + modal crear) ─────────────────────────────
   function initComboboxes() {
-    const grupoData       = document.getElementById('listaGruposData');
+    const grupoData        = document.getElementById('listaGruposData');
     const inputGrupoFiltro = document.getElementById('inputGrupoTexto');
     const panelGrupoFiltro = document.getElementById('panelGrupoFiltro');
     const inputGrupoCrear  = document.getElementById('numero_ficha');
@@ -130,13 +227,25 @@
     const panelArea = document.getElementById('panelAreaCrear');
     const panelZona = document.getElementById('panelZonaCrear');
 
-    if (!selArea || !selZona || !inpArea || !inpZona || !listAreas || !listZonas) return;
-
     const grupos = grupoData
       ? Array.from(grupoData.options)
           .map((opt) => ({ label: String(opt.value || '').trim() }))
           .filter((item) => item.label !== '')
       : [];
+
+    // Cabecera: número de grupo (no depender del modal para que siempre sea combobox)
+    if (inputGrupoFiltro && panelGrupoFiltro) {
+      initStyledCombobox({
+        input: inputGrupoFiltro,
+        panel: panelGrupoFiltro,
+        getItems: () => grupos,
+        onSelect: () => {},
+        getLabel: (item) => item.label,
+        maxVisibleRows: 6
+      });
+    }
+
+    if (!selArea || !selZona || !inpArea || !inpZona || !listAreas || !listZonas) return;
 
     function findDatalistOption(listEl, value) {
       const target = String(value || '').trim().toLowerCase();
@@ -175,13 +284,9 @@
       selZona.value = zonaOpt ? String(zonaOpt.dataset.id || '') : '';
     }
 
-    // Grupo (filtro cabecera)
-    initStyledCombobox({ input: inputGrupoFiltro, panel: panelGrupoFiltro,
-      getItems: () => grupos, onSelect: () => {}, getLabel: (item) => item.label });
-
     // Grupo (modal crear)
     initStyledCombobox({ input: inputGrupoCrear, panel: panelGrupoCrear,
-      getItems: () => grupos, onSelect: () => {}, getLabel: (item) => item.label });
+      getItems: () => grupos, onSelect: () => {}, getLabel: (item) => item.label, maxVisibleRows: 6 });
 
     // Área (modal crear)
     initStyledCombobox({
@@ -198,7 +303,8 @@
         cargarZonasSegunArea(item.id || '');
       },
       getLabel: (item) => item.label,
-      onClear: () => { syncAreaFromInput(); }
+      onClear: () => { syncAreaFromInput(); },
+      maxVisibleRows: 6
     });
 
     // Zona (modal crear)
@@ -214,7 +320,8 @@
       onClear: () => {
         selZona.value = '';
         selZona.dispatchEvent(new Event('change', { bubbles: true }));
-      }
+      },
+      maxVisibleRows: 6
     });
 
     // Competencia (modal crear)
@@ -247,7 +354,8 @@
         onClear: () => {
           selComp.value = '';
           selComp.dispatchEvent(new Event('change', { bubbles: true }));
-        }
+        },
+        maxVisibleRows: 6
       });
 
       if (selProgForComp) {
@@ -255,7 +363,10 @@
           inpComp.value = '';
           selComp.value = '';
           selComp.dispatchEvent(new Event('change', { bubbles: true }));
-          inpComp.dispatchEvent(new Event('input', { bubbles: true }));
+          if (inpComp._styledCombobox && typeof inpComp._styledCombobox.closePanel === 'function') {
+            inpComp._styledCombobox.closePanel();
+          }
+          inpComp.dispatchEvent(new Event('change', { bubbles: true }));
         });
       }
     }
@@ -511,8 +622,10 @@
   }
 
   // ── Bootstrap ────────────────────────────────────────────────────────────
-  document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('DOMContentLoaded', async function () {
     initEnhanceModalTrimestralSelects();
+    await cargarInstructoresFallback();
+    initModalProgramaInstructorCombos();
     initComboboxes();
     initProgramasYCompetencias();
     initModalRaes();
