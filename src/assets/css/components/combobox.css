@@ -169,7 +169,9 @@
 
 .combobox-empty-message {
   padding: 0.5rem 0.75rem;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  text-align: left;
   color: #6b7280;
   cursor: default;
 }
@@ -226,6 +228,9 @@
 .combobox-dropdown .select-zona-option,
 .combobox-dropdown .combobox-zona-option {
   padding: 10px 14px;
+  text-align: left;
+  font-size: 0.875rem;
+  line-height: 1.4;
   cursor: pointer;
   transition: background 0.15s;
 }

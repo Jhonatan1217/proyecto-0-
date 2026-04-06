@@ -135,13 +135,14 @@ if (isset($conn)) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Proyecto 0 - Visualización de registro de tablas</title>
+  <title>Proyecto Z - Visualización de registro de tablas</title>
 
   <link rel="stylesheet" href="<?= BASE_URL ?>public/css/output.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>public/css/fonts.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/formulario_crear_trimestralizacion.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/register_tables.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/select-styled.css">
+  <link rel="stylesheet" href="<?= BASE_URL ?>src/assets/css/components/combobox.css">
   <script src="<?= BASE_URL ?>src/assets/js/sweetalert2.all.min.js"></script>
 
 </head>
@@ -167,22 +168,19 @@ if (isset($conn)) {
       <div class="w-full sm:w-60">
         <label for="selectModalidad" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Modalidad</label>
         <select id="selectModalidad" name="id_modalidad"
-          class="select-styled w-full">
-          <option value="" class="text-[#00324D]" selected hidden>Seleccione la modalidad</option>
-          <option value="presencial"> presencial </option>
-          <option value="virtual"> virtual </option>
-          <option value="mixto"> mixta </option>
+          class="select-styled w-full" autocomplete="off">
+          <option value="" selected hidden>Seleccione la modalidad</option>
+          <option value="presencial">Presencial</option>
+          <option value="virtual">Virtual</option>
+          <option value="mixto">Mixta</option>
         </select>
       </div>
 
-
-
-  
       <!-- Selector de Área (Combobox) -->
       <div id="contenedorAreaFiltro" class="w-full sm:w-60">
         <label for="inputAreaTexto" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Área</label>
         <div class="custom-combobox w-full">
-          <input type="text" id="inputAreaTexto" autocomplete="off" placeholder="Seleccione o escriba el área" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none transition-all duration-200">
+          <input type="text" id="inputAreaTexto" autocomplete="off" placeholder="Seleccione o escriba el área" class="input-filtro-register w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none transition-all duration-200">
           <div id="panelAreaFiltro" class="custom-combobox-panel hidden">
             <div class="custom-combobox-list"></div>
           </div>
@@ -192,14 +190,11 @@ if (isset($conn)) {
         </select>
       </div>
 
-
-
-
       <!-- Selector de Zona (Combobox) -->
       <div id="contenedorZonaFiltro" class="w-full sm:w-60">
         <label for="inputZonaTexto" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Zona</label>
         <div class="custom-combobox w-full">
-          <input type="text" id="inputZonaTexto" autocomplete="off" placeholder="Seleccione o escriba la zona" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none transition-all duration-200">
+          <input type="text" id="inputZonaTexto" autocomplete="off" placeholder="Seleccione o escriba la zona" class="input-filtro-register w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none transition-all duration-200">
           <div id="panelZonaFiltro" class="custom-combobox-panel hidden">
             <div class="custom-combobox-list"></div>
           </div>
@@ -213,15 +208,13 @@ if (isset($conn)) {
       <div id="contenedorGrupoFiltro" class="w-full sm:w-60 hidden">
         <label for="inputGrupoTexto" class="block mb-2 text-sm sm:text-base font-semibold text-[#00324D] tracking-wide text-left">Filtrar por grupo</label>
         <div class="custom-combobox w-full">
-          <input type="text" id="inputGrupoTexto" autocomplete="off" placeholder="Seleccione o escriba número de grupo" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none transition-all duration-200">
+          <input type="text" id="inputGrupoTexto" autocomplete="off" placeholder="Buscar número de grupo" class="input-filtro-register w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900] focus:outline-none transition-all duration-200">
           <div id="panelGrupoFiltro" class="custom-combobox-panel hidden">
             <div class="custom-combobox-list"></div>
           </div>
         </div>
       </div>
     </div>
-
-
 
     <!-- Botón de crear nueva trimestralización (abre el mismo modal que en la landing) -->
     <button id="btnAbrirModal" 
@@ -244,13 +237,10 @@ if (isset($conn)) {
   </div>
 </header>
 
-
-
-
   <!-- Contenido principal -->
   <main class="flex flex-col items-center flex-grow w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pb-6">
     <section id="tabla-horarios"
-  class="w-full shadow-xl rounded-2xl border border-gray-200 p-0 overflow-hidden">
+  class="hidden w-full shadow-xl rounded-2xl border border-gray-200 p-0 overflow-hidden">
       <table class="w-full text-xs min-w-[900px] sm:text-sm border-separate border-spacing-0">
         <colgroup>
           <col style="width: 130px;">
@@ -273,12 +263,12 @@ if (isset($conn)) {
           </tr>
         </thead>
         <tbody id="tbody-horarios">
-          <tr><td colspan="7" class="p-4 text-gray-500 text-center">Cargando datos...</td></tr>
+          <tr><td colspan="7" class="p-4 text-gray-500 text-center">Cargando datos…</td></tr>
         </tbody>
       </table>
     </section>
 
-    <div id="empty-state" class="hidden w-full py-16">
+    <div id="empty-state" class="w-full py-16">
       <div class="mx-auto flex max-w-3xl flex-col items-center justify-center text-center">
         <svg
           width="120"
@@ -294,20 +284,19 @@ if (isset($conn)) {
           <path d="M9 14l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
 
-        <h3 class="text-lg sm:text-xl font-semibold text-gray-700 mb-2">
+        <h3 id="empty-state-title" class="text-lg sm:text-xl font-semibold text-gray-700 mb-2">
           Seleccione un horario
         </h3>
-        <p class="text-sm sm:text-base text-gray-500 max-w-md">
+        <p id="empty-state-desc" class="text-sm sm:text-base text-gray-500 max-w-md">
           Elige la modalidad y completa los filtros
           correspondientes para ver el horario.
         </p>
       </div>
     </div> 
 
-
     <!-- Botones de acciones -->
     <div id="botones-principales" 
-  class="mt-6 mb-6 flex flex-col sm:flex-row flex-wrap justify-end items-stretch gap-3 sm:gap-6 w-full px-2">
+  class="hidden mt-6 mb-6 flex flex-col sm:flex-row flex-wrap justify-end items-stretch gap-3 sm:gap-6 w-full px-2">
 
       <button onclick="descargarPDF()" 
         class="border border-black bg-white text-black px-6 py-2 rounded-lg transition flex items-center justify-center gap-2 w-full sm:w-auto hover:bg-gray-100 hover:border-gray-800"   style="border: 2px solid #333333c5 !important;">
@@ -327,10 +316,7 @@ if (isset($conn)) {
       <button onclick="enviarHorario()" class="bg-[#0a3a57] text-white px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">
         Enviar horario
       </button>
-      <?php endif; ?>
-      
-
-      
+      <?php endif; ?> 
     </div>
   </main>
 
@@ -404,13 +390,12 @@ if (isset($conn)) {
     window.IS_AUTHENTICATED = <?= $isAuthenticated ? 'true' : 'false' ?>;
   </script>
 
+  <!-- Combobox global (select estilizado) para modalidad en cabecera -->
+  <script src="<?= BASE_URL ?>src/assets/js/components/combobox.js"></script>
   <!-- Scripts de la vista de tablas (SOLO una vez registerTables.js para evitar el error de urlParams) -->
   <script src="<?= BASE_URL ?>src/assets/js/registerTables.js"></script>
   <script src="<?= BASE_URL ?>src/assets/js/html2canvas.min.js"></script>
   <script src="<?= BASE_URL ?>src/assets/js/jspdf.umd.min.js"></script>
-
-
-
 
   <!-- ============== MODAL CREAR TRIMESTRALIZACIÓN (Mismo que en la landing) ============== -->
   <div id="modalCrearLanding" class="fixed inset-0 z-40 hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalCrear">
@@ -439,7 +424,6 @@ if (isset($conn)) {
             <!-- GRID -->
             <div class="form-grid">
 
-
             <!-- PROGRAMA -->
               <div class="field">
                 <label for="id_programa_select" class="block text-xs font-semibold text-gray-800 mb-1">Programa de formación</label>
@@ -457,7 +441,6 @@ if (isset($conn)) {
                 </select>
               </div>
 
-
               <!-- INSTRUCTOR -->
                <div class="field">
                 <label for="nombre_instructor" class="block text-xs font-semibold text-gray-800 mb-1">Instructor</label>
@@ -471,7 +454,6 @@ if (isset($conn)) {
                   <?php endforeach; ?>
                 </select>
               </div>
-
 
               <!-- NUMERO DE FICHA -->
                <div class="field">
@@ -496,8 +478,6 @@ if (isset($conn)) {
                   <?php endforeach; ?>
                 </datalist>
               </div>
-
-
 
               <!-- TRIMESTRE -->
               <div class="field">
@@ -576,7 +556,6 @@ if (isset($conn)) {
                 </div>
               </div>
 
-
               <!-- DÍA SEMANA -->
               <div class="field">
                 <label for="dia" class="block text-xs font-semibold text-gray-800 mb-1">Día</label>
@@ -591,8 +570,6 @@ if (isset($conn)) {
                   <option value="sabado">Sábado</option>
                 </select>
               </div>
-
-
 
               <!-- HORAS -->
               <div class="field-full">
@@ -619,8 +596,6 @@ if (isset($conn)) {
                   </div>
                 </div>
               </div>
-
-
 
               <!-- COMPETENCIA -->
               <div class="field-full">
@@ -656,7 +631,6 @@ if (isset($conn)) {
                 </select>
               </div>
 
-
               <!-- Descripción de la competencia (solo informativa, no se guarda) -->
               <div class="field-full">
                 <label for="descripcion_competencia" class="block text-xs font-semibold text-gray-800 mb-1">Descripción de la competencia</label>
@@ -667,7 +641,6 @@ if (isset($conn)) {
                   class="form-field w-full px-3 py-2 text-sm rounded-lg border border-gray-300 outline-none bg-white text-gray-700 resize-none overflow-auto">
                 </textarea>
               </div>
-
 
               <!-- BOTÓN RAEs + CONTADOR -->
               <div class="field-full">
@@ -699,9 +672,6 @@ if (isset($conn)) {
         </div>
       </div>
     </div>
-
-
-
 
     <!-- ============== MODAL RAEs POR COMPETENCIA ============== -->
     <div id="modalRaes" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalRaes">
@@ -752,9 +722,6 @@ if (isset($conn)) {
       </div>
     </div>
     <!-- ============== /MODAL RAEs ============== -->
-
-
-
 
     <!-- ============== MODAL DUPLICAR HORARIO ============== -->
     <div id="modalDuplicarHorario" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalDuplicar">

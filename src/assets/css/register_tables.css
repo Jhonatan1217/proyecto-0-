@@ -160,14 +160,23 @@ th {
 	height: auto;
 }
 
-/* Selects de cabecera en minúsculas */
-#selectModalidad,
-#selectArea,
-#selectZona,
-#selectModalidad option,
-#selectArea option,
-#selectZona option {
-	text-transform: lowercase;
+/*
+ * Cabecera register_tables: placeholders más suaves (modalidad vía select estilizado + área/zona/grupo).
+ * El antiguo text-transform:lowercase en #selectModalidad hacía ver "seleccione" en lugar de "Seleccione".
+ */
+#cabecera-trimestralizacion .input-filtro-register::placeholder {
+	opacity: 0.55;
+}
+
+#cabecera-trimestralizacion .select-styled-wrapper:has(#selectModalidad[value=""]) .select-styled-trigger-text {
+	opacity: 0.55;
+}
+
+/* Misma caja tipográfica que .input-filtro-register (text-sm): el body usa text-center y heredaba al dropdown */
+#cabecera-trimestralizacion .select-styled-wrapper {
+	text-align: left;
+	font-size: 0.875rem;
+	line-height: 1.25rem;
 }
 
 /* Modal formulario: campos en columna */
