@@ -427,7 +427,7 @@ if (isset($conn)) {
             <!-- PROGRAMA -->
               <div class="field">
                 <label for="id_programa_select" class="block text-xs font-semibold text-gray-800 mb-1">Programa de formación</label>
-                <select id="id_programa_select" name="id_programa_select" class="select-styled w-full form-field">
+                <select id="id_programa_select" name="id_programa_select" class="select-styled w-full form-field" autocomplete="off">
                   <option value="">Ingrese el programa de formación</option>
                   <?php if (empty($programas)): ?>
                     <option disabled>Sin datos disponibles</option>
@@ -445,7 +445,7 @@ if (isset($conn)) {
                <div class="field">
                 <label for="nombre_instructor" class="block text-xs font-semibold text-gray-800 mb-1">Instructor</label>
                 <select name="nombre_instructor" id="nombre_instructor"
-                  class="select-styled w-full form-field">
+                  class="select-styled w-full form-field" autocomplete="off">
                   <option value="">Seleccione el instructor</option>
                   <?php foreach ($instructores as $ins): ?>
                     <option value="<?= htmlspecialchars($ins['id_instructor'] ?? '') ?>" data-tipo="<?= htmlspecialchars($ins['tipo_instructor'] ?? '') ?>">
@@ -465,7 +465,7 @@ if (isset($conn)) {
                     id="numero_ficha"
                     autocomplete="off"
                     placeholder="Seleccione o escriba número de grupo"
-                    class="form-field w-full h-9 px-3 text-sm rounded-xl border border-gray-300 outline-none bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]"/>
+                    class="filter-search-input w-full"/>
                   <div id="panelGrupoCrear" class="custom-combobox-panel hidden">
                     <div class="custom-combobox-list"></div>
                   </div>
@@ -483,7 +483,7 @@ if (isset($conn)) {
               <div class="field">
                 <label for="numero_trimestre" class="block text-xs font-semibold text-gray-800 mb-1">Trimestre de grupo</label>
                 <select name="numero_trimestre" id="numero_trimestre"
-                  class="select-styled w-full form-field">
+                  class="select-styled w-full form-field" autocomplete="off">
                   <option value="">Seleccione el trimestre que cursa el grupo</option>
                   <?php foreach ($trimestres as $t): ?>
                     <option value="<?= htmlspecialchars($t['numero_trimestre']) ?>">
@@ -506,7 +506,7 @@ if (isset($conn)) {
                         id="id_area_combo"
                         autocomplete="off"
                         placeholder="Seleccione o escriba el área"
-                        class="form-field w-full h-9 px-3 text-sm rounded-xl border border-gray-300 outline-none bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]" />
+                        class="filter-search-input w-full" />
                       <div id="panelAreaCrear" class="custom-combobox-panel hidden">
                         <div class="custom-combobox-list"></div>
                       </div>
@@ -535,7 +535,7 @@ if (isset($conn)) {
                         id="id_zona_combo"
                         autocomplete="off"
                         placeholder="Seleccione o escriba la zona"
-                        class="form-field w-full h-9 px-3 text-sm rounded-xl border border-gray-300 outline-none bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]"
+                        class="filter-search-input w-full"
                         disabled />
                       <div id="panelZonaCrear" class="custom-combobox-panel hidden">
                         <div class="custom-combobox-list"></div>
@@ -560,7 +560,7 @@ if (isset($conn)) {
               <div class="field">
                 <label for="dia" class="block text-xs font-semibold text-gray-800 mb-1">Día</label>
                 <select name="dia_semana" id="dia" 
-                  class="select-styled select-cal w-full form-field">
+                  class="select-styled w-full form-field" autocomplete="off">
                   <option value="">Seleccione fecha de inicio</option>
                   <option value="lunes">Lunes</option>
                   <option value="martes">Martes</option>
@@ -577,7 +577,7 @@ if (isset($conn)) {
                   <div class="flex-1">
                     <label for="hora_inicio" class="block text-xs font-semibold text-gray-800 mb-1">Hora de inicio</label>
                     <select name="hora_inicio" id="hora_inicio" 
-                      class="select-styled w-full form-field">
+                      class="select-styled w-full form-field" autocomplete="off">
                       <option value="">Seleccione hora de inicio</option>
                     <?php for ($i = 6; $i <= 22; $i++): ?>
                       <option value="<?= $i ?>:00"><?= $i ?>:00</option>
@@ -587,7 +587,7 @@ if (isset($conn)) {
                   <div class="flex-1">
                     <label for="hora_fin" class="block text-xs font-semibold text-gray-800 mb-1">Hora de fin</label>
                     <select name="hora_fin" id="hora_fin" 
-                      class="select-styled w-full form-field">
+                      class="select-styled w-full form-field" autocomplete="off">
                       <option value="">Seleccione hora de fin</option>
                     <?php for ($i = 7; $i <= 22; $i++): ?>
                       <option value="<?= $i ?>:00"><?= $i ?>:00</option>
@@ -607,7 +607,7 @@ if (isset($conn)) {
                     id="id_competencia_combo"
                     autocomplete="off"
                     placeholder="Seleccione o escriba la competencia"
-                    class="form-field w-full h-9 px-3 text-sm rounded-xl border border-gray-300 outline-none bg-white focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]"
+                    class="filter-search-input w-full"
                   />
                   <div id="panelCompetenciaCrear" class="custom-combobox-panel custom-combobox-panel-top hidden">
                     <div class="custom-combobox-list"></div>
@@ -634,12 +634,7 @@ if (isset($conn)) {
               <!-- Descripción de la competencia (solo informativa, no se guarda) -->
               <div class="field-full">
                 <label for="descripcion_competencia" class="block text-xs font-semibold text-gray-800 mb-1">Descripción de la competencia</label>
-                <textarea 
-                  id="descripcion_competencia" 
-                  name="descripcion_competencia" 
-                  rows="5"
-                  class="form-field w-full px-3 py-2 text-sm rounded-lg border border-gray-300 outline-none bg-white text-gray-700 resize-none overflow-auto">
-                </textarea>
+                <textarea id="descripcion_competencia" name="descripcion_competencia" rows="5" class="w-full min-h-[7.5rem] px-3 py-2 text-sm rounded-lg border border-gray-300 outline-none bg-white text-gray-700 resize-none overflow-auto focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]"></textarea>
               </div>
 
               <!-- BOTÓN RAEs + CONTADOR -->

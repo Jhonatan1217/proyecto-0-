@@ -463,8 +463,14 @@ async function cargarAreasYZonas() {
       const id_area = e.target.value;
       const inputArea = document.getElementById("inputAreaTexto");
       if (inputArea) {
-        const areaLabel = Array.from(selectArea.options).find(opt => opt.value === id_area)?.textContent || '';
-        inputArea.value = areaLabel;
+        // Sin área real: vaciar el texto visible (no copiar la etiqueta de la opción placeholder)
+        if (!id_area) {
+          inputArea.value = "";
+        } else {
+          const areaLabel = Array.from(selectArea.options).find(opt => opt.value === id_area)?.textContent || '';
+          inputArea.value = areaLabel;
+        }
+        inputArea.dispatchEvent(new Event("input", { bubbles: true }));
       }
       await cargarZonasPorArea(id_area);
       // Reconfigurar combobox de zona después de cargar nuevas zonas
@@ -475,8 +481,13 @@ async function cargarAreasYZonas() {
       id_zona = e.target.value;
       const inputZona = document.getElementById("inputZonaTexto");
       if (inputZona) {
-        const zonaLabel = Array.from(selectZona.options).find(opt => opt.value === id_zona)?.textContent || '';
-        inputZona.value = zonaLabel;
+        if (!id_zona) {
+          inputZona.value = "";
+        } else {
+          const zonaLabel = Array.from(selectZona.options).find(opt => opt.value === id_zona)?.textContent || '';
+          inputZona.value = zonaLabel;
+        }
+        inputZona.dispatchEvent(new Event("input", { bubbles: true }));
       }
       const id_area = selectArea.value;
       if (!id_zona || !id_area) {
@@ -526,6 +537,52 @@ async function cargarAreasYZonas() {
 // Configurar filtros
 // ======================
 
+/** Botón X en comboboxes locales (.custom-combobox); mismo patrón que registerTablesModal.js */
+function attachCustomComboboxClear(input, panel, onClear) {
+  const host = input.closest(".custom-combobox");
+  if (!host || host.querySelector(".btn-clear-custom-combobox")) return;
+
+  const fieldRow = document.createElement("div");
+  fieldRow.className = "custom-combobox-field";
+  host.insertBefore(fieldRow, input);
+  fieldRow.appendChild(input);
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "btn-clear-custom-combobox";
+  btn.setAttribute("aria-label", "Limpiar");
+  btn.innerHTML =
+    '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+  fieldRow.appendChild(btn);
+
+  function updateClearBtn() {
+    const show = !input.disabled && input.value.trim().length > 0;
+    btn.classList.toggle("visible", show);
+  }
+
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (panel) panel.classList.add("hidden");
+    input.value = "";
+    if (typeof onClear === "function") onClear();
+    else {
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    updateClearBtn();
+    if (!input.disabled) {
+      queueMicrotask(() => {
+        input.focus({ preventScroll: true });
+      });
+    }
+  });
+
+  input.addEventListener("input", updateClearBtn);
+  input.addEventListener("change", updateClearBtn);
+  updateClearBtn();
+}
+
 function configurarComboboxArea(){
   const inputArea = document.getElementById("inputAreaTexto");
   const selectArea = document.getElementById("selectArea");
@@ -533,6 +590,11 @@ function configurarComboboxArea(){
   const listaArea = panelArea?.querySelector(".custom-combobox-list");
 
   if (!inputArea || !selectArea || !panelArea || !listaArea) return;
+
+  attachCustomComboboxClear(inputArea, panelArea, () => {
+    selectArea.value = "";
+    selectArea.dispatchEvent(new Event("change", { bubbles: true }));
+  });
 
   function actualizarPanelArea() {
     const valor = inputArea.value.trim().toLowerCase();
@@ -559,6 +621,7 @@ function configurarComboboxArea(){
         inputArea.value = opt.textContent;
         panelArea.classList.add("hidden");
         selectArea.dispatchEvent(new Event("change", { bubbles: true }));
+        inputArea.dispatchEvent(new Event("input", { bubbles: true }));
       });
       listaArea.appendChild(div);
     });
@@ -583,6 +646,11 @@ function configurarComboboxZona(){
   const listaZona = panelZona?.querySelector(".custom-combobox-list");
 
   if (!inputZona || !selectZona || !panelZona || !listaZona) return;
+
+  attachCustomComboboxClear(inputZona, panelZona, () => {
+    selectZona.value = "";
+    selectZona.dispatchEvent(new Event("change", { bubbles: true }));
+  });
 
   function actualizarPanelZona() {
     const valor = inputZona.value.trim().toLowerCase();
@@ -609,6 +677,7 @@ function configurarComboboxZona(){
         inputZona.value = opt.textContent;
         panelZona.classList.add("hidden");
         selectZona.dispatchEvent(new Event("change", { bubbles: true }));
+        inputZona.dispatchEvent(new Event("input", { bubbles: true }));
       });
       listaZona.appendChild(div);
     });

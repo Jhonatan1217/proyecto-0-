@@ -9,11 +9,57 @@
   'use strict';
 
   // ── Utilidades de combobox local ─────────────────────────────────────────
-  function initStyledCombobox({ input, panel, getItems, onSelect, getLabel, emptyText = 'Sin datos disponibles' }) {
+  function attachClearButton(input, panel, onClear) {
+    const host = input.closest('.custom-combobox');
+    if (!host || host.querySelector('.btn-clear-custom-combobox')) return;
+
+    const fieldRow = document.createElement('div');
+    fieldRow.className = 'custom-combobox-field';
+    host.insertBefore(fieldRow, input);
+    fieldRow.appendChild(input);
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-clear-custom-combobox';
+    btn.setAttribute('aria-label', 'Limpiar');
+    btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+    fieldRow.appendChild(btn);
+
+    function updateClearBtn() {
+      const show = !input.disabled && String(input.value || '').trim().length > 0;
+      btn.classList.toggle('visible', show);
+    }
+
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (panel) panel.classList.add('hidden');
+      input.value = '';
+      if (typeof onClear === 'function') onClear();
+      else {
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      updateClearBtn();
+      if (!input.disabled) {
+        queueMicrotask(() => {
+          input.focus({ preventScroll: true });
+        });
+      }
+    });
+
+    input.addEventListener('input', updateClearBtn);
+    input.addEventListener('change', updateClearBtn);
+    updateClearBtn();
+  }
+
+  function initStyledCombobox({ input, panel, getItems, onSelect, getLabel, emptyText = 'Sin datos disponibles', onClear }) {
     if (!input || !panel || typeof getItems !== 'function') return;
 
     const list = panel.querySelector('.custom-combobox-list');
     if (!list) return;
+
+    attachClearButton(input, panel, onClear);
 
     const normalize = (v) => String(v || '').trim().toLowerCase();
 
@@ -151,7 +197,8 @@
         inpZona.disabled = !item.id;
         cargarZonasSegunArea(item.id || '');
       },
-      getLabel: (item) => item.label
+      getLabel: (item) => item.label,
+      onClear: () => { syncAreaFromInput(); }
     });
 
     // Zona (modal crear)
@@ -163,7 +210,11 @@
         area:  String(opt.dataset.area || '')
       })),
       onSelect: (item) => { selZona.value = item.id || ''; },
-      getLabel: (item) => item.label
+      getLabel: (item) => item.label,
+      onClear: () => {
+        selZona.value = '';
+        selZona.dispatchEvent(new Event('change', { bubbles: true }));
+      }
     });
 
     // Competencia (modal crear)
@@ -192,7 +243,11 @@
           selComp.dispatchEvent(new Event('change', { bubbles: true }));
         },
         getLabel: (item) => item.label,
-        emptyText: 'Sin competencias para este programa'
+        emptyText: 'Sin competencias para este programa',
+        onClear: () => {
+          selComp.value = '';
+          selComp.dispatchEvent(new Event('change', { bubbles: true }));
+        }
       });
 
       if (selProgForComp) {
@@ -200,6 +255,7 @@
           inpComp.value = '';
           selComp.value = '';
           selComp.dispatchEvent(new Event('change', { bubbles: true }));
+          inpComp.dispatchEvent(new Event('input', { bubbles: true }));
         });
       }
     }
@@ -442,8 +498,21 @@
     });
   }
 
+  /** Selects del modal Crear trimestralización: mismo componente global que el resto del sistema */
+  function initEnhanceModalTrimestralSelects() {
+    if (typeof ComboboxComponent === 'undefined' || typeof ComboboxComponent.enhanceSelectStyled !== 'function') return;
+    const form = document.getElementById('formTrimestralizacion');
+    if (!form) return;
+    ComboboxComponent.enhanceSelectStyled({
+      selector: '#formTrimestralizacion select.select-styled',
+      placeholder: 'Seleccione…',
+      placeholderValues: [''],
+    });
+  }
+
   // ── Bootstrap ────────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', function () {
+    initEnhanceModalTrimestralSelects();
     initComboboxes();
     initProgramasYCompetencias();
     initModalRaes();

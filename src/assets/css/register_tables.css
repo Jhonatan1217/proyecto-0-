@@ -90,6 +90,47 @@ th {
 	position: relative;
 }
 
+/* Fila input + botón limpiar (mismo patrón que combobox global) */
+.custom-combobox-field {
+	position: relative;
+	width: 100%;
+}
+
+.custom-combobox-field > input {
+	width: 100%;
+	box-sizing: border-box;
+	padding-right: 2.25rem;
+}
+
+.btn-clear-custom-combobox {
+	position: absolute;
+	right: 0.5rem;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 1.25rem;
+	height: 1.25rem;
+	display: none;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: none;
+	background: transparent;
+	color: #6b7280;
+	cursor: pointer;
+	border-radius: 9999px;
+	transition: color 0.15s ease, background 0.15s ease;
+	z-index: 2;
+}
+
+.btn-clear-custom-combobox:hover {
+	color: #374151;
+	background: #f3f4f6;
+}
+
+.btn-clear-custom-combobox.visible {
+	display: inline-flex;
+}
+
 .custom-combobox-panel {
 	position: absolute;
 	top: calc(100% + 6px);
@@ -170,6 +211,18 @@ th {
 
 #cabecera-trimestralizacion .select-styled-wrapper:has(#selectModalidad[value=""]) .select-styled-trigger-text {
 	opacity: 0.55;
+}
+
+/* Modal crear trimestralización: inputs tipo combobox = token global filter-search-input; placeholder legible */
+#modalCrearLanding .filter-search-input::placeholder {
+	color: #9ca3af !important;
+	opacity: 1 !important;
+}
+
+#modalCrearLanding .filter-search-input:disabled {
+	background-color: #f3f4f6;
+	cursor: not-allowed;
+	opacity: 0.7;
 }
 
 /* Misma caja tipográfica que .input-filtro-register (text-sm): el body usa text-center y heredaba al dropdown */

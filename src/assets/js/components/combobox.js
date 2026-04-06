@@ -12,7 +12,7 @@
   const EMPTY_DROPDOWN_MESSAGE = 'No se encontraron opciones.';
 
   const MODAL_IDS = '#modalRae,#modalCompetency,#modalProgram';
-  const TABLE_OR_MODAL_SELECTOR = 'table,[id*="wrapTabla"],.modal-usuario-box,.modal-grupo-box,.modal-zona-box,.modal-area-box,.modal-trimestre-box,.modal-enterprise-box,#modalProgram,#modalCompetency,#modalRae';
+  const TABLE_OR_MODAL_SELECTOR = 'table,[id*="wrapTabla"],.modal-usuario-box,.modal-grupo-box,.modal-zona-box,.modal-area-box,.modal-trimestre-box,.modal-enterprise-box,#modalProgram,#modalCompetency,#modalRae,#modalCrearLanding';
 
   function cbFireChange(select) {
     select.dispatchEvent(new Event('change', { bubbles: true }));
