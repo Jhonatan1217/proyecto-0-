@@ -291,13 +291,37 @@ function hasOverlap({ dia, inicio, fin, excludeId }) {
 // =======================
 // Mostrar/Ocultar tabla y botones
 // =======================
-function toggleTabla(mostrar = true) {
+const EMPTY_STATE_DEFAULT_TITLE = "Seleccione un horario";
+const EMPTY_STATE_DEFAULT_DESC =
+  "Elige la modalidad y completa los filtros correspondientes para ver el horario.";
+const EMPTY_STATE_FILTERED_TITLE = "Sin trimestralización";
+const EMPTY_STATE_FILTERED_DESC =
+  "No hay trimestralización registrada con los filtros seleccionados.";
+
+function setEmptyStateCopy(emptyMode) {
+  const title = document.getElementById("empty-state-title");
+  const desc = document.getElementById("empty-state-desc");
+  if (!title || !desc) return;
+  if (emptyMode === "filtered-empty") {
+    title.textContent = EMPTY_STATE_FILTERED_TITLE;
+    desc.textContent = EMPTY_STATE_FILTERED_DESC;
+  } else {
+    title.textContent = EMPTY_STATE_DEFAULT_TITLE;
+    desc.textContent = EMPTY_STATE_DEFAULT_DESC;
+  }
+}
+
+/** @param {boolean} mostrar @param {'default'|'filtered-empty'} [emptyMode] — texto del empty state si mostrar es false */
+function toggleTabla(mostrar = true, emptyMode = "default") {
   const tabla = document.querySelector("#tabla-horarios");
   const botones = document.querySelector("#botones-principales");
   const emptyState = document.querySelector("#empty-state");
-  if (tabla) tabla.style.display = mostrar ? "" : "none";
-  if (botones) botones.style.display = mostrar ? "flex" : "none";
-  if (emptyState) emptyState.style.display = mostrar ? "none" : "block";
+  if (tabla) tabla.classList.toggle("hidden", !mostrar);
+  if (botones) botones.classList.toggle("hidden", !mostrar);
+  if (emptyState) {
+    emptyState.classList.toggle("hidden", mostrar);
+    if (!mostrar) setEmptyStateCopy(emptyMode);
+  }
 }
 
 // =======================
@@ -671,9 +695,15 @@ function configurarFiltros(){
   }
 }
 
-function renderizarTablaDesdeRegistros(registrosServer, emptyMessage = "No hay registros activos.") {
+/**
+ * @param {Array} registrosServer
+ * @param {string} [emptyMessage] — reservado / mensaje legacy si la tabla se mostrara vacía
+ * @param {{ filtersApplied?: boolean }} [opts] — si filtersApplied, empty state pide revisar filtros
+ * @returns {boolean} true si hubo datos y se pintó la tabla
+ */
+function renderizarTablaDesdeRegistros(registrosServer, emptyMessage = "No hay registros activos.", opts = {}) {
   const tbody = document.getElementById("tbody-horarios");
-  if (!tbody) return;
+  if (!tbody) return false;
 
   tbody.innerHTML = "";
 
@@ -682,9 +712,10 @@ function renderizarTablaDesdeRegistros(registrosServer, emptyMessage = "No hay r
   );
 
   if (!activos.length) {
-    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500 text-center">${emptyMessage}</td></tr>`;
-    toggleTabla(false);
-    return;
+    tbody.innerHTML = "";
+    const emptyMode = opts.filtersApplied ? "filtered-empty" : "default";
+    toggleTabla(false, emptyMode);
+    return false;
   }
 
   const mapHorarios = new Map();
@@ -858,6 +889,7 @@ function renderizarTablaDesdeRegistros(registrosServer, emptyMessage = "No hay r
   toggleTabla(true);
   popupCeldas();
   popupZonaLibre();
+  return true;
 }
 
 function configurarModalidadFormulario() {
@@ -898,10 +930,7 @@ async function cargarTrimestralizacionPorGrupo(grupo) {
       ? data.data
       : [];
 
-    renderizarTablaDesdeRegistros(
-      registrosServer,
-      `No se encontraron registros para el grupo ${grupo}.`
-    );
+    renderizarTablaDesdeRegistros(registrosServer, "", { filtersApplied: true });
   }catch (e){
     console.error(e);
     Toast.fire({ icon: "error", title: "Error al cargar datos por grupo" });
@@ -940,15 +969,21 @@ async function cargarTrimestralizacion() {
       : Array.isArray(data.data)
       ? data.data
       : [];
-    renderizarTablaDesdeRegistros(
-      registrosServer,
-      "No hay registros activos para esta zona y área."
-    );
-
-    Toast.fire({
-      icon: "success",
-      title: "Trimestralización cargada correctamente",
+    const conDatos = renderizarTablaDesdeRegistros(registrosServer, "", {
+      filtersApplied: true,
     });
+
+    if (conDatos) {
+      Toast.fire({
+        icon: "success",
+        title: "Trimestralización cargada correctamente",
+      });
+    } else {
+      Toast.fire({
+        icon: "info",
+        title: "Sin registros con los filtros actuales",
+      });
+    }
 
 
   } catch (error) {
@@ -1846,6 +1881,13 @@ function popupZonaLibre(){
 // INICIO
 // =======================
 document.addEventListener("DOMContentLoaded", () => {
+  if (typeof ComboboxComponent !== "undefined" && typeof ComboboxComponent.enhanceSelectStyled === "function") {
+    ComboboxComponent.enhanceSelectStyled({
+      selector: "#selectModalidad",
+      placeholder: "Seleccione la modalidad",
+      placeholderValues: [""],
+    });
+  }
   cargarAreasYZonas();
   configurarFiltros();
   cargarFichas();
