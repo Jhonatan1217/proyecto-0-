@@ -27,6 +27,8 @@ const Toast = Swal.mixin({
 });
 
 let horariosCache = [];
+let horariosOriginal = null;
+let huboCambios = false;
 let gestionHorasCache = { instructores: [], grupos: [] };
 let gestionHorasTabActual = "instructores";
 
@@ -881,6 +883,9 @@ function renderizarTablaDesdeRegistros(registrosServer, emptyMessage = "No hay r
 
   const horariosAgrupados = Array.from(mapHorarios.values());
   horariosCache = horariosAgrupados;
+  if(!huboCambios){
+    horariosOriginal = JSON.stringify(horariosCache);
+  }
 
   horariosAgrupados.forEach((h) => {
     if (h.raesArray.length) {
@@ -1525,6 +1530,7 @@ async function enviarEdicionHorarioDesdeModal() {
 
     if (esExito) {
       dispararToastsExcedente(data.warnings);
+      huboCambios = true;
       cerrarModalEditarHorario();
       Toast.fire({
         icon: "success",
@@ -1657,6 +1663,68 @@ async function editarTrimestralizacion(reg) {
 
   abrirModalEditarHorario();
   await renderRAEsPopup(idCompetenciaActual, raesActuales);
+}
+
+async function enviarHorario(){
+  console.log("enviarHorario: huboCambios =", huboCambios);
+  console.log("horariosOriginal:", horariosOriginal);
+  console.log("horariosCache:", horariosCache);
+  
+  if(!huboCambios)
+  {
+    Toast.fire({
+      icon: "info",
+      title: "No hay cambios activos para enviar",
+    });
+    return;
+  }
+
+  const antes = JSON.parse(horariosOriginal);
+  const despues = horariosCache;
+
+let texto = "CAMBIOS DEL HORARIO: \n\n";
+despues.forEach((nuevo, index) => {
+  const viejo = antes[index];
+  if(!viejo) return;
+
+  if(viejo.dia !== nuevo.dia || viejo.hora_inicio !== nuevo.hora_inicio || viejo.hora_fin !== nuevo.hora_fin){
+    texto += `ID: ${nuevo.id_horario}\n`;
+    texto += `Dia: ${viejo.dia} ${viejo.hora_inicio} - ${viejo.hora_fin} \n`;
+    texto += `Nuevo Dia: ${nuevo.dia} ${nuevo.hora_inicio} - ${nuevo.hora_fin} \n\n`;
+  }
+});
+try{
+  const id_instructor = window.USUARIO_ID || 1;
+  const res = await fetch(`${API_BASE}src/controllers/SolicitudController.php`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      accion: "crear",
+      tipo_solicitud: "HORARIO",
+      id_instructor_solicitante: id_instructor,
+      cambios: texto,
+    })
+  });
+const data = await res.json();
+if(data.status === "success"){
+  Toast.fire({
+    icon: "success",
+    title: "Solicitud de cambio enviada exitosamente",
+  });
+  huboCambios = false;
+}else{
+  Toast.fire({
+    icon:"error",
+    title: data.message || "Error al enviar la solicitud",
+  });
+}
+}catch(e){
+  console.error("Error:", e);
+  Toast.fire({
+    icon:"error",
+    title: "Error al enviar solicitud de cambio",
+  });
+}
 }
 
 
@@ -1920,6 +1988,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnGuardarEdit) {
     btnGuardarEdit.addEventListener("click", () => {
       enviarEdicionHorarioDesdeModal();
+      huboCambios = true;
     });
   }
 

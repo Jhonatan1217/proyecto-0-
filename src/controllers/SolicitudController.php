@@ -15,8 +15,9 @@ if (!isset($conn)) {
 
 $solicitud = new Solicitud($conn);
 
-// Acción desde GET o POST
-$accion = $_POST['accion'] ?? $_GET['accion'] ?? null;
+// Acción desde GET, POST o JSON body
+$input = json_decode(file_get_contents('php://input'), true) ?? [];
+$accion = $_POST['accion'] ?? $_GET['accion'] ?? $input['accion'] ?? null;
 $response = ["status" => "error", "message" => "Acción no válida"];
 
 if (!$accion) {
@@ -107,24 +108,23 @@ switch ($accion) {
     // CREAR SOLICITUD CON DETALLES
     // ===============================
     case 'crear':
-        $tipo_solicitud = $_POST['tipo_solicitud'] ?? null;
-        $id_instructor_solicitante = $_POST['id_instructor_solicitante'] ?? null;
-        $detalles = $_POST['detalles'] ?? null;
+        $tipo_solicitud = $input['tipo_solicitud'] ?? $_POST['tipo_solicitud'] ?? null;
+        $id_instructor_solicitante = $input['id_instructor_solicitante'] ?? $_POST['id_instructor_solicitante'] ?? null;
+        $detalles = $input['detalles'] ?? $_POST['detalles'] ?? null;
+        $cambios = $input['cambios'] ?? null;
 
         if (!$tipo_solicitud || !$id_instructor_solicitante) {
             $response = ["status" => "error", "message" => "Debe enviar tipo_solicitud (HORARIO/DATOS) e id_instructor_solicitante"];
             break;
         }
-
-        // Validar tipo_solicitud
-        if (!in_array($tipo_solicitud, ['HORARIO', 'DATOS'])) {
-            $response = ["status" => "error", "message" => "tipo_solicitud debe ser HORARIO o DATOS"];
-            break;
-        }
-
-        // Procesar detalles si vienen en JSON
-        if ($detalles && is_string($detalles)) {
-            $detalles = json_decode($detalles, true);
+        if($cambios){
+            $detalles = [
+                [
+                "campo_modificado" => "HORARIO",
+                "valor_anterior" => "",
+                "valor_nuevo" => $cambios
+            ]
+        ];
         }
 
         $response = $solicitud->crear($tipo_solicitud, $id_instructor_solicitante, $detalles ?: []);

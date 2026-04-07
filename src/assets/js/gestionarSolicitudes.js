@@ -579,6 +579,7 @@ async function aprobarSolicitud() {
     if (!solicitudActualId) return;
 
     try {
+        const id_coordinador = window.USUARIO_ID || 1;
         const response = await fetch(`${API_URL}?accion=responder`, {
             method: 'POST',
             headers: {
@@ -588,24 +589,37 @@ async function aprobarSolicitud() {
                 id_solicitud: solicitudActualId,
                 estado: 'APROBADO',
                 observacion_respuesta: '',
-                id_coordinador_aprobador: 1 // Reemplazar con el ID del coordinador actual
+                id_coordinador_aprobador: id_coordinador
             })
         });
 
         const resultado = await response.json();
         
         if (resultado.status === 'success') {
-            alert('✅ Solicitud aprobada correctamente');
+            Swal.fire({
+                icon: 'success',
+                title: '✅ Solicitud aprobada correctamente',
+                timer: 2000
+            });
             cerrarModalConfirmar();
             cerrarModal();
-            // Recargar la lista
-            location.reload(); // Recarga simple, o puedes llamar a cargarSolicitudes()
+            // Recargar la lista sin refrescar la página completa
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
         } else {
-            alert('❌ Error al aprobar: ' + resultado.message);
+            Swal.fire({
+                icon: 'error',
+                title: '❌ Error al aprobar',
+                text: resultado.message
+            });
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('❌ Error de conexión');
+        Swal.fire({
+            icon: 'error',
+            title: '❌ Error de conexión'
+        });
     }
 }
 
@@ -615,11 +629,15 @@ async function devolverSolicitud() {
     const motivo = document.getElementById("motivoDevolucionInput").value.trim();
     
     if (!motivo) {
-        alert('⚠️ Debes ingresar un motivo de devolución');
+        Swal.fire({
+            icon: 'warning',
+            title: '⚠️ Debes ingresar un motivo de devolución'
+        });
         return;
     }
 
     try {
+        const id_coordinador = window.USUARIO_ID || 1;
         const response = await fetch(`${API_URL}?accion=responder`, {
             method: 'POST',
             headers: {
@@ -629,24 +647,37 @@ async function devolverSolicitud() {
                 id_solicitud: solicitudActualId,
                 estado: 'DEVUELTO',
                 observacion_respuesta: motivo,
-                id_coordinador_aprobador: 1 // Reemplazar con el ID del coordinador actual
+                id_coordinador_aprobador: id_coordinador
             })
         });
 
         const resultado = await response.json();
         
         if (resultado.status === 'success') {
-            alert('✅ Solicitud devuelta correctamente');
+            Swal.fire({
+                icon: 'success',
+                title: '✅ Solicitud devuelta correctamente',
+                timer: 2000
+            });
             cerrarModalDevolver();
             cerrarModal();
             // Recargar la lista
-            location.reload(); // Recarga simple, o puedes llamar a cargarSolicitudes()
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
         } else {
-            alert('❌ Error al devolver: ' + resultado.message);
+            Swal.fire({
+                icon: 'error',
+                title: '❌ Error al devolver',
+                text: resultado.message
+            });
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('❌ Error de conexión');
+        Swal.fire({
+            icon: 'error',
+            title: '❌ Error de conexión'
+        });
     }
 }
 

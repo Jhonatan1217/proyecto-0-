@@ -88,6 +88,11 @@ class Solicitud {
                 return ["status" => "error", "message" => "La solicitud ya ha sido respondida anteriormente"];
             }
 
+            // Si la solicitud es de HORARIO y se APRUEBA, aplicar los cambios
+            if ($solicitud['tipo_solicitud'] === 'HORARIO' && $estado === 'APROBADO') {
+                $this->aplicarCambiosHorario($id_solicitud);
+            }
+
             $sql = "UPDATE {$this->table} 
                     SET estado = :estado, 
                         observacion_respuesta = :observacion_respuesta,
@@ -105,7 +110,7 @@ class Solicitud {
             if ($stmt->rowCount() > 0) {
                 return [
                     "status" => "success", 
-                    "message" => "Solicitud respondida correctamente.", 
+                    "message" => "Solicitud respondida correctamente. Cambios aplicados.", 
                     "data" => $this->obtenerPorId($id_solicitud)
                 ];
             } else {
@@ -113,6 +118,68 @@ class Solicitud {
             }
         } catch (PDOException $e) {
             return ["status" => "error", "message" => "Error al responder solicitud: " . $e->getMessage()];
+        }
+    }
+
+    // Función auxiliar para aplicar cambios de horario
+    private function aplicarCambiosHorario($id_solicitud) {
+        try {
+            // Obtener los detalles de la solicitud
+            $sql_detalles = "SELECT valor_nuevo FROM {$this->table_detalle} 
+                            WHERE id_solicitud = :id_solicitud AND campo_modificado = 'HORARIO'";
+            $stmt_detalles = $this->conn->prepare($sql_detalles);
+            $stmt_detalles->bindParam(':id_solicitud', $id_solicitud, PDO::PARAM_INT);
+            $stmt_detalles->execute();
+            
+            $detalles = $stmt_detalles->fetchAll(PDO::FETCH_ASSOC);
+            
+            if (empty($detalles)) {
+                return false;
+            }
+
+            // Parsear el texto de cambios
+            $texto_cambios = $detalles[0]['valor_nuevo'] ?? '';
+            
+            if (empty($texto_cambios)) {
+                return false;
+            }
+
+            // Dividir por bloques de cambios (separados por ID:)
+            $cambios_aplicados = 0;
+            
+            // Expresión regular para extraer: ID, Nuevo Día y horas
+            if (preg_match_all('/ID:\s*(\d+)\s*.*?Nuevo\s+Dia:\s*(\w+)\s+(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/is', $texto_cambios, $matches)) {
+                
+                for ($i = 0; $i < count($matches[0]); $i++) {
+                    $id_horario = $matches[1][$i];
+                    $nuevo_dia = strtoupper($matches[2][$i]);
+                    $hora_inicio = $matches[3][$i] . ':' . $matches[4][$i];
+                    $hora_fin = $matches[5][$i] . ':' . $matches[6][$i];
+                    
+                    // Actualizar en la tabla de horarios
+                    $sql_update = "UPDATE horarios 
+                                   SET dia = :dia, 
+                                       hora_inicio = :hora_inicio, 
+                                       hora_fin = :hora_fin
+                                   WHERE id_horario = :id_horario";
+                    
+                    $stmt_update = $this->conn->prepare($sql_update);
+                    $stmt_update->bindParam(':dia', $nuevo_dia);
+                    $stmt_update->bindParam(':hora_inicio', $hora_inicio);
+                    $stmt_update->bindParam(':hora_fin', $hora_fin);
+                    $stmt_update->bindParam(':id_horario', $id_horario, PDO::PARAM_INT);
+                    
+                    if ($stmt_update->execute()) {
+                        $cambios_aplicados++;
+                    }
+                }
+            }
+            
+            return $cambios_aplicados > 0;
+            
+        } catch (PDOException $e) {
+            error_log("Error al aplicar cambios de horario: " . $e->getMessage());
+            return false;
         }
     }
 
