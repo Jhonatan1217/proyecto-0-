@@ -30,6 +30,30 @@ let horariosCache = [];
 let gestionHorasCache = { instructores: [], grupos: [] };
 let gestionHorasTabActual = "instructores";
 
+function getGestionHorasAccionConfig() {
+  if (gestionHorasTabActual === "grupos") {
+    return {
+      text: "Gestionar grupos",
+      title: "Ir a gestión de grupos",
+      url: `${API_BASE}index.php?page=src/views/gestionGrupos`,
+    };
+  }
+  return {
+    text: "Gestionar usuarios",
+    title: "Ir a gestión de usuarios",
+    url: `${API_BASE}index.php?page=src/views/gestionUsuarios`,
+  };
+}
+
+function syncGestionHorasAccionBtn() {
+  const btn = document.getElementById("btnIrGestionInstructores");
+  if (!btn) return;
+  const cfg = getGestionHorasAccionConfig();
+  btn.textContent = cfg.text;
+  btn.setAttribute("title", cfg.title);
+  btn.dataset.href = cfg.url;
+}
+
 function registroActivo(estado) {
   if (estado === undefined || estado === null || estado === "") return true;
   const valor = String(estado).trim().toLowerCase();
@@ -70,6 +94,14 @@ function renderExcedentePill(value) {
   return `<span class="gestion-horas-pill gestion-horas-pill--${estado}">${texto}</span>`;
 }
 
+function normalizarTextoFiltro(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
 function dispararToastsExcedente(warnings) {
   const instructores = Array.isArray(warnings?.instructores) ? warnings.instructores : [];
   const grupos = Array.isArray(warnings?.grupos) ? warnings.grupos : [];
@@ -102,24 +134,24 @@ async function cargarResumenGestionHoras() {
 }
 
 function getGestionHorasFiltrados() {
-  const search = String(document.getElementById("gestionHorasSearch")?.value || "").trim().toLowerCase();
-  const extra = String(document.getElementById("gestionHorasExtraFiltro")?.value || "").trim().toLowerCase();
+  const search = normalizarTextoFiltro(document.getElementById("gestionHorasSearch")?.value || "");
+  const extra = normalizarTextoFiltro(document.getElementById("gestionHorasExtraFiltro")?.value || "");
 
   if (gestionHorasTabActual === "instructores") {
     return gestionHorasCache.instructores.filter((item) => {
       const bySearch = !search
-        || String(item.nombre_instructor || "").toLowerCase().includes(search)
-        || String(item.id_instructor || "").toLowerCase().includes(search);
-      const byExtra = !extra || String(item.tipo_contrato || "").toLowerCase() === extra;
+        || normalizarTextoFiltro(item.nombre_instructor || "").includes(search)
+        || normalizarTextoFiltro(item.id_instructor || "").includes(search);
+      const byExtra = !extra || normalizarTextoFiltro(item.tipo_contrato || "") === extra;
       return bySearch && byExtra;
     });
   }
 
   return gestionHorasCache.grupos.filter((item) => {
     const bySearch = !search
-      || String(item.id_grupo || "").toLowerCase().includes(search)
-      || String(item.id_ficha || "").toLowerCase().includes(search);
-    const byExtra = !extra || String(item.nivel_grupo || "").toLowerCase() === extra;
+      || normalizarTextoFiltro(item.id_grupo || "").includes(search)
+      || normalizarTextoFiltro(item.id_ficha || "").includes(search);
+    const byExtra = !extra || normalizarTextoFiltro(item.nivel_grupo || "") === extra;
     return bySearch && byExtra;
   });
 }
@@ -127,15 +159,24 @@ function getGestionHorasFiltrados() {
 function renderGestionHorasResumen(rows) {
   const resumen = document.getElementById("gestionHorasResumen");
   if (!resumen) return;
+  const excedidos = rows.filter(
+    (item) => Number(item?.horas_actuales ?? 0) > Number(item?.horas_maximas ?? 0)
+  );
+  const totalExcedidos = excedidos.length;
+  const alertHtml = totalExcedidos
+    ? `<div class="gh-alert gh-alert--danger">Se detectaron ${totalExcedidos} ${gestionHorasTabActual === "instructores" ? "instructor(es)" : "grupo(s)"} por encima del límite de horas.</div>`
+    : `<div class="gh-alert gh-alert--ok">Sin excedentes de horas en ${gestionHorasTabActual === "instructores" ? "instructores" : "grupos"}.</div>`;
 
   if (gestionHorasTabActual === "instructores") {
     resumen.innerHTML = `
       <p class="gh-resumen-title">Instructores</p>
-      <p class="gh-resumen-sub">(Instructores Planta 32h, Instructores Contratista 40h)</p>`;
+      <p class="gh-resumen-sub">(Instructores Planta 32h, Instructores Contratista 40h)</p>
+      ${alertHtml}`;
   } else {
     resumen.innerHTML = `
       <p class="gh-resumen-title">Grupos</p>
-      <p class="gh-resumen-sub">(Cada grupo tiene un máximo de 30 horas semanales)</p>`;
+      <p class="gh-resumen-sub">(Cada grupo tiene un máximo de 30 horas semanales)</p>
+      ${alertHtml}`;
   }
 }
 
@@ -149,11 +190,12 @@ function renderGestionHoras() {
 
   if (tabInst) tabInst.classList.toggle("is-active", gestionHorasTabActual === "instructores");
   if (tabGrupos) tabGrupos.classList.toggle("is-active", gestionHorasTabActual === "grupos");
+  syncGestionHorasAccionBtn();
 
   if (gestionHorasTabActual === "instructores") {
     filtros.innerHTML = `
       <input id="gestionHorasSearch" type="text" placeholder="Buscar instructores" class="gh-filtros-input" />
-      <select id="gestionHorasExtraFiltro" class="gh-filtros-select">
+      <select id="gestionHorasExtraFiltro" class="gh-filtros-select select-styled">
         <option value="">Todos los tipos de contrato</option>
         <option value="planta">Planta</option>
         <option value="contratista">Contratista</option>
@@ -171,7 +213,7 @@ function renderGestionHoras() {
   } else {
     filtros.innerHTML = `
       <input id="gestionHorasSearch" type="text" placeholder="Buscar grupos" class="gh-filtros-input" />
-      <select id="gestionHorasExtraFiltro" class="gh-filtros-select">
+      <select id="gestionHorasExtraFiltro" class="gh-filtros-select select-styled">
         <option value="">Todos los niveles</option>
         <option value="técnico">Técnico</option>
         <option value="tecnólogo">Tecnólogo</option>
@@ -190,6 +232,18 @@ function renderGestionHoras() {
 
   document.getElementById("gestionHorasSearch")?.addEventListener("input", renderGestionHorasTabla);
   document.getElementById("gestionHorasExtraFiltro")?.addEventListener("change", renderGestionHorasTabla);
+  if (
+    typeof ComboboxComponent !== "undefined" &&
+    typeof ComboboxComponent.enhanceSelectStyled === "function"
+  ) {
+    ComboboxComponent.enhanceSelectStyled({
+      selector: "#modalGestionHoras select.select-styled",
+      forceDropup: true,
+      placeholderValues: [""],
+      maxDropdownItems: 6,
+      allowClear: true,
+    });
+  }
   renderGestionHorasTabla();
 }
 
@@ -220,7 +274,7 @@ function renderGestionHorasTabla() {
           <td class="center">${formatHourNumber(item.horas_maximas)}</td>
           <td class="center">${excHTML}</td>
           <td class="center">
-            <button type="button" class="gh-action-btn" onclick="window.location.href='${API_BASE}index.php?page=src/views/gestionInstructores'" title="Gestionar instructor">
+            <button type="button" class="gh-action-btn" onclick="window.location.href='${API_BASE}index.php?page=src/views/gestionUsuarios'" title="Gestionar usuarios">
               <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M4 20H8L18.5 9.5C19.33 8.67 19.33 7.33 18.5 6.5C17.67 5.67 16.33 5.67 15.5 6.5L5 17V20Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.5 8.5L16.5 11.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
           </td>
@@ -922,7 +976,7 @@ function renderizarTablaDesdeRegistros(registrosServer, emptyMessage = "No hay r
               data-hora-fin="${r.hora_fin ?? ""}"
               data-hora-rango="${r.hora_inicio ?? ""} - ${r.hora_fin ?? ""}"
               data-raes='${JSON.stringify(r.raesArray)}' 
-              style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+              style="display: flex; flex-direction: column; justify-content: center; height: 100%; gap: 0.35rem;">
             <div class="font-bold text-sm" style="color: #39a900; margin-bottom: 4px;">Competencia: ${r.nombre_competencia ?? "Sin competencia"}</div>
             <div class="flex items-start gap-1 text-xs text-gray-600" style="margin-bottom: 4px;">
               <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -948,7 +1002,7 @@ function renderizarTablaDesdeRegistros(registrosServer, emptyMessage = "No hay r
           </div>`;
 
       fila.innerHTML += `
-          <td rowspan="${rowspan}" class="p-0 text-sm text-center leading-tight align-top">
+          <td rowspan="${rowspan}" class="p-0 text-sm text-center leading-tight align-middle">
             ${contenido}
           </td>`;
     });
@@ -2111,7 +2165,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.querySelector("#modalGestionHoras .gh-backdrop")?.addEventListener("click", cerrarModalGestionHoras);
   document.getElementById("btnIrGestionInstructores")?.addEventListener("click", () => {
-    window.location.href = `${API_BASE}index.php?page=src/views/gestionInstructores`;
+    const cfg = getGestionHorasAccionConfig();
+    window.location.href = cfg.url;
   });
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;

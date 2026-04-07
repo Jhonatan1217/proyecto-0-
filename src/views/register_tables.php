@@ -442,7 +442,7 @@ if (isset($conn)) {
 
       <!-- Footer -->
       <div class="gh-footer">
-        <button type="button" id="btnIrGestionInstructores" class="rounded-lg border border-gray-400 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">Gestionar instructores</button>
+        <button type="button" id="btnIrGestionInstructores" class="rounded-lg border border-gray-400 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">Gestionar usuarios</button>
         <button type="button" id="btnAceptarGestionHoras" class="rounded-lg bg-[#00324d] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#00263b] transition">Aceptar</button>
       </div>
     </div>
