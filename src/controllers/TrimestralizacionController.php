@@ -435,7 +435,10 @@ case 'listarPorGrupo':
 
         try {
             $hasNivelFicha = hasColumn($conn, 'fichas', 'nivel_ficha');
-            $nivelFichaSelect = $hasNivelFicha ? "f.nivel_ficha" : "NULL AS nivel_ficha";
+            // Nivel mostrado: primero ficha; si vacío, el del programa (como en gestión de grupos).
+            $nivelFichaSelect = $hasNivelFicha
+                ? "COALESCE(NULLIF(TRIM(f.nivel_ficha), ''), NULLIF(TRIM(p.nivel_formacion), '')) AS nivel_ficha"
+                : "NULLIF(TRIM(p.nivel_formacion), '') AS nivel_ficha";
             $joinInstructores = "LEFT JOIN instructores i ON h.id_instructor = i.id_instructor";
             $selectInstructores = "i.id_instructor, i.nombre_instructor, i.tipo_instructor";
 
