@@ -90,6 +90,47 @@ th {
 	position: relative;
 }
 
+/* Fila input + botón limpiar (mismo patrón que combobox global) */
+.custom-combobox-field {
+	position: relative;
+	width: 100%;
+}
+
+.custom-combobox-field > input {
+	width: 100%;
+	box-sizing: border-box;
+	padding-right: 2.25rem;
+}
+
+.btn-clear-custom-combobox {
+	position: absolute;
+	right: 0.5rem;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 1.25rem;
+	height: 1.25rem;
+	display: none;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: none;
+	background: transparent;
+	color: #6b7280;
+	cursor: pointer;
+	border-radius: 9999px;
+	transition: color 0.15s ease, background 0.15s ease;
+	z-index: 2;
+}
+
+.btn-clear-custom-combobox:hover {
+	color: #374151;
+	background: #f3f4f6;
+}
+
+.btn-clear-custom-combobox.visible {
+	display: inline-flex;
+}
+
 .custom-combobox-panel {
 	position: absolute;
 	top: calc(100% + 6px);
@@ -116,6 +157,10 @@ th {
 	max-height: 280px;
 	overflow-y: auto;
 	padding: 4px;
+}
+
+.custom-combobox-list.custom-combobox-list--max-rows-6 {
+	max-height: calc(6 * (20px + 0.875rem * 1.4) + 8px);
 }
 
 .custom-combobox-list::-webkit-scrollbar { width: 8px; }
@@ -164,12 +209,24 @@ th {
  * Cabecera register_tables: placeholders más suaves (modalidad vía select estilizado + área/zona/grupo).
  * El antiguo text-transform:lowercase en #selectModalidad hacía ver "seleccione" en lugar de "Seleccione".
  */
-#cabecera-trimestralizacion .input-filtro-register::placeholder {
+#cabecera-trimestralizacion .filter-search-input::placeholder {
 	opacity: 0.55;
 }
 
 #cabecera-trimestralizacion .select-styled-wrapper:has(#selectModalidad[value=""]) .select-styled-trigger-text {
 	opacity: 0.55;
+}
+
+/* Modal crear trimestralización: inputs tipo combobox = token global filter-search-input; placeholder legible */
+#modalCrearLanding .filter-search-input::placeholder {
+	color: #9ca3af !important;
+	opacity: 1 !important;
+}
+
+#modalCrearLanding .filter-search-input:disabled {
+	background-color: #f3f4f6;
+	cursor: not-allowed;
+	opacity: 0.7;
 }
 
 /* Misma caja tipográfica que .input-filtro-register (text-sm): el body usa text-center y heredaba al dropdown */
@@ -186,6 +243,10 @@ th {
 }
 
 /* ── Modal Gestión de Horas ──────────────────────────────────────────── */
+#modalGestionHoras {
+	z-index: 120000 !important;
+}
+
 .gh-backdrop { background: rgba(15, 23, 42, 0.45); }
 
 .gh-card {
@@ -193,6 +254,11 @@ th {
 	border-radius: 16px;
 	box-shadow: 0 8px 40px rgba(15, 23, 42, 0.18);
 	border: 1px solid #e2e8f0;
+	height: min(90vh, 46rem);
+	max-height: min(90vh, 46rem) !important;
+	overflow: hidden !important;
+	display: flex;
+	flex-direction: column;
 }
 
 .gh-header {
@@ -271,6 +337,27 @@ th {
 	margin: 0;
 }
 
+.gh-alert {
+	margin-top: 10px;
+	padding: 8px 10px;
+	border-radius: 8px;
+	font-size: 0.82rem;
+	font-weight: 600;
+	border: 1px solid transparent;
+}
+
+.gh-alert--danger {
+	background: #fef2f2;
+	border-color: #fecaca;
+	color: #991b1b;
+}
+
+.gh-alert--ok {
+	background: #ecfdf3;
+	border-color: #bbf7d0;
+	color: #166534;
+}
+
 .gh-filtros {
 	display: flex;
 	gap: 10px;
@@ -301,7 +388,9 @@ th {
 .gh-table-wrapper {
 	overflow-x: auto;
 	overflow-y: auto;
-	max-height: 340px;
+	flex: 1 1 auto;
+	min-height: 0;
+	max-height: none;
 	border: 1px solid #e5e7eb;
 	border-radius: 10px;
 }

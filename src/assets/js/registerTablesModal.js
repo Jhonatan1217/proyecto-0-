@@ -9,11 +9,61 @@
   'use strict';
 
   // ── Utilidades de combobox local ─────────────────────────────────────────
-  function initStyledCombobox({ input, panel, getItems, onSelect, getLabel, emptyText = 'Sin datos disponibles' }) {
+  function attachClearButton(input, panel, onClear) {
+    const host = input.closest('.custom-combobox');
+    if (!host || host.querySelector('.btn-clear-custom-combobox')) return;
+
+    const fieldRow = document.createElement('div');
+    fieldRow.className = 'custom-combobox-field';
+    host.insertBefore(fieldRow, input);
+    fieldRow.appendChild(input);
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-clear-custom-combobox';
+    btn.setAttribute('aria-label', 'Limpiar');
+    btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+    fieldRow.appendChild(btn);
+
+    function updateClearBtn() {
+      const show = !input.disabled && String(input.value || '').trim().length > 0;
+      btn.classList.toggle('visible', show);
+    }
+
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (panel) panel.classList.add('hidden');
+      input.value = '';
+      if (typeof onClear === 'function') onClear();
+      else {
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      updateClearBtn();
+      if (!input.disabled) {
+        queueMicrotask(() => {
+          input.focus({ preventScroll: true });
+        });
+      }
+    });
+
+    input.addEventListener('input', updateClearBtn);
+    input.addEventListener('change', updateClearBtn);
+    updateClearBtn();
+  }
+
+  function initStyledCombobox({ input, panel, getItems, onSelect, getLabel, emptyText = 'Sin datos disponibles', onClear, maxVisibleRows }) {
     if (!input || !panel || typeof getItems !== 'function') return;
 
     const list = panel.querySelector('.custom-combobox-list');
     if (!list) return;
+
+    if (maxVisibleRows === 6) {
+      list.classList.add('custom-combobox-list--max-rows-6');
+    }
+
+    attachClearButton(input, panel, onClear);
 
     const normalize = (v) => String(v || '').trim().toLowerCase();
 
@@ -63,14 +113,107 @@
     document.addEventListener('click', (e) => {
       const wrapper = input.closest('.custom-combobox');
       if (wrapper && !wrapper.contains(e.target)) closePanel();
-    });
+    }, true);
 
     input._styledCombobox = { render, closePanel, openPanel };
   }
 
+  /** Programa e instructor del modal crear: input + panel + select oculto (listado filtrable). */
+  function initModalProgramaInstructorCombos() {
+    const selProg   = document.getElementById('id_programa_select');
+    const inpProg   = document.getElementById('id_programa_combo');
+    const panelProg = document.getElementById('panelProgramaCrear');
+    const selIns    = document.getElementById('nombre_instructor');
+    const inpIns    = document.getElementById('id_instructor_combo');
+    const panelIns  = document.getElementById('panelInstructorCrear');
+
+    if (!selProg || !inpProg || !panelProg || !selIns || !inpIns || !panelIns) return;
+
+    function getProgramaItems() {
+      return Array.from(selProg.options)
+        .filter((opt) => opt.value !== '' && !opt.disabled)
+        .map((opt) => ({
+          label: String(opt.textContent || '').trim(),
+          id: String(opt.value || '')
+        }))
+        .filter((item) => item.id);
+    }
+
+    initStyledCombobox({
+      input: inpProg,
+      panel: panelProg,
+      getItems: getProgramaItems,
+      onSelect: (item) => {
+        selProg.value = item.id || '';
+        selProg.dispatchEvent(new Event('change', { bubbles: true }));
+      },
+      getLabel: (item) => item.label,
+      emptyText: 'Sin programas disponibles',
+      onClear: () => {
+        selProg.value = '';
+        selProg.dispatchEvent(new Event('change', { bubbles: true }));
+      },
+      maxVisibleRows: 6
+    });
+
+    function getInstructorItems() {
+      return Array.from(selIns.options)
+        .filter((opt) => opt.value !== '' && !opt.disabled)
+        .map((opt) => ({
+          label: String(opt.textContent || '').trim(),
+          id: String(opt.value || '')
+        }))
+        .filter((item) => item.id);
+    }
+
+    initStyledCombobox({
+      input: inpIns,
+      panel: panelIns,
+      getItems: getInstructorItems,
+      onSelect: (item) => {
+        selIns.value = item.id || '';
+        selIns.dispatchEvent(new Event('change', { bubbles: true }));
+      },
+      getLabel: (item) => item.label,
+      emptyText: 'Sin instructores disponibles',
+      onClear: () => {
+        selIns.value = '';
+        selIns.dispatchEvent(new Event('change', { bubbles: true }));
+      },
+      maxVisibleRows: 6
+    });
+
+    function syncProgInputFromSelect() {
+      const v = selProg.value;
+      if (!v) {
+        inpProg.value = '';
+      } else {
+        const opt = Array.from(selProg.options).find((o) => String(o.value) === String(v));
+        inpProg.value = opt ? String(opt.textContent || '').trim() : '';
+      }
+      inpProg.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    function syncInsInputFromSelect() {
+      const v = selIns.value;
+      if (!v) {
+        inpIns.value = '';
+      } else {
+        const opt = Array.from(selIns.options).find((o) => String(o.value) === String(v));
+        inpIns.value = opt ? String(opt.textContent || '').trim() : '';
+      }
+      inpIns.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    selProg.addEventListener('change', syncProgInputFromSelect);
+    selIns.addEventListener('change', syncInsInputFromSelect);
+    syncProgInputFromSelect();
+    syncInsInputFromSelect();
+  }
+
   // ── Init comboboxes (cabecera + modal crear) ─────────────────────────────
   function initComboboxes() {
-    const grupoData       = document.getElementById('listaGruposData');
+    const grupoData        = document.getElementById('listaGruposData');
     const inputGrupoFiltro = document.getElementById('inputGrupoTexto');
     const panelGrupoFiltro = document.getElementById('panelGrupoFiltro');
     const inputGrupoCrear  = document.getElementById('numero_ficha');
@@ -84,13 +227,25 @@
     const panelArea = document.getElementById('panelAreaCrear');
     const panelZona = document.getElementById('panelZonaCrear');
 
-    if (!selArea || !selZona || !inpArea || !inpZona || !listAreas || !listZonas) return;
-
     const grupos = grupoData
       ? Array.from(grupoData.options)
           .map((opt) => ({ label: String(opt.value || '').trim() }))
           .filter((item) => item.label !== '')
       : [];
+
+    // Cabecera: número de grupo (no depender del modal para que siempre sea combobox)
+    if (inputGrupoFiltro && panelGrupoFiltro) {
+      initStyledCombobox({
+        input: inputGrupoFiltro,
+        panel: panelGrupoFiltro,
+        getItems: () => grupos,
+        onSelect: () => {},
+        getLabel: (item) => item.label,
+        maxVisibleRows: 6
+      });
+    }
+
+    if (!selArea || !selZona || !inpArea || !inpZona || !listAreas || !listZonas) return;
 
     function findDatalistOption(listEl, value) {
       const target = String(value || '').trim().toLowerCase();
@@ -129,13 +284,9 @@
       selZona.value = zonaOpt ? String(zonaOpt.dataset.id || '') : '';
     }
 
-    // Grupo (filtro cabecera)
-    initStyledCombobox({ input: inputGrupoFiltro, panel: panelGrupoFiltro,
-      getItems: () => grupos, onSelect: () => {}, getLabel: (item) => item.label });
-
     // Grupo (modal crear)
     initStyledCombobox({ input: inputGrupoCrear, panel: panelGrupoCrear,
-      getItems: () => grupos, onSelect: () => {}, getLabel: (item) => item.label });
+      getItems: () => grupos, onSelect: () => {}, getLabel: (item) => item.label, maxVisibleRows: 6 });
 
     // Área (modal crear)
     initStyledCombobox({
@@ -151,7 +302,9 @@
         inpZona.disabled = !item.id;
         cargarZonasSegunArea(item.id || '');
       },
-      getLabel: (item) => item.label
+      getLabel: (item) => item.label,
+      onClear: () => { syncAreaFromInput(); },
+      maxVisibleRows: 6
     });
 
     // Zona (modal crear)
@@ -163,7 +316,12 @@
         area:  String(opt.dataset.area || '')
       })),
       onSelect: (item) => { selZona.value = item.id || ''; },
-      getLabel: (item) => item.label
+      getLabel: (item) => item.label,
+      onClear: () => {
+        selZona.value = '';
+        selZona.dispatchEvent(new Event('change', { bubbles: true }));
+      },
+      maxVisibleRows: 6
     });
 
     // Competencia (modal crear)
@@ -192,7 +350,12 @@
           selComp.dispatchEvent(new Event('change', { bubbles: true }));
         },
         getLabel: (item) => item.label,
-        emptyText: 'Sin competencias para este programa'
+        emptyText: 'Sin competencias para este programa',
+        onClear: () => {
+          selComp.value = '';
+          selComp.dispatchEvent(new Event('change', { bubbles: true }));
+        },
+        maxVisibleRows: 6
       });
 
       if (selProgForComp) {
@@ -200,6 +363,10 @@
           inpComp.value = '';
           selComp.value = '';
           selComp.dispatchEvent(new Event('change', { bubbles: true }));
+          if (inpComp._styledCombobox && typeof inpComp._styledCombobox.closePanel === 'function') {
+            inpComp._styledCombobox.closePanel();
+          }
+          inpComp.dispatchEvent(new Event('change', { bubbles: true }));
         });
       }
     }
@@ -442,10 +609,73 @@
     });
   }
 
+  /**
+   * Rellena #nombre_instructor vía API si el PHP no trajo opciones (mismo criterio que cargarProgramasFallback).
+   * Debe ejecutarse antes de initModalProgramaInstructorCombos.
+   */
+  async function cargarInstructoresFallback() {
+    const sel = document.getElementById('nombre_instructor');
+    if (!sel) return;
+    const yaTiene = Array.from(sel.options).some(
+      (opt) => opt.value && !String(opt.textContent || '').toLowerCase().includes('sin datos disponibles')
+    );
+    if (yaTiene) return;
+
+    const base = (window.BASE_URL || '').replace(/\/+$/, '/');
+    try {
+      const res = await fetch(base + 'src/controllers/InstructorController.php?accion=listar');
+      if (!res.ok) return;
+      const data = await res.json();
+      const arr = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
+      if (!arr.length) return;
+
+      const activos = arr.filter((i) => {
+        const e = i.estado;
+        return e === undefined || e === null || String(e) === '1' || e === 1;
+      });
+      const lista = activos.length ? activos : arr;
+
+      sel.innerHTML = '<option value="">Seleccione el instructor</option>';
+      lista.forEach((i) => {
+        const id = i.id_instructor ?? i.id_usuario ?? '';
+        const nombre = i.nombre_instructor ?? i.nombre_completo ?? '';
+        const tipo = i.tipo_instructor ?? i.tipo_contrato ?? '';
+        if (!id) return;
+        const opt = document.createElement('option');
+        opt.value = String(id);
+        if (tipo) opt.setAttribute('data-tipo', String(tipo));
+        opt.textContent = nombre + (tipo ? ' — ' + tipo : '');
+        sel.appendChild(opt);
+      });
+    } catch (e) {
+      console.warn('No se pudieron cargar instructores (fallback):', e);
+    }
+  }
+
+  /** Selects del modal Crear trimestralización: mismo componente global que el resto del sistema */
+  function initEnhanceModalTrimestralSelects() {
+    if (typeof ComboboxComponent === 'undefined' || typeof ComboboxComponent.enhanceSelectStyled !== 'function') return;
+    const form = document.getElementById('formTrimestralizacion');
+    if (!form) return;
+    ComboboxComponent.enhanceSelectStyled({
+      selector: '#formTrimestralizacion select.select-styled',
+      placeholder: 'Seleccione…',
+      placeholderValues: [''],
+    });
+  }
+
   // ── Bootstrap ────────────────────────────────────────────────────────────
-  document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('DOMContentLoaded', async function () {
+    initEnhanceModalTrimestralSelects();
+    await cargarInstructoresFallback();
+    initModalProgramaInstructorCombos();
     initComboboxes();
     initProgramasYCompetencias();
     initModalRaes();
   });
+
+  /** Expuesto para registerTables.js (modal editar horario: combobox filtrable). */
+  window.registerTablesModalHelpers = {
+    initStyledCombobox: initStyledCombobox
+  };
 })();

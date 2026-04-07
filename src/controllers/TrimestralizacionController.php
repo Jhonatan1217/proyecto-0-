@@ -239,10 +239,14 @@ function fetchInstructorHourSummaries(PDO $conn, string $tablaHorario, ?array $i
 
 function fetchGroupHourSummaries(PDO $conn, string $tablaHorario, ?array $ids = null) {
     $params = [];
-    $nivelSelect = hasColumn($conn, 'fichas', 'nivel_ficha') ? 'f.nivel_ficha' : "'' AS nivel_ficha";
+    $nivelFichaExpr = hasColumn($conn, 'fichas', 'nivel_ficha') ? "NULLIF(TRIM(f.nivel_ficha), '')" : "NULL";
+    $joinPrograma = hasColumn($conn, 'fichas', 'id_programa') ? 'LEFT JOIN programas p ON p.id_programa = f.id_programa' : '';
+    $nivelProgramaExpr = $joinPrograma ? "NULLIF(TRIM(p.nivel_formacion), '')" : "NULL";
+    $nivelSelect = "COALESCE({$nivelFichaExpr}, {$nivelProgramaExpr}, '') AS nivel_ficha";
     $sql = "
         SELECT f.id_ficha, f.numero_ficha, {$nivelSelect}
         FROM fichas f
+        {$joinPrograma}
         WHERE f.numero_ficha IS NOT NULL
           AND f.numero_ficha <> ''
     ";
