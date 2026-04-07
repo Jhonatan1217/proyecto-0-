@@ -455,8 +455,17 @@ if (isset($conn)) {
 
   <!-- Combobox global (select estilizado) para modalidad en cabecera -->
   <script src="<?= BASE_URL ?>src/assets/js/components/combobox.js"></script>
-  <!-- Scripts de la vista de tablas (SOLO una vez registerTables.js para evitar el error de urlParams) -->
-  <script src="<?= BASE_URL ?>src/assets/js/registerTables.js"></script>
+  <!-- RegisterTables: orden fijo (namespace window.RegisterTables); cargar una sola vez la cadena -->
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/config.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/utils.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/templates.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/gestionHoras.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/areasFiltros.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/grid.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/trimestralizacionData.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/editHorario.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/modalsPdf.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/init.js"></script>
   <script src="<?= BASE_URL ?>src/assets/js/html2canvas.min.js"></script>
   <script src="<?= BASE_URL ?>src/assets/js/jspdf.umd.min.js"></script>
 

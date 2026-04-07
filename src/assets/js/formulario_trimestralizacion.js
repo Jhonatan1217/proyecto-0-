@@ -572,11 +572,10 @@ if (!window.TRIMESTRALIZACION_INIT) {
 
           dispararToastsExcedente(data.warnings);
 
-          Swal.fire({
+          Toast.fire({
             icon: "success",
             title: "Trimestralización creada",
-            text: "Ahora puedes decidir si deseas duplicarla en otros días.",
-            confirmButtonText: "Continuar"
+            text: "Ahora puedes decidir si deseas duplicarla en otros días."
           });
 
           abrirModalDuplicar({

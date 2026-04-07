@@ -674,7 +674,7 @@
     initModalRaes();
   });
 
-  /** Expuesto para registerTables.js (modal editar horario: combobox filtrable). */
+  /** Expuesto para registerTables (modal editar horario: combobox filtrable). */
   window.registerTablesModalHelpers = {
     initStyledCombobox: initStyledCombobox
   };
