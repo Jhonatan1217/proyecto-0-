@@ -72,6 +72,31 @@ function formatHourNumber(value) {
   return Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, "");
 }
 
+/** Alinea horas del servidor (ej. 06:00:00) con opciones del select (HH:00). */
+function normalizarHoraParaSelectEditar(hora) {
+  if (hora == null || hora === "") return "";
+  const parts = String(hora).trim().split(":");
+  const h = parseInt(parts[0], 10);
+  const m = parseInt(parts[1] ?? "0", 10);
+  if (!Number.isFinite(h)) return "";
+  return `${String(h).padStart(2, "0")}:${String(Number.isFinite(m) ? m : 0).padStart(2, "0")}`;
+}
+
+function etiquetaNivelGrupo(f) {
+  const raw = f?.nivel ?? f?.nivel_ficha ?? f?.nivel_formacion ?? "";
+  const s = String(raw).trim();
+  return s || "Sin nivel";
+}
+
+function refreshEditarHorarioNativeSelectsUi() {
+  ["editDia", "editHoraInicio", "editHoraFin"].forEach((id) => {
+    const s = document.getElementById(id);
+    if (!s) return;
+    const w = s.closest(".combobox-wrapper");
+    if (w && typeof w._cbUpdateInput === "function") w._cbUpdateInput();
+  });
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -961,8 +986,9 @@ function renderizarTablaDesdeRegistros(registrosServer, emptyMessage = "No hay r
         omitirFilasPorDia[dia] = rowspan - 1;
       }
 
+      const nivelGrupoTxt = String(r.nivel_ficha ?? "").trim() || "Sin nivel";
       const contenido = `
-          <div class="registro"
+          <div class="registro horario-registro"
               data-id="${r.id_horario || ""}"
               data-id-instructor="${r.id_instructor ?? ""}"
               data-instructor="${r.nombre_instructor ?? ""}"
@@ -976,16 +1002,16 @@ function renderizarTablaDesdeRegistros(registrosServer, emptyMessage = "No hay r
               data-hora-fin="${r.hora_fin ?? ""}"
               data-hora-rango="${r.hora_inicio ?? ""} - ${r.hora_fin ?? ""}"
               data-raes='${JSON.stringify(r.raesArray)}' 
-              style="display: flex; flex-direction: column; justify-content: center; height: 100%; gap: 0.35rem;">
-            <div class="font-bold text-sm" style="color: #39a900; margin-bottom: 4px;">Competencia: ${r.nombre_competencia ?? "Sin competencia"}</div>
-            <div class="flex items-start gap-1 text-xs text-gray-600" style="margin-bottom: 4px;">
-              <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              >
+            <div class="font-bold text-sm horario-registro-line" style="color: #39a900;">Competencia: ${r.nombre_competencia ?? "Sin competencia"}</div>
+            <div class="horario-registro-line flex items-center justify-center gap-1 text-xs text-gray-600">
+              <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                 <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
               </svg>
               <span>${r.nombre_instructor ?? ""}</span>
             </div>
-            <div class="flex items-start gap-1 text-xs text-gray-600" style="margin-bottom: 4px;">
-              <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <div class="horario-registro-line flex items-center justify-center gap-1 text-xs text-gray-600">
+              <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                 <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
                 <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
               </svg>
@@ -993,8 +1019,15 @@ function renderizarTablaDesdeRegistros(registrosServer, emptyMessage = "No hay r
                 ${r.numero_ficha ?? "—"}
               </span>
             </div>
-            <div class="flex items-start gap-1 text-xs text-gray-500">
-              <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <div class="horario-registro-line flex items-center justify-center gap-1 text-xs text-gray-600">
+              <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+              </svg>
+              <span>Nivel: ${escapeHtml(nivelGrupoTxt)}</span>
+            </div>
+            <div class="horario-registro-line flex items-center justify-center gap-1 text-xs text-gray-500">
+              <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
               </svg>
               <span>${duracionHoras} hora${duracionHoras > 1 ? "s" : ""}</span>
@@ -1360,7 +1393,37 @@ async function obtenerRoesPorCompetencia(id_competencia) {
 // Funcion de editar
 // ======================
 
-let editarHorarioContext = { idHorario: "", id_zona_val: "", id_area_val: "" };
+let editarHorarioContext = { idHorario: "", id_zona_val: "", id_area_val: "", snapshotInicial: null };
+
+function capturarSnapshotEdicionHorario() {
+  const raes = [...document.querySelectorAll("#editRAEs input:checked")]
+    .map((chk) => String(chk.value))
+    .sort();
+  return {
+    dia: String(document.getElementById("editDia")?.value ?? ""),
+    horaInicio: normalizarHoraParaSelectEditar(document.getElementById("editHoraInicio")?.value ?? ""),
+    horaFin: normalizarHoraParaSelectEditar(document.getElementById("editHoraFin")?.value ?? ""),
+    ficha: String(document.getElementById("editFicha")?.value ?? ""),
+    idInstructor: String(document.getElementById("editInstructor")?.value ?? ""),
+    idCompetencia: String(document.getElementById("editCompetencia")?.value ?? ""),
+    raesKey: raes.join(","),
+    descripcion: String(document.getElementById("editDescripcion")?.value ?? "").trim(),
+  };
+}
+
+function snapshotsEdicionHorarioIguales(a, b) {
+  if (!a || !b) return false;
+  return (
+    a.dia === b.dia &&
+    a.horaInicio === b.horaInicio &&
+    a.horaFin === b.horaFin &&
+    a.ficha === b.ficha &&
+    a.idInstructor === b.idInstructor &&
+    a.idCompetencia === b.idCompetencia &&
+    a.raesKey === b.raesKey &&
+    a.descripcion === b.descripcion
+  );
+}
 
 /** Día y horas: desplegable estilo sistema (chevron, X opcional, máx. 6 filas, encima del modal). */
 function ensureEditarHorarioNativeSelectsEnhanced() {
@@ -1508,6 +1571,12 @@ async function enviarEdicionHorarioDesdeModal() {
     return;
   }
 
+  const actual = capturarSnapshotEdicionHorario();
+  if (snapshotsEdicionHorarioIguales(actual, editarHorarioContext.snapshotInicial)) {
+    setEditHorarioValidation("No hay cambios respecto al horario actual.");
+    return;
+  }
+
   try {
     const payload = [out.value];
     const resUpdate = await fetch(`${API_BASE}src/controllers/TrimestralizacionController.php?accion=actualizar`, {
@@ -1590,7 +1659,7 @@ async function editarTrimestralizacion(reg) {
 
   const optionFichas = listaFichas
     .map((f) => {
-      const nivel = f.nivel_formacion || f.nivel_ficha || "Sin nivel";
+      const nivel = etiquetaNivelGrupo(f);
       return `<option value="${f.numero_ficha}" ${String(f.numero_ficha) === String(ficha) ? "selected" : ""}>
       ${f.numero_ficha} - Nivel ${nivel}
     </option>`;
@@ -1598,18 +1667,37 @@ async function editarTrimestralizacion(reg) {
     .join("");
 
   const horas = Array.from({ length: 16 }, (_, i) => i + 6);
-  const horaOpcionesInicio = horas
-    .map(
-      (h) =>
-        `<option value="${String(h).padStart(2, "0")}:00" ${String(h).padStart(2, "0") + ":00" === horaInicio ? "selected" : ""}>${String(h).padStart(2, "0")}:00</option>`
-    )
-    .join("");
-  const horaOpcionesFin = horas
-    .map(
-      (h) =>
-        `<option value="${String(h).padStart(2, "0")}:00" ${String(h).padStart(2, "0") + ":00" === horaFin ? "selected" : ""}>${String(h).padStart(2, "0")}:00</option>`
-    )
-    .join("");
+  const hiNorm = normalizarHoraParaSelectEditar(horaInicio);
+  const hfNorm = normalizarHoraParaSelectEditar(horaFin);
+  const slotsEstandar = new Set(horas.map((h) => `${String(h).padStart(2, "0")}:00`));
+
+  let extraIni = "";
+  let extraFin = "";
+  if (hiNorm && !slotsEstandar.has(hiNorm)) {
+    extraIni = `<option value="${hiNorm}" selected>${hiNorm}</option>`;
+  }
+  if (hfNorm && !slotsEstandar.has(hfNorm)) {
+    extraFin = `<option value="${hfNorm}" selected>${hfNorm}</option>`;
+  }
+
+  const horaOpcionesInicio = extraIni
+    + horas
+      .map(
+        (h) => {
+          const v = `${String(h).padStart(2, "0")}:00`;
+          return `<option value="${v}" ${v === hiNorm ? "selected" : ""}>${v}</option>`;
+        }
+      )
+      .join("");
+  const horaOpcionesFin = extraFin
+    + horas
+      .map(
+        (h) => {
+          const v = `${String(h).padStart(2, "0")}:00`;
+          return `<option value="${v}" ${v === hfNorm ? "selected" : ""}>${v}</option>`;
+        }
+      )
+      .join("");
 
   const diasSemana = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"];
   const selDia = document.getElementById("editDia");
@@ -1649,6 +1737,7 @@ async function editarTrimestralizacion(reg) {
 
   ensureEditarHorarioComboBusquedaEnhance();
   refreshEditarHorarioComboBusquedaUi();
+  refreshEditarHorarioNativeSelectsUi();
 
   ["editDia", "editHoraInicio", "editHoraFin"].forEach((id) => {
     const s = document.getElementById(id);
@@ -1656,7 +1745,9 @@ async function editarTrimestralizacion(reg) {
   });
 
   abrirModalEditarHorario();
+  refreshEditarHorarioNativeSelectsUi();
   await renderRAEsPopup(idCompetenciaActual, raesActuales);
+  editarHorarioContext.snapshotInicial = capturarSnapshotEdicionHorario();
 }
 
 
@@ -1676,7 +1767,13 @@ async function renderRAEsPopup(idCompetencia, raesMarcados = []) {
   cont.innerHTML = raes
     .map((rae) => {
       const desc = (rae.descripcion || rae.descripcion_rae || "").trim();
-      const checked = raesMarcados.includes(`${rae.id_rae} - ${desc}`) ? "checked" : "";
+      const idRae = String(rae.id_rae ?? "");
+      const checked = raesMarcados.some((m) => {
+        const s = String(m ?? "");
+        return s === `${idRae} - ${desc}` || s === idRae || s.startsWith(`${idRae} -`);
+      })
+        ? "checked"
+        : "";
       return `
       <label class="flex items-start gap-2 mb-1 py-1.5 px-2 rounded-lg hover:bg-white/80 cursor-pointer border border-transparent hover:border-gray-200/80">
         <input type="checkbox" class="mt-0.5 rounded border-gray-300 text-[#39A900] focus:ring-[#39A900] focus:ring-offset-0" value="${rae.id_rae}" ${checked}>
