@@ -28,7 +28,6 @@
     RT.data.configurarModalidadFormulario();
 
     if (S.id_zona) {
-      UI.toggleTabla(true);
       RT.data.cargarTrimestralizacion();
     } else {
       UI.toggleTabla(false);

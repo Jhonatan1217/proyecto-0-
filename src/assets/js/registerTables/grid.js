@@ -16,8 +16,6 @@
     const tbody = document.getElementById("tbody-horarios");
     if (!tbody) return false;
 
-    tbody.innerHTML = "";
-
     const activos = (Array.isArray(registrosServer) ? registrosServer : []).filter(
       (d) => d && (d.estado === 1 || d.estado === "1")
     );
@@ -112,6 +110,7 @@
       omitirFilasPorDia[dia] = 0;
     });
 
+    const frag = document.createDocumentFragment();
     horas.forEach((hora) => {
       const fila = document.createElement("tr");
       fila.className = "";
@@ -199,9 +198,10 @@
           </td>`;
       });
 
-      tbody.appendChild(fila);
+      frag.appendChild(fila);
     });
 
+    tbody.replaceChildren(frag);
     RT.ui.toggleTabla(true);
     G.bindTablePopupDelegates();
     return true;

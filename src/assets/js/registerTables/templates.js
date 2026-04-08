@@ -127,17 +127,17 @@
     accionesZonaLibre: function (isAuth) {
       if (isAuth) {
         return `
-          <div class="mt-8 flex justify-end gap-3">
-            <button id="btnCerrarPopupZonaLibre" class="bg-[#00324d] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">Cerrar</button>
-            <button id="btnAbrirModalZonaLibre" class="bg-gray-200 text-gray-800 text-sm px-6 py-2 rounded-lg hover:bg-gray-300 transition flex items-center justify-center w-full sm:w-auto">
+          <div class="mt-8 flex flex-col gap-3 items-end sm:flex-row sm:justify-end sm:items-center">
+            <button id="btnAbrirModalZonaLibre" class="bg-[#00324d] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-auto max-w-full">
               Agregar Horario
             </button>
+            <button id="btnCerrarPopupZonaLibre" type="button" class="bg-white border border-gray-300 text-gray-800 text-sm px-6 py-2 rounded-lg hover:bg-gray-50 transition flex items-center justify-center w-auto max-w-full">Cerrar</button>
           </div>
         `;
       }
       return `
           <div class="mt-8 flex justify-end gap-3">
-            <button id="btnCerrarPopupZonaLibre" class="bg-[#00324d] text-white text-sm px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">Cerrar</button>
+            <button id="btnCerrarPopupZonaLibre" type="button" class="bg-white border border-gray-300 text-gray-800 text-sm px-6 py-2 rounded-lg hover:bg-gray-50 transition flex items-center justify-center w-full sm:w-auto">Cerrar</button>
           </div>
         `;
     },

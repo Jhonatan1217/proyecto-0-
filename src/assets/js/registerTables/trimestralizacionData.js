@@ -55,12 +55,13 @@
     const id_area = selectArea ? selectArea.value : "";
 
     if (!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500">Cargando datos...</td></tr>`;
 
     if (!S.id_zona || !id_area) {
       RT.ui.toggleTabla(false);
       return;
     }
+
+    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500">Cargando datos...</td></tr>`;
 
     try {
       const modalidad = String(document.getElementById("selectModalidad")?.value || "presencial")

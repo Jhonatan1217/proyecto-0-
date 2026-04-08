@@ -217,6 +217,34 @@ th {
 	opacity: 0.55;
 }
 
+/* Área / zona: deshabilitados hasta elegir modalidad — sin hover de borde y aspecto claramente gris */
+#cabecera-trimestralizacion .filter-search-input:disabled {
+	background-color: #e5e7eb;
+	color: #6b7280;
+	border-color: #c4c4c9;
+	cursor: not-allowed;
+	opacity: 1;
+}
+
+#cabecera-trimestralizacion .filter-search-input:disabled::placeholder {
+	color: #9ca3af;
+	opacity: 1;
+}
+
+#cabecera-trimestralizacion .filter-search-input:disabled:hover {
+	border-color: #c4c4c9;
+	box-shadow: none;
+}
+
+#cabecera-trimestralizacion .custom-combobox:has(.filter-search-input:disabled) {
+	cursor: not-allowed;
+}
+
+#cabecera-trimestralizacion #contenedorAreaFiltro:has(#inputAreaTexto:disabled) label,
+#cabecera-trimestralizacion #contenedorZonaFiltro:has(#inputZonaTexto:disabled) label {
+	color: #6b7280;
+}
+
 /* Modal crear trimestralización: inputs tipo combobox = token global filter-search-input; placeholder legible */
 #modalCrearLanding .filter-search-input::placeholder {
 	color: #9ca3af !important;

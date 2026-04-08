@@ -200,10 +200,34 @@
     );
   };
 
+  /**
+   * Área y zona solo usables con modalidad "presencial"; zona además requiere área.
+   */
+  RT.ui.sincronizarHabilitacionFiltrosAreaZona = function () {
+    const selectModalidad = document.getElementById("selectModalidad") || document.getElementById("selectModalidadFiltro");
+    const sa = document.getElementById("selectArea");
+    const ia = document.getElementById("inputAreaTexto");
+    const sz = document.getElementById("selectZona");
+    const iz = document.getElementById("inputZonaTexto");
+    if (!selectModalidad) return;
+
+    const v = String(selectModalidad.value || "").trim().toLowerCase();
+    const mod = v === "mixta" ? "mixto" : v;
+    const presencial = mod === "presencial";
+    const tieneArea = Boolean(sa && String(sa.value || "").trim());
+
+    if (ia) ia.disabled = !presencial;
+    if (sa) sa.disabled = !presencial;
+    if (iz) iz.disabled = !presencial || !tieneArea;
+    if (sz) {
+      if (!presencial || !tieneArea) sz.disabled = true;
+    }
+  };
+
   RT.ui.configurarFiltros = function () {
     const selectModalidad = document.getElementById("selectModalidad") || document.getElementById("selectModalidadFiltro");
-    const selectArea = document.getElementById("contenedorAreaFiltro") || document.getElementById("selectArea")?.parentElement;
-    const selectZona = document.getElementById("contenedorZonaFiltro") || document.getElementById("selectZona")?.parentElement;
+    const contenedorArea = document.getElementById("contenedorAreaFiltro") || document.getElementById("selectArea")?.parentElement;
+    const contenedorZona = document.getElementById("contenedorZonaFiltro") || document.getElementById("selectZona")?.parentElement;
     const contenedorGrupo = document.getElementById("contenedorGrupoFiltro");
     const inputGrupo = document.getElementById("inputGrupoTexto");
 
@@ -247,8 +271,8 @@
 
       const modalidad = normalizarModalidad(selectModalidad.value);
       if (modalidad === "presencial") {
-        if (selectArea) selectArea.classList.remove("hidden");
-        if (selectZona) selectZona.classList.remove("hidden");
+        if (contenedorArea) contenedorArea.classList.remove("hidden");
+        if (contenedorZona) contenedorZona.classList.remove("hidden");
         if (contenedorGrupo) contenedorGrupo.classList.add("hidden");
 
         if (S.id_zona && document.getElementById("selectArea")?.value) {
@@ -257,8 +281,8 @@
           RT.ui.toggleTabla(false);
         }
       } else if (modalidad === "virtual" || modalidad === "mixto") {
-        if (selectArea) selectArea.classList.add("hidden");
-        if (selectZona) selectZona.classList.add("hidden");
+        if (contenedorArea) contenedorArea.classList.add("hidden");
+        if (contenedorZona) contenedorZona.classList.add("hidden");
         if (contenedorGrupo) contenedorGrupo.classList.remove("hidden");
 
         RT.ui.toggleTabla(false);
@@ -268,8 +292,13 @@
           RT.data.cargarTrimestralizacionPorGrupo(valor);
         }
       } else {
+        if (contenedorArea) contenedorArea.classList.remove("hidden");
+        if (contenedorZona) contenedorZona.classList.remove("hidden");
+        if (contenedorGrupo) contenedorGrupo.classList.add("hidden");
         RT.ui.toggleTabla(false);
       }
+
+      RT.ui.sincronizarHabilitacionFiltrosAreaZona();
     });
 
     const modalidadInicial = RT.filtrosIniciales.modalidad === "mixta" ? "mixto" : RT.filtrosIniciales.modalidad;
@@ -287,6 +316,7 @@
       }
     }
 
+    RT.ui.sincronizarHabilitacionFiltrosAreaZona();
     S.cascadaFiltrosPresencialActiva = true;
   };
 
@@ -435,6 +465,7 @@
           inputArea.dispatchEvent(new Event("change", { bubbles: true }));
         }
         await cargarZonasPorArea(id_area);
+        RT.ui.sincronizarHabilitacionFiltrosAreaZona();
         setTimeout(() => RT.ui.configurarComboboxZona(), 100);
       });
 
@@ -458,7 +489,6 @@
         }
         const h1 = document.querySelector("#cabecera-trimestralizacion h1");
         if (h1) h1.innerHTML = `VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA ${S.id_zona}`;
-        RT.ui.toggleTabla(true);
         RT.data.cargarTrimestralizacion();
         T.fire({ icon: "info", title: `Zona ${S.id_zona} seleccionada` });
       });
@@ -476,7 +506,6 @@
           if (RT.filtrosIniciales.id_zona && selectZona.value === RT.filtrosIniciales.id_zona) {
             const h1 = document.querySelector("#cabecera-trimestralizacion h1");
             if (h1) h1.innerHTML = `VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA ${RT.filtrosIniciales.id_zona}`;
-            RT.ui.toggleTabla(true);
             RT.data.cargarTrimestralizacion();
           }
         }
@@ -484,6 +513,7 @@
 
       RT.ui.configurarComboboxArea();
       RT.ui.configurarComboboxZona();
+      RT.ui.sincronizarHabilitacionFiltrosAreaZona();
     } catch (err) {
       console.error("Error en cargarAreasYZonas:", err);
       T.fire({ icon: "error", title: "Error al conectar con el servidor" });
