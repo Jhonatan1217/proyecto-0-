@@ -7,8 +7,6 @@
   const S = RT.state;
   const U = RT.util;
   const T = RT.Toast;
-  const GH = RT.gestionHoras;
-
   const E = {};
 
   E.hasOverlap = function ({ dia, inicio, fin, excludeId }) {
@@ -203,6 +201,40 @@
     };
   };
 
+  E.aplicarEdicionHorarioEnCache = function (outValue) {
+    const index = S.horariosCache.findIndex((h) => String(h.id_horario) === String(outValue.id_horario));
+    if (index === -1) return false;
+
+    const prev = S.horariosCache[index];
+    const raesArray = [...document.querySelectorAll("#editRAEs input:checked")].map((chk) => {
+      const span = chk.closest("label")?.querySelector("span");
+      return span ? span.textContent.trim() : String(chk.value);
+    });
+
+    const inst = S.listaInstructores.find((i) => String(i.id_instructor) === String(outValue.id_instructor));
+    const comp = S.listaCompetencias.find((c) => String(c.id_competencia) === String(outValue.id_competencia));
+    const fich = S.listaFichas.find((f) => String(f.numero_ficha) === String(outValue.numero_ficha));
+
+    const merged = { ...prev, ...outValue, raesArray };
+    delete merged.raes;
+
+    if (inst) {
+      merged.nombre_instructor = inst.nombre_instructor;
+      merged.tipo_instructor = inst.tipo_instructor;
+    }
+    if (comp) {
+      merged.nombre_competencia = comp.nombre_competencia;
+    }
+    if (fich) {
+      merged.nivel_ficha = fich.nivel_ficha;
+      if (fich.programa_formacion != null) merged.programa_formacion = fich.programa_formacion;
+      if (fich.nombre_programa != null) merged.nombre_programa = fich.nombre_programa;
+    }
+
+    S.horariosCache[index] = merged;
+    return true;
+  };
+
   E.enviarEdicionHorarioDesdeModal = async function () {
     E.setEditHorarioValidation("");
     const out = E.recolectarPayloadEdicionHorario();
@@ -218,39 +250,25 @@
     }
 
     try {
-      const payload = [out.value];
-      const resUpdate = await fetch(`${RT.API_BASE}src/controllers/TrimestralizacionController.php?accion=actualizar`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      if (!E.aplicarEdicionHorarioEnCache(out.value)) {
+        throw new Error("No se encontró el horario en la tabla actual.");
+      }
+      S.huboCambios = true;
+      if (typeof RT.solicitud.detectarCambios === "function") {
+        RT.solicitud.detectarCambios();
+      }
+      E.cerrarModalEditarHorario();
+      T.fire({
+        icon: "success",
+        title: "Horario modificado",
       });
-
-      if (!resUpdate.ok) {
-        throw new Error(`HTTP error! status: ${resUpdate.status}`);
-      }
-
-      const data = await resUpdate.json();
-      const esExito = data.success === true || data.success === "true" || data.status === "success";
-
-      if (esExito) {
-        GH.dispararToastsExcedente(data.warnings);
-        E.cerrarModalEditarHorario();
-        T.fire({
-          icon: "success",
-          title: data.message || data.mensaje || "Horario actualizado correctamente",
-        });
-        RT.data.cargarTrimestralizacion();
-      } else {
-        console.error("Error del servidor:", data);
-        const msg = data.error || data.message || data.mensaje || "Error al actualizar el horario.";
-        E.setEditHorarioValidation(msg);
-        T.fire({ icon: "error", title: msg });
-      }
+      RT.grid.renderizarTablaDesdeRegistros(S.horariosCache, "", { filtersApplied: true });
     } catch (e) {
-      console.error("Error en actualización:", e);
-      const msg = e.message || "Ocurrió un problema de conexión al actualizar.";
-      E.setEditHorarioValidation(msg);
-      T.fire({ icon: "error", title: msg });
+      console.error("Error al editar horario:", e);
+      T.fire({
+        icon: "error",
+        title: "Error al editar horario",
+      });
     }
   };
 

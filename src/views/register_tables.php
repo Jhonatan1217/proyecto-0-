@@ -462,6 +462,7 @@ if (isset($conn)) {
   <script src="<?= BASE_URL ?>src/assets/js/registerTables/gestionHoras.js"></script>
   <script src="<?= BASE_URL ?>src/assets/js/registerTables/areasFiltros.js"></script>
   <script src="<?= BASE_URL ?>src/assets/js/registerTables/grid.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/solicitudCambiosHorario.js"></script>
   <script src="<?= BASE_URL ?>src/assets/js/registerTables/trimestralizacionData.js"></script>
   <script src="<?= BASE_URL ?>src/assets/js/registerTables/editHorario.js"></script>
   <script src="<?= BASE_URL ?>src/assets/js/registerTables/modalsPdf.js"></script>

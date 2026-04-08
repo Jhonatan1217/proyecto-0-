@@ -32,6 +32,10 @@
     },
     /** Tras init, al cambiar modalidad se limpian área/zona (evita borrar query params al cargar). */
     cascadaFiltrosPresencialActiva: false,
+    /** Snapshot JSON de horariosCache para comparar cambios pendientes de envío a coordinación */
+    horariosOriginal: null,
+    /** Hay ediciones locales no enviadas como solicitud */
+    huboCambios: false,
   };
 
   RT.API_BASE = ((w && w.BASE_URL) || "").replace(/\/+$/, "/");
@@ -62,6 +66,7 @@
   RT.edit = RT.edit || {};
   RT.ui = RT.ui || {};
   RT.modals = RT.modals || {};
+  RT.solicitud = RT.solicitud || {};
   RT.modals.abrirModal = RT.modals.abrirModal || function () {
     console.warn("RegisterTables.modals.abrirModal no inicializado aún");
   };

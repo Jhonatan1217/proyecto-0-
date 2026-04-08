@@ -24,6 +24,10 @@
       tbody.innerHTML = "";
       const emptyMode = opts.filtersApplied ? "filtered-empty" : "default";
       RT.ui.toggleTabla(false, emptyMode);
+      if (!S.huboCambios) {
+        S.horariosCache = [];
+        S.horariosOriginal = JSON.stringify(S.horariosCache);
+      }
       return false;
     }
 
@@ -51,11 +55,17 @@
           nombre_programa: r.nombre_programa,
           id_competencia: r.id_competencia,
           nombre_competencia: r.nombre_competencia,
-          raesArray: [],
+          raesArray: Array.isArray(r.raesArray) ? [...r.raesArray] : [],
         });
       }
 
       const agr = mapHorarios.get(id);
+      if (Array.isArray(r.raesArray)) {
+        r.raesArray.forEach((txt) => {
+          const s = String(txt || "").trim();
+          if (s && !agr.raesArray.includes(s)) agr.raesArray.push(s);
+        });
+      }
       if (r.id_rae) {
         const textoRae = `${r.id_rae} - ${r.descripcion_rae ?? ""}`.trim();
         if (textoRae && !agr.raesArray.includes(textoRae)) {
@@ -66,6 +76,9 @@
 
     const horariosAgrupados = Array.from(mapHorarios.values());
     S.horariosCache = horariosAgrupados;
+    if (!S.huboCambios) {
+      S.horariosOriginal = JSON.stringify(S.horariosCache);
+    }
 
     horariosAgrupados.forEach((h) => {
       if (h.raesArray.length) {

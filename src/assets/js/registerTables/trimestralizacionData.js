@@ -43,6 +43,9 @@
       const registrosServer = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
 
       RT.grid.renderizarTablaDesdeRegistros(registrosServer, "", { filtersApplied: true });
+      if (typeof RT.solicitud.detectarCambios === "function") {
+        RT.solicitud.detectarCambios();
+      }
     } catch (e) {
       console.error(e);
       T.fire({ icon: "error", title: "Error al cargar datos por grupo" });
@@ -89,6 +92,9 @@
           icon: "info",
           title: "Sin registros con los filtros actuales",
         });
+      }
+      if (typeof RT.solicitud.detectarCambios === "function") {
+        RT.solicitud.detectarCambios();
       }
     } catch (error) {
       console.error("Error al cargar:", error);
