@@ -10,7 +10,7 @@
   const ED = RT.edit;
   const MD = RT.modals;
 
-  function initRegisterTables() {
+  async function initRegisterTables() {
     if (typeof ComboboxComponent !== "undefined" && typeof ComboboxComponent.enhanceSelectStyled === "function") {
       ComboboxComponent.enhanceSelectStyled({
         selector: "#selectModalidad",
@@ -20,7 +20,7 @@
     }
 
     UI.cargarFiltrosSuperiores();
-    UI.cargarAreasYZonas();
+    await UI.cargarAreasYZonas();
     UI.configurarFiltros();
     RT.data.cargarFichas();
     RT.data.cargarInstructores();
@@ -141,5 +141,7 @@
     w.mostrarModalEliminar = MD.mostrarModalEliminar;
   }
 
-  document.addEventListener("DOMContentLoaded", initRegisterTables);
+  document.addEventListener("DOMContentLoaded", () => {
+    void initRegisterTables();
+  });
 })(window);

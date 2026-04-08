@@ -230,6 +230,21 @@
     }
 
     selectModalidad.addEventListener("change", () => {
+      if (S.cascadaFiltrosPresencialActiva) {
+        const inputGrupoEl = document.getElementById("inputGrupoTexto");
+        if (inputGrupoEl) inputGrupoEl.value = "";
+        const sa = document.getElementById("selectArea");
+        const ia = document.getElementById("inputAreaTexto");
+        if (ia) {
+          ia.value = "";
+          ia.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        if (sa) {
+          sa.value = "";
+          sa.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      }
+
       const modalidad = normalizarModalidad(selectModalidad.value);
       if (modalidad === "presencial") {
         if (selectArea) selectArea.classList.remove("hidden");
@@ -271,6 +286,8 @@
         RT.data.cargarTrimestralizacionPorGrupo(RT.filtrosIniciales.numero_ficha);
       }
     }
+
+    S.cascadaFiltrosPresencialActiva = true;
   };
 
   RT.ui.cargarAreasYZonas = async function () {
@@ -400,6 +417,13 @@
 
       selectArea.addEventListener("change", async (e) => {
         const id_area = e.target.value;
+        RT.ui.toggleTabla(false);
+        S.id_zona = null;
+        const inputZonaClear = document.getElementById("inputZonaTexto");
+        if (inputZonaClear) {
+          inputZonaClear.value = "";
+          inputZonaClear.dispatchEvent(new Event("change", { bubbles: true }));
+        }
         const inputArea = document.getElementById("inputAreaTexto");
         if (inputArea) {
           if (!id_area) {

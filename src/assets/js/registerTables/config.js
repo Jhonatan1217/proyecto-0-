@@ -30,6 +30,8 @@
       id_area_val: "",
       snapshotInicial: null,
     },
+    /** Tras init, al cambiar modalidad se limpian área/zona (evita borrar query params al cargar). */
+    cascadaFiltrosPresencialActiva: false,
   };
 
   RT.API_BASE = ((w && w.BASE_URL) || "").replace(/\/+$/, "/");

@@ -144,9 +144,17 @@
           omitirFilasPorDia[dia] = rowspan - 1;
         }
 
-        const nivelGrupoTxt = String(r.nivel_ficha ?? "").trim() || "Sin nivel";
+        const nivelGrupoRaw = String(r.nivel_ficha ?? "").trim();
+        const nivelGrupoNorm = nivelGrupoRaw
+          ? nivelGrupoRaw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+          : "";
+        const nivelGrupoTxt = !nivelGrupoRaw
+          ? "Sin nivel"
+          : nivelGrupoNorm === "tecnologo"
+          ? "Tecnólogo"
+          : nivelGrupoRaw;
         const contenido = `
-          <div class="registro horario-registro cursor-pointer hover:bg-gray-50"
+          <div class="registro horario-registro h-full flex flex-col items-start justify-start text-left cursor-pointer hover:bg-gray-50"
               data-id="${r.id_horario || ""}"
               data-id-instructor="${r.id_instructor ?? ""}"
               data-instructor="${r.nombre_instructor ?? ""}"
@@ -162,13 +170,13 @@
               data-raes='${JSON.stringify(r.raesArray)}'
               >
             <div class="font-bold text-sm horario-registro-line" style="color: #39a900;">Competencia: ${r.nombre_competencia ?? "Sin competencia"}</div>
-            <div class="horario-registro-line flex items-center justify-center gap-1 text-xs text-gray-600">
+            <div class="horario-registro-line w-full flex items-center justify-start gap-1 text-xs text-gray-600">
               <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                 <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
               </svg>
               <span>${r.nombre_instructor ?? ""}</span>
             </div>
-            <div class="horario-registro-line flex items-center justify-center gap-1 text-xs text-gray-600">
+            <div class="horario-registro-line w-full flex items-center justify-start gap-1 text-xs text-gray-600">
               <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                 <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
                 <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
@@ -177,7 +185,7 @@
                 ${U.escapeHtml(nivelGrupoTxt)} · ${U.escapeHtml(String(r.numero_ficha ?? "—"))}
               </span>
             </div>
-            <div class="horario-registro-line flex items-center justify-center gap-1 text-xs text-gray-500">
+            <div class="horario-registro-line w-full flex items-center justify-start gap-1 text-xs text-gray-500">
               <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
               </svg>
@@ -186,7 +194,7 @@
           </div>`;
 
         fila.innerHTML += `
-          <td rowspan="${rowspan}" class="p-0 text-sm text-center leading-tight align-middle">
+          <td rowspan="${rowspan}" class="td-con-registro p-0 text-sm text-left leading-tight align-middle">
             ${contenido}
           </td>`;
       });
