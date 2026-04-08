@@ -18,7 +18,10 @@ if (!isset($conn)) {
 
 // Instancia el modelo Horario pasando la conexión a la base de datos
 $horario = new Horario($conn);
-$accion = $_POST["accion"] ?? $_GET["accion"] ?? null;
+
+// Lee desde JSON body o POST/GET
+$input = json_decode(file_get_contents('php://input'), true) ?? [];
+$accion = $_POST["accion"] ?? $_GET["accion"] ?? $input["accion"] ?? null;
 
 // Respuesta base
 $response = ["status" => "error", "message" => "Acción no válida"];
@@ -31,16 +34,16 @@ if ($accion) {
         // ===============================
         case "crear":
             // Parámetros necesarios
-            $dia = $_POST["dia"];
-            $hora_inicio = $_POST["hora_inicio"];
-            $hora_fin = $_POST["hora_fin"];
-            $id_zona = $_POST["id_zona"];
-            $id_area = $_POST["id_area"];
-            $id_ficha = $_POST["id_ficha"];
-            $id_instructor = $_POST["id_instructor"];
-            $id_competencia = $_POST["id_competencia"];
-            $id_rae = $_POST["id_rae"];
-            $numero_trimestre = $_POST["numero_trimestre"];
+            $dia = $input["dia"] ?? $_POST["dia"] ?? null;
+            $hora_inicio = $input["hora_inicio"] ?? $_POST["hora_inicio"] ?? null;
+            $hora_fin = $input["hora_fin"] ?? $_POST["hora_fin"] ?? null;
+            $id_zona = $input["id_zona"] ?? $_POST["id_zona"] ?? null;
+            $id_area = $input["id_area"] ?? $_POST["id_area"] ?? null;
+            $id_ficha = $input["id_ficha"] ?? $_POST["id_ficha"] ?? null;
+            $id_instructor = $input["id_instructor"] ?? $_POST["id_instructor"] ?? null;
+            $id_competencia = $input["id_competencia"] ?? $_POST["id_competencia"] ?? null;
+            $id_rae = $input["id_rae"] ?? $_POST["id_rae"] ?? null;
+            $numero_trimestre = $input["numero_trimestre"] ?? $_POST["numero_trimestre"] ?? null;
             // Llamar al método de creación
             $resultado = $horario->crearHorario($dia, $hora_inicio, $hora_fin, $id_zona, $id_area, $id_ficha, $id_instructor, $id_competencia, $id_rae, $numero_trimestre);
             // Responder según el resultado
@@ -56,12 +59,12 @@ if ($accion) {
         // ===============================
         case "actualizar":
             // Parámetros necesarios
-            $id_horario = $_POST["id_horario"];
-            $id_ficha = $_POST["id_ficha"];
-            $numero_trimestre = $_POST["numero_trimestre"];
-            $id_instructor = $_POST["id_instructor"];
-            $id_competencia = $_POST["id_competencia"];
-            $id_rae = $_POST["id_rae"];
+            $id_horario = $input["id_horario"] ?? $_POST["id_horario"] ?? null;
+            $id_ficha = $input["id_ficha"] ?? $_POST["id_ficha"] ?? null;
+            $numero_trimestre = $input["numero_trimestre"] ?? $_POST["numero_trimestre"] ?? null;
+            $id_instructor = $input["id_instructor"] ?? $_POST["id_instructor"] ?? null;
+            $id_competencia = $input["id_competencia"] ?? $_POST["id_competencia"] ?? null;
+            $id_rae = $input["id_rae"] ?? $_POST["id_rae"] ?? null;
             // Llamar al método de actualización
             $resultado = $horario->actualizarHorario($id_horario, $id_ficha, $numero_trimestre, $id_instructor, $id_competencia, $id_rae);
             // Responder según el resultado
@@ -73,10 +76,42 @@ if ($accion) {
             break;
 
         // ===============================
+        // ACTUALIZAR HORARIO COMPLETO (con día y horas)
+        // ===============================
+        case "actualizarCompleto":
+            // Parámetros desde JSON body o POST (enviados por aplicarCambiosHorario)
+            $id_horario = $input["id_horario"] ?? $_POST["id_horario"] ?? null;
+            $dia = $input["dia"] ?? $_POST["dia"] ?? null;
+            $hora_inicio = $input["hora_inicio"] ?? $_POST["hora_inicio"] ?? null;
+            $hora_fin = $input["hora_fin"] ?? $_POST["hora_fin"] ?? null;
+            $id_ficha = $input["id_ficha"] ?? $_POST["id_ficha"] ?? null;
+            $numero_trimestre = $input["numero_trimestre"] ?? $_POST["numero_trimestre"] ?? null;
+            $id_instructor = $input["id_instructor"] ?? $_POST["id_instructor"] ?? null;
+            $id_competencia = $input["id_competencia"] ?? $_POST["id_competencia"] ?? null;
+            $id_rae = $input["id_rae"] ?? $_POST["id_rae"] ?? null;
+            
+            // Validar parámetro obligatorio
+            if (!$id_horario) {
+                $response = ["status" => "error", "message" => "id_horario es requerido"];
+                break;
+            }
+            
+            // Llamar al método de actualización completo
+            $resultado = $horario->actualizarHorarioCompleto($id_horario, $dia, $hora_inicio, $hora_fin, $id_ficha, $numero_trimestre, $id_instructor, $id_competencia, $id_rae);
+            
+            // Responder según el resultado
+            if ($resultado) {
+                $response = ["status" => "success", "message" => "Horario actualizado correctamente (cambios aprobados)."];
+            } else {
+                $response = ["status" => "error", "message" => "Error al actualizar el horario."];
+            }
+            break;
+
+        // ===============================
         // INHABILITAR HORARIOS POR ZONA
         // ===============================
         case "inhabilitarZona":
-            $id_zona = $_POST["id_zona"]; // Parámetro necesario
+            $id_zona = $input["id_zona"] ?? $_POST["id_zona"] ?? null;
             // Llamar al método de inhabilitación
             $resultado = $horario->inhabilitarPorZona($id_zona);
             // Responder según el resultado
@@ -91,7 +126,7 @@ if ($accion) {
         // ACTIVAR HORARIO
         // ===============================
         case "activar":
-            $id_horario = $_POST["id_horario"]; // Parámetro necesario
+            $id_horario = $input["id_horario"] ?? $_POST["id_horario"] ?? null;
             // Llamar al método de activación
             $resultado = $horario->activarHorario($id_horario);
             // Responder según el resultado

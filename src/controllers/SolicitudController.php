@@ -113,11 +113,18 @@ switch ($accion) {
         $detalles = $input['detalles'] ?? $_POST['detalles'] ?? null;
         $cambios = $input['cambios'] ?? null;
 
+        if (is_string($detalles)) {
+            $dec = json_decode($detalles, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $detalles = $dec;
+            }
+        }
+
         if (!$tipo_solicitud || !$id_instructor_solicitante) {
             $response = ["status" => "error", "message" => "Debe enviar tipo_solicitud (HORARIO/DATOS) e id_instructor_solicitante"];
             break;
         }
-        if($cambios){
+        if($cambios && empty($detalles)){
             $detalles = [
                 [
                 "campo_modificado" => "HORARIO",
