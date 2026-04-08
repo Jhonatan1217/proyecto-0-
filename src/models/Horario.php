@@ -77,6 +77,44 @@ class Horario {
     }
 
     /**
+     * Actualizar un horario con todos los campos (incluyendo día y horas)
+     * Se usa cuando se aprueban cambios desde el frontend
+     */
+    public function actualizarHorarioCompleto($id_horario, $dia, $hora_inicio, $hora_fin, $id_ficha, $numero_trimestre, $id_instructor, $id_competencia, $id_rae) {
+        try {
+            $sql = "UPDATE " . $this->table . " 
+                    SET dia = :dia,
+                        hora_inicio = :hora_inicio,
+                        hora_fin = :hora_fin,
+                        id_ficha = :id_ficha, 
+                        numero_trimestre = :numero_trimestre, 
+                        id_instructor = :id_instructor, 
+                        id_competencia = :id_competencia,
+                        id_rae = :id_rae
+                    WHERE id_horario = :id_horario";
+
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':id_horario', $id_horario);
+            $stmt->bindParam(':dia', $dia);
+            $stmt->bindParam(':hora_inicio', $hora_inicio);
+            $stmt->bindParam(':hora_fin', $hora_fin);
+            $stmt->bindParam(':id_ficha', $id_ficha);
+            $stmt->bindParam(':numero_trimestre', $numero_trimestre);
+            $stmt->bindParam(':id_instructor', $id_instructor);
+            $stmt->bindParam(':id_competencia', $id_competencia);
+            $stmt->bindParam(':id_rae', $id_rae);
+
+            if ($stmt->execute()) {
+                return true;
+            }
+            return false;
+        } catch (PDOException $e) {
+            echo "Error al actualizar horario completo: " . $e->getMessage();
+            return false;
+        }
+    }
+
+    /**
      * Inhabilitar (limpiar) todos los horarios de una zona
      * Cambia el estado a 0 en todos los horarios con ese id_zona
      */

@@ -318,7 +318,7 @@ if (isset($conn)) {
         Limpiar Trimestralización
       </button>
 
-      <button onclick="enviarHorario()" class="bg-[#0a3a57] text-white px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">
+      <button onclick="enviarHorario()" class="hidden bg-[#0a3a57] text-white px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">
         Enviar horario
       </button>
       <?php endif; ?> 
@@ -455,8 +455,18 @@ if (isset($conn)) {
 
   <!-- Combobox global (select estilizado) para modalidad en cabecera -->
   <script src="<?= BASE_URL ?>src/assets/js/components/combobox.js"></script>
-  <!-- Scripts de la vista de tablas (SOLO una vez registerTables.js para evitar el error de urlParams) -->
-  <script src="<?= BASE_URL ?>src/assets/js/registerTables.js"></script>
+  <!-- RegisterTables: orden fijo (namespace window.RegisterTables); cargar una sola vez la cadena -->
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/config.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/utils.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/templates.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/gestionHoras.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/areasFiltros.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/grid.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/solicitudCambiosHorario.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/trimestralizacionData.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/editHorario.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/modalsPdf.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/init.js"></script>
   <script src="<?= BASE_URL ?>src/assets/js/html2canvas.min.js"></script>
   <script src="<?= BASE_URL ?>src/assets/js/jspdf.umd.min.js"></script>
 
