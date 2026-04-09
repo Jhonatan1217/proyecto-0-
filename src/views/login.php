@@ -1,5 +1,12 @@
 <?php
 // login.php
+if (!defined('BASE_URL')) {
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+    $host = $_SERVER['HTTP_HOST'];
+    $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
+    $project = preg_replace('#/src/.*$#', '', $scriptDir);
+    define('BASE_URL', $protocol . $host . $project . '/');
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -115,9 +122,12 @@
                         >
                         <button type="button"
                             id="togglePasswordBtn"
-                            onclick="togglePassword()"
-                            class="absolute top-1/2 right-3 -translate-y-1/2 w-5 h-5 text-gray-500">
-                            👁
+                            onclick="togglePasswordVisibility('password', 'loginEyeIcon')"
+                            class="absolute top-1/2 right-3 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none p-0.5"
+                            aria-label="Mostrar contraseña">
+                            <svg id="loginEyeIcon" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.477 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                            </svg>
                         </button>
                     </div>
                 </div>
@@ -128,6 +138,8 @@
                         ¿Olvidaste la contraseña?
                     </a>
                 </div>
+
+                <p id="loginFormMessage" class="hidden rounded-lg border px-3 py-2 text-sm text-center" role="alert"></p>
 
                 <div class="flex justify-center">
                     <button
@@ -193,6 +205,8 @@
         <span class="text-black" id="correoUsuario"></span>
     </p>
 
+    <p id="verificationFormMessage" class="hidden mb-3 rounded-lg border px-2 py-1.5 text-[11px] text-center" role="alert"></p>
+
     <!-- OTP 3 + 3 -->
     <div class="flex justify-center items-center gap-3 mb-4">
         <div class="flex gap-1">
@@ -218,8 +232,11 @@
     </button>
 
     <p class="text-[10px] text-gray-400 mt-3">
-        No recibiste el código?
-        <button onclick="reenviarCodigo()" class="text-black">Reenviar código</button>
+        <span id="contadorTexto" class="block min-h-[1.25em] text-gray-600 mb-1 text-center"></span>
+        <span class="inline-flex flex-wrap items-center justify-center gap-1 w-full">
+            <span>¿No recibiste el código?</span>
+            <button type="button" id="reenviarBtn" onclick="reenviarCodigo()" class="text-black underline font-medium hover:text-green-700 hidden">Reenviar código</button>
+        </span>
     </p>
 
   </div>
@@ -272,22 +289,34 @@
         Tu correo fue verificado correctamente. Ahora ingresa tu nueva contraseña.
     </p>
 
+    <p id="passwordFormMessage" class="hidden mb-3 rounded-lg border px-2 py-1.5 text-[11px]" role="alert"></p>
+
     <!-- input 1 -->
     <label class="text-[11px] text-gray-600">Nueva contraseña</label>
     <div class="relative mb-3">
         <input type="password" id="newPassword"
-            class="w-full border rounded-md px-3 py-2 text-xs pr-8"
-            placeholder="Ingresa tu nueva contraseña">
-        <span class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">👁</span>
+            class="w-full border rounded-md px-3 py-2 text-xs pr-9"
+            placeholder="Ingresa tu nueva contraseña"
+            autocomplete="new-password">
+        <button type="button" onclick="toggleFirstLoginPassword('newPassword', 'newPasswordEyeIcon')" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none" aria-label="Mostrar contraseña">
+            <svg id="newPasswordEyeIcon" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.477 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+            </svg>
+        </button>
     </div>
 
     <!-- input 2 -->
     <label class="text-[11px] text-gray-600">Confirmar contraseña</label>
     <div class="relative mb-4">
-        <input type="password"
-            class="w-full border rounded-md px-3 py-2 text-xs pr-8"
-            placeholder="Ingresa la contraseña de nuevo">
-        <span class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">👁</span>
+        <input type="password" id="confirmNewPassword"
+            class="w-full border rounded-md px-3 py-2 text-xs pr-9"
+            placeholder="Ingresa la contraseña de nuevo"
+            autocomplete="new-password">
+        <button type="button" onclick="toggleFirstLoginPassword('confirmNewPassword', 'confirmNewPasswordEyeIcon')" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none" aria-label="Mostrar contraseña">
+            <svg id="confirmNewPasswordEyeIcon" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.477 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+            </svg>
+        </button>
     </div>
 
     <!-- botón -->
@@ -319,36 +348,8 @@ function volverVerificacion(){
     abrirModal("verificationModal");
 }
 </script>
-<script>
-document.getElementById("loginForm").addEventListener("submit", function(e) {
-    e.preventDefault(); // evita que recargue
-
-    const correo = document.querySelector("input[name='correo']").value;
-
-    // guardar correo
-    localStorage.setItem("correoUsuario", correo);
-
-    // mostrar correo en el modal
-    mostrarCorreo();
-
-    // abrir modal
-    abrirModal("verificationModal");
-});
-</script>
-<script>
-function mostrarCorreo() {
-    const correo = localStorage.getItem("correoUsuario");
-
-    if (!correo) return;
-
-    const [usuario, dominio] = correo.split("@");
-
-    const oculto = usuario.substring(0, 2) + "****@" + dominio;
-
-    document.getElementById("correoUsuario").textContent = oculto;
-}
-</script>
-<script src="./src/assets/js/login.js"></script>
+<script>window.LOGIN_FETCH_ROOT = <?= json_encode(BASE_URL) ?>;</script>
+<script src="<?= BASE_URL ?>src/assets/js/login.js"></script>
 
 </body>
 </html>
