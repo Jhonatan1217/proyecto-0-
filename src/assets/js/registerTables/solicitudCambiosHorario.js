@@ -9,14 +9,27 @@
 
   const SOL = {};
 
+  function setBotonEnviarVisible(visible) {
+    const btnEnviar = document.querySelector("button[onclick='enviarHorario()']");
+    if (!btnEnviar) return;
+    btnEnviar.classList.toggle("hidden", !visible);
+    btnEnviar.style.display = visible ? "inline-flex" : "none";
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    setBotonEnviarVisible(false);
+  });
+
   SOL.detectarCambios = function () {
+    if (!S.horariosOriginal) {
+      S.huboCambios = false;
+      setBotonEnviarVisible(false);
+      return;
+    }
+
     const actual = JSON.stringify(S.horariosCache);
     S.huboCambios = actual !== S.horariosOriginal;
-
-    const btnEnviar = document.querySelector("button[onclick='enviarHorario()']");
-    if (btnEnviar) {
-      btnEnviar.style.display = S.huboCambios ? "block" : "none";
-    }
+    setBotonEnviarVisible(S.huboCambios);
   };
 
   SOL.enviarHorario = async function () {
@@ -122,7 +135,7 @@
 
         S.horariosOriginal = JSON.stringify(S.horariosCache);
         S.huboCambios = false;
-        SOL.detectarCambios();
+        setBotonEnviarVisible(false);
       } else {
         T.fire({
           icon: "error",
@@ -139,6 +152,7 @@
   };
 
   Object.assign(RT.solicitud, SOL);
+  setBotonEnviarVisible(false);
   w.enviarHorario = function () {
     return SOL.enviarHorario();
   };

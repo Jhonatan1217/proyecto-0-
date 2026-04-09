@@ -138,6 +138,10 @@
 
     w.descargarPDF = MD.descargarPDF;
     w.mostrarModalEliminar = MD.mostrarModalEliminar;
+
+    if (RT.solicitud && typeof RT.solicitud.detectarCambios === "function") {
+      RT.solicitud.detectarCambios();
+    }
   }
 
   document.addEventListener("DOMContentLoaded", () => {

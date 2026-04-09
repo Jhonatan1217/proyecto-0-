@@ -76,9 +76,6 @@
 
     const horariosAgrupados = Array.from(mapHorarios.values());
     S.horariosCache = horariosAgrupados;
-    if (!S.huboCambios) {
-      S.horariosOriginal = JSON.stringify(S.horariosCache);
-    }
 
     horariosAgrupados.forEach((h) => {
       if (h.raesArray.length) {
@@ -87,6 +84,13 @@
         h.raesHtml = `<span class="text-gray-500 italic">Sin especificar</span>`;
       }
     });
+
+    if (opts && opts.resetSnapshot === true) {
+      S.huboCambios = false;
+      S.horariosOriginal = JSON.stringify(S.horariosCache);
+    } else if (!S.huboCambios) {
+      S.horariosOriginal = JSON.stringify(S.horariosCache);
+    }
 
     const dias = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"];
     const horas = Array.from({ length: 16 }, (_, i) => i + 6);

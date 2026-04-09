@@ -42,7 +42,7 @@
       const data = await res.json();
       const registrosServer = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
 
-      RT.grid.renderizarTablaDesdeRegistros(registrosServer, "", { filtersApplied: true });
+      RT.grid.renderizarTablaDesdeRegistros(registrosServer, "", { filtersApplied: true, resetSnapshot: true });
       if (typeof RT.solicitud.detectarCambios === "function") {
         RT.solicitud.detectarCambios();
       }
@@ -80,6 +80,7 @@
       const registrosServer = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : [];
       const conDatos = RT.grid.renderizarTablaDesdeRegistros(registrosServer, "", {
         filtersApplied: true,
+        resetSnapshot: true,
       });
 
       if (conDatos) {
