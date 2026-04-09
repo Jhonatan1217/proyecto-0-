@@ -3,7 +3,7 @@
 $host   = 'localhost';           // MySQL Host Name
 $dbname = 'proyecto-z';        // MySQL DB Name
 $user   = 'root';                   // MySQL User Name (SIN TAB)
-$pass   = '';                    // tu contraseña del vPanel
+$pass   = '123456';                    // tu contraseña del vPanel
 
 try {
     $conn = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $pass);
