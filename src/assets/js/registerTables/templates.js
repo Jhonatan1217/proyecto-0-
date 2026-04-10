@@ -33,7 +33,7 @@
     },
 
     /**
-     * @param {{ competencia: string, ficha: string, programa: string, instructor: string, dia: string, hora: string, raesDisplay: string, accionesHtml: string }} p
+     * @param {{ competencia: string, ficha: string, programa: string, instructor: string, dia: string, hora: string, raesDisplay: string, descripcionJornada: string, accionesHtml: string }} p
      */
     trimestralizacionPopupHtml: function (p) {
       const competencia = U.escapeHtml(p.competencia);
@@ -43,6 +43,8 @@
       const dia = U.escapeHtml(p.dia);
       const hora = U.escapeHtml(p.hora);
       const raesDisplay = U.escapeHtml(p.raesDisplay.replace(/\|/g, ", "));
+      const descJ = String(p.descripcionJornada || "").trim();
+      const descripcionJornadaHtml = U.escapeHtml(descJ || "—");
       return `
               <div class="text-left" style="max-height: min(26rem, calc(100vh - 14rem)); overflow-y: auto;">
                 <div class="mb-4 pb-2 flex items-center justify-between gap-3">
@@ -114,7 +116,7 @@
                     </svg>
                     <div>
                       <p class="text-gray-400 text-xs">Descripción de la jornada</p>
-                      <p class="text-gray-800 font-medium">Descripción de la jornada</p>
+                      <p class="text-gray-800 font-medium whitespace-pre-wrap">${descripcionJornadaHtml}</p>
                     </div>
                   </div>
                 </div>

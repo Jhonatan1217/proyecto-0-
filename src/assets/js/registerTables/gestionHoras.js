@@ -230,6 +230,7 @@
   };
 
   GH.abrirModalGestionHoras = async function () {
+    if (w.PUEDE_GESTION_HORAS_Y_LIMPIAR === false) return;
     const modal = document.getElementById("modalGestionHoras");
     if (!modal) return;
     try {

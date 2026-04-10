@@ -60,6 +60,8 @@
       const viejo = antes[index];
       if (!viejo) return;
 
+      const descV = String(viejo.descripcion_jornada ?? viejo.descripcion ?? "").trim();
+      const descN = String(nuevo.descripcion_jornada ?? nuevo.descripcion ?? "").trim();
       const cambioEnFila =
         viejo.dia !== nuevo.dia ||
         viejo.hora_inicio !== nuevo.hora_inicio ||
@@ -67,6 +69,7 @@
         String(viejo.id_instructor) !== String(nuevo.id_instructor) ||
         String(viejo.id_competencia) !== String(nuevo.id_competencia) ||
         String(viejo.numero_ficha ?? "") !== String(nuevo.numero_ficha ?? "") ||
+        descV !== descN ||
         JSON.stringify(viejo.raes ?? viejo.raesArray ?? []) !== JSON.stringify(nuevo.raes ?? nuevo.raesArray ?? []);
 
       if (cambioEnFila) {
@@ -87,6 +90,7 @@
             numero_ficha: viejo.numero_ficha,
             id_instructor: viejo.id_instructor,
             id_competencia: viejo.id_competencia,
+            descripcion_jornada: descV,
             raes: viejo.raes ?? viejo.raesArray ?? [],
           }),
           valor_nuevo: JSON.stringify({
@@ -97,6 +101,7 @@
             numero_ficha: nuevo.numero_ficha,
             id_instructor: nuevo.id_instructor,
             id_competencia: nuevo.id_competencia,
+            descripcion_jornada: descN,
             raes: nuevo.raes ?? nuevo.raesArray ?? [],
           }),
         });

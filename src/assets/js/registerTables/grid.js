@@ -42,6 +42,7 @@
           dia: r.dia,
           hora_inicio: r.hora_inicio,
           hora_fin: r.hora_fin,
+          descripcion_jornada: r.descripcion_jornada != null ? String(r.descripcion_jornada) : "",
           id_zona: r.id_zona,
           id_area: r.id_area,
           numero_trimestre: r.numero_trimestre,
@@ -169,6 +170,7 @@
           : nivelGrupoNorm === "tecnologo"
           ? "Tecnólogo"
           : nivelGrupoRaw;
+        const descJAttr = U.escapeHtml(String(r.descripcion_jornada ?? ""));
         const contenido = `
           <div class="registro horario-registro h-full flex flex-col items-start justify-start text-left cursor-pointer hover:bg-gray-50"
               data-id="${r.id_horario || ""}"
@@ -183,6 +185,7 @@
               data-hora-inicio="${r.hora_inicio ?? ""}"
               data-hora-fin="${r.hora_fin ?? ""}"
               data-hora-rango="${r.hora_inicio ?? ""} - ${r.hora_fin ?? ""}"
+              data-descripcion-jornada="${descJAttr}"
               data-raes='${JSON.stringify(r.raesArray)}'
               >
             <div class="font-bold text-sm horario-registro-line" style="color: #39a900;">Competencia: ${r.nombre_competencia ?? "Sin competencia"}</div>
@@ -231,6 +234,7 @@
     const instructor = reg.getAttribute("data-instructor") || "Sin instructor";
     const dia = reg.getAttribute("data-dia") || "Sin día";
     const hora = reg.getAttribute("data-hora-rango") || reg.getAttribute("data-hora-inicio") || "Sin hora";
+    const descripcionJornada = reg.getAttribute("data-descripcion-jornada") || "";
 
     let raesDisplay = "";
     try {
@@ -251,6 +255,7 @@
       dia,
       hora,
       raesDisplay,
+      descripcionJornada,
       accionesHtml,
     });
 
