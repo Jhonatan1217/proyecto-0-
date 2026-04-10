@@ -77,6 +77,16 @@
     getEl("verPerfilDocumento").textContent = (data && data.numero_documento) || "—";
     getEl("verPerfilCorreo").textContent = (data && data.correo_electronico) || "—";
     getEl("verPerfilArea").textContent = (data && data.nombre_area) || "—";
+
+    var areaContainer = getEl("verPerfilAreaContainer");
+    if (areaContainer) {
+        var cargoUsuario = window.USUARIO_CARGO || "";
+        if (cargoUsuario.toUpperCase() === "COORDINADOR") {
+            areaContainer.style.display = "";
+        } else {
+            areaContainer.style.display = "none";
+        }
+    }
   }
 
   var solicitarCambiosValoresIniciales = null;

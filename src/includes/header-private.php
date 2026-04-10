@@ -274,7 +274,9 @@ document.addEventListener("DOMContentLoaded", function () {
         <div><span class="text-xs font-semibold text-gray-500 uppercase">Nombre</span><p id="verPerfilNombreCampo" class="text-gray-900 mt-0.5"></p></div>
         <div><span class="text-xs font-semibold text-gray-500 uppercase">Número documento</span><p id="verPerfilDocumento" class="text-gray-900 mt-0.5"></p></div>
         <div><span class="text-xs font-semibold text-gray-500 uppercase">Correo electrónico</span><p id="verPerfilCorreo" class="text-gray-900 mt-0.5"></p></div>
-        <div><span class="text-xs font-semibold text-gray-500 uppercase">Área del coordinador</span><p id="verPerfilArea" class="text-gray-900 mt-0.5">—</p></div>
+        <div id="verPerfilAreaContainer">
+          <div><span class="text-xs font-semibold text-gray-500 uppercase">Área del coordinador</span><p id="verPerfilArea" class="text-gray-900 mt-0.5">—</p></div>
+        </div>
       </div>
     </div>
   </div>
@@ -473,6 +475,7 @@ aria-labelledby="modalCambiarContrasenaTitle">
 window.API_USUARIO = "<?= BASE_URL ?>src/controllers/UsuarioController.php";
 window.API_SOLICITUD = "<?= BASE_URL ?>src/controllers/SolicitudController.php";
 window.USUARIO_ID = <?= json_encode((int)($_SESSION['usuario_id'] ?? 0)) ?>;
+window.USUARIO_CARGO = <?= json_encode($_SESSION['usuario_cargo'] ?? '') ?>;
 window.BASE_URL = <?= json_encode(BASE_URL) ?>;
 </script>
 <script src="<?= BASE_URL ?>src/assets/js/gestionPerfil.js"></script>
