@@ -26,22 +26,6 @@ function normalizarTipoDocumento($val) {
     return in_array($v, $TIPO_DOC_VALIDOS) ? $v : 'CC';
 }
 
-/**
- * Resuelve el nombre del área a id_area. Si no existe, la crea.
- * @return int|null id_area o null si nombre vacío
- */
-function resolverAreaPorNombre($conn, $nombre) {
-    $nombre = trim((string) $nombre);
-    if ($nombre === '') return null;
-    $stmt = $conn->prepare("SELECT id_area FROM area WHERE TRIM(nombre_area) = :nombre AND estado = 1 LIMIT 1");
-    $stmt->execute([':nombre' => $nombre]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    if ($row) return (int) $row['id_area'];
-    $stmt = $conn->prepare("INSERT INTO area (nombre_area, estado) VALUES (:nombre, 1)");
-    $stmt->execute([':nombre' => $nombre]);
-    return (int) $conn->lastInsertId();
-}
-
 function inreq($k) {
     global $__JSON;
     return $_POST[$k] ?? $_GET[$k] ?? ($__JSON[$k] ?? null);
@@ -78,6 +62,33 @@ try {
             echo json_encode($data ?: ['error' => 'Usuario no encontrado']);
             break;
 
+        // ============================================================
+        // SINCRONIZAR $_SESSION con datos actuales en BD (usuario logueado)
+        // ============================================================
+        case 'sincronizar_sesion':
+            $idSesion = intval($_SESSION['usuario_id'] ?? 0);
+            if (!$idSesion) {
+                echo json_encode(['status' => 'error', 'message' => 'No autenticado']);
+                break;
+            }
+            $data = $usuarioModel->obtenerPorId($idSesion, true);
+            if (!$data) {
+                echo json_encode(['status' => 'error', 'message' => 'Usuario no encontrado']);
+                break;
+            }
+            $_SESSION['usuario_nombre'] = $data['nombre_completo'] ?? '';
+            $_SESSION['usuario_correo'] = $data['correo_electronico'] ?? '';
+            $_SESSION['usuario_cargo'] = $data['cargo'] ?? '';
+            echo json_encode([
+                'status' => 'success',
+                'data' => [
+                    'nombre_completo' => $data['nombre_completo'] ?? '',
+                    'correo_electronico' => $data['correo_electronico'] ?? '',
+                    'cargo' => $data['cargo'] ?? '',
+                ],
+            ]);
+            break;
+
         case 'listar':
             // Si se pide un ID específico
             if (isset($_GET['id'])) {
@@ -106,11 +117,10 @@ try {
         // ============================================================
         case 'crear':
             $cargo = trim((string) inreq('cargo'));
-            $id_area = inreq('id_area') ? intval(inreq('id_area')) : null;
-            if (!$id_area && stripos($cargo, 'coordinador') !== false) {
-                $areaNombre = trim((string) inreq('area_coordinador'));
-                $id_area = $areaNombre ? resolverAreaPorNombre($conn, $areaNombre) : null;
-            }
+            $esCoordinador = stripos($cargo, 'coordinador') !== false;
+            $areaCoordTxt = trim((string) inreq('area_coordinador'));
+            // Área del coordinador: solo texto en usuarios.area_coordinador; no id_area ni tabla `area`.
+            $id_area = $esCoordinador ? null : (inreq('id_area') ? intval(inreq('id_area')) : null);
             $datos = [
                 'nombre_completo'   => trim((string) inreq('nombre_completo')),
                 'tipo_documento'    => normalizarTipoDocumento(inreq('tipo_documento')),
@@ -118,6 +128,7 @@ try {
                 'correo_electronico' => trim((string) inreq('correo_electronico')),
                 'cargo'             => $cargo,
                 'id_area'           => $id_area,
+                'area_coordinador'  => ($esCoordinador && $areaCoordTxt !== '') ? $areaCoordTxt : null,
                 'tipo_instructor'   => inreq('tipo_instructor') ? trim((string) inreq('tipo_instructor')) : null,
                 'tipo_contrato'     => trim((string) inreq('tipo_contrato')) ?: 'CONTRATISTA',
                 'password_hash'     => password_hash(trim((string) inreq('password')), PASSWORD_DEFAULT),
@@ -161,11 +172,12 @@ try {
 
             $estadoRequest = inreq('estado');
             $cargo = trim((string) inreq('cargo'));
-            $id_area = inreq('id_area') ? intval(inreq('id_area')) : null;
-            if (!$id_area && stripos($cargo, 'coordinador') !== false) {
-                $areaNombre = trim((string) inreq('area_coordinador'));
-                $id_area = $areaNombre ? resolverAreaPorNombre($conn, $areaNombre) : null;
-            }
+            $esCoordinador = stripos($cargo, 'coordinador') !== false;
+            $areaCoordTxt = trim((string) inreq('area_coordinador'));
+            $id_area = $esCoordinador ? null : (inreq('id_area') ? intval(inreq('id_area')) : null);
+            $area_coordinador_db = $esCoordinador
+                ? ($areaCoordTxt !== '' ? $areaCoordTxt : null)
+                : null;
 
             $datos = [
                 'nombre_completo'   => trim((string) inreq('nombre_completo')),
@@ -174,6 +186,7 @@ try {
                 'correo_electronico' => trim((string) inreq('correo_electronico')),
                 'cargo'             => $cargo,
                 'id_area'           => $id_area,
+                'area_coordinador'  => $area_coordinador_db,
                 'tipo_instructor'   => inreq('tipo_instructor') ? trim((string) inreq('tipo_instructor')) : null,
                 'tipo_contrato'     => trim((string) inreq('tipo_contrato')),
                 'estado'            => $estadoRequest !== null ? intval($estadoRequest) : (int)($usuarioActual['estado'] ?? 1),

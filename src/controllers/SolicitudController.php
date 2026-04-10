@@ -15,6 +15,52 @@ if (!isset($conn)) {
 
 $solicitud = new Solicitud($conn);
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// --- Permisos según sesión (coordinador / es_sistema ven todo; instructores solo lo propio) ---
+function sol_sess_id() {
+    return (int) ($_SESSION['usuario_id'] ?? 0);
+}
+
+function sol_sess_cargo_norm() {
+    return strtoupper(trim((string) ($_SESSION['usuario_cargo'] ?? '')));
+}
+
+function sol_sess_es_sistema() {
+    return (int) ($_SESSION['usuario_es_sistema'] ?? 0) === 1;
+}
+
+function sol_es_coordinador_rol() {
+    return sol_sess_cargo_norm() === 'COORDINADOR';
+}
+
+/** Coordinador o cuenta sistema: listan y gestionan solicitudes de terceros */
+function sol_puede_ver_todas_solicitudes() {
+    return sol_sess_es_sistema() || sol_es_coordinador_rol();
+}
+
+/** Solo coordinador o administrador (es_sistema) pueden aprobar / devolver */
+function sol_puede_responder_solicitudes() {
+    return sol_sess_es_sistema() || sol_es_coordinador_rol();
+}
+
+function sol_requiere_sesion_json() {
+    if (sol_sess_id() <= 0) {
+        echo json_encode(['status' => 'error', 'message' => 'Debe iniciar sesión para continuar.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+function sol_requiere_gestion_solicitudes_json() {
+    sol_requiere_sesion_json();
+    if (!sol_puede_responder_solicitudes()) {
+        echo json_encode(['status' => 'error', 'message' => 'No tiene permiso para esta acción.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
 // Acción desde GET, POST o JSON body
 $input = json_decode(file_get_contents('php://input'), true) ?? [];
 $accion = $_POST['accion'] ?? $_GET['accion'] ?? $input['accion'] ?? null;
@@ -31,7 +77,12 @@ switch ($accion) {
     // LISTAR TODAS LAS SOLICITUDES
     // ===============================
     case 'listar':
-        $data = $solicitud->listar();
+        sol_requiere_sesion_json();
+        if (sol_puede_ver_todas_solicitudes()) {
+            $data = $solicitud->listar();
+        } else {
+            $data = $solicitud->listarPorInstructor(sol_sess_id(), null);
+        }
         $response = ["status" => "success", "data" => $data];
         break;
 
@@ -39,7 +90,12 @@ switch ($accion) {
     // LISTAR SOLICITUDES PENDIENTES
     // ===============================
     case 'listar_pendientes':
-        $data = $solicitud->listarPendientes();
+        sol_requiere_sesion_json();
+        if (sol_puede_ver_todas_solicitudes()) {
+            $data = $solicitud->listarPendientes();
+        } else {
+            $data = $solicitud->listarPorInstructor(sol_sess_id(), 'PENDIENTE');
+        }
         $response = ["status" => "success", "data" => $data];
         break;
 
@@ -47,7 +103,12 @@ switch ($accion) {
     // LISTAR SOLICITUDES APROBADAS
     // ===============================
     case 'listar_aprobadas':
-        $data = $solicitud->listarAprobadas();
+        sol_requiere_sesion_json();
+        if (sol_puede_ver_todas_solicitudes()) {
+            $data = $solicitud->listarAprobadas();
+        } else {
+            $data = $solicitud->listarPorInstructor(sol_sess_id(), 'APROBADO');
+        }
         $response = ["status" => "success", "data" => $data];
         break;
 
@@ -55,7 +116,12 @@ switch ($accion) {
     // LISTAR SOLICITUDES DEVUELTAS
     // ===============================
     case 'listar_devueltas':
-        $data = $solicitud->listarDevueltas();
+        sol_requiere_sesion_json();
+        if (sol_puede_ver_todas_solicitudes()) {
+            $data = $solicitud->listarDevueltas();
+        } else {
+            $data = $solicitud->listarPorInstructor(sol_sess_id(), 'DEVUELTO');
+        }
         $response = ["status" => "success", "data" => $data];
         break;
 
@@ -68,8 +134,22 @@ switch ($accion) {
             $response = ["status" => "error", "message" => "Debe enviar el estado (PENDIENTE, APROBADO, DEVUELTO)"];
             break;
         }
-        $data = $solicitud->listarPorEstado($estado);
-        $response = ["status" => "success", "data" => $data];
+        $estado = strtoupper(trim((string) $estado));
+        if (!in_array($estado, ['PENDIENTE', 'APROBADO', 'DEVUELTO'], true)) {
+            $response = ["status" => "error", "message" => "Estado no válido (use PENDIENTE, APROBADO o DEVUELTO)"];
+            break;
+        }
+        sol_requiere_sesion_json();
+        if (sol_puede_ver_todas_solicitudes()) {
+            $data = $solicitud->listarPorEstado($estado);
+        } else {
+            $data = $solicitud->listarPorInstructor(sol_sess_id(), $estado);
+        }
+        if (is_array($data) && isset($data['status']) && $data['status'] === 'error') {
+            $response = $data;
+        } else {
+            $response = ["status" => "success", "data" => $data];
+        }
         break;
 
     // ===============================
@@ -81,7 +161,13 @@ switch ($accion) {
             $response = ["status" => "error", "message" => "Debe enviar id_instructor"];
             break;
         }
-        $data = $solicitud->listarPorInstructor($id_instructor);
+        sol_requiere_sesion_json();
+        $id_instructor = (int) $id_instructor;
+        if (!sol_puede_ver_todas_solicitudes() && $id_instructor !== sol_sess_id()) {
+            $response = ["status" => "error", "message" => "No autorizado para consultar solicitudes de otro usuario."];
+            break;
+        }
+        $data = $solicitud->listarPorInstructor($id_instructor, null);
         $response = ["status" => "success", "data" => $data];
         break;
 
@@ -96,18 +182,27 @@ switch ($accion) {
             break;
         }
 
+        sol_requiere_sesion_json();
         $data = $solicitud->obtenerPorId($id_solicitud);
-        if ($data) {
-            $response = ["status" => "success", "data" => $data];
-        } else {
+        if (!$data) {
             $response = ["status" => "error", "message" => "Solicitud no encontrada"];
+            break;
         }
+        if (!sol_puede_ver_todas_solicitudes()) {
+            $idSol = (int) ($data['id_instructor_solicitante'] ?? 0);
+            if ($idSol !== sol_sess_id()) {
+                $response = ["status" => "error", "message" => "No autorizado para ver esta solicitud."];
+                break;
+            }
+        }
+        $response = ["status" => "success", "data" => $data];
         break;
 
     // ===============================
     // CREAR SOLICITUD CON DETALLES
     // ===============================
     case 'crear':
+        sol_requiere_sesion_json();
         $tipo_solicitud = $input['tipo_solicitud'] ?? $_POST['tipo_solicitud'] ?? null;
         $id_instructor_solicitante = $input['id_instructor_solicitante'] ?? $_POST['id_instructor_solicitante'] ?? null;
         $detalles = $input['detalles'] ?? $_POST['detalles'] ?? null;
@@ -124,6 +219,11 @@ switch ($accion) {
             $response = ["status" => "error", "message" => "Debe enviar tipo_solicitud (HORARIO/DATOS) e id_instructor_solicitante"];
             break;
         }
+        $id_ins = (int) $id_instructor_solicitante;
+        if ($id_ins !== sol_sess_id()) {
+            $response = ["status" => "error", "message" => "Solo puede crear solicitudes asociadas a su propio usuario."];
+            break;
+        }
         if($cambios && empty($detalles)){
             $detalles = [
                 [
@@ -134,13 +234,19 @@ switch ($accion) {
         ];
         }
 
-        $response = $solicitud->crear($tipo_solicitud, $id_instructor_solicitante, $detalles ?: []);
+        $response = $solicitud->crear($tipo_solicitud, $id_ins, $detalles ?: []);
         break;
 
     // ===============================
     // RESPONDER SOLICITUD (APROBAR/DEVOLVER)
     // ===============================
     case 'responder':
+        sol_requiere_sesion_json();
+        if (!sol_puede_responder_solicitudes()) {
+            $response = ["status" => "error", "message" => "Solo coordinadores o administradores pueden aprobar o devolver solicitudes."];
+            break;
+        }
+
         $id_solicitud = $_POST['id_solicitud'] ?? null;
         $estado = $_POST['estado'] ?? null;
         $observacion_respuesta = $_POST['observacion_respuesta'] ?? '';
@@ -151,13 +257,32 @@ switch ($accion) {
             break;
         }
 
-        $response = $solicitud->responder($id_solicitud, $estado, $observacion_respuesta, $id_coordinador_aprobador);
+        $idApr = (int) $id_coordinador_aprobador;
+        if ($idApr !== sol_sess_id()) {
+            $response = ["status" => "error", "message" => "Identificador de aprobador no válido para la sesión actual."];
+            break;
+        }
+
+        $filaSol = $solicitud->obtenerPorId($id_solicitud);
+        if (!$filaSol) {
+            $response = ["status" => "error", "message" => "Solicitud no encontrada"];
+            break;
+        }
+        $idSolicitante = (int) ($filaSol['id_instructor_solicitante'] ?? 0);
+        // Coordinador no puede aprobar/devolver sus propias solicitudes (sí puede un administrador es_sistema)
+        if ($idSolicitante === sol_sess_id() && sol_es_coordinador_rol() && !sol_sess_es_sistema()) {
+            $response = ["status" => "error", "message" => "Un coordinador no puede aprobar ni devolver sus propias solicitudes. Debe hacerlo otro coordinador o un administrador."];
+            break;
+        }
+
+        $response = $solicitud->responder($id_solicitud, $estado, $observacion_respuesta, $idApr);
         break;
 
     // ===============================
     // ACTUALIZAR SOLICITUD Y DETALLES
     // ===============================
     case 'actualizar':
+        sol_requiere_gestion_solicitudes_json();
         $id_solicitud = $_POST['id_solicitud'] ?? null;
         $tipo_solicitud = $_POST['tipo_solicitud'] ?? null;
         $detalles = $_POST['detalles'] ?? null;
@@ -185,6 +310,7 @@ switch ($accion) {
     // AGREGAR DETALLE A SOLICITUD
     // ===============================
     case 'agregar_detalle':
+        sol_requiere_gestion_solicitudes_json();
         $id_solicitud = $_POST['id_solicitud'] ?? null;
         $campo_modificado = $_POST['campo_modificado'] ?? null;
         $valor_anterior = $_POST['valor_anterior'] ?? null;
@@ -202,6 +328,7 @@ switch ($accion) {
     // ELIMINAR DETALLE
     // ===============================
     case 'eliminar_detalle':
+        sol_requiere_gestion_solicitudes_json();
         $id_detalle = $_POST['id_detalle'] ?? $_GET['id_detalle'] ?? null;
 
         if (!$id_detalle) {
@@ -216,6 +343,7 @@ switch ($accion) {
     // ELIMINAR SOLICITUD
     // ===============================
     case 'eliminar':
+        sol_requiere_gestion_solicitudes_json();
         $id_solicitud = $_POST['id_solicitud'] ?? $_GET['id_solicitud'] ?? null;
 
         if (!$id_solicitud) {
@@ -230,7 +358,24 @@ switch ($accion) {
     // CONTAR SOLICITUDES POR ESTADO (ESTADÍSTICAS)
     // ===============================
     case 'contar_por_estado':
-        $data = $solicitud->contarPorEstado();
+        sol_requiere_sesion_json();
+        if (sol_puede_ver_todas_solicitudes()) {
+            $data = $solicitud->contarPorEstado();
+        } else {
+            $mis = $solicitud->listarPorInstructor(sol_sess_id(), null);
+            $data = ['pendientes' => 0, 'aprobadas' => 0, 'devueltas' => 0, 'total' => 0];
+            foreach ($mis as $row) {
+                $e = strtoupper((string) ($row['estado'] ?? ''));
+                if ($e === 'PENDIENTE') {
+                    $data['pendientes']++;
+                } elseif ($e === 'APROBADO') {
+                    $data['aprobadas']++;
+                } elseif ($e === 'DEVUELTO') {
+                    $data['devueltas']++;
+                }
+                $data['total']++;
+            }
+        }
         $response = ["status" => "success", "data" => $data];
         break;
 

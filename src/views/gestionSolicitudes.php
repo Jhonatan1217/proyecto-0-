@@ -295,7 +295,7 @@
           <button type="button" class="filter-btn" data-estado="Devuelto">Devueltas</button>
         </div>
 
-        <div class="w-full max-w-md">
+        <div class="w-full max-w-md space-y-2">
           <input
             type="text"
             id="searchInput"
@@ -303,6 +303,17 @@
             class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 outline-none transition focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/25"
             autocomplete="off"
           />
+          <button
+            type="button"
+            id="btnRefrescarSolicitudes"
+            class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-[#39A900] bg-white px-4 py-2.5 text-sm font-medium text-[#39A900] transition hover:bg-[#39A900]/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#39A900]/30"
+            aria-label="Refrescar la lista de solicitudes desde el servidor"
+          >
+            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refrescar solicitudes
+          </button>
         </div>
       </div>
 
@@ -397,7 +408,14 @@
             </div>
         </div>
 
-        <!-- Acciones (solo PENDIENTE) -->
+        <!-- Coordinador: solicitud propia pendiente (no puede aprobarla él mismo) -->
+        <div id="avisoSolicitudPropiaCoordinador" class="modal-detalle-pad-x pb-2 hidden">
+            <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                Como coordinador, no puede aprobar ni devolver sus propias solicitudes. Solo otro coordinador o un administrador del sistema puede hacerlo.
+            </div>
+        </div>
+
+        <!-- Acciones (solo PENDIENTE y con permiso) -->
         <div id="botonesAccion" class="modal-detalle-pad-x pb-6 space-y-4 hidden">
             <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
                 Al confirmar, la solicitud pasará a <strong>Aprobados</strong> y los cambios mostrados arriba se aplicarán al usuario en el sistema.
@@ -429,4 +447,4 @@
   window.API_URL = "<?= BASE_URL ?>src/controllers/SolicitudController.php";
 </script>
 
-<script src="<?= BASE_URL ?>src/assets/js/gestionarSolicitudes.js?v=10" defer></script>
+<script src="<?= BASE_URL ?>src/assets/js/gestionarSolicitudes.js?v=12" defer></script>

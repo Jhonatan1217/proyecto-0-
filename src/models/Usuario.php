@@ -89,9 +89,9 @@ class Usuario {
         }
 
         $sql = "INSERT INTO " . $this->table . " 
-                (nombre_completo, tipo_documento, numero_documento, correo_electronico, cargo, id_area, tipo_instructor, tipo_contrato, password_hash, estado, es_sistema)
+                (nombre_completo, tipo_documento, numero_documento, correo_electronico, cargo, id_area, area_coordinador, tipo_instructor, tipo_contrato, password_hash, estado, es_sistema)
                 VALUES 
-                (:nombre_completo, :tipo_documento, :numero_documento, :correo_electronico, :cargo, :id_area, :tipo_instructor, :tipo_contrato, :password_hash, :estado, :es_sistema)";
+                (:nombre_completo, :tipo_documento, :numero_documento, :correo_electronico, :cargo, :id_area, :area_coordinador, :tipo_instructor, :tipo_contrato, :password_hash, :estado, :es_sistema)";
         
         $stmt = $this->conn->prepare($sql);
 
@@ -101,7 +101,17 @@ class Usuario {
         $stmt->bindParam(':numero_documento', $data['numero_documento']);
         $stmt->bindParam(':correo_electronico', $data['correo_electronico']);
         $stmt->bindParam(':cargo', $data['cargo']);
-        $stmt->bindParam(':id_area', $data['id_area'], PDO::PARAM_INT); // Puede ser NULL
+        if ($data['id_area'] === null || $data['id_area'] === '') {
+            $stmt->bindValue(':id_area', null, PDO::PARAM_NULL);
+        } else {
+            $stmt->bindValue(':id_area', (int) $data['id_area'], PDO::PARAM_INT);
+        }
+        $ac = array_key_exists('area_coordinador', $data) ? $data['area_coordinador'] : null;
+        if ($ac === null || $ac === '') {
+            $stmt->bindValue(':area_coordinador', null, PDO::PARAM_NULL);
+        } else {
+            $stmt->bindValue(':area_coordinador', (string) $ac, PDO::PARAM_STR);
+        }
         $stmt->bindParam(':tipo_instructor', $data['tipo_instructor']); // Puede ser NULL
         $stmt->bindParam(':tipo_contrato', $data['tipo_contrato']);
         $stmt->bindParam(':password_hash', $data['password_hash']);
@@ -138,6 +148,7 @@ class Usuario {
                 correo_electronico = :correo_electronico,
                 cargo = :cargo,
                 id_area = :id_area,
+                area_coordinador = :area_coordinador,
                 tipo_instructor = :tipo_instructor,
                 tipo_contrato = :tipo_contrato,
                 estado = :estado
@@ -152,6 +163,7 @@ class Usuario {
                     correo_electronico = :correo_electronico,
                     cargo = :cargo,
                     id_area = :id_area,
+                    area_coordinador = :area_coordinador,
                     tipo_instructor = :tipo_instructor,
                     tipo_contrato = :tipo_contrato,
                     password_hash = :password_hash,
@@ -171,6 +183,12 @@ class Usuario {
             $stmt->bindValue(':id_area', null, PDO::PARAM_NULL);
         } else {
             $stmt->bindValue(':id_area', (int) $data['id_area'], PDO::PARAM_INT);
+        }
+        $acUp = array_key_exists('area_coordinador', $data) ? $data['area_coordinador'] : null;
+        if ($acUp === null || $acUp === '') {
+            $stmt->bindValue(':area_coordinador', null, PDO::PARAM_NULL);
+        } else {
+            $stmt->bindValue(':area_coordinador', (string) $acUp, PDO::PARAM_STR);
         }
         $stmt->bindParam(':tipo_instructor', $data['tipo_instructor']);
         $stmt->bindParam(':tipo_contrato', $data['tipo_contrato']);

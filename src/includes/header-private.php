@@ -192,7 +192,7 @@ document.addEventListener("DOMContentLoaded", function () {
         class="flex items-center space-x-3 focus:outline-none">
 
         <!-- AVATAR -->
-       <div class="w-10 h-10 min-w-[40px] min-h-[40px]
+       <div id="headerUserAvatar" class="w-10 h-10 min-w-[40px] min-h-[40px]
             bg-gray-600 text-white
             rounded-full
             flex items-center justify-center
@@ -203,10 +203,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
         <!-- TEXT -->
         <div class="text-left">
-          <p class="text-sm font-semibold text-gray-800 leading-none">
+          <p id="headerUserNombre" class="text-sm font-semibold text-gray-800 leading-none">
             <?= htmlspecialchars($nombre) ?>
           </p>
-          <p class="text-xs text-gray-500">
+          <p id="headerUserCargo" class="text-xs text-gray-500">
             <?= htmlspecialchars($cargo) ?>
           </p>
         </div>
@@ -280,6 +280,7 @@ document.addEventListener("DOMContentLoaded", function () {
       </div>
       <div class="border-t border-gray-200 pt-4 space-y-3">
         <div><span class="text-xs font-semibold text-gray-500 uppercase">Nombre</span><p id="verPerfilNombreCampo" class="text-gray-900 mt-0.5"></p></div>
+        <div><span class="text-xs font-semibold text-gray-500 uppercase">Tipo de documento</span><p id="verPerfilTipoDocumento" class="text-gray-900 mt-0.5"></p></div>
         <div><span class="text-xs font-semibold text-gray-500 uppercase">Número documento</span><p id="verPerfilDocumento" class="text-gray-900 mt-0.5"></p></div>
         <div><span class="text-xs font-semibold text-gray-500 uppercase">Correo electrónico</span><p id="verPerfilCorreo" class="text-gray-900 mt-0.5"></p></div>
         <div id="verPerfilInstructorContainer" class="hidden">
@@ -312,8 +313,17 @@ document.addEventListener("DOMContentLoaded", function () {
       <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo de documento</label><div class="relative"><select name="tipo_documento" class="select-perfil input-enterprise py-2.5 text-sm pr-10 appearance-none cursor-pointer"><option value="">Seleccione tipo de documento</option><option value="CC">Cédula de Ciudadanía</option><option value="CE">Cédula de Extranjería</option><option value="PASAPORTE">Pasaporte</option></select></div></div>
       <div><label class="block text-sm font-medium text-gray-700 mb-1">Número de documento</label><input type="text" name="numero_documento" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none" /></div>
       <div><label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label><input type="email" name="correo_electronico" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none" /></div>
+      <div id="solicitarGrupoCoordinadorPerfil" class="hidden space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Área del coordinador</label>
+          <input type="text" name="area_coordinador" autocomplete="organization" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none" placeholder="Ej. Unidad o dependencia" />
+          <p class="text-xs text-gray-500 mt-1">Solo referencia de tu cargo; no se crea en el catálogo de áreas de horarios.</p>
+        </div>
+      </div>
+      <div id="solicitarGrupoInstructorPerfil" class="space-y-4">
       <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo instructor</label><div class="relative"><select name="tipo_instructor" class="select-perfil input-enterprise py-2.5 text-sm pr-10 appearance-none cursor-pointer"><option value="">Seleccione tipo instructor</option><option value="Técnico">Técnico</option><option value="Transversal">Transversal</option></select></div></div>
       <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo contrato</label><div class="relative"><select name="tipo_contrato" class="select-perfil input-enterprise py-2.5 text-sm pr-10 appearance-none cursor-pointer"><option value="">Seleccione tipo contrato</option><option value="Planta">Planta</option><option value="Contratista">Contratista</option></select></div></div>
+      </div>
       <div class="pt-3 border-t border-gray-200">
         <p class="text-sm font-semibold text-gray-700 mb-2">Seguridad</p>
         <button type="button" id="btnAbrirCambiarContrasena" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 transition focus:ring-2 focus:ring-green-600/30 outline-none">

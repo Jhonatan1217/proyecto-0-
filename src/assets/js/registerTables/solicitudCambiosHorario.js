@@ -120,6 +120,7 @@
       const id_instructor = w.USUARIO_ID || 1;
       const res = await fetch(`${RT.API_BASE}src/controllers/SolicitudController.php`, {
         method: "POST",
+        credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           accion: "crear",

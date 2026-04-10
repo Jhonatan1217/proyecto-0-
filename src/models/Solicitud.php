@@ -335,6 +335,7 @@ class Solicitud {
             'correo_electronico',
             'tipo_instructor',
             'tipo_contrato',
+            'area_coordinador',
         ];
 
         $solicitud = $this->obtenerPorId($id_solicitud);
@@ -367,6 +368,9 @@ class Solicitud {
             'id_area' => isset($usuario['id_area']) && $usuario['id_area'] !== '' && $usuario['id_area'] !== null
                 ? (int) $usuario['id_area']
                 : null,
+            'area_coordinador' => isset($usuario['area_coordinador']) && $usuario['area_coordinador'] !== null && $usuario['area_coordinador'] !== ''
+                ? (string) $usuario['area_coordinador']
+                : null,
             'tipo_instructor' => (string)($usuario['tipo_instructor'] ?? ''),
             'tipo_contrato' => (string)($usuario['tipo_contrato'] ?? ''),
             'estado' => (int)($usuario['estado'] ?? 1),
@@ -381,6 +385,11 @@ class Solicitud {
                 continue;
             }
             $data[$campo] = (string) $d['valor_nuevo'];
+        }
+
+        $cargoLower = strtolower((string) ($data['cargo'] ?? ''));
+        if (strpos($cargoLower, 'coordinador') !== false) {
+            $data['id_area'] = null;
         }
 
         $resultado = $usuarioModel->actualizar($idUsuario, $data);
@@ -633,9 +642,10 @@ class Solicitud {
         }
     }
 
-    // Función para listar solicitudes por instructor
-    public function listarPorInstructor($id_instructor) {
+    // Función para listar solicitudes por instructor (opcionalmente filtradas por estado)
+    public function listarPorInstructor($id_instructor, $estado = null) {
         try {
+            $id_instructor = (int) $id_instructor;
             $sql = "SELECT 
                         s.id_solicitud,
                         s.codigo_solicitud,
@@ -646,16 +656,23 @@ class Solicitud {
                         s.observacion_respuesta,
                         s.id_instructor_solicitante,
                         instructor.nombre_completo as nombre_instructor,
+                        instructor.correo_electronico as correo_instructor,
                         s.id_coordinador_aprobador,
                         coordinador.nombre_completo as nombre_coordinador
                     FROM {$this->table} s
                     LEFT JOIN usuarios instructor ON s.id_instructor_solicitante = instructor.id_usuario
                     LEFT JOIN usuarios coordinador ON s.id_coordinador_aprobador = coordinador.id_usuario
-                    WHERE s.id_instructor_solicitante = :id_instructor
-                    ORDER BY s.fecha_solicitud DESC";
-            
+                    WHERE s.id_instructor_solicitante = :id_instructor";
+            if ($estado !== null && in_array($estado, ['PENDIENTE', 'APROBADO', 'DEVUELTO'], true)) {
+                $sql .= " AND s.estado = :estado";
+            }
+            $sql .= " ORDER BY s.fecha_solicitud DESC";
+
             $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':id_instructor', $id_instructor, PDO::PARAM_INT);
+            $stmt->bindValue(':id_instructor', $id_instructor, PDO::PARAM_INT);
+            if ($estado !== null && in_array($estado, ['PENDIENTE', 'APROBADO', 'DEVUELTO'], true)) {
+                $stmt->bindValue(':estado', $estado, PDO::PARAM_STR);
+            }
             $stmt->execute();
             $solicitudes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

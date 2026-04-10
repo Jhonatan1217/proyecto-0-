@@ -1,6 +1,6 @@
 /**
  * Módulo Gestión de Perfil – Widget de usuario y modales (Ver perfil, Solicitar cambios, Cambiar contraseña).
- * No modifica el módulo de Solicitudes (listado/aprobación).
+ * Expone actualización del header y de la sesión vía UsuarioController (sincronizar_sesion).
  */
 (function () {
   var API = window.API_USUARIO;
@@ -53,6 +53,13 @@
     if (n === "CONTRATISTA") return "Contratista";
     return String(v || "—").trim() || "—";
   }
+  function formatoTipoDocumento(v) {
+    var n = normalizeTxt(v);
+    if (n === "CC") return "Cédula de Ciudadanía";
+    if (n === "CE") return "Cédula de Extranjería";
+    if (n === "PASAPORTE") return "Pasaporte";
+    return String(v || "—").trim() || "—";
+  }
   function isRolEsSistema() {
     if (USUARIO_ES_SISTEMA) return true;
     var cargo = normalizeTxt(window.USUARIO_CARGO || "");
@@ -72,6 +79,44 @@
     btn.setAttribute("title", "No disponible para cuenta de sistema");
     btn.classList.add("opacity-50", "cursor-not-allowed");
     btn.classList.remove("hover:bg-gray-100");
+  }
+
+  function aplicarDatosAlHeaderUsuario(data) {
+    if (!data || typeof data !== "object" || data.error) return;
+    var nombreRaw = String(data.nombre_completo || "").trim();
+    var nombre = nombreRaw || "Usuario";
+    var cargo = String(data.cargo || "").trim();
+    var av = getEl("headerUserAvatar");
+    var nm = getEl("headerUserNombre");
+    var cg = getEl("headerUserCargo");
+    if (av) {
+      var ini = "US";
+      if (nombre !== "Usuario") {
+        ini = nombre.split(/\s+/).map(function (s) { return s[0]; }).filter(Boolean).slice(0, 2).join("").toUpperCase();
+      }
+      av.textContent = ini;
+    }
+    if (nm) nm.textContent = nombre;
+    if (cg) cg.textContent = cargo;
+    if (typeof window !== "undefined") {
+      window.USUARIO_CARGO = cargo;
+    }
+  }
+
+  function refrescarSesionUsuarioYHeader() {
+    if (!API || !USUARIO_ID) return Promise.resolve();
+    return fetch(API + "?accion=sincronizar_sesion", { credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j && j.status === "success" && j.data) {
+          aplicarDatosAlHeaderUsuario({
+            nombre_completo: j.data.nombre_completo,
+            cargo: j.data.cargo,
+            correo_electronico: j.data.correo_electronico
+          });
+        }
+      })
+      .catch(function () {});
   }
 
   var lastModalOpener = null;
@@ -137,9 +182,12 @@
     getEl("verPerfilNombre").textContent = nombre;
     getEl("verPerfilRol").textContent = (data && data.cargo) || "—";
     getEl("verPerfilNombreCampo").textContent = nombre;
+    var elTipoDoc = getEl("verPerfilTipoDocumento");
+    if (elTipoDoc) elTipoDoc.textContent = formatoTipoDocumento(data && data.tipo_documento);
     getEl("verPerfilDocumento").textContent = (data && data.numero_documento) || "—";
     getEl("verPerfilCorreo").textContent = (data && data.correo_electronico) || "—";
-    getEl("verPerfilArea").textContent = (data && data.nombre_area) || "—";
+    var areaTxt = (data && (data.area_coordinador || data.nombre_area)) || "—";
+    getEl("verPerfilArea").textContent = areaTxt;
     var tipoInstructor = getEl("verPerfilTipoInstructor");
     var tipoContrato = getEl("verPerfilTipoContrato");
     if (tipoInstructor) tipoInstructor.textContent = formatoTipoInstructor(data && data.tipo_instructor);
@@ -176,26 +224,44 @@
       numero_documento: (form.querySelector("[name='numero_documento']") || {}).value || "",
       correo_electronico: (form.querySelector("[name='correo_electronico']") || {}).value || "",
       tipo_instructor: (form.querySelector("[name='tipo_instructor']") || {}).value || "",
-      tipo_contrato: (form.querySelector("[name='tipo_contrato']") || {}).value || ""
+      tipo_contrato: (form.querySelector("[name='tipo_contrato']") || {}).value || "",
+      area_coordinador: (form.querySelector("[name='area_coordinador']") || {}).value || ""
     };
+  }
+  function actualizarGruposSolicitarPerfil(cargo) {
+    var gIns = getEl("solicitarGrupoInstructorPerfil");
+    var gCoor = getEl("solicitarGrupoCoordinadorPerfil");
+    var c = normalizeTxt(cargo || window.USUARIO_CARGO || "");
+    var esIns = c.indexOf("INSTRUCTOR") >= 0;
+    var esCoor = c.indexOf("COORDINADOR") >= 0;
+    if (gIns) gIns.classList.toggle("hidden", !esIns);
+    if (gCoor) gCoor.classList.toggle("hidden", !esCoor);
   }
   function validarCamposRequeridosSolicitar(form) {
     if (!form) return { ok: true };
+    var c = normalizeTxt(window.USUARIO_CARGO || "");
+    var esIns = c.indexOf("INSTRUCTOR") >= 0;
+    var esCoor = c.indexOf("COORDINADOR") >= 0;
     var checks = [
       { name: "nombre_completo", label: "Nombre completo" },
       { name: "tipo_documento", label: "Tipo de documento" },
       { name: "numero_documento", label: "Número de documento" },
-      { name: "correo_electronico", label: "Correo electrónico" },
-      { name: "tipo_instructor", label: "Tipo instructor" },
-      { name: "tipo_contrato", label: "Tipo contrato" }
+      { name: "correo_electronico", label: "Correo electrónico" }
     ];
+    if (esIns) {
+      checks.push({ name: "tipo_instructor", label: "Tipo instructor" });
+      checks.push({ name: "tipo_contrato", label: "Tipo contrato" });
+    }
+    if (esCoor) {
+      checks.push({ name: "area_coordinador", label: "Área del coordinador" });
+    }
     for (var i = 0; i < checks.length; i += 1) {
-      var c = checks[i];
-      var el = form.querySelector("[name='" + c.name + "']");
+      var ch = checks[i];
+      var el = form.querySelector("[name='" + ch.name + "']");
       if (!el) continue;
       var val = String(el.value || "").trim();
       if (!val) {
-        return { ok: false, field: c.name, label: c.label, el: el };
+        return { ok: false, field: ch.name, label: ch.label, el: el };
       }
     }
     return { ok: true };
@@ -213,6 +279,9 @@
         setSelectValueFlexible(sel, data[name] || "");
       }
     });
+    var inArea = form.querySelector("[name='area_coordinador']");
+    if (inArea) inArea.value = (data.area_coordinador || data.nombre_area || "").trim();
+    actualizarGruposSolicitarPerfil(data.cargo || window.USUARIO_CARGO);
     solicitarCambiosValoresIniciales = getFormSolicitarCambiosValues(form);
   }
 
@@ -220,6 +289,8 @@
     closeUserMenu();
     loadPerfil().then(function (data) {
       fillModalVerPerfil(data);
+      aplicarDatosAlHeaderUsuario(data);
+      refrescarSesionUsuarioYHeader();
       openModal("modalVerPerfil");
     });
   }
@@ -227,6 +298,8 @@
   function onEditarPerfil() {
     closeUserMenu();
     loadPerfil().then(function (data) {
+      aplicarDatosAlHeaderUsuario(data);
+      refrescarSesionUsuarioYHeader();
       if (isRolEsSistema() || isCuentaSistemaData(data)) {
         disableEditarPerfilAction();
         if (window.Swal) {
@@ -482,7 +555,7 @@
         fd.append("tipo_solicitud", "DATOS");
         fd.append("id_instructor_solicitante", USUARIO_ID);
         fd.append("detalles", JSON.stringify(detalles));
-        fetch(API_SOLICITUD, { method: "POST", body: fd })
+        fetch(API_SOLICITUD, { method: "POST", credentials: "same-origin", body: fd })
           .then(function (r) { return r.json(); })
           .then(function (data) {
             if (data && data.status === "success") {
@@ -491,16 +564,19 @@
                   toast: true,
                   position: "top-end",
                   icon: "success",
-                  title: "Solicitud enviada al administrador.",
+                  title: "Solicitud enviada al administrador o coordinador.",
                   showConfirmButton: false,
                   timer: 2500,
                   zIndex: TOAST_Z_INDEX
                 });
               } else {
-                alert("Solicitud enviada al administrador.");
+                alert("Solicitud enviada al administrador o coordinador.");
               }
               closeModal("modalSolicitarCambiosPerfil");
               solicitarCambiosValoresIniciales = null;
+              if (typeof window.recargarModuloSolicitudes === "function") {
+                window.recargarModuloSolicitudes();
+              }
             } else {
               if (window.Swal) {
                 Swal.fire({ toast: true, position: "top-end", icon: "error", title: data.message || data.error || "Error al enviar la solicitud.", showConfirmButton: false, timer: 3000, zIndex: TOAST_Z_INDEX });
@@ -705,5 +781,18 @@ if (formContrasena) {
 
     initTogglePassword(getEl("modalCambiarContrasena"));
     enhanceSelectsPerfilModal();
+  });
+
+  window.aplicarDatosAlHeaderUsuario = aplicarDatosAlHeaderUsuario;
+  window.refrescarSesionUsuarioYHeader = refrescarSesionUsuarioYHeader;
+
+  var visTimerHeaderSync;
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState !== "visible") return;
+    if (!USUARIO_ID) return;
+    clearTimeout(visTimerHeaderSync);
+    visTimerHeaderSync = setTimeout(function () {
+      refrescarSesionUsuarioYHeader();
+    }, 400);
   });
 })();

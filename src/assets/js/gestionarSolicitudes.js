@@ -1,5 +1,28 @@
 const API_URL_FALLBACK = 'src/controllers/SolicitudController.php';
 
+function usuarioPuedeResponderSolicitudes() {
+    if (Number(window.USUARIO_ES_SISTEMA || 0) === 1) return true;
+    return String(window.USUARIO_CARGO || "").trim().toUpperCase() === "COORDINADOR";
+}
+
+/** Aprobar / devolver: coordinador o es_sistema, y nunca la propia solicitud si es solo coordinador */
+function usuarioPuedeResponderSolicitudPendiente(data) {
+    if (!data || String(data.estado || "").toUpperCase() !== "PENDIENTE") return false;
+    if (!usuarioPuedeResponderSolicitudes()) return false;
+    if (Number(window.USUARIO_ES_SISTEMA || 0) === 1) return true;
+    const cargo = String(window.USUARIO_CARGO || "").trim().toUpperCase();
+    if (cargo !== "COORDINADOR") return false;
+    const uid = Number(window.USUARIO_ID || 0);
+    const idSol = Number(data.id_instructor_solicitante);
+    if (!idSol || idSol === uid) return false;
+    return true;
+}
+
+function usuarioEsCoordinadorNoSistema() {
+    if (Number(window.USUARIO_ES_SISTEMA || 0) === 1) return false;
+    return String(window.USUARIO_CARGO || "").trim().toUpperCase() === "COORDINADOR";
+}
+
 function getSolicitudApiUrl() {
     return typeof window !== 'undefined' && window.API_URL ? window.API_URL : API_URL_FALLBACK;
 }
@@ -113,7 +136,7 @@ document.addEventListener("DOMContentLoaded", () => {
             
             console.log("Cargando datos desde:", url);
             
-            const response = await fetch(url);
+            const response = await fetch(url, { credentials: "same-origin" });
             const resultado = await response.json();
             
             console.log("Datos recibidos:", resultado);
@@ -305,6 +328,10 @@ document.addEventListener("DOMContentLoaded", () => {
         aplicarFiltros();
     });
 
+    document.getElementById("btnRefrescarSolicitudes")?.addEventListener("click", () => {
+        cargarSolicitudes();
+    });
+
     solPrev?.addEventListener("click", () => {
         if (paginaActual > 1) {
             paginaActual -= 1;
@@ -322,6 +349,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     aplicarEstilosFiltros("Todas");
     cargarSolicitudes();
+
+    window.recargarModuloSolicitudes = function () {
+        cargarSolicitudes();
+    };
 });
 
 // ================================
@@ -353,6 +384,7 @@ async function verSolicitud(id) {
         correo_electronico: "Correo electrónico",
         tipo_instructor: "Tipo instructor",
         tipo_contrato: "Tipo contrato",
+        area_coordinador: "Área del coordinador",
     };
     const ordenCamposDatos = [
         "nombre_completo",
@@ -361,6 +393,7 @@ async function verSolicitud(id) {
         "correo_electronico",
         "tipo_instructor",
         "tipo_contrato",
+        "area_coordinador",
     ];
     const cambiosDatos = [];
 
@@ -370,7 +403,9 @@ async function verSolicitud(id) {
     // Si NO vienen, pedirlos al backend por separado
     if (detalles.length === 0) {
         try {
-            const resp = await fetch(`${getSolicitudApiUrl()}?accion=detalle&id=${id}`);
+            const resp = await fetch(`${getSolicitudApiUrl()}?accion=obtener&id_solicitud=${encodeURIComponent(id)}`, {
+                credentials: "same-origin",
+            });
             const result = await resp.json();
             if (result.status === "success" && result.data) {
                 detalles = result.data.detalles || (Array.isArray(result.data) ? result.data : []);
@@ -457,6 +492,7 @@ async function verSolicitud(id) {
 
     const dataModal = {
         id:               solicitud.id_solicitud,
+        id_instructor_solicitante: solicitud.id_instructor_solicitante,
         codigo:           solicitud.codigo_solicitud || `S-${solicitud.id_solicitud}`,
         solicitante:      solicitud.nombre_instructor || "N/A",
         programa:         programaDisplay,
@@ -549,12 +585,24 @@ function abrirModal(data) {
         motivoDiv.classList.add("hidden");
     }
 
-    // Mostrar/ocultar botones de acción según el estado
+    // Mostrar/ocultar botones de acción (instructores nunca; coordinador no en solicitud propia)
     const botonesDiv = document.getElementById("botonesAccion");
-    if (data.estado === "PENDIENTE") {
+    const avisoPropiaCoord = document.getElementById("avisoSolicitudPropiaCoordinador");
+    const pendiente = String(data.estado || "").toUpperCase() === "PENDIENTE";
+    const puedeActuar = pendiente && usuarioPuedeResponderSolicitudPendiente(data);
+    const avisoCoordPropio =
+        pendiente &&
+        usuarioEsCoordinadorNoSistema() &&
+        Number(data.id_instructor_solicitante) === Number(window.USUARIO_ID || 0);
+
+    if (puedeActuar) {
         botonesDiv.classList.remove("hidden");
     } else {
         botonesDiv.classList.add("hidden");
+    }
+    if (avisoPropiaCoord) {
+        if (avisoCoordPropio) avisoPropiaCoord.classList.remove("hidden");
+        else avisoPropiaCoord.classList.add("hidden");
     }
 
     // Contenido dinámico
@@ -633,6 +681,7 @@ async function aprobarSolicitud() {
         const id_coordinador = window.USUARIO_ID || 1;
         const response = await fetch(`${getSolicitudApiUrl()}?accion=responder`, {
             method: 'POST',
+            credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
@@ -654,10 +703,8 @@ async function aprobarSolicitud() {
                 timer: 2000
             });
             cerrarModal();
-            // Recargar la lista sin refrescar la página completa
-            setTimeout(() => {
-                location.reload();
-            }, 1500);
+            window.recargarModuloSolicitudes?.();
+            window.refrescarSesionUsuarioYHeader?.();
         } else {
             Swal.fire({
                 icon: 'error',
@@ -691,6 +738,7 @@ async function devolverSolicitud() {
         const id_coordinador = window.USUARIO_ID || 1;
         const response = await fetch(`${getSolicitudApiUrl()}?accion=responder`, {
             method: 'POST',
+            credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
@@ -713,10 +761,8 @@ async function devolverSolicitud() {
             });
             cerrarModalDevolver();
             cerrarModal();
-            // Recargar la lista
-            setTimeout(() => {
-                location.reload();
-            }, 1500);
+            window.recargarModuloSolicitudes?.();
+            window.refrescarSesionUsuarioYHeader?.();
         } else {
             Swal.fire({
                 icon: 'error',

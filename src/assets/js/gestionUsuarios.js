@@ -583,8 +583,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (String(datos.cargo || '').toLowerCase().includes('coordinador')) {
             datos.tipo_instructor = null;
             datos.tipo_contrato = null;
-            const idArea = form.querySelector('[name="id_area"]')?.value;
-            datos.id_area = idArea ? parseInt(idArea, 10) : null;
+            datos.id_area = null;
         } else {
             datos.id_area = null;
         }
@@ -661,8 +660,9 @@ function datosEditarDesdeForm(form) {
     if (String(datos.cargo || '').toLowerCase().includes('coordinador')) {
         datos.tipo_instructor = null;
         datos.tipo_contrato = null;
+        datos.id_area = null;
     } else {
-        datos.area_coordinador = datos.area_coordinador || '';
+        datos.area_coordinador = '';
     }
     return datos;
 }
@@ -724,7 +724,7 @@ async function prepararEdicion(id) {
                 }
             } else {
                 const inputArea = form.querySelector('[name="area_coordinador"]');
-                if (inputArea) inputArea.value = u.nombre_area || u.area_coordinador || '';
+                if (inputArea) inputArea.value = (u.area_coordinador || u.nombre_area || '').trim();
             }
 
             const datosIniciales = datosEditarDesdeForm(form);
@@ -821,7 +821,7 @@ async function verUsuarioDetalles(id) {
                 verBlock.classList.toggle('hidden', !tieneTrim);
             }
         } else {
-            set('verArea', u.nombre_area || u.area_coordinador || 'No asignada');
+            set('verArea', u.area_coordinador || u.nombre_area || 'No asignada');
             const verBlock = document.getElementById('verRolTrimestralizacion');
             if (verBlock) verBlock.classList.add('hidden');
         }
