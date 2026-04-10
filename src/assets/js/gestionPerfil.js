@@ -487,9 +487,17 @@
           .then(function (data) {
             if (data && data.status === "success") {
               if (window.Swal) {
-                Swal.fire({ toast: true, position: "top-end", icon: "success", title: data.message || "Solicitud enviada al administrador.", showConfirmButton: false, timer: 2500, zIndex: TOAST_Z_INDEX });
+                Swal.fire({
+                  toast: true,
+                  position: "top-end",
+                  icon: "success",
+                  title: "Solicitud enviada al administrador.",
+                  showConfirmButton: false,
+                  timer: 2500,
+                  zIndex: TOAST_Z_INDEX
+                });
               } else {
-                alert(data.message || "Solicitud enviada al administrador.");
+                alert("Solicitud enviada al administrador.");
               }
               closeModal("modalSolicitarCambiosPerfil");
               solicitarCambiosValoresIniciales = null;

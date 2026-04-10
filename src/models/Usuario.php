@@ -167,7 +167,11 @@ class Usuario {
         $stmt->bindParam(':numero_documento', $data['numero_documento']);
         $stmt->bindParam(':correo_electronico', $data['correo_electronico']);
         $stmt->bindParam(':cargo', $data['cargo']);
-        $stmt->bindParam(':id_area', $data['id_area'], PDO::PARAM_INT);
+        if ($data['id_area'] === null || $data['id_area'] === '') {
+            $stmt->bindValue(':id_area', null, PDO::PARAM_NULL);
+        } else {
+            $stmt->bindValue(':id_area', (int) $data['id_area'], PDO::PARAM_INT);
+        }
         $stmt->bindParam(':tipo_instructor', $data['tipo_instructor']);
         $stmt->bindParam(':tipo_contrato', $data['tipo_contrato']);
         $stmt->bindParam(':estado', $data['estado'], PDO::PARAM_INT);

@@ -1,4 +1,47 @@
-const API_URL = 'src/controllers/SolicitudController.php';
+const API_URL_FALLBACK = 'src/controllers/SolicitudController.php';
+
+function getSolicitudApiUrl() {
+    return typeof window !== 'undefined' && window.API_URL ? window.API_URL : API_URL_FALLBACK;
+}
+
+/** Misma lógica que gestionPerfil.js (verPerfilAvatar) para iniciales del nombre */
+function inicialesDesdeNombreCompleto(nombre) {
+    const n = (nombre || "").trim();
+    if (!n || n === "N/A") return "—";
+    return n
+        .split(/\s+/)
+        .map((s) => s[0])
+        .filter(Boolean)
+        .slice(0, 2)
+        .join("")
+        .toUpperCase();
+}
+
+function escapeHtmlSolicitud(str) {
+    const s = String(str ?? "");
+    return s
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+function solClaseBadgeEstado(estado) {
+    const e = (estado || "PENDIENTE").toUpperCase();
+    const base = "sol-badge-estado";
+    if (e === "PENDIENTE") return `${base} sol-badge-estado--pendiente`;
+    if (e === "APROBADO") return `${base} sol-badge-estado--aprobado`;
+    if (e === "DEVUELTO") return `${base} sol-badge-estado--devuelto`;
+    return `${base} sol-badge-estado--otro`;
+}
+
+function solClaseBadgeTipo(tipoRaw) {
+    const t = (tipoRaw || "").toUpperCase();
+    const base = "sol-badge-tipo";
+    if (t === "DATOS" || t.includes("DATO")) return `${base} sol-badge-tipo--datos`;
+    if (t === "HORARIO" || t.includes("HORARIO")) return `${base} sol-badge-tipo--horario`;
+    return `${base} sol-badge-tipo--otro`;
+}
 
 let todasLasSolicitudes = [];
 let solicitudActualId = null;
@@ -6,28 +49,32 @@ let solicitudActualTipo = null;
 let solicitudActualData = null;
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Elementos del DOM
     const botones = document.querySelectorAll(".filter-btn");
     const tablaBody = document.getElementById("tablaSolicitudes");
     const buscador = document.getElementById("searchInput");
-    const totalElement = document.getElementById("total");
-    const mostrandoElement = document.getElementById("mostrando");
-    
-    // Variables de estado
+    const paginacionWrap = document.getElementById("solicitudesPagination");
+    const solPrev = document.getElementById("solPrev");
+    const solNext = document.getElementById("solNext");
+
+    const ITEMS_PER_PAGE = 8;
+
     let estadoActivo = "Todas";
     let solicitudesFiltradas = [];
+    let paginaActual = 1;
+
+    function aplicarEstilosFiltros(estado) {
+        botones.forEach((btn) => {
+            btn.classList.toggle("solicitud-filter--active", btn.dataset.estado === estado);
+        });
+    }
 
     // Configurar event listeners de los modales
     document.getElementById("btnAprobar")?.addEventListener("click", () => {
-        abrirModalConfirmar();
+        aprobarSolicitud();
     });
 
     document.getElementById("btnDevolver")?.addEventListener("click", () => {
         abrirModalDevolver();
-    });
-
-    document.getElementById("btnConfirmarAprobar")?.addEventListener("click", () => {
-        aprobarSolicitud();
     });
 
     document.getElementById("btnConfirmarDevolver")?.addEventListener("click", () => {
@@ -36,12 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Botón de cerrar del modal principal
     document.getElementById("cerrarModalDetalle")?.addEventListener("click", () => {
-        const modal = document.getElementById("modalDetalle");
-        modal.classList.add("hidden");
-        modal.classList.remove("flex");
-        solicitudActualId   = null;
-        solicitudActualTipo = null;
-        solicitudActualData = null;
+        cerrarModal();
     });
 
 
@@ -52,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             mostrarLoading(true);
             
-            let url = API_URL;
+            let url = getSolicitudApiUrl();
             
             // Determinar qué endpoint llamar según el estado activo
             switch(estadoActivo) {
@@ -96,29 +138,61 @@ document.addEventListener("DOMContentLoaded", () => {
     // APLICAR FILTROS (BÚSQUEDA)
     // ================================
     function aplicarFiltros() {
-        const textoBusqueda = buscador.value.toLowerCase();
-        
-        solicitudesFiltradas = todasLasSolicitudes.filter(solicitud => {
+        paginaActual = 1;
+        const textoBusqueda = (buscador?.value || "").toLowerCase().trim();
+
+        solicitudesFiltradas = todasLasSolicitudes.filter((solicitud) => {
             if (!textoBusqueda) return true;
-            
-            const coincideEnCampos = 
+
+            const idStr = solicitud.id_solicitud != null ? String(solicitud.id_solicitud) : "";
+            const programa =
+                (solicitud.programa && String(solicitud.programa)) ||
+                (solicitud.nombre_programa && String(solicitud.nombre_programa)) ||
+                "";
+
+            return (
                 (solicitud.codigo_solicitud && solicitud.codigo_solicitud.toLowerCase().includes(textoBusqueda)) ||
+                (idStr && idStr.includes(textoBusqueda)) ||
                 (solicitud.nombre_instructor && solicitud.nombre_instructor.toLowerCase().includes(textoBusqueda)) ||
-                (solicitud.tipo_solicitud && solicitud.tipo_solicitud.toLowerCase().includes(textoBusqueda));
-            
-            return coincideEnCampos;
+                (solicitud.tipo_solicitud && solicitud.tipo_solicitud.toLowerCase().includes(textoBusqueda)) ||
+                (programa && programa.toLowerCase().includes(textoBusqueda))
+            );
         });
-        
+
         renderizarTabla();
-        actualizarContadores();
     }
 
     // ================================
     // RENDERIZAR TABLA
     // ================================
+    function actualizarPaginacion() {
+        if (!paginacionWrap || !solPrev || !solNext) return;
+
+        const total = solicitudesFiltradas.length;
+        if (total === 0) {
+            paginacionWrap.classList.add("hidden");
+            return;
+        }
+
+        const totalPages = Math.max(1, Math.ceil(total / ITEMS_PER_PAGE));
+        if (paginaActual > totalPages) paginaActual = totalPages;
+        if (paginaActual < 1) paginaActual = 1;
+
+        paginacionWrap.classList.remove("hidden");
+
+        const info = document.getElementById("solPageInfo");
+        if (info) {
+            const itemLabel = total === 1 ? "ítem" : "ítems";
+            info.textContent = `Página ${paginaActual} de ${totalPages} · ${total} ${itemLabel}`;
+        }
+
+        solPrev.disabled = paginaActual <= 1;
+        solNext.disabled = paginaActual >= totalPages;
+    }
+
     function renderizarTabla() {
         if (!tablaBody) return;
-        
+
         if (solicitudesFiltradas.length === 0) {
             tablaBody.innerHTML = `
                 <tr>
@@ -127,44 +201,39 @@ document.addEventListener("DOMContentLoaded", () => {
                     </td>
                 </tr>
             `;
+            actualizarPaginacion();
             return;
         }
-        
+
+        const totalPages = Math.max(1, Math.ceil(solicitudesFiltradas.length / ITEMS_PER_PAGE));
+        if (paginaActual > totalPages) paginaActual = totalPages;
+
+        const inicio = (paginaActual - 1) * ITEMS_PER_PAGE;
+        const paginaDatos = solicitudesFiltradas.slice(inicio, inicio + ITEMS_PER_PAGE);
+
         let html = "";
-        
-        solicitudesFiltradas.forEach(sol => {
+
+        paginaDatos.forEach((sol) => {
             const fecha = sol.fecha_solicitud ? new Date(sol.fecha_solicitud).toLocaleDateString('es-CO') : 'N/A';
-            
-            let badgeColor = "";
-            let estadoTexto = sol.estado || "PENDIENTE";
-            
-            switch(estadoTexto) {
-                case "PENDIENTE":
-                    badgeColor = "bg-amber-100 text-amber-800";
-                    break;
-                case "APROBADO":
-                    badgeColor = "bg-emerald-100 text-emerald-800";
-                    break;
-                case "DEVUELTO":
-                    badgeColor = "bg-rose-100 text-rose-800";
-                    break;
-                default:
-                    badgeColor = "bg-gray-100 text-gray-800";
-            }
-            
+
+            const estadoTexto = (sol.estado || "PENDIENTE").toUpperCase();
+            const tipoTexto = sol.tipo_solicitud || "N/A";
+            const clsEstado = solClaseBadgeEstado(estadoTexto);
+            const clsTipo = solClaseBadgeTipo(tipoTexto);
+
             html += `
                 <tr data-estado="${estadoTexto}" class="hover:bg-gray-50">
-                    <td class="px-4 py-3">${sol.codigo_solicitud || sol.id_solicitud}</td>
+                    <td class="px-4 py-3">${escapeHtmlSolicitud(sol.codigo_solicitud || sol.id_solicitud)}</td>
                     <td class="px-4 py-3">
-                        <div class="font-medium">${sol.nombre_instructor || 'N/A'}</div>
-                        <div class="text-xs text-gray-500">${sol.correo_instructor || ''}</div>
+                        <div class="font-medium">${escapeHtmlSolicitud(sol.nombre_instructor || "N/A")}</div>
+                        <div class="text-xs text-gray-500">${escapeHtmlSolicitud(sol.correo_instructor || "")}</div>
                     </td>
-                    <td class="px-4 py-3">
-                        <span class="px-2 py-1 text-xs rounded-full ${badgeColor}">
-                            ${estadoTexto}
-                        </span>
+                    <td class="px-4 py-3 text-center">
+                        <span class="${clsEstado}">${escapeHtmlSolicitud(estadoTexto)}</span>
                     </td>
-                    <td class="px-4 py-3">${sol.tipo_solicitud || 'N/A'}</td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="${clsTipo}">${escapeHtmlSolicitud(tipoTexto)}</span>
+                    </td>
                     <td class="px-4 py-3">${fecha}</td>
                     <td class="px-4 py-3 text-center">
                         <button onclick="verSolicitud(${sol.id_solicitud})" 
@@ -178,26 +247,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 </tr>
             `;
         });
-        
-        tablaBody.innerHTML = html;
-    }
 
-    // ================================
-    // ACTUALIZAR CONTADORES
-    // ================================
-    function actualizarContadores() {
-        if (totalElement) {
-            totalElement.textContent = todasLasSolicitudes.length;
-        }
-        if (mostrandoElement) {
-            mostrandoElement.textContent = solicitudesFiltradas.length;
-        }
+        tablaBody.innerHTML = html;
+        actualizarPaginacion();
     }
 
     // ================================
     // FUNCIONES DE INTERFAZ
     // ================================
     function mostrarLoading(mostrar) {
+        if (mostrar && paginacionWrap) {
+            paginacionWrap.classList.add("hidden");
+        }
         if (mostrar) {
             tablaBody.innerHTML = `
                 <tr>
@@ -216,6 +277,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function mostrarError(mensaje) {
+        if (paginacionWrap) paginacionWrap.classList.add("hidden");
         tablaBody.innerHTML = `
             <tr>
                 <td colspan="6" class="px-4 py-8 text-center text-red-500">
@@ -229,39 +291,36 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ================================
-    // CAMBIAR ESTADO ACTIVO
-    // ================================
-    function quitarActivo() {
-        botones.forEach(b => {
-            b.classList.remove('boton-activo');
-        });
-    }
-
-    function activarBoton(estado) {
-        quitarActivo();
-        const botonActivo = document.querySelector(`[data-estado="${estado}"]`);
-        if (botonActivo) {
-            botonActivo.classList.add('boton-activo');
-        }
-    }
-
-    // ================================
     // EVENT LISTENERS
     // ================================
-    botones.forEach(btn => {
+    botones.forEach((btn) => {
         btn.addEventListener("click", async () => {
             estadoActivo = btn.dataset.estado;
-            activarBoton(estadoActivo);
+            aplicarEstilosFiltros(estadoActivo);
             await cargarSolicitudes();
         });
     });
 
-    buscador.addEventListener("input", () => {
+    buscador?.addEventListener("input", () => {
         aplicarFiltros();
     });
 
-    // Cargar datos iniciales
-    activarBoton("Todas");
+    solPrev?.addEventListener("click", () => {
+        if (paginaActual > 1) {
+            paginaActual -= 1;
+            renderizarTabla();
+        }
+    });
+
+    solNext?.addEventListener("click", () => {
+        const totalPages = Math.max(1, Math.ceil(solicitudesFiltradas.length / ITEMS_PER_PAGE));
+        if (paginaActual < totalPages) {
+            paginaActual += 1;
+            renderizarTabla();
+        }
+    });
+
+    aplicarEstilosFiltros("Todas");
     cargarSolicitudes();
 });
 
@@ -285,8 +344,25 @@ async function verSolicitud(id) {
     }
 
     let nombreAnterior = "", nombreNuevo = "";
-    let docAnterior    = "", docNuevo    = "";
     let horarioAnterior = "", horarioNuevo = "";
+
+    const etiquetaCampoDatos = {
+        nombre_completo: "Nombre",
+        tipo_documento: "Tipo de documento",
+        numero_documento: "Documento",
+        correo_electronico: "Correo electrónico",
+        tipo_instructor: "Tipo instructor",
+        tipo_contrato: "Tipo contrato",
+    };
+    const ordenCamposDatos = [
+        "nombre_completo",
+        "tipo_documento",
+        "numero_documento",
+        "correo_electronico",
+        "tipo_instructor",
+        "tipo_contrato",
+    ];
+    const cambiosDatos = [];
 
     // Detalles que pueden venir en el listado
     let detalles = solicitud.detalles || [];
@@ -294,7 +370,7 @@ async function verSolicitud(id) {
     // Si NO vienen, pedirlos al backend por separado
     if (detalles.length === 0) {
         try {
-            const resp = await fetch(`${window.API_URL}?accion=detalle&id=${id}`);
+            const resp = await fetch(`${getSolicitudApiUrl()}?accion=detalle&id=${id}`);
             const result = await resp.json();
             if (result.status === "success" && result.data) {
                 detalles = result.data.detalles || (Array.isArray(result.data) ? result.data : []);
@@ -309,19 +385,62 @@ async function verSolicitud(id) {
         }
     }
 
-    // Procesar array detalles (campo_modificado / valor_anterior / valor_nuevo)
-    detalles.forEach(detalle => {
-        const campo = (detalle.campo_modificado || "").toLowerCase();
-        if (campo.includes("horario")) {
-            horarioAnterior = detalle.valor_anterior || horarioAnterior;
-            horarioNuevo    = detalle.valor_nuevo    || horarioNuevo;
-        } else if (campo.includes("nombre") || campo.includes("nombres")) {
-            nombreAnterior = detalle.valor_anterior || nombreAnterior;
-            nombreNuevo    = detalle.valor_nuevo    || nombreNuevo;
-        } else if (campo.includes("documento") || campo.includes("doc")) {
-            docAnterior = detalle.valor_anterior || docAnterior;
-            docNuevo    = detalle.valor_nuevo    || docNuevo;
+    // Procesar detalles: datos personales por nombre de campo exacto (evita filas falsas);
+    // horario con criterio amplio por compatibilidad.
+    detalles.forEach((detalle) => {
+        const campo = (detalle.campo_modificado || "").trim();
+        const cLow = campo.toLowerCase();
+
+        const campoDatosKey = Object.keys(etiquetaCampoDatos).find(
+            (k) => k.toLowerCase() === cLow
+        );
+
+        if (campoDatosKey) {
+            const va = String(detalle.valor_anterior ?? "").trim();
+            const vn = String(detalle.valor_nuevo ?? "").trim();
+            if (va !== vn) {
+                cambiosDatos.push({
+                    campo: campoDatosKey,
+                    etiqueta: etiquetaCampoDatos[campoDatosKey],
+                    anterior: va || "No especificado",
+                    nuevo: vn || "No especificado",
+                });
+            }
+            if (campoDatosKey === "nombre_completo") {
+                nombreAnterior = detalle.valor_anterior ?? nombreAnterior;
+                nombreNuevo = detalle.valor_nuevo ?? nombreNuevo;
+            }
+            return;
         }
+
+        if (cLow.includes("horario")) {
+            horarioAnterior = detalle.valor_anterior || horarioAnterior;
+            horarioNuevo = detalle.valor_nuevo || horarioNuevo;
+        } else if (cLow.includes("nombre") || cLow.includes("nombres")) {
+            const va = String(detalle.valor_anterior ?? "").trim();
+            const vn = String(detalle.valor_nuevo ?? "").trim();
+            nombreAnterior = detalle.valor_anterior || nombreAnterior;
+            nombreNuevo = detalle.valor_nuevo || nombreNuevo;
+            if (va !== vn) {
+                cambiosDatos.push({
+                    campo: "nombre_completo",
+                    etiqueta: "Nombre",
+                    anterior: va || "No especificado",
+                    nuevo: vn || "No especificado",
+                });
+            }
+        }
+    });
+
+    cambiosDatos.sort(
+        (a, b) => ordenCamposDatos.indexOf(a.campo) - ordenCamposDatos.indexOf(b.campo)
+    );
+    const cambiosDatosUnicos = [];
+    const camposVistos = new Set();
+    cambiosDatos.forEach((row) => {
+        if (camposVistos.has(row.campo)) return;
+        camposVistos.add(row.campo);
+        cambiosDatosUnicos.push(row);
     });
 
     // Fallback: leer campos planos de la solicitud si aún están vacíos
@@ -330,19 +449,25 @@ async function verSolicitud(id) {
         horarioNuevo    = solicitud.horario_nuevo    || solicitud.valor_nuevo    || "";
     }
 
+    const rawPrograma = (solicitud.programa || solicitud.nombre_programa || "").trim();
+    const programaDisplay =
+        rawPrograma && rawPrograma.toUpperCase() !== "N/A"
+            ? rawPrograma
+            : "Usuario no vinculado a un programa";
+
     const dataModal = {
         id:               solicitud.id_solicitud,
         codigo:           solicitud.codigo_solicitud || `S-${solicitud.id_solicitud}`,
         solicitante:      solicitud.nombre_instructor || "N/A",
-        programa:         solicitud.programa || solicitud.nombre_programa || "N/A",
+        programa:         programaDisplay,
         fecha:            solicitud.fecha_solicitud || "",
         estado:           (solicitud.estado || "PENDIENTE").toUpperCase(),
         tipo:             solicitudActualTipo,
         tipoRaw:          solicitud.tipo_solicitud || "",   // valor original del backend
         motivoDevolucion: solicitud.observacion_respuesta || "",
         nombreAnterior, nombreNuevo,
-        docAnterior,    docNuevo,
         horarioAnterior, horarioNuevo,
+        cambiosDatos: cambiosDatosUnicos,
     };
 
     console.log("📦 DATOS MAPEADOS:", dataModal);
@@ -360,11 +485,20 @@ function abrirModal(data) {
     modal.classList.remove("hidden");
     modal.classList.add("flex");
 
-    // Datos básicos
-    document.getElementById("modalCodigo").textContent      = data.codigo      || "";
-    document.getElementById("modalSolicitante").textContent = data.solicitante  || "";
-    document.getElementById("modalPrograma").textContent    = data.programa     || "";
-    document.getElementById("modalFecha").textContent       = data.fecha        || "";
+    const avatarEl = document.getElementById("modalSolicitudAvatar");
+    if (avatarEl) {
+        avatarEl.textContent = inicialesDesdeNombreCompleto(data.solicitante);
+    }
+
+    document.getElementById("modalCodigo").textContent = data.codigo || "";
+    document.getElementById("modalSolicitante").textContent = data.solicitante || "";
+    document.getElementById("modalPrograma").textContent = data.programa || "Usuario no vinculado a un programa";
+
+    const fechaRaw = data.fecha || "";
+    const fechaFormateada = fechaRaw.includes(" ")
+        ? fechaRaw.split(" ").join(" - ")
+        : fechaRaw;
+    document.getElementById("modalFecha").textContent = fechaFormateada;
 
     // Badge de tipo — usa el valor normalizado o el raw del backend directamente
     const tipoBadge = document.getElementById("modalTipoBadge");
@@ -375,7 +509,9 @@ function abrirModal(data) {
                         : data.tipo                ? data.tipo
                         : "";
         tipoBadge.textContent = tipoTexto;
-        tipoBadge.style.display = tipoTexto ? "inline-block" : "none";
+        tipoBadge.className =
+            "inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-0.5 text-[11px] font-medium text-gray-600";
+        tipoBadge.style.display = tipoTexto ? "inline-flex" : "none";
     }
 
     // Guardar ID de la solicitud actual para usarlo en los botones
@@ -385,18 +521,21 @@ function abrirModal(data) {
     const estado = document.getElementById("modalEstado");
     estado.textContent = data.estado || "";
 
+    const estadoBase =
+        "inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold";
+
     if (data.estado === "PENDIENTE") {
-        estado.className = "px-3 py-1 rounded-full text-sm font-medium";
-        estado.style.cssText = 'background-color: #fef3c7 !important; color: #92400e !important;';
+        estado.className = estadoBase;
+        estado.style.cssText = "background-color: #fef3c7 !important; color: #92400e !important;";
     } else if (data.estado === "APROBADO") {
-        estado.className = "px-3 py-1 rounded-full text-sm font-medium";
-        estado.style.cssText = 'background-color: #C5E7B5 !important; color: #166534 !important;';
+        estado.className = estadoBase;
+        estado.style.cssText = "background-color: #C5E7B5 !important; color: #166534 !important;";
     } else if (data.estado === "DEVUELTO") {
-        estado.className = "px-3 py-1 rounded-full text-sm font-medium";
-        estado.style.cssText = 'background-color: #ffe4e6 !important; color: #9b1c1c !important;';
+        estado.className = estadoBase;
+        estado.style.cssText = "background-color: #ffe4e6 !important; color: #9b1c1c !important;";
     } else {
-        estado.className = "px-3 py-1 rounded-full text-sm font-medium";
-        estado.style.cssText = 'background-color: #f3f4f6 !important; color: #1f2937 !important;';
+        estado.className = estadoBase;
+        estado.style.cssText = "background-color: #f3f4f6 !important; color: #1f2937 !important;";
     }
 
     // Mostrar/ocultar motivo de devolución según el estado
@@ -422,38 +561,30 @@ function abrirModal(data) {
     const contenedor = document.getElementById("modalContenido");
 
     if (data.tipo === "datos") {
+        const filas =
+            data.cambiosDatos && data.cambiosDatos.length > 0
+                ? data.cambiosDatos
+                      .map(
+                          (row) => `
+                    <div style="font-size:13px;">
+                        <p style="font-weight:600;color:#6b7280;margin:0 0 6px 0;">${escapeHtmlSolicitud(row.etiqueta)}</p>
+                        <div style="display:flex;flex-direction:column;gap:6px;">
+                            <div style="background:#fff;border:1px solid #d1d5db;border-radius:8px;padding:7px 14px;color:#374151;word-break:break-word;">${escapeHtmlSolicitud(row.anterior)}</div>
+                            <div style="display:flex;align-items:center;gap:6px;padding-left:6px;color:#9ca3af;font-size:15px;">↓</div>
+                            <div style="background:#fff;border:1.5px solid #10b981;border-radius:8px;padding:7px 14px;font-weight:600;color:#065f46;word-break:break-word;">${escapeHtmlSolicitud(row.nuevo)}</div>
+                        </div>
+                    </div>`
+                      )
+                      .join("")
+                : `<p style="font-size:13px;color:#6b7280;">No hay cambios detallados en esta solicitud.</p>`;
+
         contenedor.innerHTML = `
-            <div class="bg-gray-50 rounded-xl p-4" style="border:1px solid #d1d5db;">
-                <div class="flex items-center gap-2 mb-4 font-semibold" style="color:#39A900;">
-                    <i data-lucide="user" style="width:16px;height:16px;"></i>
+            <div style="border:1px solid #d1d5db;border-radius:12px;background:#f9fafb;padding:16px 20px;">
+                <div style="display:flex;align-items:center;gap:7px;margin-bottom:16px;font-size:13px;font-weight:700;color:#39A900;">
+                    <i data-lucide="user" style="width:15px;height:15px;flex-shrink:0;"></i>
                     Cambio de datos personales
                 </div>
-                <div style="display:flex;flex-direction:column;gap:16px;font-size:14px;">
-                    <div>
-                        <p style="color:#6b7280;margin-bottom:6px;">Nombre</p>
-                        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-                            <div style="padding:6px 14px;background:#f9fafb;border:1px solid #d1d5db;border-radius:6px;color:#374151;">
-                                ${data.nombreAnterior || "<span style='color:#9ca3af'>No especificado</span>"}
-                            </div>
-                            <span style="color:#9ca3af;">→</span>
-                            <div style="padding:6px 14px;background:#f0fdf4;border:1px solid #10b981;border-radius:6px;color:#065f46;font-weight:600;">
-                                ${data.nombreNuevo || "<span style='color:#9ca3af'>No especificado</span>"}
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <p style="color:#6b7280;margin-bottom:6px;">Documento</p>
-                        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-                            <div style="padding:6px 14px;background:#f9fafb;border:1px solid #d1d5db;border-radius:6px;color:#374151;">
-                                ${data.docAnterior || "<span style='color:#9ca3af'>No especificado</span>"}
-                            </div>
-                            <span style="color:#9ca3af;">→</span>
-                            <div style="padding:6px 14px;background:#f0fdf4;border:1px solid #10b981;border-radius:6px;color:#065f46;font-weight:600;">
-                                ${data.docNuevo || "<span style='color:#9ca3af'>No especificado</span>"}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <div style="display:flex;flex-direction:column;gap:18px;">${filas}</div>
             </div>
         `;
         lucide.createIcons();
@@ -461,104 +592,24 @@ function abrirModal(data) {
     } else {
         // Default: bloque de horario (cubre "horario" y cualquier otro tipo)
         contenedor.innerHTML = `
-            <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:14px;">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;color:#16a34a;font-weight:600;font-size:14px;">
-                    <i data-lucide="clock" style="width:16px;height:16px;"></i>
+            <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                <div class="mb-3 flex items-center gap-2 text-sm font-semibold text-green-600">
+                    <i data-lucide="clock" class="h-4 w-4 shrink-0"></i>
                     Cambio de horario
                 </div>
-                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                    <div style="padding:5px 14px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;color:#4b5563;">
-                        ${data.horarioAnterior || "No especificado"}
+                <div class="flex flex-wrap items-center gap-2.5 text-sm">
+                    <div class="rounded-md border border-gray-300 bg-white px-3.5 py-1.5 text-gray-700">
+                        ${escapeHtmlSolicitud(data.horarioAnterior || "No especificado")}
                     </div>
-                    <span style="color:#9ca3af;font-size:16px;">→</span>
-                    <div style="padding:5px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:13px;color:#15803d;font-weight:600;">
-                        ${data.horarioNuevo || "No especificado"}
+                    <span class="text-base text-gray-400">→</span>
+                    <div class="rounded-md border border-emerald-300 bg-white px-3.5 py-1.5 font-semibold text-green-700">
+                        ${escapeHtmlSolicitud(data.horarioNuevo || "No especificado")}
                     </div>
                 </div>
             </div>
         `;
         lucide.createIcons();
     }
-}
-
-// ================================
-// FUNCIONES PARA MODALES DE CONFIRMACIÓN
-// ================================
-function abrirModalConfirmar() {
-
-    if (!solicitudActualData) return;
-
-    const data = solicitudActualData;
-
-    // Datos básicos
-    document.getElementById("modalCodigoConfirmacion").textContent = data.codigo;
-    document.getElementById("modalSolicitanteConfirmacion").textContent = data.solicitante;
-
-    const contenedor = document.getElementById("contenidoConfirmacion");
-
-    // Render dinámico según tipo
-    if (data.tipo === "datos") {
-
-        contenedor.innerHTML = `
-            <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-
-                <div class="flex items-center gap-2 mb-4 text-gray-700 font-medium">
-                    <i data-lucide="user" class="w-5 h-5 text-green-600"></i>
-                    Cambio de datos
-                </div>
-
-                <div class="flex items-center justify-between gap-3 flex-wrap">
-
-                    <div class="bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-700 min-w-[150px]">
-                        ${data.nombreAnterior || "No especificado"}
-                    </div>
-
-                    <span class="text-gray-400 font-semibold">→</span>
-
-                    <div class="bg-green-100 border border-green-400 rounded-lg px-4 py-2 text-sm text-green-800 font-medium min-w-[150px]">
-                        ${data.nombreNuevo || "No especificado"}
-                    </div>
-
-                </div>
-            </div>
-        `;
-
-    } else if (data.tipo === "horario") {
-
-        contenedor.innerHTML = `
-            <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-
-                <div class="flex items-center gap-2 mb-4 text-gray-700 font-medium">
-                    <i data-lucide="clock" class="w-5 h-5 text-green-600"></i>
-                    Cambio de horario
-                </div>
-
-                <div class="flex items-center justify-between gap-3 flex-wrap">
-
-                    <div class="bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-700 min-w-[150px]">
-                        ${data.horarioAnterior || "No especificado"}
-                    </div>
-
-                    <span class="text-gray-400 font-semibold">→</span>
-
-                    <div class="bg-green-100 border border-green-400 rounded-lg px-4 py-2 text-sm text-green-800 font-medium min-w-[150px]">
-                        ${data.horarioNuevo || "No especificado"}
-                    </div>
-
-                </div>
-            </div>
-        `;
-    }
-
-    document.getElementById("modalConfirmarAprobacion").classList.remove("hidden");
-    document.getElementById("modalConfirmarAprobacion").classList.add("flex");
-
-    lucide.createIcons();
-}
-
-function cerrarModalConfirmar() {
-    document.getElementById("modalConfirmarAprobacion").classList.add("hidden");
-    document.getElementById("modalConfirmarAprobacion").classList.remove("flex");
 }
 
 function abrirModalDevolver() {
@@ -580,7 +631,7 @@ async function aprobarSolicitud() {
 
     try {
         const id_coordinador = window.USUARIO_ID || 1;
-        const response = await fetch(`${API_URL}?accion=responder`, {
+        const response = await fetch(`${getSolicitudApiUrl()}?accion=responder`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -598,10 +649,10 @@ async function aprobarSolicitud() {
         if (resultado.status === 'success') {
             Swal.fire({
                 icon: 'success',
-                title: '✅ Solicitud aprobada correctamente',
+                title: 'Solicitud aprobada correctamente',
+                showConfirmButton: false,
                 timer: 2000
             });
-            cerrarModalConfirmar();
             cerrarModal();
             // Recargar la lista sin refrescar la página completa
             setTimeout(() => {
@@ -610,7 +661,7 @@ async function aprobarSolicitud() {
         } else {
             Swal.fire({
                 icon: 'error',
-                title: '❌ Error al aprobar',
+                title: 'Error al aprobar',
                 text: resultado.message
             });
         }
@@ -618,7 +669,7 @@ async function aprobarSolicitud() {
         console.error('Error:', error);
         Swal.fire({
             icon: 'error',
-            title: '❌ Error de conexión'
+            title: 'Error de conexión'
         });
     }
 }
@@ -631,14 +682,14 @@ async function devolverSolicitud() {
     if (!motivo) {
         Swal.fire({
             icon: 'warning',
-            title: '⚠️ Debes ingresar un motivo de devolución'
+            title: 'Debes ingresar un motivo de devolución'
         });
         return;
     }
 
     try {
         const id_coordinador = window.USUARIO_ID || 1;
-        const response = await fetch(`${API_URL}?accion=responder`, {
+        const response = await fetch(`${getSolicitudApiUrl()}?accion=responder`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -656,7 +707,8 @@ async function devolverSolicitud() {
         if (resultado.status === 'success') {
             Swal.fire({
                 icon: 'success',
-                title: '✅ Solicitud devuelta correctamente',
+                title: 'Solicitud devuelta correctamente',
+                showConfirmButton: false,
                 timer: 2000
             });
             cerrarModalDevolver();
@@ -668,7 +720,7 @@ async function devolverSolicitud() {
         } else {
             Swal.fire({
                 icon: 'error',
-                title: '❌ Error al devolver',
+                title: 'Error al devolver',
                 text: resultado.message
             });
         }
@@ -676,7 +728,7 @@ async function devolverSolicitud() {
         console.error('Error:', error);
         Swal.fire({
             icon: 'error',
-            title: '❌ Error de conexión'
+            title: 'Error de conexión'
         });
     }
 }
@@ -688,8 +740,8 @@ function cerrarModal() {
     const modal = document.getElementById("modalDetalle");
     modal.classList.add("hidden");
     modal.classList.remove("flex");
-    
-    // Limpiar datos
+
     solicitudActualId = null;
     solicitudActualTipo = null;
+    solicitudActualData = null;
 }
