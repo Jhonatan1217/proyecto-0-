@@ -318,7 +318,7 @@ if (isset($conn)) {
         Limpiar Trimestralización
       </button>
 
-      <button onclick="enviarHorario()" class="hidden bg-[#0a3a57] text-white px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">
+      <button onclick="enviarHorario()" style="display:none;" class="hidden bg-[#0a3a57] text-white px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">
         Enviar horario
       </button>
       <?php endif; ?> 
