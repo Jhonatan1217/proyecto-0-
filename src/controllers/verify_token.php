@@ -1,6 +1,10 @@
 <?php
 require_once __DIR__ . '/../../config/database.php';
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -35,8 +39,13 @@ if ($stmt->rowCount() === 0) {
     exit;
 }
 
-$conn->prepare("UPDATE usuarios SET estado = 1 WHERE id_usuario = :id")
-     ->execute([":id" => $id]);
+/*
+ * No activar la cuenta aquí: si estado pasara a 1 antes de cambiar la contraseña,
+ * el usuario podría entrar con la clave por defecto (p. ej. documento) sin completar el paso 2.
+ * La activación (estado = 1) ocurre solo en change_password_first.php tras guardar la nueva clave.
+ */
+session_regenerate_id(true);
+$_SESSION['first_login_password_change_user_id'] = $id;
 
 $conn->prepare("UPDATE tokens_correo SET usado = 1
                 WHERE id_usuario = :id AND token = :token")
