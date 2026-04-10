@@ -26,7 +26,7 @@ $correo = trim($_POST['correo'] ?? '');
 $password = trim($_POST['password'] ?? '');
 
 if (empty($correo) || empty($password)) {
-    echo json_encode(["status" => "error"]);
+    echo json_encode(["status" => "error", "message" => "Completa correo y contraseña."]);
     exit;
 }
 
@@ -39,7 +39,7 @@ $stmt->bindParam(":correo", $correo);
 $stmt->execute();
 
 if ($stmt->rowCount() === 0) {
-    echo json_encode(["status" => "error"]);
+    echo json_encode(["status" => "error", "message" => "Credenciales inválidas."]);
     exit;
 }
 
@@ -49,7 +49,7 @@ if (
     !password_verify($password, $usuario['password_hash']) &&
     $password !== $usuario['password_hash']
 ) {
-    echo json_encode(["status" => "error"]);
+    echo json_encode(["status" => "error", "message" => "Credenciales inválidas."]);
     exit;
 }
 

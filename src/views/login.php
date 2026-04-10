@@ -1,5 +1,12 @@
 <?php
 // login.php
+if (!defined('BASE_URL')) {
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+    $host = $_SERVER['HTTP_HOST'];
+    $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
+    $project = preg_replace('#/src/.*$#', '', $scriptDir);
+    define('BASE_URL', $protocol . $host . $project . '/');
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -44,18 +51,18 @@
         body {
             font-family: 'Inter', sans-serif;
         }
-        .otp-input {
-            width: 50px;
-            height: 55px;
+         .otp-input {
+            width: 38px;
+            height: 42px;
+            font-size: 16px;
             text-align: center;
-            font-size: 22px;
-            border: 2px solid #ccc;
-            border-radius: 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
             outline: none;
-            transition: 0.2s;
         }
         .otp-input:focus {
-            border-color: #15803d;
+            border-color: #9ca3af;
+            box-shadow: 0 0 0 2px rgba(0,0,0,0.05);
         }
     </style>
 </head>
@@ -115,15 +122,12 @@
                         >
                         <button type="button"
                             id="togglePasswordBtn"
-                            onclick="togglePassword()"
-                            aria-label="Mostrar contraseña"
-                            class="absolute top-1/2 right-3 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-gray-500 hover:text-gray-700 transition focus:outline-none focus:ring-2 focus:ring-green-600/30 rounded">
-                            <span id="iconEyeOpen" class="password-toggle-icon" aria-hidden="true">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                            </span>
-                            <span id="iconEyeClosed" class="password-toggle-icon hidden" aria-hidden="true">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878a4.5 4.5 0 106.262 6.262M4.5 4.5l15 15"/></svg>
-                            </span>
+                            onclick="togglePasswordVisibility('password', 'loginEyeIcon')"
+                            class="absolute top-1/2 right-3 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none p-0.5"
+                            aria-label="Mostrar contraseña">
+                            <svg id="loginEyeIcon" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.477 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                            </svg>
                         </button>
                     </div>
                 </div>
@@ -135,12 +139,13 @@
                     </a>
                 </div>
 
+                <p id="loginFormMessage" class="hidden rounded-lg border px-3 py-2 text-sm text-center" role="alert"></p>
+
                 <div class="flex justify-center">
                     <button
                         type="submit"
                         name="login"
-                        class="h-12 w-48 rounded-full bg-dark-navy text-sm font-semibold text-white hover:bg-dark-navy-hover focus:ring-2 focus:ring-green-600/30 focus:outline-none"
-                    >
+                        class="h-12 w-48 rounded-full bg-dark-navy text-sm font-semibold text-white hover:bg-dark-navy-hover">
                         Iniciar Sesion
                     </button>
                 </div>
@@ -157,65 +162,194 @@
 
 </main>
 
-<!-- Modal verificación OTP -->
-<div id="verificationModal"
-     class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
+<!-- ================= MODAL OTP ================= -->
+<div id="verificationModal" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center z-50">
+  <div class="bg-white w-[320px] rounded-xl p-5 relative text-center">
 
-    <div class="bg-white p-8 rounded-xl w-96 text-center space-y-6">
+    <!-- cerrar -->
+    <button onclick="cerrarModal('verificationModal')" class="absolute top-3 right-3 text-gray-400 text-sm">✕</button>
 
-        <h2 class="text-xl font-bold text-green-700">
-            Código de Verificación
-        </h2>
+    <div class="flex items-center text-[11px] mb-5">
 
-        <div class="flex justify-center gap-3">
-            <input class="otp-input" maxlength="1">
-            <input class="otp-input" maxlength="1">
-            <input class="otp-input" maxlength="1">
-            <input class="otp-input" maxlength="1">
-            <input class="otp-input" maxlength="1">
-            <input class="otp-input" maxlength="1">
+  <!-- Paso 1 -->
+    <div class="flex items-center gap-2">
+        <div class="w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-[10px]">
+        1
         </div>
+        <span class="text-black">Verificar</span>
+    </div>
 
-        <button onclick="verificarCodigo()"
-            class="w-full bg-green-700 text-white py-2 rounded-lg">
-            Verificar
-        </button>
+    <!-- línea -->
+    <div class="flex-1 h-[1px] bg-gray-200 mx-3"></div>
 
-        <div class="text-sm text-gray-600">
-            <span id="contadorTexto">Puedes reenviar en 60s</span>
-            <button id="reenviarBtn"
-                onclick="reenviarCodigo()"
-                class="hidden text-green-700 font-semibold">
-                Reenviar código
-            </button>
+    <!-- Paso 2 -->
+    <div class="flex items-center gap-2">
+        <div class="w-5 h-5 border border-gray-300 rounded-full flex items-center justify-center text-[10px] text-gray-400">
+        2
         </div>
+        <span class="text-gray-400">Contraseña</span>
+    </div>
 
     </div>
+
+    <!-- icono -->
+    <div class="flex justify-center mb-3">
+        <div class="w-10 h-10 rounded-full border border-gray-200 bg-gray-50 flex items-center justify-center">
+            <img src="<?= BASE_URL ?>src/assets/img/icons/Security/Shield-Check.svg" class="w-5 h-5">
+        </div>
+    </div>
+
+    <h2 class="text-sm font-semibold">Verifica tu correo</h2>
+    <p class="text-[11px] text-gray-500 mb-4">
+        Hemos enviado un código de 6 dígitos a<br>
+        <span class="text-black" id="correoUsuario"></span>
+    </p>
+
+    <p id="verificationFormMessage" class="hidden mb-3 rounded-lg border px-2 py-1.5 text-[11px] text-center" role="alert"></p>
+
+    <!-- OTP 3 + 3 -->
+    <div class="flex justify-center items-center gap-3 mb-4">
+        <div class="flex gap-1">
+            <input class="otp-input" maxlength="1">
+            <input class="otp-input" maxlength="1">
+            <input class="otp-input" maxlength="1">
+        </div>
+
+        <div class="w-4 h-[1px] bg-gray-300"></div>
+
+        <div class="flex gap-1">
+            <input class="otp-input" maxlength="1">
+            <input class="otp-input" maxlength="1">
+            <input class="otp-input" maxlength="1">
+        </div>
+    </div>
+
+    <!-- botón -->
+    <button onclick="verificarCodigo()"
+        class="w-full bg-gray-200 text-gray-500 py-2 rounded-md text-xs flex items-center justify-center gap-2">
+        <img src="<?= BASE_URL ?>src/assets/img/icons/Security/Shield-Check.svg" class="w-4 h-4">
+        Verificar correo
+    </button>
+
+    <p class="text-[10px] text-gray-400 mt-3">
+        <span id="contadorTexto" class="block min-h-[1.25em] text-gray-600 mb-1 text-center"></span>
+        <span class="inline-flex flex-wrap items-center justify-center gap-1 w-full">
+            <span>¿No recibiste el código?</span>
+            <button type="button" id="reenviarBtn" onclick="reenviarCodigo()" class="text-black underline font-medium hover:text-green-700 hidden">Reenviar código</button>
+        </span>
+    </p>
+
+  </div>
 </div>
 
-<!-- Modal cambio de contraseña obligatoria -->
-<div id="passwordModal"
-     class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
+<!-- ================= PASSWORD ================= -->
+<div id="passwordModal" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center z-50">
+  <div class="bg-white w-[320px] rounded-xl p-5 relative text-left">
 
-    <div class="bg-white p-8 rounded-xl w-96 text-center space-y-6">
+    <!-- cerrar -->
+    <button onclick="cerrarModal('passwordModal')" class="absolute top-3 right-3 text-gray-400 text-sm">✕</button>
 
-        <h2 class="text-xl font-bold text-green-700">
-            Cambiar Contraseña Obligatoria
-        </h2>
+    <div class="flex items-center text-[11px] mb-5">
 
+
+  <!-- Paso 1 COMPLETADO -->
+    <div class="flex items-center gap-2">
+
+    <!-- bola verde con icono dentro -->
+    <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+        <img src="<?= BASE_URL ?>src/assets/img/icons/Security/Shield-Check.svg" class="w-3.5 h-3.5 invert">
+    </div>
+
+    <span class="text-green-600">Verificar</span>
+
+    </div>
+
+    <!-- línea -->
+    <div class="flex-1 h-[1px] bg-gray-200 mx-3"></div>
+
+    <!-- Paso 2 ACTIVO -->
+    <div class="flex items-center gap-2">
+        <div class="w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-[10px]">
+        2
+        </div>
+        <span class="text-black">Contraseña</span>
+    </div>
+
+    </div>
+
+    <!-- icono -->
+    <div class="flex justify-center mb-3">
+        <div class="w-10 h-10 rounded-full border border-gray-200 bg-gray-50 flex items-center justify-center">
+            <img src="<?= BASE_URL ?>src/assets/img/icons/Security/Shield-Check.svg" class="w-5 h-5">
+        </div>
+    </div>
+
+    <h2 class="text-sm font-semibold text-center">Cambiar contraseña</h2>
+    <p class="text-[11px] text-gray-500 text-center mb-4">
+        Tu correo fue verificado correctamente. Ahora ingresa tu nueva contraseña.
+    </p>
+
+    <p id="passwordFormMessage" class="hidden mb-3 rounded-lg border px-2 py-1.5 text-[11px]" role="alert"></p>
+
+    <!-- input 1 -->
+    <label class="text-[11px] text-gray-600">Nueva contraseña</label>
+    <div class="relative mb-3">
         <input type="password" id="newPassword"
-            class="w-full border rounded-lg p-3 text-center"
-            placeholder="Nueva contraseña segura">
-
-        <button onclick="cambiarPassword()"
-            class="w-full bg-green-700 text-white py-2 rounded-lg">
-            Guardar y Continuar
+            class="w-full border rounded-md px-3 py-2 text-xs pr-9"
+            placeholder="Ingresa tu nueva contraseña"
+            autocomplete="new-password">
+        <button type="button" onclick="toggleFirstLoginPassword('newPassword', 'newPasswordEyeIcon')" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none" aria-label="Mostrar contraseña">
+            <svg id="newPasswordEyeIcon" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.477 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+            </svg>
         </button>
-
     </div>
+
+    <!-- input 2 -->
+    <label class="text-[11px] text-gray-600">Confirmar contraseña</label>
+    <div class="relative mb-4">
+        <input type="password" id="confirmNewPassword"
+            class="w-full border rounded-md px-3 py-2 text-xs pr-9"
+            placeholder="Ingresa la contraseña de nuevo"
+            autocomplete="new-password">
+        <button type="button" onclick="toggleFirstLoginPassword('confirmNewPassword', 'confirmNewPasswordEyeIcon')" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none" aria-label="Mostrar contraseña">
+            <svg id="confirmNewPasswordEyeIcon" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.477 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- botón -->
+    <button onclick="cambiarPassword()"
+    class="w-full bg-gray-200 text-gray-500 py-2 rounded-md text-xs flex items-center justify-center gap-2">
+
+    <img src="<?= BASE_URL ?>src/assets/img/icons/Security/lock.svg" class="w-4 h-4">
+
+    Cambiar contraseña
+    </button>
+
+    <p class="text-[11px] text-gray-400 mt-3 text-center cursor-pointer"
+       onclick="volverVerificacion()">
+        ← Volver a verificación
+    </p>
+
+  </div>
 </div>
 
-<script src="./src/assets/js/login.js"></script>
+<script>
+function abrirModal(id){
+    document.getElementById(id).classList.remove("hidden");
+}
+function cerrarModal(id){
+    document.getElementById(id).classList.add("hidden");
+}
+function volverVerificacion(){
+    cerrarModal("passwordModal");
+    abrirModal("verificationModal");
+}
+</script>
+<script>window.LOGIN_FETCH_ROOT = <?= json_encode(BASE_URL) ?>;</script>
+<script src="<?= BASE_URL ?>src/assets/js/login.js"></script>
 
 </body>
 </html>
