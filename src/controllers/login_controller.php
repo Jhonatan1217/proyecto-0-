@@ -30,7 +30,7 @@ if (empty($correo) || empty($password)) {
     exit;
 }
 
-$sql = "SELECT id_usuario, nombre_completo, correo_electronico, password_hash, estado, cargo
+$sql = "SELECT id_usuario, nombre_completo, correo_electronico, password_hash, estado, cargo, COALESCE(es_sistema, 0) AS es_sistema
         FROM usuarios
         WHERE correo_electronico = :correo
         LIMIT 1";
@@ -190,5 +190,6 @@ $_SESSION['usuario_id'] = $usuario['id_usuario'];
 $_SESSION['usuario_nombre'] = $usuario['nombre_completo'];
 $_SESSION['usuario_correo'] = $usuario['correo_electronico'];
 $_SESSION['usuario_cargo'] = $usuario['cargo'] ?? '';
+$_SESSION['usuario_es_sistema'] = (int)($usuario['es_sistema'] ?? 0);
 
 echo json_encode(["status" => "success"]);

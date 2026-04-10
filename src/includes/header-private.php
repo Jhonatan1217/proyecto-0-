@@ -27,9 +27,13 @@ document.addEventListener("DOMContentLoaded", function () {
       top: 5rem !important;
       z-index: 40 !important;
     }
-    /* Cuando un modal está abierto (body overflow:hidden) el toast sube encima del backdrop */
+    /* Cuando body tiene overflow:hidden, el toast debe superar .modal-perfil (999999) */
     body[style*="overflow: hidden"] .swal2-container {
-      z-index: 9999 !important;
+      z-index: 2147483000 !important;
+    }
+    /* Con modal de perfil visible, .swal2-container.swal2-top-end (z-index:40 arriba) quedaba detrás del backdrop */
+    body:has(.modal-perfil:not(.hidden)) .swal2-container {
+      z-index: 2147483000 !important;
     }
     .modal-perfil {
       z-index: 999999 !important;
@@ -232,7 +236,11 @@ document.addEventListener("DOMContentLoaded", function () {
           <span>Ver perfil</span>
         </button>
 
-        <button type="button" data-action="editar-perfil" class="user-widget-action w-full flex items-center gap-3 px-4 py-3 text-sm text-left hover:bg-gray-100 transition">
+        <button
+          type="button"
+          data-action="editar-perfil"
+          <?= strtoupper(trim((string)($_SESSION['usuario_cargo'] ?? ''))) === 'ES SISTEMA' ? 'disabled aria-disabled="true" title="No disponible para rol Es sistema"' : '' ?>
+          class="user-widget-action w-full flex items-center gap-3 px-4 py-3 text-sm text-left transition <?= strtoupper(trim((string)($_SESSION['usuario_cargo'] ?? ''))) === 'ES SISTEMA' ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100' ?>">
           <svg class="w-5 h-5 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
           <span>Editar perfil</span>
         </button>
@@ -274,6 +282,16 @@ document.addEventListener("DOMContentLoaded", function () {
         <div><span class="text-xs font-semibold text-gray-500 uppercase">Nombre</span><p id="verPerfilNombreCampo" class="text-gray-900 mt-0.5"></p></div>
         <div><span class="text-xs font-semibold text-gray-500 uppercase">Número documento</span><p id="verPerfilDocumento" class="text-gray-900 mt-0.5"></p></div>
         <div><span class="text-xs font-semibold text-gray-500 uppercase">Correo electrónico</span><p id="verPerfilCorreo" class="text-gray-900 mt-0.5"></p></div>
+        <div id="verPerfilInstructorContainer" class="hidden">
+          <div>
+            <span class="text-xs font-semibold text-gray-500 uppercase">Tipo instructor</span>
+            <p id="verPerfilTipoInstructor" class="text-gray-900 mt-0.5">—</p>
+          </div>
+          <div class="mt-3">
+            <span class="text-xs font-semibold text-gray-500 uppercase">Tipo contrato</span>
+            <p id="verPerfilTipoContrato" class="text-gray-900 mt-0.5">—</p>
+          </div>
+        </div>
         <div id="verPerfilAreaContainer">
           <div><span class="text-xs font-semibold text-gray-500 uppercase">Área del coordinador</span><p id="verPerfilArea" class="text-gray-900 mt-0.5">—</p></div>
         </div>
@@ -476,6 +494,7 @@ window.API_USUARIO = "<?= BASE_URL ?>src/controllers/UsuarioController.php";
 window.API_SOLICITUD = "<?= BASE_URL ?>src/controllers/SolicitudController.php";
 window.USUARIO_ID = <?= json_encode((int)($_SESSION['usuario_id'] ?? 0)) ?>;
 window.USUARIO_CARGO = <?= json_encode($_SESSION['usuario_cargo'] ?? '') ?>;
+window.USUARIO_ES_SISTEMA = <?= json_encode((int)($_SESSION['usuario_es_sistema'] ?? 0)) ?>;
 window.BASE_URL = <?= json_encode(BASE_URL) ?>;
 </script>
 <script src="<?= BASE_URL ?>src/assets/js/gestionPerfil.js"></script>

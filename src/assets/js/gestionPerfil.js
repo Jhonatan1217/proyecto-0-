@@ -7,16 +7,51 @@
   var API_SOLICITUD = window.API_SOLICITUD || "";
   var USUARIO_ID = window.USUARIO_ID || 0;
   var USUARIO_ES_SISTEMA = Number(window.USUARIO_ES_SISTEMA || 0) === 1;
+  var TOAST_Z_INDEX = 2147483000;
+  var SWAL_TOAST_Z_INDEX_STYLE_ID = "swal-toast-zindex-fix";
 
   function getEl(id) { return document.getElementById(id); }
   function qs(sel, ctx) { return (ctx || document).querySelector(sel); }
   function qsAll(sel, ctx) { return (ctx || document).querySelectorAll(sel); }
+  function ensureSwalToastOnTop() {
+    if (document.getElementById(SWAL_TOAST_Z_INDEX_STYLE_ID)) return;
+    var style = document.createElement("style");
+    style.id = SWAL_TOAST_Z_INDEX_STYLE_ID;
+    style.textContent =
+      ".swal2-container{z-index:" + TOAST_Z_INDEX + " !important;}" +
+      ".swal2-container.swal2-top-end.swal2-container--toast{z-index:" + TOAST_Z_INDEX + " !important;}";
+    document.head.appendChild(style);
+  }
   function normalizeTxt(v) {
     return String(v || "")
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .trim()
       .toUpperCase();
+  }
+  function isCargoInstructor(v) {
+    return normalizeTxt(v).indexOf("INSTRUCTOR") >= 0;
+  }
+  function setSelectValueFlexible(sel, rawValue) {
+    if (!sel) return;
+    var target = normalizeTxt(rawValue);
+    var found = [].slice.call(sel.options || []).find(function (opt) {
+      return normalizeTxt(opt.value) === target || normalizeTxt(opt.textContent) === target;
+    });
+    sel.value = found ? found.value : (rawValue || "").toString();
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+  function formatoTipoInstructor(v) {
+    var n = normalizeTxt(v);
+    if (n === "TECNICO") return "Técnico";
+    if (n === "TRANSVERSAL") return "Transversal";
+    return String(v || "—").trim() || "—";
+  }
+  function formatoTipoContrato(v) {
+    var n = normalizeTxt(v);
+    if (n === "PLANTA") return "Planta";
+    if (n === "CONTRATISTA") return "Contratista";
+    return String(v || "—").trim() || "—";
   }
   function isRolEsSistema() {
     if (USUARIO_ES_SISTEMA) return true;
@@ -105,10 +140,24 @@
     getEl("verPerfilDocumento").textContent = (data && data.numero_documento) || "—";
     getEl("verPerfilCorreo").textContent = (data && data.correo_electronico) || "—";
     getEl("verPerfilArea").textContent = (data && data.nombre_area) || "—";
+    var tipoInstructor = getEl("verPerfilTipoInstructor");
+    var tipoContrato = getEl("verPerfilTipoContrato");
+    if (tipoInstructor) tipoInstructor.textContent = formatoTipoInstructor(data && data.tipo_instructor);
+    if (tipoContrato) tipoContrato.textContent = formatoTipoContrato(data && data.tipo_contrato);
+
+    var instructorContainer = getEl("verPerfilInstructorContainer");
+    if (instructorContainer) {
+      var cargoData = (data && data.cargo) || window.USUARIO_CARGO || "";
+      if (isCargoInstructor(cargoData)) {
+        instructorContainer.classList.remove("hidden");
+      } else {
+        instructorContainer.classList.add("hidden");
+      }
+    }
 
     var areaContainer = getEl("verPerfilAreaContainer");
     if (areaContainer) {
-        var cargoUsuario = window.USUARIO_CARGO || "";
+        var cargoUsuario = (data && data.cargo) || window.USUARIO_CARGO || "";
         if (cargoUsuario.toUpperCase() === "COORDINADOR") {
             areaContainer.style.display = "";
         } else {
@@ -130,6 +179,27 @@
       tipo_contrato: (form.querySelector("[name='tipo_contrato']") || {}).value || ""
     };
   }
+  function validarCamposRequeridosSolicitar(form) {
+    if (!form) return { ok: true };
+    var checks = [
+      { name: "nombre_completo", label: "Nombre completo" },
+      { name: "tipo_documento", label: "Tipo de documento" },
+      { name: "numero_documento", label: "Número de documento" },
+      { name: "correo_electronico", label: "Correo electrónico" },
+      { name: "tipo_instructor", label: "Tipo instructor" },
+      { name: "tipo_contrato", label: "Tipo contrato" }
+    ];
+    for (var i = 0; i < checks.length; i += 1) {
+      var c = checks[i];
+      var el = form.querySelector("[name='" + c.name + "']");
+      if (!el) continue;
+      var val = String(el.value || "").trim();
+      if (!val) {
+        return { ok: false, field: c.name, label: c.label, el: el };
+      }
+    }
+    return { ok: true };
+  }
 
   function fillFormSolicitarCambios(data) {
     var form = getEl("formSolicitarCambiosPerfil");
@@ -140,8 +210,7 @@
     ["tipo_documento", "tipo_instructor", "tipo_contrato"].forEach(function (name) {
       var sel = form.querySelector("[name='" + name + "']");
       if (sel) {
-        sel.value = (data[name] || "").toString();
-        sel.dispatchEvent(new Event("change", { bubbles: true }));
+        setSelectValueFlexible(sel, data[name] || "");
       }
     });
     solicitarCambiosValoresIniciales = getFormSolicitarCambiosValues(form);
@@ -299,6 +368,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+    ensureSwalToastOnTop();
     if (isRolEsSistema()) disableEditarPerfilAction();
     // Confirmación con datos reales del usuario (si la API los entrega).
     loadPerfil().then(function (data) {
@@ -360,6 +430,26 @@
     if (formSolicitar) {
       formSolicitar.addEventListener("submit", function (e) {
         e.preventDefault();
+        var validacion = validarCamposRequeridosSolicitar(formSolicitar);
+        if (!validacion.ok) {
+          if (window.Swal) {
+            Swal.fire({
+              toast: true,
+              position: "top-end",
+              icon: "warning",
+              title: "Completa el campo: " + validacion.label,
+              showConfirmButton: false,
+              timer: 2800,
+              zIndex: TOAST_Z_INDEX
+            });
+          } else {
+            alert("Completa el campo: " + validacion.label);
+          }
+          if (validacion.el && typeof validacion.el.focus === "function") {
+            try { validacion.el.focus(); } catch (err) {}
+          }
+          return;
+        }
         var actual = getFormSolicitarCambiosValues(formSolicitar);
         var inicial = solicitarCambiosValoresIniciales || {};
         var hayCambios = Object.keys(actual).some(function (key) {
@@ -367,7 +457,7 @@
         });
         if (!hayCambios) {
           if (window.Swal) {
-            Swal.fire({ toast: true, position: "top-end", icon: "warning", title: "No se detectaron cambios", showConfirmButton: false, timer: 3000 });
+            Swal.fire({ toast: true, position: "top-end", icon: "warning", title: "No se detectaron cambios", showConfirmButton: false, timer: 3000, zIndex: TOAST_Z_INDEX });
           } else {
             alert("No se detectaron cambios.");
           }
@@ -397,7 +487,7 @@
           .then(function (data) {
             if (data && data.status === "success") {
               if (window.Swal) {
-                Swal.fire({ toast: true, position: "top-end", icon: "success", title: data.message || "Solicitud enviada al administrador.", showConfirmButton: false, timer: 2500 });
+                Swal.fire({ toast: true, position: "top-end", icon: "success", title: data.message || "Solicitud enviada al administrador.", showConfirmButton: false, timer: 2500, zIndex: TOAST_Z_INDEX });
               } else {
                 alert(data.message || "Solicitud enviada al administrador.");
               }
@@ -405,7 +495,7 @@
               solicitarCambiosValoresIniciales = null;
             } else {
               if (window.Swal) {
-                Swal.fire({ toast: true, position: "top-end", icon: "error", title: data.message || data.error || "Error al enviar la solicitud.", showConfirmButton: false, timer: 3000 });
+                Swal.fire({ toast: true, position: "top-end", icon: "error", title: data.message || data.error || "Error al enviar la solicitud.", showConfirmButton: false, timer: 3000, zIndex: TOAST_Z_INDEX });
               } else {
                 alert(data.message || data.error || "Error al enviar la solicitud.");
               }
@@ -413,7 +503,7 @@
           })
           .catch(function () {
             if (window.Swal) {
-              Swal.fire({ toast: true, position: "top-end", icon: "error", title: "Error de conexión.", showConfirmButton: false, timer: 2500 });
+              Swal.fire({ toast: true, position: "top-end", icon: "error", title: "Error de conexión.", showConfirmButton: false, timer: 2500, zIndex: TOAST_Z_INDEX });
             } else {
               alert("Error de conexión.");
             }

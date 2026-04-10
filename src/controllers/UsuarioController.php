@@ -65,7 +65,10 @@ try {
                 echo json_encode(['error' => 'ID no proporcionado']);
                 break;
             }
-            $data = $usuarioModel->obtenerPorId($id);
+            $idSesion = intval($_SESSION['usuario_id'] ?? 0);
+            // Permitir consultar datos "es_sistema" únicamente del propio usuario logueado.
+            $incluirSistema = ($idSesion > 0 && $idSesion === $id);
+            $data = $usuarioModel->obtenerPorId($id, $incluirSistema);
             if ($data) {
                 // Asegurar que tipo_documento esté presente (por si la columna tiene otro nombre o es null)
                 if (!isset($data['tipo_documento']) || $data['tipo_documento'] === null) {
