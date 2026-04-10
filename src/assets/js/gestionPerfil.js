@@ -6,10 +6,38 @@
   var API = window.API_USUARIO;
   var API_SOLICITUD = window.API_SOLICITUD || "";
   var USUARIO_ID = window.USUARIO_ID || 0;
+  var USUARIO_ES_SISTEMA = Number(window.USUARIO_ES_SISTEMA || 0) === 1;
 
   function getEl(id) { return document.getElementById(id); }
   function qs(sel, ctx) { return (ctx || document).querySelector(sel); }
   function qsAll(sel, ctx) { return (ctx || document).querySelectorAll(sel); }
+  function normalizeTxt(v) {
+    return String(v || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toUpperCase();
+  }
+  function isRolEsSistema() {
+    if (USUARIO_ES_SISTEMA) return true;
+    var cargo = normalizeTxt(window.USUARIO_CARGO || "");
+    return cargo === "ES SISTEMA" || cargo === "SISTEMA" || cargo.indexOf("SISTEMA") >= 0;
+  }
+  function isCuentaSistemaData(data) {
+    if (!data || typeof data !== "object") return false;
+    if (Number(data.es_sistema || 0) === 1) return true;
+    var cargoData = normalizeTxt(data.cargo || "");
+    return cargoData === "ES SISTEMA" || cargoData === "SISTEMA" || cargoData.indexOf("SISTEMA") >= 0;
+  }
+  function disableEditarPerfilAction() {
+    var btn = qs('[data-action="editar-perfil"]');
+    if (!btn) return;
+    btn.setAttribute("disabled", "disabled");
+    btn.setAttribute("aria-disabled", "true");
+    btn.setAttribute("title", "No disponible para cuenta de sistema");
+    btn.classList.add("opacity-50", "cursor-not-allowed");
+    btn.classList.remove("hover:bg-gray-100");
+  }
 
   var lastModalOpener = null;
 
@@ -130,6 +158,20 @@
   function onEditarPerfil() {
     closeUserMenu();
     loadPerfil().then(function (data) {
+      if (isRolEsSistema() || isCuentaSistemaData(data)) {
+        disableEditarPerfilAction();
+        if (window.Swal) {
+          Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: "info",
+            title: "Editar perfil no está disponible para cuentas de sistema.",
+            showConfirmButton: false,
+            timer: 2800
+          });
+        }
+        return;
+      }
       fillFormSolicitarCambios(data);
       openModal("modalSolicitarCambiosPerfil");
     });
@@ -257,6 +299,15 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+    if (isRolEsSistema()) disableEditarPerfilAction();
+    // Confirmación con datos reales del usuario (si la API los entrega).
+    loadPerfil().then(function (data) {
+      if (isCuentaSistemaData(data)) {
+        USUARIO_ES_SISTEMA = true;
+        disableEditarPerfilAction();
+      }
+    });
+
     var container = getEl("userDropdownContainer");
     if (container) {
       container.addEventListener("click", function (e) {
