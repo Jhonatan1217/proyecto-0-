@@ -22,10 +22,22 @@
 
     /* --- Select con flecha separada del borde --- */
     .select-nice{
-      -webkit-appearance:none; appearance:none;
-      background-image:url("../img/chevron-down.svg");
-      background-repeat:no-repeat;
-      background-position: right .75rem center;
-      background-size: 1rem 1rem;
-      padding-right: 2.25rem; /* espacio para la flecha */
+        -webkit-appearance:none; appearance:none;
+        background-image:url("../img/icons/Acction/chevron-down.svg");
+        background-repeat:no-repeat;
+        background-position: right .75rem center;
+        background-size: 1rem 1rem;
+        padding-right: 2.25rem; /* espacio para la flecha */
+    }
+
+    /* Paginación: evita que el navegador “reancle” el scroll al cambiar la altura del listado */
+    #competenciesList {
+        overflow-anchor: none;
+    }
+
+    /* Paginación: al cambiar de página el scroll va a los filtros; margen para cabecera/layout */
+    #competenciesFilters,
+    #programsFilters,
+    #raesFilters {
+        scroll-margin-top: 5rem;
     }

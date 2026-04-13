@@ -2,18 +2,21 @@
 (function () {
   // CONFIG: puntos finales y rutas usadas por el módulo
   const BASE = (window.BASE_URL || '').replace(/\/+$/, '');
-  const API_COMP = (window.API_COMPETENCIAS || (BASE + 'src/controllers/CompetenciaController.php')).replace(/\/+$/, '');
-  const API_PROG = (window.API_PROGRAMAS     || (BASE + 'src/controllers/ProgramasController.php')).replace(/\/+$/, '');
-  const API_RAE  = (window.API_RAES          || (BASE + 'src/controllers/RaeController.php')).replace(/\/+$/, '');
+  const SLASH = BASE ? '/' : '';
+  const API_COMP = (window.API_COMPETENCIAS || (BASE + SLASH + 'src/controllers/CompetenciaController.php')).replace(/\/+$/, '');
+  const API_PROG = (window.API_PROGRAMAS     || (BASE + SLASH + 'src/controllers/ProgramasController.php')).replace(/\/+$/, '');
+  const API_RAE  = (window.API_RAES          || (BASE + SLASH + 'src/controllers/RaeController.php')).replace(/\/+$/, '');
 
-  // Iconos
-  const ICON_DOWN   = `${BASE}src/assets/img/chevron-down.svg`;
-  const ICON_RIGHT  = `${BASE}src/assets/img/chevron-right.svg`;
-  const ICON_PENCIL = `${BASE}src/assets/img/pencil-line.svg`;
-  const ICON_PLUS   = `${BASE}src/assets/img/plus.svg`;
-  const ICON_LIST   = `${BASE}src/assets/img/list-checks.svg`;
+  // Iconos (chevrons en icons/Acction; editar y demás en img) — ruta con barra cuando hay BASE
+  const ICON_DOWN   = BASE + SLASH + 'src/assets/img/icons/Acction/chevron-down.svg';
+  const ICON_RIGHT  = BASE + SLASH + 'src/assets/img/icons/Acction/chevron-right.svg';
+  const ICON_PENCIL = BASE + SLASH + 'src/assets/img/icons/Acction/pencil-line.svg';
+  const ICON_PLUS   = BASE + SLASH + 'src/assets/img/plus.svg';
+  const ICON_LIST   = BASE + SLASH + 'src/assets/img/list-checks.svg';
 
   const INITIAL_RAES_OPEN = false;
+
+  const ES_INSTRUCTOR = (window.USER_CARGO || '').toUpperCase() === 'INSTRUCTOR';
 
   const tab = document.querySelector('[data-tab="competencies"]');
   if (!tab) return;
@@ -149,12 +152,17 @@
   };
 
   // CARGAS
-  async function loadPrograms({ preserveSelection = true } = {}) {
+  async function loadPrograms({ preserveSelection = true, idProgramaIncluir = null } = {}) {
     try {
       const prevFilterValue = preserveSelection && filterProgram ? filterProgram.value : null;
       const prevSelProg     = preserveSelection && selProg       ? selProg.value       : null;
 
-      const res = await apiGet(`${API_PROG}?accion=listar`);
+      const inc = idProgramaIncluir != null && String(idProgramaIncluir).trim() !== ''
+        ? String(idProgramaIncluir).trim()
+        : '';
+      let progUrl = `${API_PROG}?accion=listar&solo_activos=1`;
+      if (inc) progUrl += `&id_programa_incluir=${encodeURIComponent(inc)}`;
+      const res = await apiGet(progUrl);
       PROGRAMS = Array.isArray(res) ? res : (res?.data || []);
 
       if (filterProgram) filterProgram.querySelectorAll('option:not([value="all"])').forEach(o => o.remove());
@@ -183,6 +191,8 @@
         const exists = Array.from(selProg.options).some(o => o.value === prevSelProg);
         selProg.value = exists ? prevSelProg : '';
       }
+      filterProgram?.dispatchEvent(new Event('change', { bubbles: true }));
+      selProg?.dispatchEvent(new Event('change', { bubbles: true }));
     } catch (err) {
       console.error('[Competencias] loadPrograms:', err);
       t.err('No se pudieron cargar los programas');
@@ -209,6 +219,7 @@
       const arr = Array.isArray(res) ? res : (res?.data || []);
       RAE_MAP = {};
       arr.forEach(r => {
+        if (r.estado != null && Number(r.estado) !== 1) return;
         const idc = String(r.id_competencia ?? r.competencia_id ?? r.idCompetencia ?? '');
         if (!idc) return;
         const codigo = [
@@ -327,11 +338,14 @@
               <p class="text-zinc-500 mb-5 text-sm sm:text-base">
                 No hay competencias registrados
               </p>
-              <button id="btnFirstCompetency"
-                      class="flex items-center gap-2  bg-[#00324d] text-white px-4 py-2 rounded-xl font-medium text-sm">
-                <img src="${ICON_PLUS}" class="w-4 h-4" alt="simbolo de mas" />
-                Crear Primera Competencia
-              </button>
+
+              ${ES_INSTRUCTOR ? '' : `
+                <button id="btnFirstCompetency"
+                  class="flex items-center gap-2 bg-[#00324d] text-white px-4 py-2 rounded-xl font-medium text-sm">
+                  <img src="${ICON_PLUS}" class="w-4 h-4" alt="simbolo de mas" />
+                  Crear Primera Competencia
+                </button>
+              `}
             </div>
           </div>
         `;
@@ -399,10 +413,12 @@
             </div>
 
             <div class="shrink-0 flex items-center gap-3">
-              <button class="btn-edit inline-flex items-center justify-center p-2 text-zinc-600 hover:text-zinc-900" data-id="${e(c.id)}" title="Editar">
-                <img src="${ICON_PENCIL}" class="w-5 h-5" alt="Editar" />
-              </button>
-              ${renderSwitchHtml(c.id, !!c.estado)}
+              ${ES_INSTRUCTOR ? '' : `
+                <button class="btn-edit inline-flex items-center justify-center p-2 text-zinc-600 hover:text-zinc-900" data-id="${e(c.id)}" title="Editar">
+                  <img src="${ICON_PENCIL}" class="w-5 h-5" alt="Editar" />
+                </button>
+                ${renderSwitchHtml(c.id, !!c.estado)}
+              `}
             </div>
           </div>
         </div>
@@ -418,7 +434,9 @@
       list.appendChild(card);
     });
 
-    list.querySelectorAll('.btn-edit').forEach(b => b.addEventListener('click', onEditClick));
+    if (!ES_INSTRUCTOR) {
+  list.querySelectorAll('.btn-edit').forEach(b => b.addEventListener('click', onEditClick));
+}
     list.querySelectorAll('.switch').forEach(sw => {
       paintSwitch(sw);
       const input = sw.querySelector('input');
@@ -443,6 +461,9 @@
   }
 
   // EVENTS
+  if (ES_INSTRUCTOR && btnNew) {
+  btnNew.remove();
+}
   btnNew?.addEventListener('click', () => {
     editingId = null;
     editingSnap = null;
@@ -456,7 +477,10 @@
       inpCode.value = '';
       setCodeDuplicateUI(false); // limpiar estado duplicado
     }
-    if (selProg) selProg.value = '';
+    if (selProg) {
+      selProg.value = '';
+      selProg.dispatchEvent(new Event('change', { bubbles: true }));
+    }
     if (inpName) inpName.value = '';
     if (inpDesc) inpDesc.value = '';
 
@@ -492,6 +516,7 @@
   function openModal(withAnim = false) {
     show(backdrop); show(modal);
     if (!editingId) form?.reset();
+    selProg?.dispatchEvent(new Event('change', { bubbles: true }));
 
     if (withAnim) {
       backdrop.classList.add('animate-backdrop');
@@ -508,6 +533,7 @@
   function closeModal() {
     hide(backdrop); hide(modal);
     form?.reset();
+    selProg?.dispatchEvent(new Event('change', { bubbles: true }));
     editingId = null;
     editingSnap = null;
     if (inpCode) {
@@ -540,10 +566,16 @@
       desc: String(item.desc ?? '')
     };
 
+    await loadPrograms({
+      preserveSelection: true,
+      idProgramaIncluir: String(item.program_id ?? '')
+    });
+
     if (selProg) {
       const target = String(item.program_id ?? '');
       const exists = Array.from(selProg.options).some(o => String(o.value) === target);
       selProg.value = exists ? target : '';
+      selProg.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
     if (inpCode) {
@@ -656,11 +688,15 @@
     const prog = ev?.detail?.program || {};
     const pid  = String(prog.id_programa ?? prog.id ?? '');
 
-    await loadPrograms({ preserveSelection: true });
+    await loadPrograms({
+      preserveSelection: true,
+      idProgramaIncluir: editingId && editingSnap?.program_id ? String(editingSnap.program_id).trim() : null
+    });
 
     if (type === 'create' && isModalOpen() && !editingId && pid && selProg) {
       const has = Array.from(selProg.options).some(o => String(o.value) === pid);
       if (has) selProg.value = pid;
+      selProg.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
     renderList();

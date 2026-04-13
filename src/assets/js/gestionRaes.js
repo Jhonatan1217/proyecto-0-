@@ -3,11 +3,14 @@
   const section = document.querySelector('section[data-tab="raes"]');
   if (!section) return; // Si no existe la pestaña RAEs, no ejecuta nada
 
+  /** * <<< NUEVO >>> RESTRICCIÓN DE SEGURIDAD POR CARGO 
+   * Se asume que window.USER_CARGO viene definido desde el backend
+   */
+  const USER_CARGO = (window.USER_CARGO || "").toUpperCase();
+  const ES_INSTRUCTOR = USER_CARGO === 'INSTRUCTOR';
+
   // ==== Endpoints ====
   const API_RAES = (window.API_RAES || (window.BASE_URL || '') + 'src/controllers/RaeController.php').replace(/\/+$/, '');
-
-  const BASE = (window.BASE_URL || '').replace(/\/+$/, '');
-  const ICON_PENCIL = `${BASE}src/assets/img/pencil-line.svg`;
 
   // <<< NUEVO >>> bandera para (des)activar autocompletado de código RAE
   const AUTOCOMPLETE_RAE = false;
@@ -24,11 +27,14 @@
       <p class="text-sm text-zinc-500 max-w-md mb-4">
         No hay RAEs registrados 
       </p>
+       ${ES_INSTRUCTOR ? '' : `
        <button id="btnFirstCompetency"
-                      class="flex items-center gap-2  bg-[#00324d] text-white px-4 py-2 rounded-xl font-medium text-sm">
-                <img src="src/assets/img/plus.svg" class="w-4 h-4" alt="simbolo de mas" />
-                Crear Primera RAE
-              </button>
+                data-create-first-rae
+                class="flex items-center gap-2  bg-[#00324d] text-white px-4 py-2 rounded-xl font-medium text-sm">
+          <img src="src/assets/img/plus.svg" class="w-4 h-4" alt="simbolo de mas" />
+          Crear Primera RAE
+        </button>
+       `}
     </div>
   `;
 
@@ -51,27 +57,17 @@
   const inCode    = document.getElementById('rae_code');     // aquí va id_rae
   const inDesc    = document.getElementById('rae_desc');
   const selComp   = document.getElementById('rae_competency');
+  const selProgInForm = document.getElementById('rae_program');
 
   // Título del modal (no tocamos tu HTML; intentamos encontrarlo)
   const titleRae = document.getElementById('titleRae')
                  || modal?.querySelector('[data-title]')
                  || modal?.querySelector('h2, h3, [role="heading"]');
 
-  // ==== Inyectar select de Programas en el modal (sin tocar HTML base) ====
-  let selProgInForm = null;
-  (function injectProgramSelectInModal(){
-    if (!form) return;
-    const firstGroup = form.querySelector('div'); // insertar antes del campo "Competencia"
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = `
-      <label class="block text-sm font-medium mb-1">Programa *</label>
-      <select id="rae_program" class="w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm bg-white">
-        <option value="">Seleccione un programa</option>
-      </select>
-    `;
-    form.insertBefore(wrapper, firstGroup);
-    selProgInForm = wrapper.querySelector('#rae_program');
-  })();
+  // --- RESTRICCIÓN INICIAL ---
+  if (ES_INSTRUCTOR && btnNew) {
+    btnNew.remove(); // El instructor no puede ver el botón de creación
+  }
 
   // ==== Helpers / Estado ====
   const q = p => new URLSearchParams(p).toString();
@@ -80,6 +76,20 @@
   // estado de edición
   let editingRaeId = null;           // si no es null => estamos editando ese id_rae
   let editingSnap  = null;           // {id, prog, comp, desc}
+
+  /** Para incluir en API la competencia actual al editar (aunque esté inactiva). */
+  function modalCompPreserveId() {
+    if (!editingRaeId || editingSnap?.comp == null) return null;
+    const s = String(editingSnap.comp).trim();
+    return s === '' ? null : s;
+  }
+
+  /** Para incluir en API el programa actual al editar RAE (aunque el programa esté inactivo). */
+  function modalProgPreserveId() {
+    if (!editingRaeId || editingSnap?.prog == null) return null;
+    const s = String(editingSnap.prog).trim();
+    return s === '' ? null : s;
+  }
 
   async function fetchJSON(url, opts) {
     const res = await fetch(url, opts);
@@ -117,7 +127,9 @@
 
   // ==== Cargar Programas para filtros y modal ====
   async function loadPrograms() {
-    const data  = await fetchJSON(`${API_RAES}?accion=programas`);
+    const pp = modalProgPreserveId();
+    const qs = pp ? `&${q({ id_programa_incluir: pp })}` : '';
+    const data  = await fetchJSON(`${API_RAES}?accion=programas${qs}`);
     const progs = Array.isArray(data) ? data : (data.data || []);
 
     // Filtro de programas
@@ -132,6 +144,7 @@
       }
       const exists = Array.from(selProgFilter.options).some(o => o.value === current);
       selProgFilter.value = exists ? current : 'all';
+      selProgFilter.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
     // Modal: Programas
@@ -146,27 +159,73 @@
       }
       const exists = Array.from(selProgInForm.options).some(o => o.value === current);
       selProgInForm.value = exists ? current : '';
+      selProgInForm.dispatchEvent(new Event('change', { bubbles: true }));
     }
   }
 
-  // ==== Cargar Competencias por programa (para filtro y modal) ====
-  async function loadCompetenciasFor(programId, targetSelect, withNames = false) {
-    if (targetSelect === selCompFilter && (!programId || programId === 'all')) {
-      targetSelect.innerHTML = `<option value="all">Todas las competencias</option>`;
-      return;
+  /**
+   * Evita que una petición antigua de competencias (p. ej. la del change tras abrir el modal
+   * con programa vacío) sobrescriba una carga más reciente cuando el usuario ya eligió programa.
+   */
+  let _modalCompetenciasGen = 0;
+
+// ==== Cargar Competencias por programa (para filtro y modal) ====
+// idCompetenciaIncluir: al editar RAE, el backend incluye esa competencia aunque esté inactiva.
+async function loadCompetenciasFor(programId, targetSelect, withNames = false, idCompetenciaIncluir = null) {
+  const isModalComp = targetSelect === selComp;
+  if (isModalComp) _modalCompetenciasGen++;
+  const myGen = _modalCompetenciasGen;
+
+  // ================================
+  // CASO 1: Es el filtro y no hay programa
+  // ================================
+  if (targetSelect === selCompFilter && (!programId || programId === 'all')) {
+    targetSelect.innerHTML = `<option value="all">Todas las competencias</option>`;
+    targetSelect.disabled = true; // hasta elegir un programa concreto
+    targetSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    return;
+  }
+
+  // ================================
+  // CASO 2: No hay programa seleccionado (modal)
+  // ================================
+  if (!programId || programId === 'all') {
+    targetSelect.innerHTML = `<option value="">Seleccione una competencia</option>`;
+    targetSelect.disabled = true; // 🔴 se bloquea hasta que elijan programa
+    targetSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    return;
+  }
+
+  try {
+    const fetchParams = { id_programa: programId };
+    if (isModalComp && idCompetenciaIncluir != null && String(idCompetenciaIncluir).trim() !== '') {
+      fetchParams.id_competencia_incluir = String(idCompetenciaIncluir).trim();
     }
-    if (!programId || programId === 'all') {
-      targetSelect.innerHTML = `<option value="">Seleccione una competencia</option>`;
+    const data  = await fetchJSON(`${API_RAES}?accion=competenciasPorPrograma&${q(fetchParams)}`);
+    if (isModalComp && myGen !== _modalCompetenciasGen) return;
+
+    if (data && typeof data === 'object' && !Array.isArray(data) && data.error) {
+      console.warn('[RAEs] competenciasPorPrograma:', data.error);
+      if (isModalComp && myGen !== _modalCompetenciasGen) return;
+      targetSelect.innerHTML = `<option value="">Error: ${String(data.error)}</option>`;
+      targetSelect.disabled = true;
+      targetSelect.dispatchEvent(new Event('change', { bubbles: true }));
       return;
     }
 
-    const data  = await fetchJSON(`${API_RAES}?accion=competenciasPorPrograma&${q({id_programa: programId})}`);
     const comps = Array.isArray(data) ? data : (data.data || []);
+    if (isModalComp && myGen !== _modalCompetenciasGen) return;
 
     const current = targetSelect.value || '';
-    targetSelect.innerHTML = targetSelect === selCompFilter
-      ? `<option value=\"all\">Todas las competencias</option>`
-      : `<option value=\"\">Seleccione una competencia</option>`;
+
+    if (targetSelect === selCompFilter) {
+      targetSelect.innerHTML = `<option value="all">Todas las competencias</option>`;
+    } else {
+      const modalFirstLabel = comps.length
+        ? 'Seleccione una competencia'
+        : 'Este programa no tiene competencias';
+      targetSelect.innerHTML = `<option value="">${modalFirstLabel}</option>`;
+    }
 
     for (const c of comps) {
       const opt = document.createElement('option');
@@ -176,9 +235,25 @@
         : `${c.id_competencia} – ${c.nombre_competencia}`;
       targetSelect.appendChild(opt);
     }
+
+    if (targetSelect === selCompFilter) {
+      targetSelect.disabled = false;
+    } else {
+      targetSelect.disabled = comps.length === 0;
+    }
+
     const exists = Array.from(targetSelect.options).some(o => o.value === current);
     if (exists) targetSelect.value = current;
+    targetSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+  } catch (err) {
+    if (isModalComp && myGen !== _modalCompetenciasGen) return;
+    console.error('[RAEs] Error cargando competencias:', err);
+    targetSelect.innerHTML = `<option value="">Error cargando competencias</option>`;
+    targetSelect.disabled = true;
+    targetSelect.dispatchEvent(new Event('change', { bubbles: true }));
   }
+}
 
   // Badge de estado para cada RAE
   function statusChipRAE(estado) {
@@ -251,7 +326,7 @@
           btnCreate.dataset.bound = '1';
           btnCreate.addEventListener('click', () => {
             // reutilizamos el mismo flujo del botón "+ Nuevo RAE"
-            openModal();
+            void openModal();
           });
         }
       } else {
@@ -276,6 +351,21 @@
 
       const card = document.createElement('div');
       card.className = 'rounded-2xl ring-1 ring-zinc-200 shadow-sm bg-white overflow-hidden';
+
+      // --- CONTROLES CONDICIONALES ---
+      const controlesHtml = ES_INSTRUCTOR ? '' : `
+        <div class="shrink-0 flex items-center gap-3">
+          <button class="btn-edit-rae inline-flex items-center justify-center p-2 text-zinc-600 hover:text-zinc-900"
+                  data-id="${escapeHtml(idRae)}"
+                  data-prog="${escapeHtml(String(progId))}"
+                  data-comp="${escapeHtml(String(compId))}"
+                  data-desc="${escapeHtml(titulo)}"
+                  title="Editar">
+            <img src="src/assets/img/pencil-line.svg" class="w-5 h-5" alt="Editar" />
+          </button>
+          ${renderSwitchRae(idRae, estado)}
+        </div>
+      `;
 
       card.innerHTML = `
         <div class="p-4 md:p-5">
@@ -303,86 +393,81 @@
                 ${statusChipRAE(estado)}
               </p>
             </div>
-
-            <div class="shrink-0 flex items-center gap-3">
-              <button class="btn-edit-rae inline-flex items-center justify-center p-2 text-zinc-600 hover:text-zinc-900"
-                      data-id="${escapeHtml(idRae)}"
-                      data-prog="${escapeHtml(String(progId))}"
-                      data-comp="${escapeHtml(String(compId))}"
-                      data-desc="${escapeHtml(titulo)}"
-                      title="Editar">
-                <img src="${ICON_PENCIL}" class="w-5 h-5" alt="Editar" />
-              </button>
-              ${renderSwitchRae(idRae, estado)}
-            </div>
+            ${controlesHtml}
           </div>
         </div>
       `;
       list.appendChild(card);
     }
 
-    // Switch estado
-    list.querySelectorAll('[data-switch-rae]').forEach(sw => {
-      paintSwitchRae(sw);
-      const input = sw.querySelector('input');
-      const id = sw.getAttribute('data-switch-rae');
-      input.addEventListener('change', async () => {
-        const next = input.checked ? 1 : 0;
-        try {
-          const res = await fetchJSON(`${API_RAES}?accion=inhabilitar&${q({ id_rae: id, estado: next })}`);
-          if (res?.error) throw new Error(res.error);
-          await loadRaes();
-          window.dispatchEvent(new CustomEvent('raes:changed', { detail: { rae: { id_rae: id }}}));
-          toast.ok('Estado actualizado');
-        } catch (err) {
-          input.checked = !input.checked;
+    // --- EVENTOS DE CONTROLES (Solo si NO es Instructor) ---
+    if (!ES_INSTRUCTOR) {
+        // Switch estado
+        list.querySelectorAll('[data-switch-rae]').forEach(sw => {
           paintSwitchRae(sw);
-          toast.err('No se pudo cambiar el estado');
-          console.error('[RAEs] cambiar estado:', err);
-        }
-      });
-    });
+          const input = sw.querySelector('input');
+          const id = sw.getAttribute('data-switch-rae');
+          input.addEventListener('change', async () => {
+            const next = input.checked ? 1 : 0;
+            try {
+              const res = await fetchJSON(`${API_RAES}?accion=inhabilitar&${q({ id_rae: id, estado: next })}`);
+              if (res?.error) throw new Error(res.error);
+              await loadRaes();
+              window.dispatchEvent(new CustomEvent('raes:changed', { detail: { rae: { id_rae: id }}}));
+              toast.ok('Estado actualizado');
+            } catch (err) {
+              input.checked = !input.checked;
+              paintSwitchRae(sw);
+              toast.err('No se pudo cambiar el estado');
+              console.error('[RAEs] cambiar estado:', err);
+            }
+          });
+        });
 
-    // Editar -> abre modal y precarga
-    list.querySelectorAll('.btn-edit-rae').forEach(b => {
-      b.addEventListener('click', async (ev) => {
-        const btn = ev.currentTarget;
-        const idRae  = btn.getAttribute('data-id') || '';
-        const pid    = btn.getAttribute('data-prog') || '';
-        const cid    = btn.getAttribute('data-comp') || '';
-        const desc   = btn.getAttribute('data-desc') || '';
+        // Editar -> abre modal y precarga
+        list.querySelectorAll('.btn-edit-rae').forEach(b => {
+          b.addEventListener('click', async (ev) => {
+            const btn = ev.currentTarget;
+            const idRae  = btn.getAttribute('data-id') || '';
+            const pid    = btn.getAttribute('data-prog') || '';
+            const cid    = btn.getAttribute('data-comp') || '';
+            const desc   = btn.getAttribute('data-desc') || '';
 
-        editingRaeId = idRae;
-        editingSnap = { id:idRae, prog:pid, comp:cid, desc };
+            editingRaeId = idRae;
+            editingSnap = { id:idRae, prog:pid, comp:cid, desc };
 
-        if (form) form.reset();
-        backdrop.classList.remove('hidden');
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-        if (titleRae) titleRae.textContent = 'Editar RAE';
+            if (form) form.reset();
+            backdrop.classList.remove('hidden');
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            if (titleRae) titleRae.textContent = 'Editar RAE';
 
-        // Cargar programas y seleccionar
-        await loadPrograms();
-        if (selProgInForm) {
-          const hasProg = Array.from(selProgInForm.options).some(o => o.value === String(pid));
-          selProgInForm.value = hasProg ? String(pid) : '';
-        }
+            // Cargar programas y seleccionar
+            await loadPrograms();
+            if (selProgInForm) {
+              const hasProg = Array.from(selProgInForm.options).some(o => o.value === String(pid));
+              selProgInForm.value = hasProg ? String(pid) : '';
+              selProgInForm.dispatchEvent(new Event('change', { bubbles: true }));
+            }
 
-        // Cargar competencias del programa y seleccionar
-        if (selProgInForm && selProgInForm.value) {
-          await loadCompetenciasFor(selProgInForm.value, selComp, true);
-        } else {
-          selComp.innerHTML = `<option value="">Seleccione una competencia</option>`;
-        }
-        if (selComp) {
-          const hasComp = Array.from(selComp.options).some(o => o.value === String(cid));
-          selComp.value = hasComp ? String(cid) : '';
-        }
+            // Cargar competencias del programa y seleccionar
+            if (selProgInForm && selProgInForm.value) {
+              await loadCompetenciasFor(selProgInForm.value, selComp, true, cid ? String(cid) : null);
+            } else {
+              selComp.innerHTML = `<option value="">Seleccione una competencia</option>`;
+              selComp.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            if (selComp) {
+              const hasComp = Array.from(selComp.options).some(o => o.value === String(cid));
+              selComp.value = hasComp ? String(cid) : '';
+              selComp.dispatchEvent(new Event('change', { bubbles: true }));
+            }
 
-        if (inCode) inCode.value = idRae || '';
-        if (inDesc) inDesc.value = desc || '';
-      });
-    });
+            if (inCode) inCode.value = idRae || '';
+            if (inDesc) inDesc.value = desc || '';
+          });
+        });
+    }
   }
 
   // El panel "card" del modal (ajusta el selector si tu HTML es distinto)
@@ -401,12 +486,14 @@
 
 
   // ==== Abrir / Cerrar modal ====
-  function openModal() {
-    if (form) form.reset();
+  async function openModal() {
+    if (ES_INSTRUCTOR) return; // Bloqueo funcional
     editingRaeId = null; editingSnap = null;
     if (titleRae) titleRae.textContent = 'Nuevo RAE';
     if (inCode) inCode.value = '';
-    if (selComp) selComp.innerHTML = `<option value="">Seleccione una competencia</option>`;
+    if (form) form.reset();
+    await loadPrograms();
+    // loadPrograms repuebla #rae_program y dispara change → loadCompetenciasFor sin programa
 
     // Mostrar
     backdrop.classList.remove('hidden');
@@ -428,7 +515,7 @@
   }
 
   // ==== Eventos UI ====
-  btnNew    && btnNew.addEventListener('click', openModal);
+  btnNew    && btnNew.addEventListener('click', () => { void openModal(); });
   btnClose  && btnClose.addEventListener('click', closeModal);
   btnCancel && btnCancel.addEventListener('click', closeModal);
   backdrop?.addEventListener('click', closeModal);
@@ -447,9 +534,11 @@
     const pid = selProgInForm.value;
     if (!editingRaeId && inCode) inCode.value = ''; // solo limpiar en modo crear (se mantiene)
     if (pid) {
-      await loadCompetenciasFor(pid, selComp, true);
+      await loadCompetenciasFor(pid, selComp, true, modalCompPreserveId());
     } else {
       selComp.innerHTML = `<option value=\"\">Seleccione una competencia</option>`;
+      selComp.disabled = true;
+      selComp.dispatchEvent(new Event('change', { bubbles: true }));
     }
   });
 
@@ -464,6 +553,7 @@
   // Submit: crear o actualizar RAE (validaciones y toasts)
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (ES_INSTRUCTOR) return; // Bloqueo funcional
 
     const nuevo_id_rae   = (inCode?.value || '').trim();
     const descripcion    = (inDesc?.value || '').trim();
@@ -559,7 +649,7 @@
       await loadCompetenciasFor(selProgFilter.value, selCompFilter, false);
     }
     if (isModalOpen() && selProgInForm && selProgInForm.value) {
-      await loadCompetenciasFor(selProgInForm.value, selComp, true);
+      await loadCompetenciasFor(selProgInForm.value, selComp, true, modalCompPreserveId());
     }
     await loadRaes();
   });
@@ -576,7 +666,7 @@
       await loadCompetenciasFor(selProgFilter.value, selCompFilter, false);
     }
     if (isModalOpen() && selProgInForm && pid && selProgInForm.value === pid) {
-      await loadCompetenciasFor(pid, selComp, true);
+      await loadCompetenciasFor(pid, selComp, true, modalCompPreserveId());
       // <<< MODIFICADO >>> ya no autocompleta si llega una nueva competencia
       if (cid && selComp && AUTOCOMPLETE_RAE) {
         const has = Array.from(selComp.options).some(o => o.value === cid);

@@ -1,0 +1,862 @@
+/**
+ * Módulo Gestión de Perfil – Widget de usuario y modales (Ver perfil, Solicitar cambios, Cambiar contraseña).
+ * Expone actualización del header y de la sesión vía UsuarioController (sincronizar_sesion).
+ */
+(function () {
+  var API = window.API_USUARIO;
+  var API_SOLICITUD = window.API_SOLICITUD || "";
+  var USUARIO_ID = window.USUARIO_ID || 0;
+  var USUARIO_ES_SISTEMA = Number(window.USUARIO_ES_SISTEMA || 0) === 1;
+  var CARGO_ACTUAL_PERFIL = normalizeTxt(window.USUARIO_CARGO || "");
+  var TOAST_Z_INDEX = 2147483000;
+  var SWAL_TOAST_Z_INDEX_STYLE_ID = "swal-toast-zindex-fix";
+
+  function getEl(id) { return document.getElementById(id); }
+  function qs(sel, ctx) { return (ctx || document).querySelector(sel); }
+  function qsAll(sel, ctx) { return (ctx || document).querySelectorAll(sel); }
+  function ensureSwalToastOnTop() {
+    if (document.getElementById(SWAL_TOAST_Z_INDEX_STYLE_ID)) return;
+    var style = document.createElement("style");
+    style.id = SWAL_TOAST_Z_INDEX_STYLE_ID;
+    style.textContent =
+      ".swal2-container{z-index:" + TOAST_Z_INDEX + " !important;}" +
+      ".swal2-container.swal2-top-end.swal2-container--toast{z-index:" + TOAST_Z_INDEX + " !important;}";
+    document.head.appendChild(style);
+  }
+  function normalizeTxt(v) {
+    return String(v || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toUpperCase();
+  }
+  function isCargoInstructor(v) {
+    return normalizeTxt(v).indexOf("INSTRUCTOR") >= 0;
+  }
+  function setSelectValueFlexible(sel, rawValue) {
+    if (!sel) return;
+    var target = normalizeTxt(rawValue);
+    var found = [].slice.call(sel.options || []).find(function (opt) {
+      return normalizeTxt(opt.value) === target || normalizeTxt(opt.textContent) === target;
+    });
+    sel.value = found ? found.value : (rawValue || "").toString();
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+  function formatoTipoInstructor(v) {
+    var n = normalizeTxt(v);
+    if (n === "TECNICO") return "Técnico";
+    if (n === "TRANSVERSAL") return "Transversal";
+    return String(v || "—").trim() || "—";
+  }
+  function formatoTipoContrato(v) {
+    var n = normalizeTxt(v);
+    if (n === "PLANTA") return "Planta";
+    if (n === "CONTRATISTA") return "Contratista";
+    return String(v || "—").trim() || "—";
+  }
+  function formatoTipoDocumento(v) {
+    var n = normalizeTxt(v);
+    if (n === "CC") return "Cédula de Ciudadanía";
+    if (n === "CE") return "Cédula de Extranjería";
+    if (n === "PASAPORTE") return "Pasaporte";
+    return String(v || "—").trim() || "—";
+  }
+  function isRolEsSistema() {
+    if (USUARIO_ES_SISTEMA) return true;
+    var cargo = normalizeTxt(window.USUARIO_CARGO || "");
+    return cargo === "ES SISTEMA" || cargo === "SISTEMA" || cargo.indexOf("SISTEMA") >= 0;
+  }
+  function isCuentaSistemaData(data) {
+    if (!data || typeof data !== "object") return false;
+    if (Number(data.es_sistema || 0) === 1) return true;
+    var cargoData = normalizeTxt(data.cargo || "");
+    return cargoData === "ES SISTEMA" || cargoData === "SISTEMA" || cargoData.indexOf("SISTEMA") >= 0;
+  }
+  function disableEditarPerfilAction() {
+    var btn = qs('[data-action="editar-perfil"]');
+    if (!btn) return;
+    btn.setAttribute("disabled", "disabled");
+    btn.setAttribute("aria-disabled", "true");
+    btn.setAttribute("title", "No disponible para cuenta de sistema");
+    btn.classList.add("opacity-50", "cursor-not-allowed");
+    btn.classList.remove("hover:bg-gray-100");
+  }
+
+  function aplicarDatosAlHeaderUsuario(data) {
+    if (!data || typeof data !== "object" || data.error) return;
+    var nombreRaw = String(data.nombre_completo || "").trim();
+    var nombre = nombreRaw || "Usuario";
+    var cargo = String(data.cargo || "").trim();
+    var av = getEl("headerUserAvatar");
+    var nm = getEl("headerUserNombre");
+    var cg = getEl("headerUserCargo");
+    if (av) {
+      var ini = "US";
+      if (nombre !== "Usuario") {
+        ini = nombre.split(/\s+/).map(function (s) { return s[0]; }).filter(Boolean).slice(0, 2).join("").toUpperCase();
+      }
+      av.textContent = ini;
+    }
+    if (nm) nm.textContent = nombre;
+    if (cg) cg.textContent = cargo;
+    if (typeof window !== "undefined") {
+      window.USUARIO_CARGO = cargo;
+    }
+  }
+
+  function refrescarSesionUsuarioYHeader() {
+    if (!API || !USUARIO_ID) return Promise.resolve();
+    return fetch(API + "?accion=sincronizar_sesion", { credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j && j.status === "success" && j.data) {
+          aplicarDatosAlHeaderUsuario({
+            nombre_completo: j.data.nombre_completo,
+            cargo: j.data.cargo,
+            correo_electronico: j.data.correo_electronico
+          });
+        }
+      })
+      .catch(function () {});
+  }
+
+  var lastModalOpener = null;
+
+  function fullyCloseModal(modal) {
+    if (!modal) return;
+    var activeEl = document.activeElement;
+    if (activeEl && modal.contains(activeEl)) activeEl.blur();
+    modal.classList.add("hidden");
+    modal.classList.remove("flex", "block", "items-center", "justify-center");
+    modal.style.display = "none";
+    modal.style.pointerEvents = "none";
+    modal.style.visibility = "hidden";
+    modal.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach(function (el) {
+      el.style.pointerEvents = "none";
+    });
+    document.body.style.overflow = "";
+    document.body.classList.remove("overflow-hidden");
+    if (lastModalOpener && lastModalOpener.focus) {
+      try { lastModalOpener.focus(); } catch (e) {}
+      lastModalOpener = null;
+    }
+  }
+
+  function closeUserMenu() {
+    var menu = getEl("userMenu");
+    var chevron = getEl("chevronIcon");
+    if (menu) menu.classList.add("hidden");
+    if (chevron) chevron.classList.remove("rotate-180");
+  }
+
+  function openModal(id) {
+    var modal = getEl(id);
+    if (!modal) return;
+    lastModalOpener = document.activeElement;
+    qsAll(".modal-perfil").forEach(fullyCloseModal);
+    modal.classList.remove("hidden");
+    modal.classList.add("flex", "items-center", "justify-center");
+    modal.style.display = "";
+    modal.style.pointerEvents = "";
+    modal.style.visibility = "";
+    modal.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach(function (el) {
+      el.style.pointerEvents = "";
+    });
+  }
+
+  function closeModal(id) {
+    var modal = id ? getEl(id) : null;
+    if (modal) fullyCloseModal(modal);
+  }
+
+  function loadPerfil() {
+    if (!USUARIO_ID) return Promise.resolve(null);
+    return fetch(API + "?accion=obtener&id=" + USUARIO_ID)
+      .then(function (r) { return r.json(); })
+      .catch(function () { return null; });
+  }
+
+  function esCargoInstructorRaw(cargo) {
+    return normalizeTxt(cargo).indexOf("INSTRUCTOR") >= 0;
+  }
+  function esCargoCoordinadorRaw(cargo) {
+    return normalizeTxt(cargo).indexOf("COORDINADOR") >= 0;
+  }
+  function actualizarCamposSolicitudPorCargo(cargoRaw) {
+    var form = getEl("formSolicitarCambiosPerfil");
+    if (!form) return;
+    var gIns = getEl("solicitarGrupoInstructorPerfil");
+    var gCoor = getEl("solicitarGrupoCoordinadorPerfil");
+    var esIns = esCargoInstructorRaw(cargoRaw);
+    var esCoor = esCargoCoordinadorRaw(cargoRaw);
+    if (gIns) gIns.classList.toggle("hidden", !esIns);
+    if (gCoor) gCoor.classList.toggle("hidden", !esCoor);
+    if (esCoor) {
+      var selIns = form.querySelector("[name='tipo_instructor']");
+      var selCon = form.querySelector("[name='tipo_contrato']");
+      if (selIns) selIns.value = "";
+      if (selCon) selCon.value = "";
+    } else {
+      var selArea = form.querySelector("[name='area_coordinador']");
+      if (selArea) selArea.value = "";
+    }
+  }
+
+  function cargarOpcionesAreaCoordinadorPerfil(valorActual) {
+    var sel = getEl("solicitarAreaCoordinadorPerfil");
+    if (!sel || !API) return Promise.resolve();
+    return fetch(API + "?accion=areas", { credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(function (arr) {
+        if (!Array.isArray(arr)) return;
+        var html = '<option value="">Sin asignar área</option>';
+        function esc(s) {
+          return String(s || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+        }
+        arr.forEach(function (a) {
+          var n = String((a && a.nombre_area) || "").trim();
+          if (!n) return;
+          html += '<option value="' + esc(n) + '">' + esc(n) + '</option>';
+        });
+        sel.innerHTML = html;
+        if (valorActual) {
+          setSelectValueFlexible(sel, valorActual);
+        }
+        if (typeof sel._refreshCustomOptions === "function") {
+          sel._refreshCustomOptions();
+        } else {
+          sel.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      })
+      .catch(function () {});
+  }
+
+  function fillModalVerPerfil(data) {
+    var nombre = (data && data.nombre_completo) || "—";
+    var iniciales = nombre !== "—" ? nombre.trim().split(/\s+/).map(function (s) { return s[0]; }).slice(0, 2).join("").toUpperCase() : "—";
+    getEl("verPerfilAvatar").textContent = iniciales;
+    getEl("verPerfilNombre").textContent = nombre;
+    getEl("verPerfilRol").textContent = (data && data.cargo) || "—";
+    getEl("verPerfilNombreCampo").textContent = nombre;
+    var elTipoDoc = getEl("verPerfilTipoDocumento");
+    if (elTipoDoc) elTipoDoc.textContent = formatoTipoDocumento(data && data.tipo_documento);
+    getEl("verPerfilDocumento").textContent = (data && data.numero_documento) || "—";
+    getEl("verPerfilCorreo").textContent = (data && data.correo_electronico) || "—";
+    getEl("verPerfilArea").textContent = (data && data.nombre_area) || "—";
+    var tipoInstructor = getEl("verPerfilTipoInstructor");
+    var tipoContrato = getEl("verPerfilTipoContrato");
+    if (tipoInstructor) tipoInstructor.textContent = formatoTipoInstructor(data && data.tipo_instructor);
+    if (tipoContrato) tipoContrato.textContent = formatoTipoContrato(data && data.tipo_contrato);
+
+    var instructorContainer = getEl("verPerfilInstructorContainer");
+    if (instructorContainer) {
+      var cargoData = (data && data.cargo) || window.USUARIO_CARGO || "";
+      if (isCargoInstructor(cargoData)) {
+        instructorContainer.classList.remove("hidden");
+      } else {
+        instructorContainer.classList.add("hidden");
+      }
+    }
+
+    var areaContainer = getEl("verPerfilAreaContainer");
+    if (areaContainer) {
+        var cargoUsuario = (data && data.cargo) || window.USUARIO_CARGO || "";
+        if (cargoUsuario.toUpperCase() === "COORDINADOR") {
+            areaContainer.style.display = "";
+        } else {
+            areaContainer.style.display = "none";
+        }
+    }
+  }
+
+  var solicitarCambiosValoresIniciales = null;
+
+  function getFormSolicitarCambiosValues(form) {
+    if (!form) return {};
+    return {
+      nombre_completo: (form.querySelector("[name='nombre_completo']") || {}).value || "",
+      tipo_documento: (form.querySelector("[name='tipo_documento']") || {}).value || "",
+      numero_documento: (form.querySelector("[name='numero_documento']") || {}).value || "",
+      correo_electronico: (form.querySelector("[name='correo_electronico']") || {}).value || "",
+      tipo_instructor: (form.querySelector("[name='tipo_instructor']") || {}).value || "",
+      tipo_contrato: (form.querySelector("[name='tipo_contrato']") || {}).value || "",
+      area_coordinador: (form.querySelector("[name='area_coordinador']") || {}).value || ""
+    };
+  }
+  function validarCamposRequeridosSolicitar(form) {
+    if (!form) return { ok: true };
+    var checks = [
+      { name: "nombre_completo", label: "Nombre completo" },
+      { name: "tipo_documento", label: "Tipo de documento" },
+      { name: "numero_documento", label: "Número de documento" },
+      { name: "correo_electronico", label: "Correo electrónico" }
+    ];
+    if (esCargoInstructorRaw(CARGO_ACTUAL_PERFIL)) {
+      checks.push({ name: "tipo_instructor", label: "Tipo instructor" });
+      checks.push({ name: "tipo_contrato", label: "Tipo contrato" });
+    }
+    for (var i = 0; i < checks.length; i += 1) {
+      var c = checks[i];
+      var el = form.querySelector("[name='" + c.name + "']");
+      if (!el) continue;
+      var val = String(el.value || "").trim();
+      if (!val) {
+        return { ok: false, field: c.name, label: c.label, el: el };
+      }
+    }
+    return { ok: true };
+  }
+
+  function fillFormSolicitarCambios(data) {
+    var form = getEl("formSolicitarCambiosPerfil");
+    if (!form || !data) return;
+    CARGO_ACTUAL_PERFIL = normalizeTxt((data && data.cargo) || "");
+    actualizarCamposSolicitudPorCargo(data && data.cargo);
+    form.querySelector("[name='nombre_completo']").value = data.nombre_completo || "";
+    form.querySelector("[name='numero_documento']").value = data.numero_documento || "";
+    form.querySelector("[name='correo_electronico']").value = data.correo_electronico || "";
+    ["tipo_documento", "tipo_instructor", "tipo_contrato"].forEach(function (name) {
+      var sel = form.querySelector("[name='" + name + "']");
+      if (sel) {
+        setSelectValueFlexible(sel, data[name] || "");
+      }
+    });
+    var valorArea = (data.area_coordinador || data.nombre_area || "").trim();
+    cargarOpcionesAreaCoordinadorPerfil(valorArea);
+    solicitarCambiosValoresIniciales = getFormSolicitarCambiosValues(form);
+  }
+
+  function onVerPerfil() {
+    closeUserMenu();
+    loadPerfil().then(function (data) {
+      fillModalVerPerfil(data);
+      aplicarDatosAlHeaderUsuario(data);
+      refrescarSesionUsuarioYHeader();
+      openModal("modalVerPerfil");
+    });
+  }
+
+  function onEditarPerfil() {
+    closeUserMenu();
+    loadPerfil().then(function (data) {
+      aplicarDatosAlHeaderUsuario(data);
+      refrescarSesionUsuarioYHeader();
+      if (isRolEsSistema() || isCuentaSistemaData(data)) {
+        disableEditarPerfilAction();
+        if (window.Swal) {
+          Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: "info",
+            title: "Editar perfil no está disponible para cuentas de sistema.",
+            showConfirmButton: false,
+            timer: 2800
+          });
+        }
+        return;
+      }
+      fillFormSolicitarCambios(data);
+      openModal("modalSolicitarCambiosPerfil");
+    });
+  }
+
+  function enhanceSelectsPerfilModal() {
+    var modal = getEl("modalSolicitarCambiosPerfil");
+    if (!modal) return;
+    var selects = qsAll(".select-perfil", modal);
+    selects.forEach(function (select, idx) {
+      var isLastSelect = idx === selects.length - 1;
+      if (select.dataset.customDropdown) return;
+      select.dataset.customDropdown = "1";
+
+      var wrapper = document.createElement("div");
+      wrapper.className = "custom-select-wrapper";
+      select.parentNode.insertBefore(wrapper, select);
+      wrapper.appendChild(select);
+
+      var trigger = document.createElement("div");
+      trigger.className = "custom-select-trigger py-2.5 text-sm w-full border border-gray-300 rounded-xl px-4 pr-10 bg-white text-gray-700 flex items-center justify-between cursor-pointer hover:border-gray-400 focus-within:ring-2 focus-within:ring-[#39A900]/20 focus-within:border-[#39A900]";
+      trigger.setAttribute("tabindex", "0");
+      trigger.setAttribute("aria-haspopup", "listbox");
+
+      var dropdown = document.createElement("div");
+      dropdown.className = "custom-select-dropdown hidden";
+      dropdown.setAttribute("role", "listbox");
+
+      var span = document.createElement("span");
+      span.className = "truncate";
+
+      function updateTrigger() {
+        var opt = select.options[select.selectedIndex];
+        span.textContent = opt ? opt.textContent : "";
+      }
+      function rebuildCustomOptions() {
+        dropdown.innerHTML = "";
+        [].slice.call(select.options).forEach(function (opt, i) {
+          var div = document.createElement("div");
+          div.className = "custom-option" + (opt.value === select.value ? " selected" : "");
+          div.textContent = opt.textContent;
+          div.dataset.value = opt.value;
+          div.dataset.index = String(i);
+          div.setAttribute("role", "option");
+          div.addEventListener("click", function (e) {
+            e.stopPropagation();
+            select.value = opt.value;
+            select.dispatchEvent(new Event("change", { bubbles: true }));
+            dropdown.querySelectorAll(".custom-option").forEach(function (o) { o.classList.remove("selected"); });
+            div.classList.add("selected");
+            updateTrigger();
+            dropdown.classList.add("hidden");
+          });
+          dropdown.appendChild(div);
+        });
+        updateTrigger();
+      }
+      select._refreshCustomOptions = rebuildCustomOptions;
+
+      trigger.appendChild(span);
+      var arrow = document.createElement("span");
+      arrow.className = "shrink-0 text-gray-400";
+      arrow.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>';
+      trigger.appendChild(arrow);
+
+      rebuildCustomOptions();
+
+      select.classList.add("sr-only", "absolute", "inset-0", "w-full", "h-full", "opacity-0", "pointer-events-none");
+      wrapper.appendChild(trigger);
+      wrapper.appendChild(dropdown);
+
+      trigger.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var open = !dropdown.classList.contains("hidden");
+        document.querySelectorAll(".custom-select-dropdown").forEach(function (d) { d.classList.add("hidden"); });
+        if (!open) {
+          var needsUp = isLastSelect;
+          if (!needsUp) {
+            var rect = wrapper.getBoundingClientRect();
+            var dropdownMaxH = 220;
+            var margin = 12;
+            var spaceBelow = window.innerHeight - rect.bottom;
+            needsUp = spaceBelow < dropdownMaxH + margin;
+          }
+          dropdown.classList.toggle("dropdown-up", needsUp);
+          dropdown.classList.remove("hidden");
+        } else {
+          dropdown.classList.remove("dropdown-up");
+        }
+      });
+
+      select.addEventListener("change", function () {
+        updateTrigger();
+        dropdown.querySelectorAll(".custom-option").forEach(function (o) {
+          o.classList.toggle("selected", o.dataset.value === select.value);
+        });
+      });
+
+      document.addEventListener("click", function (e) {
+        if (!wrapper.contains(e.target)) dropdown.classList.add("hidden");
+      }, true);
+    });
+  }
+
+  function initTogglePassword(container) {
+    if (!container) return;
+    qsAll(".toggle-pwd", container).forEach(function (btn) {
+      var iconOpen = btn.querySelector(".icon-eye-open");
+      var iconClosed = btn.querySelector(".icon-eye-closed");
+      btn.addEventListener("click", function () {
+        var wrap = btn.closest(".relative");
+        var input = wrap && wrap.querySelector("input");
+        if (!input) return;
+        var isPass = input.type === "password";
+        input.type = isPass ? "text" : "password";
+        btn.setAttribute("aria-label", isPass ? "Ocultar contraseña" : "Mostrar contraseña");
+        if (iconOpen && iconClosed) {
+          if (isPass) {
+            iconOpen.classList.remove("hidden");
+            iconClosed.classList.add("hidden");
+          } else {
+            iconOpen.classList.add("hidden");
+            iconClosed.classList.remove("hidden");
+          }
+        }
+      });
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    ensureSwalToastOnTop();
+    if (isRolEsSistema()) disableEditarPerfilAction();
+    // Confirmación con datos reales del usuario (si la API los entrega).
+    loadPerfil().then(function (data) {
+      if (isCuentaSistemaData(data)) {
+        USUARIO_ES_SISTEMA = true;
+        disableEditarPerfilAction();
+      }
+    });
+
+    var container = getEl("userDropdownContainer");
+    if (container) {
+      container.addEventListener("click", function (e) {
+        var action = e.target.closest("[data-action]");
+        if (!action) return;
+        e.preventDefault();
+        var act = action.getAttribute("data-action");
+        if (act === "ver-perfil") onVerPerfil();
+        else if (act === "editar-perfil") onEditarPerfil();
+        else if (act === "cerrar-sesion") {
+          closeUserMenu();
+          openModal("modalCerrarSesion");
+        }
+      });
+    }
+
+    var btnConfirmarCerrar = getEl("btnConfirmarCerrarSesion");
+    if (btnConfirmarCerrar) {
+      btnConfirmarCerrar.addEventListener("click", function () {
+        closeModal("modalCerrarSesion");
+        var base = window.BASE_URL || "";
+        window.location.href = base + "index.php?page=logout";
+      });
+    }
+
+    qsAll("[data-close]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-close");
+        if (id) closeModal(id);
+      });
+    });
+
+    var btnCambiarContrasena = getEl("btnAbrirCambiarContrasena");
+    if (btnCambiarContrasena) {
+      btnCambiarContrasena.addEventListener("click", function () {
+        closeModal("modalSolicitarCambiosPerfil");
+        openModal("modalCambiarContrasena");
+      });
+    }
+
+    var btnVolver = getEl("btnVolverEditarPerfil");
+    if (btnVolver) {
+      btnVolver.addEventListener("click", function () {
+        closeModal("modalCambiarContrasena");
+        openModal("modalSolicitarCambiosPerfil");
+      });
+    }
+
+    var formSolicitar = getEl("formSolicitarCambiosPerfil");
+    if (formSolicitar) {
+      formSolicitar.addEventListener("submit", function (e) {
+        e.preventDefault();
+        var validacion = validarCamposRequeridosSolicitar(formSolicitar);
+        if (!validacion.ok) {
+          if (window.Swal) {
+            Swal.fire({
+              toast: true,
+              position: "top-end",
+              icon: "warning",
+              title: "Completa el campo: " + validacion.label,
+              showConfirmButton: false,
+              timer: 2800,
+              zIndex: TOAST_Z_INDEX
+            });
+          } else {
+            alert("Completa el campo: " + validacion.label);
+          }
+          if (validacion.el && typeof validacion.el.focus === "function") {
+            try { validacion.el.focus(); } catch (err) {}
+          }
+          return;
+        }
+        var actual = getFormSolicitarCambiosValues(formSolicitar);
+        var inicial = solicitarCambiosValoresIniciales || {};
+        var keysEvaluar = ["nombre_completo", "tipo_documento", "numero_documento", "correo_electronico"];
+        if (esCargoInstructorRaw(CARGO_ACTUAL_PERFIL)) {
+          keysEvaluar.push("tipo_instructor", "tipo_contrato");
+        }
+        if (esCargoCoordinadorRaw(CARGO_ACTUAL_PERFIL)) {
+          keysEvaluar.push("area_coordinador");
+        }
+        var hayCambios = keysEvaluar.some(function (key) {
+          return String(actual[key] || "").trim() !== String(inicial[key] || "").trim();
+        });
+        if (!hayCambios) {
+          if (window.Swal) {
+            Swal.fire({ toast: true, position: "top-end", icon: "warning", title: "No se detectaron cambios", showConfirmButton: false, timer: 3000, zIndex: TOAST_Z_INDEX });
+          } else {
+            alert("No se detectaron cambios.");
+          }
+          return;
+        }
+        var detalles = [];
+        keysEvaluar.forEach(function (key) {
+          var vAnt = String(inicial[key] || "").trim();
+          var vNuevo = String(actual[key] || "").trim();
+          if (vNuevo !== vAnt) {
+            detalles.push({ campo_modificado: key, valor_anterior: vAnt || null, valor_nuevo: vNuevo });
+          }
+        });
+        if (!detalles.length) {
+          if (window.Swal) {
+            Swal.fire({ toast: true, position: "top-end", icon: "warning", title: "No hay datos válidos para enviar.", showConfirmButton: false, timer: 2800, zIndex: TOAST_Z_INDEX });
+          } else {
+            alert("No hay datos válidos para enviar.");
+          }
+          return;
+        }
+        var btnEnviar = formSolicitar.querySelector('button[type="submit"]');
+        var textoOriginal = btnEnviar ? btnEnviar.innerHTML : "";
+        if (btnEnviar) {
+          btnEnviar.disabled = true;
+          btnEnviar.innerHTML = "Enviando...";
+        }
+        var fd = new FormData();
+        fd.append("accion", "crear");
+        fd.append("tipo_solicitud", "DATOS");
+        fd.append("id_instructor_solicitante", USUARIO_ID);
+        fd.append("detalles", JSON.stringify(detalles));
+        fetch(API_SOLICITUD, { method: "POST", credentials: "same-origin", body: fd })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data && data.status === "success") {
+              if (window.Swal) {
+                Swal.fire({
+                  toast: true,
+                  position: "top-end",
+                  icon: "success",
+                  title: "Solicitud enviada al administrador o coordinador.",
+                  showConfirmButton: false,
+                  timer: 2500,
+                  zIndex: TOAST_Z_INDEX
+                });
+              } else {
+                alert("Solicitud enviada al administrador o coordinador.");
+              }
+              closeModal("modalSolicitarCambiosPerfil");
+              solicitarCambiosValoresIniciales = null;
+              if (typeof window.recargarModuloSolicitudes === "function") {
+                window.recargarModuloSolicitudes();
+              }
+            } else {
+              if (window.Swal) {
+                Swal.fire({ toast: true, position: "top-end", icon: "error", title: data.message || data.error || "Error al enviar la solicitud.", showConfirmButton: false, timer: 3000, zIndex: TOAST_Z_INDEX });
+              } else {
+                alert(data.message || data.error || "Error al enviar la solicitud.");
+              }
+            }
+          })
+          .catch(function () {
+            if (window.Swal) {
+              Swal.fire({ toast: true, position: "top-end", icon: "error", title: "Error de conexión.", showConfirmButton: false, timer: 2500, zIndex: TOAST_Z_INDEX });
+            } else {
+              alert("Error de conexión.");
+            }
+          })
+          .finally(function () {
+            if (btnEnviar) {
+              btnEnviar.disabled = false;
+              btnEnviar.innerHTML = textoOriginal;
+            }
+          });
+      });
+    }
+
+    var formContrasena = getEl("formCambiarContrasena");
+
+if (formContrasena) {
+
+  formContrasena.addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    var actual = (formContrasena.querySelector("[name='password_actual']") || {}).value || "";
+    var nueva = (formContrasena.querySelector("[name='password_nueva']") || {}).value || "";
+    var confirmar = (formContrasena.querySelector("[name='password_confirmar']") || {}).value || "";
+
+    // Validar contraseña actual
+    if (!actual.trim()) {
+      if (window.Swal) {
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "error",
+          title: "Debe ingresar la contraseña actual.",
+          showConfirmButton: false,
+          timer: 2500,
+          zIndex: 999999
+        });
+      } else {
+        alert("Debe ingresar la contraseña actual.");
+      }
+      return;
+    }
+
+    // Validar coincidencia
+    if (nueva !== confirmar) {
+      if (window.Swal) {
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "error",
+          title: "Las contraseñas no coinciden.",
+          showConfirmButton: false,
+          timer: 2500,
+          zIndex: 999999
+        });
+      } else {
+        alert("Las contraseñas no coinciden.");
+      }
+      return;
+    }
+
+    // Validar longitud
+    if (nueva.length < 6) {
+      if (window.Swal) {
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "error",
+          title: "La nueva contraseña debe tener al menos 6 caracteres.",
+          showConfirmButton: false,
+          timer: 2500,
+          zIndex: 999999
+        });
+      } else {
+        alert("La nueva contraseña debe tener al menos 6 caracteres.");
+      }
+      return;
+    }
+
+    // Validar que no sea igual
+    if (nueva === actual) {
+      if (window.Swal) {
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "error",
+          title: "La nueva contraseña no puede ser igual a la actual.",
+          showConfirmButton: false,
+          timer: 2500,
+          zIndex: 999999
+        });
+      } else {
+        alert("La nueva contraseña no puede ser igual a la actual.");
+      }
+      return;
+    }
+
+    // Botón loading
+    var btn = formContrasena.querySelector('button[type="submit"]');
+    var originalText = btn ? btn.innerHTML : "";
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = `
+        <span class="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
+        Procesando...
+      `;
+    }
+
+    // Enviar datos
+    var fd = new FormData();
+    fd.append("id_usuario", USUARIO_ID);
+    fd.append("password_actual", actual);
+    fd.append("password_nueva", nueva);
+
+    fetch(API + "?accion=cambiarContrasena", {
+      method: "POST",
+      body: fd
+    })
+    .then(function (r) {
+      return r.json();
+    })
+    .then(function (data) {
+
+      if (data && data.success) {
+
+        if (window.Swal) {
+          Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: "success",
+            title: data.message || "Contraseña actualizada.",
+            showConfirmButton: false,
+            timer: 2500,
+            zIndex: 999999
+          });
+        } else {
+          alert(data.message || "Contraseña actualizada.");
+        }
+
+        closeModal("modalCambiarContrasena");
+        formContrasena.reset();
+
+      } else {
+
+        if (window.Swal) {
+          Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: "error",
+            title: data.error || "Error al cambiar contraseña.",
+            showConfirmButton: false,
+            timer: 2500,
+            zIndex: 999999
+          });
+        } else {
+          alert(data.error || "Error al cambiar contraseña.");
+        }
+
+      }
+
+    })
+    .catch(function () {
+
+      if (window.Swal) {
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "error",
+          title: "Error de conexión.",
+          showConfirmButton: false,
+          timer: 2500,
+          zIndex: 999999
+        });
+      } else {
+        alert("Error de conexión.");
+      }
+
+    })
+    .finally(function () {
+
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+
+    });
+
+  });
+
+}
+
+    initTogglePassword(getEl("modalCambiarContrasena"));
+    enhanceSelectsPerfilModal();
+  });
+
+  window.aplicarDatosAlHeaderUsuario = aplicarDatosAlHeaderUsuario;
+  window.refrescarSesionUsuarioYHeader = refrescarSesionUsuarioYHeader;
+
+  var visTimerHeaderSync;
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState !== "visible") return;
+    if (!USUARIO_ID) return;
+    clearTimeout(visTimerHeaderSync);
+    visTimerHeaderSync = setTimeout(function () {
+      refrescarSesionUsuarioYHeader();
+    }, 400);
+  });
+})();

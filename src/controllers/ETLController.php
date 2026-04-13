@@ -1,6 +1,6 @@
 <?php
-ini_set("display_errors", 1);
-error_reporting(E_ALL);
+ini_set("display_errors", 0);
+error_reporting(0);
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../../config/database.php';
@@ -9,27 +9,44 @@ require_once __DIR__ . '/../models/Rae.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
-//Comentario de prueba
-
 class EtlController {
 
     public function subir() {
 
+        header('Content-Type: application/json');
+
         if (!isset($_FILES['archivo'])) {
-            echo " No se recibió archivo.";
-            return;
+            echo json_encode([
+                'success' => false,
+                'error' => 'No se recibió archivo.'
+            ]);
+            exit;
         }
 
         $programa = $_POST['programa'] ?? null;
+
         if (!$programa) {
-            echo " Debe seleccionar un programa.";
-            return;
+            echo json_encode([
+                'success' => false,
+                'error' => 'Debe seleccionar un programa.'
+            ]);
+            exit;
         }
 
         global $conn;
+
+        if (!$conn) {
+            echo json_encode([
+                'success' => false,
+                'error' => 'Error de conexión a la base de datos.'
+            ]);
+            exit;
+        }
+
         $file = $_FILES['archivo']['tmp_name'];
 
         try {
+
             $spreadsheet = IOFactory::load($file);
             $sheet = $spreadsheet->getActiveSheet();
             $rows = $sheet->toArray();
@@ -37,7 +54,6 @@ class EtlController {
             $insertadasComp = 0;
             $insertadasRae = 0;
 
-            // Empieza en fila 14
             for ($i = 13; $i < count($rows); $i++) {
 
                 $comp = trim($rows[$i][5] ?? "");
@@ -45,40 +61,58 @@ class EtlController {
 
                 if ($comp === "" || $rae === "") continue;
 
-                // COMPETENCIA: "228115 - APLICAR DISEÑO DE SOFTWARE"
+                if (!str_contains($comp, "-") || !str_contains($rae, "-")) continue;
+
+                // Separar competencia
                 [$codC, $nomC] = array_map('trim', explode("-", $comp, 2));
 
-                // Insertar competencia (id_competencia = código)
                 $stmt = $conn->prepare("
-                    INSERT IGNORE INTO competencias (id_competencia, id_programa, nombre_competencia, estado)
+                    INSERT IGNORE INTO competencias 
+                    (id_competencia, id_programa, nombre_competencia, estado)
                     VALUES (?, ?, ?, 1)
                 ");
                 $stmt->execute([$codC, $programa, $nomC]);
 
-                if ($stmt->rowCount() > 0) $insertadasComp++;
+                if ($stmt->rowCount() > 0) {
+                    $insertadasComp++;
+                }
 
-                // RAE: "228115001 - DESCRIBIR LA ARQUITECTURA"
+                // Separar RAE
                 [$codR, $descR] = array_map('trim', explode("-", $rae, 2));
 
-                // Insertar RAE (id_rae = código)
                 $stmt2 = $conn->prepare("
-                    INSERT IGNORE INTO raes (id_rae, descripcion, id_competencia, estado)
+                    INSERT IGNORE INTO raes 
+                    (id_rae, descripcion, id_competencia, estado)
                     VALUES (?, ?, ?, 1)
                 ");
                 $stmt2->execute([$codR, $descR, $codC]);
 
-                if ($stmt2->rowCount() > 0) $insertadasRae++;
+                if ($stmt2->rowCount() > 0) {
+                    $insertadasRae++;
+                }
             }
 
-            echo "Importación completada:<br>
-                  • Competencias procesadas: $insertadasComp <br>
-                  • Resultados de aprendizaje procesados: $insertadasRae";
+            echo json_encode([
+                'success' => true,
+                'competencias' => $insertadasComp,
+                'raes' => $insertadasRae
+            ]);
+            exit;
 
         } catch (Exception $e) {
-            echo "Error procesando archivo: " . $e->getMessage();
+
+            echo json_encode([
+                'success' => false,
+                'error' => 'Error procesando archivo: ' . $e->getMessage()
+            ]);
+            exit;
         }
     }
 }
+
+/* ================================
+   EJECUCIÓN DEL CONTROLADOR
+   ================================ */
 
 $accion = $_GET['accion'] ?? null;
 $controller = new EtlController();
@@ -86,5 +120,10 @@ $controller = new EtlController();
 if ($accion && method_exists($controller, $accion)) {
     $controller->$accion();
 } else {
-    echo "Acción no válida";
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => false,
+        'error' => 'Acción no válida'
+    ]);
+    exit;
 }

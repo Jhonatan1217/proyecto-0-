@@ -1,7 +1,3 @@
-* {
-	font-family: sans-serif;
-}
-
 h1 {
 	text-transform: uppercase;
 	margin-bottom: 5px;
@@ -15,11 +11,28 @@ h2 {
 table {
 	width: 100%;
 	border-collapse: collapse;
-	margin: 20px auto;
+	margin: 0;
 }
 
 th {
-	background-color: #39A900;
+	background-color: #d1d5db;
+	color: #374151;
+	font-weight: 600;
+}
+
+/* Celdas de competencias */
+.registro {
+	position: relative;
+}
+
+.registro::before {
+	content: '';
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 4px;
+	background-color: #16a34a;
 }
 
 .celda {
@@ -38,7 +51,6 @@ th {
 	transition: box-shadow .15s ease, border-color .15s ease;
 }
 
-
 .celda:focus {
 	outline: none;
 	border-color: #16a34a;
@@ -49,7 +61,7 @@ th {
 	min-height: 60px;
 }
 
-/* Modal styles */
+/* Modal overlay heredado */
 .modal-overlay {
 	display: none;
 	position: fixed;
@@ -71,4 +83,519 @@ th {
 	width: 80px;
 	height: 80px;
 	margin: 0 auto 20px;
+}
+
+/* ── Combobox local (filtros cabecera + modal crear) ─────────────────── */
+.custom-combobox {
+	position: relative;
+}
+
+/* Fila input + botón limpiar (mismo patrón que combobox global) */
+.custom-combobox-field {
+	position: relative;
+	width: 100%;
+}
+
+.custom-combobox-field > input {
+	width: 100%;
+	box-sizing: border-box;
+	padding-right: 2.25rem;
+}
+
+.btn-clear-custom-combobox {
+	position: absolute;
+	right: 0.5rem;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 1.25rem;
+	height: 1.25rem;
+	display: none;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: none;
+	background: transparent;
+	color: #6b7280;
+	cursor: pointer;
+	border-radius: 9999px;
+	transition: color 0.15s ease, background 0.15s ease;
+	z-index: 2;
+}
+
+.btn-clear-custom-combobox:hover {
+	color: #374151;
+	background: #f3f4f6;
+}
+
+.btn-clear-custom-combobox.visible {
+	display: inline-flex;
+}
+
+.custom-combobox-panel {
+	position: absolute;
+	top: calc(100% + 6px);
+	left: 0;
+	right: 0;
+	z-index: 80;
+	background: #ffffff;
+	border: 1px solid #e5e7eb;
+	border-radius: 12px;
+	box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
+	overflow: hidden;
+}
+
+.custom-combobox-panel-top {
+	top: auto !important;
+	bottom: calc(100% + 6px) !important;
+}
+
+.custom-combobox-panel.hidden {
+	display: none;
+}
+
+.custom-combobox-list {
+	max-height: 280px;
+	overflow-y: auto;
+	padding: 4px;
+}
+
+.custom-combobox-list.custom-combobox-list--max-rows-6 {
+	max-height: calc(6 * (20px + 0.875rem * 1.4) + 8px);
+}
+
+.custom-combobox-list::-webkit-scrollbar { width: 8px; }
+.custom-combobox-list::-webkit-scrollbar-thumb {
+	background: #9ca3af;
+	border-radius: 999px;
+}
+
+.custom-combobox-option,
+.custom-combobox-empty {
+	width: 100%;
+	border: 0;
+	background: transparent;
+	text-align: left;
+	border-radius: 10px;
+	padding: 10px 14px;
+	font-size: 0.875rem;
+	color: #1f2937;
+	white-space: normal;
+	word-break: break-word;
+	line-height: 1.4;
+}
+
+.custom-combobox-option {
+	cursor: pointer;
+	transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.custom-combobox-option:hover,
+.custom-combobox-option.is-active {
+	background: #f3f4f6;
+	color: #111827;
+}
+
+.custom-combobox-empty {
+	color: #6b7280;
+	cursor: default;
+}
+
+/* Fix: select-styled con .form-field no recorta el texto */
+.select-styled.form-field {
+	height: auto;
+}
+
+/*
+ * Cabecera register_tables: placeholders más suaves (modalidad vía select estilizado + área/zona/grupo).
+ * El antiguo text-transform:lowercase en #selectModalidad hacía ver "seleccione" en lugar de "Seleccione".
+ */
+#cabecera-trimestralizacion .filter-search-input::placeholder {
+	opacity: 0.55;
+}
+
+#cabecera-trimestralizacion .select-styled-wrapper:has(#selectModalidad[value=""]) .select-styled-trigger-text {
+	opacity: 0.55;
+}
+
+/* Área / zona: deshabilitados hasta elegir modalidad — sin hover de borde y aspecto claramente gris */
+#cabecera-trimestralizacion .filter-search-input:disabled {
+	background-color: #e5e7eb;
+	color: #6b7280;
+	border-color: #c4c4c9;
+	cursor: not-allowed;
+	opacity: 1;
+}
+
+#cabecera-trimestralizacion .filter-search-input:disabled::placeholder {
+	color: #9ca3af;
+	opacity: 1;
+}
+
+#cabecera-trimestralizacion .filter-search-input:disabled:hover {
+	border-color: #c4c4c9;
+	box-shadow: none;
+}
+
+#cabecera-trimestralizacion .custom-combobox:has(.filter-search-input:disabled) {
+	cursor: not-allowed;
+}
+
+#cabecera-trimestralizacion #contenedorAreaFiltro:has(#inputAreaTexto:disabled) label,
+#cabecera-trimestralizacion #contenedorZonaFiltro:has(#inputZonaTexto:disabled) label {
+	color: #6b7280;
+}
+
+/* Modal crear trimestralización: inputs tipo combobox = token global filter-search-input; placeholder legible */
+#modalCrearLanding .filter-search-input::placeholder {
+	color: #9ca3af !important;
+	opacity: 1 !important;
+}
+
+#modalCrearLanding .filter-search-input:disabled {
+	background-color: #f3f4f6;
+	cursor: not-allowed;
+	opacity: 0.7;
+}
+
+/* Misma caja tipográfica que .input-filtro-register (text-sm): el body usa text-center y heredaba al dropdown */
+#cabecera-trimestralizacion .select-styled-wrapper {
+	text-align: left;
+	font-size: 0.875rem;
+	line-height: 1.25rem;
+}
+
+/* Modal formulario: campos en columna */
+#modalCard .form-grid {
+	display: flex;
+	flex-direction: column;
+}
+
+/* ── Modal Gestión de Horas ──────────────────────────────────────────── */
+#modalGestionHoras {
+	z-index: 120000 !important;
+}
+
+.gh-backdrop { background: rgba(15, 23, 42, 0.45); }
+
+.gh-card {
+	background: #ffffff;
+	border-radius: 16px;
+	box-shadow: 0 8px 40px rgba(15, 23, 42, 0.18);
+	border: 1px solid #e2e8f0;
+	height: min(90vh, 46rem);
+	max-height: min(90vh, 46rem) !important;
+	overflow: hidden !important;
+	display: flex;
+	flex-direction: column;
+}
+
+.gh-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding-bottom: 14px;
+	border-bottom: 1px solid #e5e7eb;
+}
+
+.gh-title {
+	font-size: 1.35rem;
+	font-weight: 700;
+	color: #111827;
+	margin: 0;
+}
+
+.gh-close {
+	background: none;
+	border: none;
+	font-size: 1.4rem;
+	color: #6b7280;
+	cursor: pointer;
+	padding: 4px 8px;
+	border-radius: 6px;
+	line-height: 1;
+	transition: color 0.15s;
+}
+
+.gh-close:hover { color: #111827; }
+
+.gh-tabs {
+	display: flex;
+	gap: 8px;
+	border: 1.5px dashed #c4cdd6;
+	border-radius: 10px;
+	padding: 8px 10px;
+	margin: 14px 0;
+}
+
+.gh-tab {
+	padding: 6px 20px;
+	border-radius: 20px;
+	font-size: 0.875rem;
+	font-weight: 600;
+	cursor: pointer;
+	border: 1.5px solid transparent;
+	transition: all 0.15s;
+	background: transparent;
+	color: #374151;
+}
+
+.gh-tab.is-active {
+	background: #39a900;
+	color: #fff;
+	border-color: #39a900;
+}
+
+.gh-tab:not(.is-active) {
+	border-color: #d1d5db;
+	color: #374151;
+}
+
+.gh-resumen { margin-bottom: 10px; }
+
+.gh-resumen-title {
+	font-size: 0.95rem;
+	font-weight: 700;
+	color: #111827;
+	margin: 0 0 2px 0;
+}
+
+.gh-resumen-sub {
+	font-size: 0.8rem;
+	color: #6b7280;
+	margin: 0;
+}
+
+.gh-alert {
+	margin-top: 10px;
+	padding: 8px 10px;
+	border-radius: 8px;
+	font-size: 0.82rem;
+	font-weight: 600;
+	border: 1px solid transparent;
+}
+
+.gh-alert--danger {
+	background: #fef2f2;
+	border-color: #fecaca;
+	color: #991b1b;
+}
+
+.gh-alert--ok {
+	background: #ecfdf3;
+	border-color: #bbf7d0;
+	color: #166534;
+}
+
+.gh-filtros {
+	display: flex;
+	gap: 10px;
+	border: 1.5px dashed #c4cdd6;
+	border-radius: 10px;
+	padding: 10px 12px;
+	margin-bottom: 14px;
+}
+
+.gh-filtros-input,
+.gh-filtros-select {
+	flex: 1;
+	border: 1px solid #d1d5db;
+	border-radius: 8px;
+	padding: 8px 12px;
+	font-size: 0.875rem;
+	color: #374151;
+	background: #fff;
+	outline: none;
+	transition: border-color 0.15s;
+}
+
+.gh-filtros-input:focus,
+.gh-filtros-select:focus { border-color: #39a900; }
+
+.gh-filtros-select { max-width: 220px; }
+
+.gh-table-wrapper {
+	overflow-x: auto;
+	overflow-y: auto;
+	flex: 1 1 auto;
+	min-height: 0;
+	max-height: none;
+	border: 1px solid #e5e7eb;
+	border-radius: 10px;
+}
+
+.gh-table-wrapper::-webkit-scrollbar { width: 6px; height: 6px; }
+.gh-table-wrapper::-webkit-scrollbar-thumb { background: #c4cdd6; border-radius: 99px; }
+
+.gh-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.875rem;
+	white-space: nowrap;
+}
+
+.gh-table thead th {
+	background: #f9fafb;
+	color: #374151;
+	font-weight: 600;
+	text-align: left;
+	padding: 10px 14px;
+	border-bottom: 1px solid #e5e7eb;
+	font-size: 0.82rem;
+}
+
+.gh-table thead th.center { text-align: center; }
+
+.gh-table tbody tr {
+	border-bottom: 1px solid #e5e7eb;
+	transition: background 0.1s;
+}
+
+.gh-table tbody tr:hover { background: #f9fafb; }
+.gh-table tbody tr:last-child { border-bottom: none; }
+
+.gh-table tbody td {
+	padding: 11px 14px;
+	color: #374151;
+	font-size: 0.875rem;
+}
+
+.gh-table tbody td.center { text-align: center; }
+
+.gh-excedente-neg {
+	color: #dc2626;
+	font-weight: 600;
+}
+
+.gh-action-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	border: 1px solid #d1d5db;
+	border-radius: 7px;
+	background: #fff;
+	color: #374151;
+	cursor: pointer;
+	transition: all 0.15s;
+}
+
+.gh-action-btn:hover {
+	border-color: #39a900;
+	color: #39a900;
+}
+
+.gh-footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	margin-top: 16px;
+}
+
+/* ── Tabla horario (cuadrícula semanal) ──────────────────────────────── */
+#tabla-horarios {
+	border: 1px solid #b6b6b6;
+	border-radius: 10px;
+	overflow: hidden;
+	background: #ededed;
+}
+
+#tabla-horarios table {
+	width: 100%;
+	table-layout: fixed;
+	border-collapse: collapse;
+	background: #ededed;
+}
+
+#tabla-horarios thead th {
+	background: #9ea0a3 !important;
+	color: #f3f4f6 !important;
+	border: 1px solid #b6b6b6 !important;
+	font-weight: 700;
+	font-size: 14px;
+	padding: 10px 8px !important;
+	text-align: center;
+}
+
+#tabla-horarios tbody td {
+	background: #ffffff;
+	border: 1px solid #c0c0c0;
+	color: #5f5f5f;
+	font-size: 13px;
+	vertical-align: middle;
+}
+
+/* Bloque de trimestralización en celdas fusionadas: alineado arriba/izquierda */
+#tabla-horarios tbody td .horario-registro {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	justify-content: center;
+	height: 100%;
+	min-height: 100%;
+	width: 100%;
+	box-sizing: border-box;
+	padding: 8px 8px 8px 12px;
+	gap: 0.35rem;
+	text-align: left;
+}
+
+#tabla-horarios tbody td .horario-registro .horario-registro-line {
+	width: 100%;
+	justify-content: flex-start;
+	text-align: left;
+	word-break: break-word;
+}
+
+/*
+ * Franja verde solo dentro de esta celda (no compartida con la columna izquierda).
+ * Con border-collapse:collapse un border-left grueso se “parte” entre dos celdas.
+ * Aquí: padding + background en el área de padding, el contenido no la tapa.
+ */
+#tabla-horarios tbody td.td-con-registro {
+	padding-top: 0;
+	padding-right: 0;
+	padding-bottom: 0;
+	padding-left: 4px;
+	background-color: #ffffff;
+	background-image: linear-gradient(#16a34a, #16a34a);
+	background-size: 4px 100%;
+	background-position: left top;
+	background-repeat: no-repeat;
+	background-origin: padding-box;
+	background-clip: padding-box;
+}
+
+/* Evita doble franja con .registro::before del CSS global */
+#tabla-horarios tbody td.td-con-registro .registro::before {
+	display: none;
+}
+
+#tabla-horarios tbody td.hora-col {
+	background: #f3f4f6 !important;
+	color: #5a5a5a !important;
+	font-weight: 700;
+	text-align: center;
+	white-space: nowrap;
+}
+
+#tabla-horarios .registro {
+	background: #ffffff !important;
+	box-shadow: none !important;
+	margin-bottom: 0 !important;
+	padding: 8px 8px 8px 12px !important;
+	height: 100%;
+}
+
+#tabla-horarios tbody td.zona-libre {
+	vertical-align: top;
+}
+
+#tabla-horarios .zona-libre { background: #ffffff !important; }
+#tabla-horarios .zona-libre:hover { background: #f5f7fa !important; }
+
+@media (max-width: 600px) {
+	.gh-filtros { flex-direction: column; }
+	.gh-filtros-select { max-width: 100%; }
+	.gh-footer { flex-direction: column; }
 }
