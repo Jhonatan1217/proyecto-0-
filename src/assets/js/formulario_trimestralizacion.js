@@ -79,6 +79,10 @@ if (!window.TRIMESTRALIZACION_INIT) {
     function construirRegistroHorarioLocal(form, resultadoVal) {
       const selInstructor = form.querySelector("[name='nombre_instructor'] option:checked");
       const selComp = form.querySelector("[name='id_competencia'] option:checked");
+      const selProgGlobal = document.getElementById("id_programa_select");
+      const selProg = selProgGlobal && selProgGlobal.options
+        ? selProgGlobal.options[selProgGlobal.selectedIndex]
+        : null;
       const selFicha = form.querySelector("[name='numero_ficha'] option:checked");
       const idRaeField = form.querySelector("[name='id_rae']");
       const raesRaw = idRaeField ? String(idRaeField.value || "").trim() : "";
@@ -89,6 +93,7 @@ if (!window.TRIMESTRALIZACION_INIT) {
         ""
       ).trim();
       const tmpId = "tmp_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
+      const programaNombre = selProg ? String(selProg.textContent || "").trim() : "";
 
       return {
         id_horario: tmpId,
@@ -106,7 +111,7 @@ if (!window.TRIMESTRALIZACION_INIT) {
         raesArray: raes,
         nombre_instructor: selInstructor ? selInstructor.textContent.trim() : "",
         nombre_competencia: selComp ? selComp.textContent.trim() : "",
-        nombre_programa: selComp && selComp.dataset ? String(selComp.dataset.programa || "").trim() : "",
+        nombre_programa: programaNombre || (selComp && selComp.dataset ? String(selComp.dataset.programa || "").trim() : ""),
         nivel_ficha: selFicha && selFicha.dataset ? String(selFicha.dataset.nivel || "").trim() : "",
       };
     }
@@ -123,6 +128,115 @@ if (!window.TRIMESTRALIZACION_INIT) {
         RT.solicitud.detectarCambios();
       }
       return true;
+    }
+
+    function prellenarModalCrearDesdeContexto(extra) {
+      function cerrarPanelCombobox(inp) {
+        if (!inp || !inp._styledCombobox || typeof inp._styledCombobox.closePanel !== "function") return;
+        inp._styledCombobox.closePanel();
+      }
+      function textoDeOpcion(selectEl, valor) {
+        if (!selectEl) return "";
+        const opt = Array.from(selectEl.options || []).find(function (o) {
+          return String(o.value || "") === String(valor || "");
+        });
+        return opt ? String(opt.textContent || "").trim() : "";
+      }
+      function normalizarHoraSelect(v) {
+        var s = String(v || "").trim().toLowerCase();
+        if (!s) return "";
+        s = s.replace(/\./g, "").replace(/\s+/g, " ");
+        var ampm = "";
+        if (s.includes("am")) ampm = "am";
+        if (s.includes("pm")) ampm = "pm";
+        s = s.replace(/\s*(am|pm)\s*/g, "");
+        var p = s.split(":");
+        var h = parseInt(p[0], 10);
+        if (isNaN(h)) return "";
+        var mm = String((p[1] || "00")).trim().padStart(2, "0").slice(0, 2);
+        if (ampm === "pm" && h < 12) h += 12;
+        if (ampm === "am" && h === 12) h = 0;
+        return String(h) + ":" + mm;
+      }
+      function sumarUnaHora(v) {
+        var n = normalizarHoraSelect(v);
+        if (!n) return "";
+        var p = n.split(":");
+        var h = parseInt(p[0], 10);
+        if (isNaN(h)) return "";
+        var mm = p[1] || "00";
+        return String((h + 1) % 24) + ":" + mm;
+      }
+
+      const selAreaModal = document.getElementById("id_area");
+      const selZonaModal = document.getElementById("id_zona");
+      const inpAreaModal = document.getElementById("id_area_combo");
+      const inpZonaModal = document.getElementById("id_zona_combo");
+      const selDia = document.getElementById("dia") || document.querySelector(".trimestralizacion-form [name='dia_semana']");
+      const selHoraIni = document.getElementById("hora_inicio");
+      const selHoraFin = document.getElementById("hora_fin");
+
+      // Limpiar horas siempre; solo se rellenan si el contexto trae una hora concreta
+      if (selHoraIni) selHoraIni.value = "";
+      if (selHoraFin) selHoraFin.value = "";
+
+      const areaActual = document.getElementById("selectArea")?.value || "";
+      const zonaActual = document.getElementById("selectZona")?.value || "";
+      if (selAreaModal && inpAreaModal && areaActual) {
+        inpAreaModal.value = textoDeOpcion(selAreaModal, areaActual);
+        inpAreaModal.dispatchEvent(new Event("blur", { bubbles: true }));
+        cerrarPanelCombobox(inpAreaModal);
+      }
+      if (selZonaModal && inpZonaModal && zonaActual) {
+        const zonaLabel = textoDeOpcion(selZonaModal, zonaActual);
+        if (zonaLabel) {
+          inpZonaModal.value = zonaLabel;
+          inpZonaModal.dispatchEvent(new Event("blur", { bubbles: true }));
+          cerrarPanelCombobox(inpZonaModal);
+        }
+      }
+
+      const diaRaw = String((extra && extra.dia) || "").trim().toLowerCase();
+      if (selDia && diaRaw) {
+        var mapaDia = {
+          "lunes": "lunes",
+          "martes": "martes",
+          "miercoles": "miercoles",
+          "miércoles": "miercoles",
+          "jueves": "jueves",
+          "viernes": "viernes",
+          "sabado": "sabado",
+          "sábado": "sabado"
+        };
+        selDia.value = mapaDia[diaRaw] || diaRaw;
+        selDia.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+
+      const hr = String((extra && extra.hora) || "").trim();
+      if (hr && (selHoraIni || selHoraFin)) {
+        const m = hr.match(/([0-2]?\d(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?)\s*[-–]\s*([0-2]?\d(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?)/i);
+        if (m) {
+          if (selHoraIni) {
+            selHoraIni.value = normalizarHoraSelect(m[1]);
+            selHoraIni.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+          if (selHoraFin) {
+            selHoraFin.value = normalizarHoraSelect(m[2]);
+            selHoraFin.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        } else {
+          var horaIni = normalizarHoraSelect(hr);
+          var horaFin = sumarUnaHora(hr);
+          if (selHoraIni && horaIni) {
+            selHoraIni.value = horaIni;
+            selHoraIni.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+          if (selHoraFin && horaFin) {
+            selHoraFin.value = horaFin;
+            selHoraFin.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        }
+      }
     }
 
     function validarFormularioHorario(form, overrideDia = null) {
@@ -287,6 +401,9 @@ if (!window.TRIMESTRALIZACION_INIT) {
 
     // ================== MODAL DUPLICAR ==================
     configurarModalidadCrear();
+    document.addEventListener("rt:abrir-modal-crear", function (ev) {
+      prellenarModalCrearDesdeContexto((ev && ev.detail) || {});
+    });
 
     const modalDup       = document.getElementById("modalDuplicarHorario");
     const backdropDup    = document.getElementById("modalDuplicarBackdrop");

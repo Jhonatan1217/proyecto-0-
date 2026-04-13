@@ -36,7 +36,6 @@
      * @param {{ competencia: string, ficha: string, programa: string, instructor: string, dia: string, hora: string, raesDisplay: string, descripcionJornada: string, accionesHtml: string }} p
      */
     trimestralizacionPopupHtml: function (p) {
-      const competencia = U.escapeHtml(p.competencia);
       const ficha = U.escapeHtml(p.ficha);
       const programa = U.escapeHtml(p.programa);
       const instructor = U.escapeHtml(p.instructor);
@@ -86,16 +85,6 @@
                     <div>
                       <p class="text-gray-400 text-xs">Programa de Formación</p>
                       <p class="text-gray-800 font-medium">${programa}</p>
-                    </div>
-                  </div>
-
-                  <div class="flex items-start gap-3">
-                    <svg class="w-4 h-4 mt-0.5 text-indigo-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H4z"/>
-                    </svg>
-                    <div>
-                      <p class="text-gray-400 text-xs">Competencia</p>
-                      <p class="text-gray-800 font-medium">${competencia}</p>
                     </div>
                   </div>
 

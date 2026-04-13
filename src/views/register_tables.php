@@ -452,7 +452,7 @@ if (isset($conn)) {
   <script src="<?= BASE_URL ?>src/assets/js/registerTables/templates.js"></script>
   <script src="<?= BASE_URL ?>src/assets/js/registerTables/gestionHoras.js"></script>
   <script src="<?= BASE_URL ?>src/assets/js/registerTables/areasFiltros.js"></script>
-  <script src="<?= BASE_URL ?>src/assets/js/registerTables/grid.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/grid.js?v=2"></script>
   <script src="<?= BASE_URL ?>src/assets/js/registerTables/solicitudCambiosHorario.js"></script>
   <script src="<?= BASE_URL ?>src/assets/js/registerTables/trimestralizacionData.js"></script>
   <script src="<?= BASE_URL ?>src/assets/js/registerTables/editHorario.js"></script>
@@ -722,12 +722,6 @@ if (isset($conn)) {
                 </select>
               </div>
 
-              <!-- Descripción de la competencia (solo informativa, no se guarda) -->
-              <div class="field-full">
-                <label for="descripcion_competencia" class="block text-xs font-semibold text-gray-800 mb-1">Descripción de la competencia</label>
-                <textarea id="descripcion_competencia" name="descripcion_competencia" rows="2" class="w-full min-h-[3.75rem] max-h-[4.5rem] px-3 py-2 text-sm rounded-lg border border-gray-300 outline-none bg-white text-gray-700 resize-none overflow-auto focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]"></textarea>
-              </div>
-
               <!-- BOTÓN RAEs + CONTADOR -->
               <div class="field-full">
                 <div class="flex items-center justify-between gap-3">
@@ -902,7 +896,7 @@ if (isset($conn)) {
 
     <!-- Scripts compartidos: apertura de modal, validaciones, flujo duplicar, etc -->
     <script src="<?= BASE_URL ?>src/assets/js/landing.js"></script>
-    <script src="<?= BASE_URL ?>src/assets/js/formulario_trimestralizacion.js"></script>
+    <script src="<?= BASE_URL ?>src/assets/js/formulario_trimestralizacion.js?v=2"></script>
 
     <script src="<?= BASE_URL ?>src/assets/js/registerTablesModal.js"></script>
 

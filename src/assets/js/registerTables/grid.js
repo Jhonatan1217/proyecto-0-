@@ -147,7 +147,7 @@
           fila.innerHTML += `
             <td class="p-2 text-sm text-center leading-tight align-top zona-libre cursor-pointer"
               data-dia="${dia}"
-              data-hora="${String(hora).padStart(2, "0")}: 00">
+              data-hora="${String(hora).padStart(2, "0")}:00">
               <span class="text-gray-400 italic">Zona libre</span>
           </td>`;
           return;
@@ -301,7 +301,7 @@
         if (RT.IS_AUTHENTICATED) {
           document.getElementById("btnAbrirModalZonaLibre")?.addEventListener("click", () => {
             Swal.close();
-            RT.modals.abrirModal();
+            RT.modals.abrirModal({ dia, hora });
           });
         }
       },

@@ -152,7 +152,7 @@
     pdf.save(`trimestralizacion_zona_${S.id_zona}.pdf`);
   };
 
-  M.abrirModal = function () {
+  M.abrirModal = function (prefill) {
     const modal = document.getElementById("modalCrearLanding");
     if (!modal) {
       console.error("❌ No existe #modalCrearLanding");
@@ -165,6 +165,13 @@
     modal.querySelectorAll(".absolute.inset-0, .fixed.inset-0, [class*='inset-0']").forEach((el) => {
       el.style.pointerEvents = "";
     });
+    try {
+      document.dispatchEvent(
+        new CustomEvent("rt:abrir-modal-crear", {
+          detail: prefill && typeof prefill === "object" ? prefill : {},
+        })
+      );
+    } catch (e) {}
   };
 
   M.cerrarModalCrear = function () {
