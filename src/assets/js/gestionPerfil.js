@@ -7,6 +7,7 @@
   var API_SOLICITUD = window.API_SOLICITUD || "";
   var USUARIO_ID = window.USUARIO_ID || 0;
   var USUARIO_ES_SISTEMA = Number(window.USUARIO_ES_SISTEMA || 0) === 1;
+  var CARGO_ACTUAL_PERFIL = normalizeTxt(window.USUARIO_CARGO || "");
   var TOAST_Z_INDEX = 2147483000;
   var SWAL_TOAST_Z_INDEX_STYLE_ID = "swal-toast-zindex-fix";
 
@@ -175,6 +176,65 @@
       .catch(function () { return null; });
   }
 
+  function esCargoInstructorRaw(cargo) {
+    return normalizeTxt(cargo).indexOf("INSTRUCTOR") >= 0;
+  }
+  function esCargoCoordinadorRaw(cargo) {
+    return normalizeTxt(cargo).indexOf("COORDINADOR") >= 0;
+  }
+  function actualizarCamposSolicitudPorCargo(cargoRaw) {
+    var form = getEl("formSolicitarCambiosPerfil");
+    if (!form) return;
+    var gIns = getEl("solicitarGrupoInstructorPerfil");
+    var gCoor = getEl("solicitarGrupoCoordinadorPerfil");
+    var esIns = esCargoInstructorRaw(cargoRaw);
+    var esCoor = esCargoCoordinadorRaw(cargoRaw);
+    if (gIns) gIns.classList.toggle("hidden", !esIns);
+    if (gCoor) gCoor.classList.toggle("hidden", !esCoor);
+    if (esCoor) {
+      var selIns = form.querySelector("[name='tipo_instructor']");
+      var selCon = form.querySelector("[name='tipo_contrato']");
+      if (selIns) selIns.value = "";
+      if (selCon) selCon.value = "";
+    } else {
+      var selArea = form.querySelector("[name='area_coordinador']");
+      if (selArea) selArea.value = "";
+    }
+  }
+
+  function cargarOpcionesAreaCoordinadorPerfil(valorActual) {
+    var sel = getEl("solicitarAreaCoordinadorPerfil");
+    if (!sel || !API) return Promise.resolve();
+    return fetch(API + "?accion=areas", { credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(function (arr) {
+        if (!Array.isArray(arr)) return;
+        var html = '<option value="">Sin asignar área</option>';
+        function esc(s) {
+          return String(s || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+        }
+        arr.forEach(function (a) {
+          var n = String((a && a.nombre_area) || "").trim();
+          if (!n) return;
+          html += '<option value="' + esc(n) + '">' + esc(n) + '</option>';
+        });
+        sel.innerHTML = html;
+        if (valorActual) {
+          setSelectValueFlexible(sel, valorActual);
+        }
+        if (typeof sel._refreshCustomOptions === "function") {
+          sel._refreshCustomOptions();
+        } else {
+          sel.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      })
+      .catch(function () {});
+  }
+
   function fillModalVerPerfil(data) {
     var nombre = (data && data.nombre_completo) || "—";
     var iniciales = nombre !== "—" ? nombre.trim().split(/\s+/).map(function (s) { return s[0]; }).slice(0, 2).join("").toUpperCase() : "—";
@@ -223,7 +283,8 @@
       numero_documento: (form.querySelector("[name='numero_documento']") || {}).value || "",
       correo_electronico: (form.querySelector("[name='correo_electronico']") || {}).value || "",
       tipo_instructor: (form.querySelector("[name='tipo_instructor']") || {}).value || "",
-      tipo_contrato: (form.querySelector("[name='tipo_contrato']") || {}).value || ""
+      tipo_contrato: (form.querySelector("[name='tipo_contrato']") || {}).value || "",
+      area_coordinador: (form.querySelector("[name='area_coordinador']") || {}).value || ""
     };
   }
   function validarCamposRequeridosSolicitar(form) {
@@ -232,10 +293,12 @@
       { name: "nombre_completo", label: "Nombre completo" },
       { name: "tipo_documento", label: "Tipo de documento" },
       { name: "numero_documento", label: "Número de documento" },
-      { name: "correo_electronico", label: "Correo electrónico" },
-      { name: "tipo_instructor", label: "Tipo instructor" },
-      { name: "tipo_contrato", label: "Tipo contrato" }
+      { name: "correo_electronico", label: "Correo electrónico" }
     ];
+    if (esCargoInstructorRaw(CARGO_ACTUAL_PERFIL)) {
+      checks.push({ name: "tipo_instructor", label: "Tipo instructor" });
+      checks.push({ name: "tipo_contrato", label: "Tipo contrato" });
+    }
     for (var i = 0; i < checks.length; i += 1) {
       var c = checks[i];
       var el = form.querySelector("[name='" + c.name + "']");
@@ -251,6 +314,8 @@
   function fillFormSolicitarCambios(data) {
     var form = getEl("formSolicitarCambiosPerfil");
     if (!form || !data) return;
+    CARGO_ACTUAL_PERFIL = normalizeTxt((data && data.cargo) || "");
+    actualizarCamposSolicitudPorCargo(data && data.cargo);
     form.querySelector("[name='nombre_completo']").value = data.nombre_completo || "";
     form.querySelector("[name='numero_documento']").value = data.numero_documento || "";
     form.querySelector("[name='correo_electronico']").value = data.correo_electronico || "";
@@ -260,6 +325,8 @@
         setSelectValueFlexible(sel, data[name] || "");
       }
     });
+    var valorArea = (data.area_coordinador || data.nombre_area || "").trim();
+    cargarOpcionesAreaCoordinadorPerfil(valorArea);
     solicitarCambiosValoresIniciales = getFormSolicitarCambiosValues(form);
   }
 
@@ -327,6 +394,29 @@
         var opt = select.options[select.selectedIndex];
         span.textContent = opt ? opt.textContent : "";
       }
+      function rebuildCustomOptions() {
+        dropdown.innerHTML = "";
+        [].slice.call(select.options).forEach(function (opt, i) {
+          var div = document.createElement("div");
+          div.className = "custom-option" + (opt.value === select.value ? " selected" : "");
+          div.textContent = opt.textContent;
+          div.dataset.value = opt.value;
+          div.dataset.index = String(i);
+          div.setAttribute("role", "option");
+          div.addEventListener("click", function (e) {
+            e.stopPropagation();
+            select.value = opt.value;
+            select.dispatchEvent(new Event("change", { bubbles: true }));
+            dropdown.querySelectorAll(".custom-option").forEach(function (o) { o.classList.remove("selected"); });
+            div.classList.add("selected");
+            updateTrigger();
+            dropdown.classList.add("hidden");
+          });
+          dropdown.appendChild(div);
+        });
+        updateTrigger();
+      }
+      select._refreshCustomOptions = rebuildCustomOptions;
 
       trigger.appendChild(span);
       var arrow = document.createElement("span");
@@ -334,26 +424,7 @@
       arrow.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>';
       trigger.appendChild(arrow);
 
-      [].slice.call(select.options).forEach(function (opt, i) {
-        var div = document.createElement("div");
-        div.className = "custom-option" + (opt.value === select.value ? " selected" : "");
-        div.textContent = opt.textContent;
-        div.dataset.value = opt.value;
-        div.dataset.index = String(i);
-        div.setAttribute("role", "option");
-        div.addEventListener("click", function (e) {
-          e.stopPropagation();
-          select.value = opt.value;
-          select.dispatchEvent(new Event("change", { bubbles: true }));
-          dropdown.querySelectorAll(".custom-option").forEach(function (o) { o.classList.remove("selected"); });
-          div.classList.add("selected");
-          updateTrigger();
-          dropdown.classList.add("hidden");
-        });
-        dropdown.appendChild(div);
-      });
-
-      updateTrigger();
+      rebuildCustomOptions();
 
       select.classList.add("sr-only", "absolute", "inset-0", "w-full", "h-full", "opacity-0", "pointer-events-none");
       wrapper.appendChild(trigger);
@@ -503,7 +574,14 @@
         }
         var actual = getFormSolicitarCambiosValues(formSolicitar);
         var inicial = solicitarCambiosValoresIniciales || {};
-        var hayCambios = Object.keys(actual).some(function (key) {
+        var keysEvaluar = ["nombre_completo", "tipo_documento", "numero_documento", "correo_electronico"];
+        if (esCargoInstructorRaw(CARGO_ACTUAL_PERFIL)) {
+          keysEvaluar.push("tipo_instructor", "tipo_contrato");
+        }
+        if (esCargoCoordinadorRaw(CARGO_ACTUAL_PERFIL)) {
+          keysEvaluar.push("area_coordinador");
+        }
+        var hayCambios = keysEvaluar.some(function (key) {
           return String(actual[key] || "").trim() !== String(inicial[key] || "").trim();
         });
         if (!hayCambios) {
@@ -515,13 +593,21 @@
           return;
         }
         var detalles = [];
-        Object.keys(actual).forEach(function (key) {
+        keysEvaluar.forEach(function (key) {
           var vAnt = String(inicial[key] || "").trim();
           var vNuevo = String(actual[key] || "").trim();
           if (vNuevo !== vAnt) {
             detalles.push({ campo_modificado: key, valor_anterior: vAnt || null, valor_nuevo: vNuevo });
           }
         });
+        if (!detalles.length) {
+          if (window.Swal) {
+            Swal.fire({ toast: true, position: "top-end", icon: "warning", title: "No hay datos válidos para enviar.", showConfirmButton: false, timer: 2800, zIndex: TOAST_Z_INDEX });
+          } else {
+            alert("No hay datos válidos para enviar.");
+          }
+          return;
+        }
         var btnEnviar = formSolicitar.querySelector('button[type="submit"]');
         var textoOriginal = btnEnviar ? btnEnviar.innerHTML : "";
         if (btnEnviar) {

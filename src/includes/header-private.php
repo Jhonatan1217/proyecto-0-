@@ -313,8 +313,18 @@ document.addEventListener("DOMContentLoaded", function () {
       <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo de documento</label><div class="relative"><select name="tipo_documento" class="select-perfil input-enterprise py-2.5 text-sm pr-10 appearance-none cursor-pointer"><option value="">Seleccione tipo de documento</option><option value="CC">Cédula de Ciudadanía</option><option value="CE">Cédula de Extranjería</option><option value="PASAPORTE">Pasaporte</option></select></div></div>
       <div><label class="block text-sm font-medium text-gray-700 mb-1">Número de documento</label><input type="text" name="numero_documento" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none" /></div>
       <div><label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label><input type="email" name="correo_electronico" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none" /></div>
-      <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo instructor</label><div class="relative"><select name="tipo_instructor" class="select-perfil input-enterprise py-2.5 text-sm pr-10 appearance-none cursor-pointer"><option value="">Seleccione tipo instructor</option><option value="Técnico">Técnico</option><option value="Transversal">Transversal</option></select></div></div>
-      <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo contrato</label><div class="relative"><select name="tipo_contrato" class="select-perfil input-enterprise py-2.5 text-sm pr-10 appearance-none cursor-pointer"><option value="">Seleccione tipo contrato</option><option value="Planta">Planta</option><option value="Contratista">Contratista</option></select></div></div>
+      <div id="solicitarGrupoInstructorPerfil" class="space-y-4">
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo instructor</label><div class="relative"><select name="tipo_instructor" class="select-perfil input-enterprise py-2.5 text-sm pr-10 appearance-none cursor-pointer"><option value="">Seleccione tipo instructor</option><option value="Técnico">Técnico</option><option value="Transversal">Transversal</option></select></div></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo contrato</label><div class="relative"><select name="tipo_contrato" class="select-perfil input-enterprise py-2.5 text-sm pr-10 appearance-none cursor-pointer"><option value="">Seleccione tipo contrato</option><option value="Planta">Planta</option><option value="Contratista">Contratista</option></select></div></div>
+      </div>
+      <div id="solicitarGrupoCoordinadorPerfil" class="hidden">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Área del coordinador</label>
+        <div class="relative">
+          <select id="solicitarAreaCoordinadorPerfil" name="area_coordinador" class="select-perfil input-enterprise py-2.5 text-sm pr-10 appearance-none cursor-pointer">
+            <option value="">Sin asignar área</option>
+          </select>
+        </div>
+      </div>
       <div class="pt-3 border-t border-gray-200">
         <p class="text-sm font-semibold text-gray-700 mb-2">Seguridad</p>
         <button type="button" id="btnAbrirCambiarContrasena" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 transition focus:ring-2 focus:ring-green-600/30 outline-none">
@@ -527,6 +537,57 @@ window.BASE_URL = <?= json_encode(BASE_URL) ?>;
     document.addEventListener('DOMContentLoaded', desactivarAutocompleteEnPrivado);
   } else {
     desactivarAutocompleteEnPrivado();
+  }
+})();
+</script>
+<script>
+// Cierre de sesión automático tras 10 minutos sin actividad (zona privada).
+(function () {
+  var INACTIVITY_MS = 10 * 60 * 1000;
+  var inactivityTimer = null;
+  var logoutInProgress = false;
+
+  function doAutoLogout() {
+    if (logoutInProgress) return;
+    logoutInProgress = true;
+    var base = window.BASE_URL || "";
+    window.location.href = base + "index.php?page=logout";
+  }
+
+  function resetInactivityTimer() {
+    if (logoutInProgress) return;
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(doAutoLogout, INACTIVITY_MS);
+  }
+
+  function bindActivityListeners() {
+    [
+      "click",
+      "mousemove",
+      "mousedown",
+      "keydown",
+      "scroll",
+      "touchstart",
+      "pointerdown"
+    ].forEach(function (evt) {
+      window.addEventListener(evt, resetInactivityTimer, { passive: true });
+    });
+
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible") {
+        resetInactivityTimer();
+      }
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () {
+      bindActivityListeners();
+      resetInactivityTimer();
+    });
+  } else {
+    bindActivityListeners();
+    resetInactivityTimer();
   }
 })();
 </script>
