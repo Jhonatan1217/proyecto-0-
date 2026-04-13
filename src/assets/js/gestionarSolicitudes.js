@@ -66,6 +66,51 @@ function solClaseBadgeTipo(tipoRaw) {
     return `${base} sol-badge-tipo--otro`;
 }
 
+function parseHorarioJson(raw) {
+    if (!raw) return null;
+    if (typeof raw === "object") return raw;
+    try {
+        return JSON.parse(String(raw));
+    } catch (_) {
+        return null;
+    }
+}
+
+function construirCambiosHorarioHumanos(anterior, nuevo) {
+    if (!anterior || !nuevo) return [];
+    const cambios = [];
+    if (anterior.dia !== nuevo.dia) {
+        cambios.push({ etiqueta: "Dia", anterior: anterior.dia || "No especificado", nuevo: nuevo.dia || "No especificado" });
+    }
+    if (anterior.hora_inicio !== nuevo.hora_inicio || anterior.hora_fin !== nuevo.hora_fin) {
+        cambios.push({
+            etiqueta: "Horario",
+            anterior: `${anterior.hora_inicio || "?"} - ${anterior.hora_fin || "?"}`,
+            nuevo: `${nuevo.hora_inicio || "?"} - ${nuevo.hora_fin || "?"}`,
+        });
+    }
+    if (String(anterior.numero_ficha ?? "") !== String(nuevo.numero_ficha ?? "")) {
+        cambios.push({ etiqueta: "Ficha", anterior: anterior.numero_ficha || "No especificada", nuevo: nuevo.numero_ficha || "No especificada" });
+    }
+    if (String(anterior.id_instructor ?? "") !== String(nuevo.id_instructor ?? "")) {
+        cambios.push({ etiqueta: "Instructor", anterior: anterior.id_instructor || "No especificado", nuevo: nuevo.id_instructor || "No especificado" });
+    }
+    if (String(anterior.id_competencia ?? "") !== String(nuevo.id_competencia ?? "")) {
+        cambios.push({ etiqueta: "Competencia", anterior: anterior.id_competencia || "No especificada", nuevo: nuevo.id_competencia || "No especificada" });
+    }
+    const aDesc = String(anterior.descripcion_jornada ?? "").trim();
+    const nDesc = String(nuevo.descripcion_jornada ?? "").trim();
+    if (aDesc !== nDesc) {
+        cambios.push({ etiqueta: "Descripcion jornada", anterior: aDesc || "Sin descripcion", nuevo: nDesc || "Sin descripcion" });
+    }
+    const aRaes = (anterior.raes || []).join(", ");
+    const nRaes = (nuevo.raes || []).join(", ");
+    if (aRaes !== nRaes) {
+        cambios.push({ etiqueta: "RAEs", anterior: aRaes || "Sin RAEs", nuevo: nRaes || "Sin RAEs" });
+    }
+    return cambios;
+}
+
 let todasLasSolicitudes = [];
 let solicitudActualId = null;
 let solicitudActualTipo = null;
@@ -376,6 +421,8 @@ async function verSolicitud(id) {
 
     let nombreAnterior = "", nombreNuevo = "";
     let horarioAnterior = "", horarioNuevo = "";
+    let cambiosHorario = [];
+    let bloquesHorario = [];
 
     const etiquetaCampoDatos = {
         nombre_completo: "Nombre",
@@ -447,8 +494,23 @@ async function verSolicitud(id) {
         }
 
         if (cLow.includes("horario")) {
-            horarioAnterior = detalle.valor_anterior || horarioAnterior;
-            horarioNuevo = detalle.valor_nuevo || horarioNuevo;
+            const hAnt = parseHorarioJson(detalle.valor_anterior);
+            const hNue = parseHorarioJson(detalle.valor_nuevo);
+            if (hAnt && hNue) {
+                const c = construirCambiosHorarioHumanos(hAnt, hNue);
+                if (c.length) {
+                    cambiosHorario = cambiosHorario.concat(c);
+                    bloquesHorario.push({
+                        titulo: "Horario ID " + (hNue.id_horario || hAnt.id_horario || "N/A"),
+                        cambios: c,
+                    });
+                }
+                horarioAnterior = `${hAnt.dia || ""} ${hAnt.hora_inicio || ""} - ${hAnt.hora_fin || ""}`.trim();
+                horarioNuevo = `${hNue.dia || ""} ${hNue.hora_inicio || ""} - ${hNue.hora_fin || ""}`.trim();
+            } else {
+                horarioAnterior = detalle.valor_anterior || horarioAnterior;
+                horarioNuevo = detalle.valor_nuevo || horarioNuevo;
+            }
         } else if (cLow.includes("nombre") || cLow.includes("nombres")) {
             const va = String(detalle.valor_anterior ?? "").trim();
             const vn = String(detalle.valor_nuevo ?? "").trim();
@@ -501,6 +563,8 @@ async function verSolicitud(id) {
         motivoDevolucion: solicitud.observacion_respuesta || "",
         nombreAnterior, nombreNuevo,
         horarioAnterior, horarioNuevo,
+        cambiosHorario,
+        bloquesHorario,
         cambiosDatos: cambiosDatosUnicos,
     };
 
@@ -637,21 +701,44 @@ function abrirModal(data) {
 
     } else {
         // Default: bloque de horario (cubre "horario" y cualquier otro tipo)
+        const filasHorario =
+            data.bloquesHorario && data.bloquesHorario.length > 0
+                ? data.bloquesHorario
+                      .map((bloque) => `
+                    <div style="border:1px solid #d1d5db;border-radius:10px;background:#fff;padding:12px;">
+                        <p style="font-size:12px;font-weight:700;color:#374151;margin:0 0 10px 0;">${escapeHtmlSolicitud(bloque.titulo)}</p>
+                        <div style="display:flex;flex-direction:column;gap:14px;">
+                            ${(bloque.cambios || []).map((row) => `
+                                <div style="font-size:13px;">
+                                    <p style="font-weight:600;color:#6b7280;margin:0 0 6px 0;">${escapeHtmlSolicitud(row.etiqueta)}</p>
+                                    <div style="display:flex;flex-direction:column;gap:6px;">
+                                        <div style="background:#fff;border:1px solid #d1d5db;border-radius:8px;padding:7px 14px;color:#374151;word-break:break-word;white-space:normal;">${escapeHtmlSolicitud(row.anterior)}</div>
+                                        <div style="display:flex;align-items:center;gap:6px;padding-left:6px;color:#9ca3af;font-size:15px;">↓</div>
+                                        <div style="background:#fff;border:1.5px solid #10b981;border-radius:8px;padding:7px 14px;font-weight:600;color:#065f46;word-break:break-word;white-space:normal;">${escapeHtmlSolicitud(row.nuevo)}</div>
+                                    </div>
+                                </div>
+                            `).join("")}
+                        </div>
+                    </div>
+                      `)
+                      .join("")
+                : `
+                <div class="flex flex-wrap items-center gap-2.5 text-sm">
+                    <div class="rounded-md border border-gray-300 bg-white px-3.5 py-1.5 text-gray-700 break-words">
+                        ${escapeHtmlSolicitud(data.horarioAnterior || "No especificado")}
+                    </div>
+                    <span class="text-base text-gray-400">→</span>
+                    <div class="rounded-md border border-emerald-300 bg-white px-3.5 py-1.5 font-semibold text-green-700 break-words">
+                        ${escapeHtmlSolicitud(data.horarioNuevo || "No especificado")}
+                    </div>
+                </div>`;
         contenedor.innerHTML = `
             <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
                 <div class="mb-3 flex items-center gap-2 text-sm font-semibold text-green-600">
                     <i data-lucide="clock" class="h-4 w-4 shrink-0"></i>
                     Cambio de horario
                 </div>
-                <div class="flex flex-wrap items-center gap-2.5 text-sm">
-                    <div class="rounded-md border border-gray-300 bg-white px-3.5 py-1.5 text-gray-700">
-                        ${escapeHtmlSolicitud(data.horarioAnterior || "No especificado")}
-                    </div>
-                    <span class="text-base text-gray-400">→</span>
-                    <div class="rounded-md border border-emerald-300 bg-white px-3.5 py-1.5 font-semibold text-green-700">
-                        ${escapeHtmlSolicitud(data.horarioNuevo || "No especificado")}
-                    </div>
-                </div>
+                <div style="display:flex;flex-direction:column;gap:16px;max-height:40vh;overflow-y:auto;overflow-x:hidden;">${filasHorario}</div>
             </div>
         `;
         lucide.createIcons();

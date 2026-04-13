@@ -250,33 +250,8 @@
     }
 
     try {
-      const idx = S.horariosCache.findIndex((h) => String(h.id_horario) === String(out.value.id_horario));
-      const backup = idx >= 0 ? JSON.parse(JSON.stringify(S.horariosCache[idx])) : null;
       if (!E.aplicarEdicionHorarioEnCache(out.value)) {
         throw new Error("No se encontró el horario en la tabla actual.");
-      }
-      if (w.PUEDE_GESTION_HORAS_Y_LIMPIAR === true) {
-        const persist = {
-          id_horario: out.value.id_horario,
-          dia: out.value.dia,
-          hora_inicio: out.value.hora_inicio,
-          hora_fin: out.value.hora_fin,
-          numero_ficha: out.value.numero_ficha,
-          id_instructor: out.value.id_instructor,
-          id_competencia: out.value.id_competencia,
-          raes: out.value.raes,
-          descripcion_jornada: out.value.descripcion_jornada,
-        };
-        const res = await fetch(`${RT.API_BASE}src/controllers/TrimestralizacionController.php?accion=actualizar`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify([persist]),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || data.success === false) {
-          if (backup && idx >= 0) S.horariosCache[idx] = backup;
-          throw new Error(data.error || data.mensaje || "No se pudo guardar en el servidor.");
-        }
       }
       S.huboCambios = true;
       if (typeof RT.solicitud.detectarCambios === "function") {
@@ -285,14 +260,15 @@
       E.cerrarModalEditarHorario();
       T.fire({
         icon: "success",
-        title: "Horario modificado",
+        title: "Cambio aplicado en vista previa",
+        html: "El horario solo cambia para usted hasta que pulse Enviar horario.",
       });
       RT.grid.renderizarTablaDesdeRegistros(S.horariosCache, "", { filtersApplied: true });
     } catch (e) {
       console.error("Error al editar horario:", e);
       T.fire({
         icon: "error",
-        title: "Error al editar horario",
+        title: e && e.message ? e.message : "Error al editar horario",
       });
     }
   };

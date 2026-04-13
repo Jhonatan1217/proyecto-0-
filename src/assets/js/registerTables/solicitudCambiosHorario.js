@@ -51,14 +51,40 @@
     }
 
     const despues = S.horariosCache;
+    const porIdAntes = new Map((antes || []).map((r) => [String(r.id_horario), r]));
 
-    let texto = "CAMBIOS DEL HORARIO: \n\n";
-    let hayCambios = false;
+    let texto = "CAMBIOS DE HORARIO SOLICITADOS:\n\n";
     const detalles = [];
 
-    despues.forEach((nuevo, index) => {
-      const viejo = antes[index];
-      if (!viejo) return;
+    despues.forEach((nuevo) => {
+      const viejo = porIdAntes.get(String(nuevo.id_horario));
+      if (!viejo) {
+        const descNuevo = String(nuevo.descripcion_jornada ?? nuevo.descripcion ?? "").trim();
+        const raesNuevo = (nuevo.raes ?? nuevo.raesArray ?? []);
+        texto += `Nuevo horario (${nuevo.dia} ${nuevo.hora_inicio} - ${nuevo.hora_fin})\n`;
+        texto += `- Instructor: ${nuevo.id_instructor || "N/A"}\n`;
+        texto += `- Competencia: ${nuevo.id_competencia || "N/A"}\n`;
+        texto += `- Ficha: ${nuevo.numero_ficha || "N/A"}\n\n`;
+        detalles.push({
+          campo_modificado: "HORARIO_JSON",
+          valor_anterior: "",
+          valor_nuevo: JSON.stringify({
+            es_nuevo: true,
+            dia: nuevo.dia,
+            hora_inicio: nuevo.hora_inicio,
+            hora_fin: nuevo.hora_fin,
+            numero_ficha: nuevo.numero_ficha,
+            id_instructor: nuevo.id_instructor,
+            id_competencia: nuevo.id_competencia,
+            id_zona: nuevo.id_zona ?? null,
+            id_area: nuevo.id_area ?? null,
+            modalidad: nuevo.modalidad ?? null,
+            descripcion_jornada: descNuevo,
+            raes: raesNuevo,
+          }),
+        });
+        return;
+      }
 
       const descV = String(viejo.descripcion_jornada ?? viejo.descripcion ?? "").trim();
       const descN = String(nuevo.descripcion_jornada ?? nuevo.descripcion ?? "").trim();
@@ -73,12 +99,31 @@
         JSON.stringify(viejo.raes ?? viejo.raesArray ?? []) !== JSON.stringify(nuevo.raes ?? nuevo.raesArray ?? []);
 
       if (cambioEnFila) {
-        hayCambios = true;
-        texto += `ID: ${nuevo.id_horario}\n`;
-        texto += `Anterior: ${viejo.dia} ${viejo.hora_inicio} - ${viejo.hora_fin}\n`;
-        texto += `Nuevo Dia: ${nuevo.dia} ${nuevo.hora_inicio} - ${nuevo.hora_fin}\n`;
-        texto += `Instructor: ${viejo.id_instructor} -> ${nuevo.id_instructor}\n`;
-        texto += `Competencia: ${viejo.id_competencia} -> ${nuevo.id_competencia}\n\n`;
+        const cambiosFila = [];
+        if (viejo.dia !== nuevo.dia) {
+          cambiosFila.push(`- Dia: ${viejo.dia} -> ${nuevo.dia}`);
+        }
+        if (viejo.hora_inicio !== nuevo.hora_inicio || viejo.hora_fin !== nuevo.hora_fin) {
+          cambiosFila.push(`- Horario: ${viejo.hora_inicio} - ${viejo.hora_fin} -> ${nuevo.hora_inicio} - ${nuevo.hora_fin}`);
+        }
+        if (String(viejo.id_instructor) !== String(nuevo.id_instructor)) {
+          cambiosFila.push(`- Instructor: ${viejo.id_instructor} -> ${nuevo.id_instructor}`);
+        }
+        if (String(viejo.id_competencia) !== String(nuevo.id_competencia)) {
+          cambiosFila.push(`- Competencia: ${viejo.id_competencia} -> ${nuevo.id_competencia}`);
+        }
+        if (String(viejo.numero_ficha ?? "") !== String(nuevo.numero_ficha ?? "")) {
+          cambiosFila.push(`- Ficha: ${viejo.numero_ficha || "N/A"} -> ${nuevo.numero_ficha || "N/A"}`);
+        }
+        if (descV !== descN) {
+          cambiosFila.push(`- Descripcion jornada: ${descV || "Sin descripcion"} -> ${descN || "Sin descripcion"}`);
+        }
+        if (JSON.stringify(viejo.raes ?? viejo.raesArray ?? []) !== JSON.stringify(nuevo.raes ?? nuevo.raesArray ?? [])) {
+          const raesAnt = (viejo.raes ?? viejo.raesArray ?? []).join(", ");
+          const raesNue = (nuevo.raes ?? nuevo.raesArray ?? []).join(", ");
+          cambiosFila.push(`- RAEs: ${raesAnt || "Sin RAEs"} -> ${raesNue || "Sin RAEs"}`);
+        }
+        texto += `Horario ID ${nuevo.id_horario}\n${cambiosFila.join("\n")}\n\n`;
 
         detalles.push({
           campo_modificado: "HORARIO_JSON",
@@ -108,7 +153,7 @@
       }
     });
 
-    if (!hayCambios || !detalles.length) {
+    if (!detalles.length) {
       T.fire({
         icon: "info",
         title: "No hay cambios detectados",

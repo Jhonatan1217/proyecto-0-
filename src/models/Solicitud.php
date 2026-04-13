@@ -182,13 +182,23 @@ class Solicitud {
 
             $cambios_aplicados = 0;
             if (!empty($detallesJson)) {
+                $columnasTabla = [];
+                try {
+                    $desc = $this->conn->query("DESCRIBE {$tablaHorario}")->fetchAll(PDO::FETCH_ASSOC);
+                    foreach ($desc as $c) {
+                        if (!empty($c['Field'])) $columnasTabla[$c['Field']] = true;
+                    }
+                } catch (Throwable $e) {
+                    $columnasTabla = [];
+                }
                 foreach ($detallesJson as $detalle) {
                     $payload = json_decode($detalle['valor_nuevo'] ?? '', true);
-                    if (!is_array($payload) || empty($payload['id_horario'])) {
+                    if (!is_array($payload)) {
                         continue;
                     }
 
-                    $id_horario = (int)$payload['id_horario'];
+                    $esNuevo = !empty($payload['es_nuevo']) || empty($payload['id_horario']);
+
                     $dia = strtoupper((string)($payload['dia'] ?? ''));
                     $hora_inicio = (string)($payload['hora_inicio'] ?? '');
                     $hora_fin = (string)($payload['hora_fin'] ?? '');
@@ -216,34 +226,80 @@ class Solicitud {
                         $id_rae = $raes;
                     }
 
-                    $sql_update = "UPDATE {$tablaHorario}
-                                   SET dia = :dia,
-                                       hora_inicio = :hora_inicio,
-                                       hora_fin = :hora_fin,
-                                       id_instructor = :id_instructor,
-                                       id_competencia = :id_competencia,
-                                       id_rae = COALESCE(:id_rae, id_rae)
-                                   WHERE id_horario = :id_horario";
+                    $ok = false;
+                    if ($esNuevo) {
+                        $cols = [];
+                        $vals = [];
+                        $binds = [];
+                        $setCol = function ($col, $val, $type = PDO::PARAM_STR) use (&$cols, &$vals, &$binds, $columnasTabla) {
+                            if (!empty($columnasTabla) && empty($columnasTabla[$col])) return;
+                            $cols[] = $col;
+                            $vals[] = ':' . $col;
+                            $binds[] = [$col, $val, $type];
+                        };
 
-                    $stmt_update = $this->conn->prepare($sql_update);
-                    $stmt_update->bindParam(':dia', $dia);
-                    $stmt_update->bindParam(':hora_inicio', $hora_inicio);
-                    $stmt_update->bindParam(':hora_fin', $hora_fin);
-                    $stmt_update->bindParam(':id_instructor', $id_instructor);
-                    $stmt_update->bindParam(':id_competencia', $id_competencia);
-                    $stmt_update->bindParam(':id_rae', $id_rae);
-                    $stmt_update->bindParam(':id_horario', $id_horario, PDO::PARAM_INT);
+                        $setCol('dia', $dia);
+                        $setCol('hora_inicio', $hora_inicio);
+                        $setCol('hora_fin', $hora_fin);
+                        $setCol('id_instructor', $id_instructor, PDO::PARAM_INT);
+                        $setCol('id_competencia', $id_competencia, PDO::PARAM_INT);
+                        if (array_key_exists('id_rae', $columnasTabla) || empty($columnasTabla)) $setCol('id_rae', $id_rae);
+                        $idZona = isset($payload['id_zona']) && $payload['id_zona'] !== '' ? (int)$payload['id_zona'] : null;
+                        $idArea = isset($payload['id_area']) && $payload['id_area'] !== '' ? (int)$payload['id_area'] : null;
+                        $modalidad = isset($payload['modalidad']) ? trim((string)$payload['modalidad']) : null;
+                        $descripcion = isset($payload['descripcion_jornada']) ? trim((string)$payload['descripcion_jornada']) : null;
+                        if ($idZona !== null) $setCol('id_zona', $idZona, PDO::PARAM_INT);
+                        if ($idArea !== null) $setCol('id_area', $idArea, PDO::PARAM_INT);
+                        if ($modalidad !== null && $modalidad !== '') $setCol('modalidad', strtoupper($modalidad));
+                        if ($descripcion !== null && $descripcion !== '') $setCol('descripcion_jornada', $descripcion);
+                        if (array_key_exists('estado', $columnasTabla) || empty($columnasTabla)) $setCol('estado', 1, PDO::PARAM_INT);
 
-                    $ok = $stmt_update->execute();
+                        if (!empty($numero_ficha) && (array_key_exists('id_ficha', $columnasTabla) || empty($columnasTabla))) {
+                            $stF = $this->conn->prepare("SELECT id_ficha FROM fichas WHERE numero_ficha = :numero_ficha LIMIT 1");
+                            $stF->execute([':numero_ficha' => $numero_ficha]);
+                            $rowF = $stF->fetch(PDO::FETCH_ASSOC);
+                            if ($rowF && !empty($rowF['id_ficha'])) $setCol('id_ficha', (int)$rowF['id_ficha'], PDO::PARAM_INT);
+                        }
 
-                    if ($ok && !empty($numero_ficha)) {
-                        $sql_ficha = "UPDATE {$tablaHorario}
-                                      SET id_ficha = (SELECT f.id_ficha FROM fichas f WHERE f.numero_ficha = :numero_ficha LIMIT 1)
-                                      WHERE id_horario = :id_horario";
-                        $stmt_ficha = $this->conn->prepare($sql_ficha);
-                        $stmt_ficha->bindParam(':numero_ficha', $numero_ficha);
-                        $stmt_ficha->bindParam(':id_horario', $id_horario, PDO::PARAM_INT);
-                        $stmt_ficha->execute();
+                        if (!empty($cols)) {
+                            $sql_ins = "INSERT INTO {$tablaHorario} (" . implode(',', $cols) . ") VALUES (" . implode(',', $vals) . ")";
+                            $stmt_ins = $this->conn->prepare($sql_ins);
+                            foreach ($binds as $b) {
+                                $stmt_ins->bindValue(':' . $b[0], $b[1], $b[2]);
+                            }
+                            $ok = $stmt_ins->execute();
+                        }
+                    } else {
+                        $id_horario = (int)$payload['id_horario'];
+                        $sql_update = "UPDATE {$tablaHorario}
+                                       SET dia = :dia,
+                                           hora_inicio = :hora_inicio,
+                                           hora_fin = :hora_fin,
+                                           id_instructor = :id_instructor,
+                                           id_competencia = :id_competencia,
+                                           id_rae = COALESCE(:id_rae, id_rae)
+                                       WHERE id_horario = :id_horario";
+
+                        $stmt_update = $this->conn->prepare($sql_update);
+                        $stmt_update->bindParam(':dia', $dia);
+                        $stmt_update->bindParam(':hora_inicio', $hora_inicio);
+                        $stmt_update->bindParam(':hora_fin', $hora_fin);
+                        $stmt_update->bindParam(':id_instructor', $id_instructor);
+                        $stmt_update->bindParam(':id_competencia', $id_competencia);
+                        $stmt_update->bindParam(':id_rae', $id_rae);
+                        $stmt_update->bindParam(':id_horario', $id_horario, PDO::PARAM_INT);
+
+                        $ok = $stmt_update->execute();
+
+                        if ($ok && !empty($numero_ficha)) {
+                            $sql_ficha = "UPDATE {$tablaHorario}
+                                         SET id_ficha = (SELECT f.id_ficha FROM fichas f WHERE f.numero_ficha = :numero_ficha LIMIT 1)
+                                         WHERE id_horario = :id_horario";
+                            $stmt_ficha = $this->conn->prepare($sql_ficha);
+                            $stmt_ficha->bindParam(':numero_ficha', $numero_ficha);
+                            $stmt_ficha->bindParam(':id_horario', $id_horario, PDO::PARAM_INT);
+                            $stmt_ficha->execute();
+                        }
                     }
 
                     if ($ok) {

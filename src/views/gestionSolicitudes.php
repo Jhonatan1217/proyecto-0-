@@ -196,6 +196,11 @@
     gap: var(--md-gutter);
     margin-top: var(--md-gutter);
   }
+  #modalDetalle #modalContenido {
+    max-width: 100%;
+    overflow-x: hidden;
+    word-break: break-word;
+  }
   /* Motivo devolución al ver solicitud rechazada: aire arriba, izquierda y abajo */
   #modalDetalle #motivoDevolucion {
     padding-top: 1rem;

@@ -72,6 +72,59 @@ if (!window.TRIMESTRALIZACION_INIT) {
       if (btnAbrir?.focus) try { btnAbrir.focus(); } catch (e) {}
     }
 
+    function enModoVistaPreviaLocal() {
+      return !!(window.RegisterTables && window.RegisterTables.state && Array.isArray(window.RegisterTables.state.horariosCache));
+    }
+
+    function construirRegistroHorarioLocal(form, resultadoVal) {
+      const selInstructor = form.querySelector("[name='nombre_instructor'] option:checked");
+      const selComp = form.querySelector("[name='id_competencia'] option:checked");
+      const selFicha = form.querySelector("[name='numero_ficha'] option:checked");
+      const idRaeField = form.querySelector("[name='id_rae']");
+      const raesRaw = idRaeField ? String(idRaeField.value || "").trim() : "";
+      const raes = raesRaw ? raesRaw.split(",").map((s) => s.trim()).filter(Boolean) : [];
+      const descripcion = String(
+        form.querySelector("[name='descripcion_jornada']")?.value ??
+        form.querySelector("[name='descripcion']")?.value ??
+        ""
+      ).trim();
+      const tmpId = "tmp_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
+
+      return {
+        id_horario: tmpId,
+        dia: resultadoVal.dia,
+        hora_inicio: resultadoVal.horaInicio,
+        hora_fin: resultadoVal.horaFin,
+        numero_ficha: resultadoVal.numeroFicha,
+        id_instructor: resultadoVal.instructor,
+        id_competencia: resultadoVal.id_competencia,
+        id_zona: resultadoVal.zona || "",
+        id_area: resultadoVal.id_area || "",
+        modalidad: (resultadoVal.modalidad || "").toUpperCase(),
+        descripcion_jornada: descripcion,
+        raes: raes,
+        raesArray: raes,
+        nombre_instructor: selInstructor ? selInstructor.textContent.trim() : "",
+        nombre_competencia: selComp ? selComp.textContent.trim() : "",
+        nombre_programa: selComp && selComp.dataset ? String(selComp.dataset.programa || "").trim() : "",
+        nivel_ficha: selFicha && selFicha.dataset ? String(selFicha.dataset.nivel || "").trim() : "",
+      };
+    }
+
+    function aplicarRegistroLocalYRefrescar(registro) {
+      if (!enModoVistaPreviaLocal()) return false;
+      const RT = window.RegisterTables;
+      RT.state.horariosCache.push(registro);
+      RT.state.huboCambios = true;
+      if (RT.grid && typeof RT.grid.renderizarTablaDesdeRegistros === "function") {
+        RT.grid.renderizarTablaDesdeRegistros(RT.state.horariosCache, "", { filtersApplied: true });
+      }
+      if (RT.solicitud && typeof RT.solicitud.detectarCambios === "function") {
+        RT.solicitud.detectarCambios();
+      }
+      return true;
+    }
+
     function validarFormularioHorario(form, overrideDia = null) {
       const modalidad = (form.querySelector("[name='modalidad']")?.value || "").trim().toLowerCase();
       const esPresencial = modalidad === "presencial";
@@ -328,7 +381,9 @@ if (!window.TRIMESTRALIZACION_INIT) {
       }
       if (!soloCerrar) {
         cerrarModalCrear();
-        redirectToHorario(duplicacionCtx);
+        if (!enModoVistaPreviaLocal()) {
+          redirectToHorario(duplicacionCtx);
+        }
       }
     }
 
@@ -345,14 +400,18 @@ if (!window.TRIMESTRALIZACION_INIT) {
       }
       Swal.fire({
         icon: "success",
-        title: "Trimestralización creada",
-        text: "El horario se guardó correctamente.",
+        title: enModoVistaPreviaLocal() ? "Horario agregado en vista previa" : "Trimestralización creada",
+        text: enModoVistaPreviaLocal()
+          ? "El horario solo es visible para usted hasta enviarlo."
+          : "El horario se guardó correctamente.",
         confirmButtonText: "Aceptar"
       });
       cerrarModalCrear();
-      setTimeout(() => {
-        redirectToHorario(duplicacionCtx);
-      }, TOAST_TIME);
+      if (!enModoVistaPreviaLocal()) {
+        setTimeout(() => {
+          redirectToHorario(duplicacionCtx);
+        }, TOAST_TIME);
+      }
     }
 
     // 🔄 Sincronizar checklist -> select oculto
@@ -418,54 +477,38 @@ if (!window.TRIMESTRALIZACION_INIT) {
             break;
           }
 
-          const { id_area, id_competencia } = resultadoVal;
+          if (enModoVistaPreviaLocal()) {
+            const regDup = construirRegistroHorarioLocal(form, resultadoVal);
+            aplicarRegistroLocalYRefrescar(regDup);
+            continue;
+          }
 
+          const { id_area, id_competencia } = resultadoVal;
           const fd2 = new FormData(form);
           fd2.set("dia_semana", diaDestino);
           fd2.set("area", id_area);
           fd2.set("duplicar_desde", diaOriginal || "");
-
           try {
             const id_rae_field = form.querySelector("[name='id_rae']");
             const selOpt = form.querySelector("[name='id_competencia'] option:checked");
-
-            if (id_competencia) {
-              fd2.set("id_competencia", id_competencia);
-            }
-
+            if (id_competencia) fd2.set("id_competencia", id_competencia);
             const programa = selOpt && selOpt.dataset ? (selOpt.dataset.programa || "") : "";
             fd2.set("id_programa", programa);
-
             const rae = id_rae_field ? (id_rae_field.value || "") : "";
             fd2.set("id_rae", rae);
-          } catch (err) {
-            console.warn("No se pudo anexar id_programa/id_rae al FormData (duplicado)", err);
-          }
-
-          try {
             const res2 = await fetch(form.action, {
               method: "POST",
               body: fd2,
-              headers: {
-                "X-Requested-With": "XMLHttpRequest",
-                "Accept": "application/json"
-              },
+              headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "application/json" },
               credentials: "same-origin"
             });
-
             const data2 = await res2.json().catch(() => ({}));
-
             if (!res2.ok || data2.status === "error" || data2.error) {
-              const mensaje2 =
-                data2.mensaje ||
-                data2.error ||
-                "El horario original se guardó, pero hubo un error al duplicarlo en uno de los días seleccionados.";
-
+              const mensaje2 = data2.mensaje || data2.error || "El horario original se guardó, pero hubo un error al duplicarlo.";
               huboError = true;
               mensajeError = mensaje2;
               break;
             }
-
           } catch (err) {
             console.error("Error duplicando horario:", err);
             huboError = true;
@@ -490,20 +533,26 @@ if (!window.TRIMESTRALIZACION_INIT) {
 
         Swal.fire({
           icon: "success",
-          title: "Trimestralización creada y duplicada",
-          text: "Se guardó el horario en los días seleccionados.",
+          title: enModoVistaPreviaLocal() ? "Vista previa creada y duplicada" : "Trimestralización creada y duplicada",
+          text: enModoVistaPreviaLocal()
+            ? "Los horarios quedan en vista previa local hasta enviarlos."
+            : "Se guardó el horario en los días seleccionados.",
           confirmButtonText: "Aceptar"
         });
         Toast.fire({
           icon: "success",
-          title: "¡Horario creado y duplicado correctamente!"
+          title: enModoVistaPreviaLocal()
+            ? "Horario agregado a vista previa"
+            : "¡Horario creado y duplicado correctamente!"
         });
 
         cerrarModalDuplicar(true);
         cerrarModalCrear();
-        setTimeout(() => {
-          redirectToHorario(duplicacionCtx);
-        }, TOAST_TIME);
+        if (!enModoVistaPreviaLocal()) {
+          setTimeout(() => {
+            redirectToHorario(duplicacionCtx);
+          }, TOAST_TIME);
+        }
       });
     }
 
@@ -547,6 +596,26 @@ if (!window.TRIMESTRALIZACION_INIT) {
         }
 
         try {
+          if (enModoVistaPreviaLocal()) {
+            const regNuevo = construirRegistroHorarioLocal(form, resultado);
+            aplicarRegistroLocalYRefrescar(regNuevo);
+            Toast.fire({
+              icon: "success",
+              title: "Horario agregado en vista previa",
+              text: "Ahora puedes decidir si deseas duplicarlo en otros días."
+            });
+            abrirModalDuplicar({
+              form,
+              diaOriginal: dia,
+              id_area,
+              id_competencia,
+              modalidad,
+              id_zona: zona,
+              numero_ficha: numeroFicha
+            });
+            return;
+          }
+
           const res = await fetch(form.action, {
             method: "POST",
             body: fd,
