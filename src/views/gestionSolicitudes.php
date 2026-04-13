@@ -201,6 +201,59 @@
     overflow-x: hidden;
     word-break: break-word;
   }
+  /* Scroll solo dentro de la tarjeta (barra junto al modal, no en la página) */
+  #modalDetalle.modal-detalle-solicitud {
+    align-items: center;
+    justify-content: center;
+  }
+  /* La tarjeta recorta; el scroll real va en un contenedor interno inset para que no se vea afuera. */
+  #modalDetalle .modal-detalle-card {
+    width: 100%;
+    max-width: 36rem;
+    max-height: min(78vh, calc(100dvh - 2.5rem));
+    overflow: hidden;
+    box-sizing: border-box;
+    border: 1px solid rgba(229, 231, 235, 0.9);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.22);
+    border-radius: 1rem;
+  }
+  @media (min-width: 640px) {
+    #modalDetalle .modal-detalle-card {
+      max-height: min(80vh, calc(100dvh - 3rem));
+    }
+  }
+  #modalDetalle .modal-detalle-scroll-inner {
+    -webkit-overflow-scrolling: touch;
+    max-height: inherit;
+    overflow-x: hidden;
+    overflow-y: auto;
+    margin-right: 0.35rem;
+    padding-bottom: 1.5rem;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.85) rgba(241, 245, 249, 0.6);
+  }
+  /* WebKit/Chromium: barra redondeada e inset respecto al borde del modal */
+  #modalDetalle .modal-detalle-scroll-inner::-webkit-scrollbar {
+    width: 9px;
+  }
+  #modalDetalle .modal-detalle-scroll-inner::-webkit-scrollbar-track {
+    background: rgba(241, 245, 249, 0.75);
+    border-radius: 999px;
+    margin: 12px 0;
+  }
+  #modalDetalle .modal-detalle-scroll-inner::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.75);
+    border-radius: 999px;
+    border: 2px solid rgba(241, 245, 249, 0.75);
+    background-clip: padding-box;
+  }
+  #modalDetalle .modal-detalle-scroll-inner::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.85);
+  }
+  #modalDetalle .modal-detalle-scroll-inner::-webkit-scrollbar-corner {
+    background: transparent;
+  }
   /* Motivo devolución al ver solicitud rechazada: aire arriba, izquierda y abajo */
   #modalDetalle #motivoDevolucion {
     padding-top: 1rem;
@@ -329,7 +382,7 @@
 
             <thead class="bg-gray-50 border-b border-gray-200 text-gray-600 sticky top-0 z-10">
               <tr>
-                <th class="px-4 py-3 font-semibold text-left">ID</th>
+                <th class="px-4 py-3 font-semibold text-left">Código</th>
                 <th class="px-4 py-3 font-semibold text-left">Solicitante</th>
                 <th class="px-4 py-3 font-semibold text-left">Solicitud</th>
                 <th class="px-4 py-3 font-semibold text-left">Tipo</th>
@@ -360,17 +413,19 @@
 
 </div>
 <!-- ================= MODAL DETALLE ================= -->
-<div id="modalDetalle" class="modal-detalle-solicitud fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
+<div id="modalDetalle" class="modal-detalle-solicitud fixed inset-0 z-50 hidden overflow-hidden bg-black/40 p-3 sm:p-5" role="dialog" aria-modal="true">
 
-    <div class="bg-white rounded-2xl shadow-2xl relative" style="width:100%;max-width:520px;">
+    <div id="modalDetalleCard" class="modal-detalle-card rounded-2xl bg-white relative mx-auto w-full">
 
-        <!-- BOTÓN CERRAR -->
         <button type="button" id="cerrarModalDetalle"
             onclick="cerrarModal()"
-            class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-xl font-bold z-10 leading-none"
-            style="line-height:1;padding:4px 8px;">
+            class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-xl font-bold z-20 leading-none bg-white/95 rounded-md"
+            style="line-height:1;padding:4px 8px;"
+            aria-label="Cerrar">
             ✕
         </button>
+
+        <div id="modalDetalleScrollInner" class="modal-detalle-scroll-inner">
 
         <!-- Cabecera: avatar+nombre; debajo, meta alineada al mismo borde izquierdo que el cuadro de datos -->
         <div class="modal-detalle-pad-x pt-6 pb-4">
@@ -402,6 +457,14 @@
 
         <div class="border-t border-gray-100 modal-detalle-separator"></div>
 
+        <!-- Ubicación (solo solicitudes de horario): área y zona -->
+        <div id="modalHorarioUbicacionWrap" class="hidden modal-detalle-pad-x pt-3 pb-0">
+            <div class="rounded-xl border border-violet-200 bg-violet-50/90 px-4 py-3 text-sm text-violet-950">
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-violet-700 mb-1.5">Ubicación del horario</p>
+                <div id="modalHorarioUbicacionLineas" class="flex flex-col gap-1 font-medium text-violet-900"></div>
+            </div>
+        </div>
+
         <!-- CONTENIDO DINÁMICO (bloque horario o datos) -->
         <div id="modalContenido" class="modal-detalle-pad-x py-4"></div>
 
@@ -421,7 +484,7 @@
         </div>
 
         <!-- Acciones (solo PENDIENTE y con permiso) -->
-        <div id="botonesAccion" class="modal-detalle-pad-x pb-6 space-y-4 hidden">
+        <div id="botonesAccion" class="modal-detalle-pad-x pb-0 space-y-4 hidden">
             <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
                 Al confirmar, la solicitud pasará a <strong>Aprobados</strong> y los cambios mostrados arriba se aplicarán al usuario en el sistema.
             </div>
@@ -429,6 +492,8 @@
                 <button type="button" id="btnDevolver">Devolver</button>
                 <button type="button" id="btnAprobar" class="btn-modal-primary">Confirmar aprobación</button>
             </div>
+        </div>
+
         </div>
 
     </div>
@@ -450,6 +515,7 @@
 </div>
 <script>
   window.API_URL = "<?= BASE_URL ?>src/controllers/SolicitudController.php";
+  window.BASE_URL = "<?= BASE_URL ?>";
 </script>
 
-<script src="<?= BASE_URL ?>src/assets/js/gestionarSolicitudes.js?v=12" defer></script>
+<script src="<?= BASE_URL ?>src/assets/js/gestionarSolicitudes.js?v=19" defer></script>

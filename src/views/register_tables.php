@@ -896,7 +896,7 @@ if (isset($conn)) {
 
     <!-- Scripts compartidos: apertura de modal, validaciones, flujo duplicar, etc -->
     <script src="<?= BASE_URL ?>src/assets/js/landing.js"></script>
-    <script src="<?= BASE_URL ?>src/assets/js/formulario_trimestralizacion.js?v=2"></script>
+    <script src="<?= BASE_URL ?>src/assets/js/formulario_trimestralizacion.js?v=3"></script>
 
     <script src="<?= BASE_URL ?>src/assets/js/registerTablesModal.js"></script>
 

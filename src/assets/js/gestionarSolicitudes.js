@@ -111,6 +111,201 @@ function construirCambiosHorarioHumanos(anterior, nuevo) {
     return cambios;
 }
 
+function capitalizarDiaSemana(d) {
+    const s = String(d || "").trim().toLowerCase();
+    if (!s) return "";
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** Título del bloque: día y franja (sustituye "Horario ID …"). */
+function tituloBloqueDesdeHorarios(hAnt, hNue, esNuevo) {
+    const n = hNue || hAnt;
+    if (!n || typeof n !== "object") return "Cambio de horario";
+    const dia = capitalizarDiaSemana(n.dia);
+    const hi = String(n.hora_inicio || "").trim();
+    const hf = String(n.hora_fin || "").trim();
+    const franja = hi && hf ? `${hi} – ${hf}` : hi || hf || "";
+    if (esNuevo) {
+        if (dia && franja) return `Nuevo · ${dia} · ${franja}`;
+        return dia || franja || "Nuevo horario";
+    }
+    if (dia && franja) return `${dia} · ${franja}`;
+    return dia || franja || "Cambio de horario";
+}
+
+const __catAreaZona = {
+    areas: new Map(),
+    zonas: new Map(),
+    ready: false,
+    loading: null,
+};
+
+function getBaseUrlSolicitudes() {
+    const u = typeof window !== "undefined" && window.BASE_URL ? String(window.BASE_URL) : "";
+    return u.replace(/\/+$/, "/");
+}
+
+/** Carga nombres de áreas y zonas para mostrar en lista y modal. */
+function asegurarCatalogosAreaZona() {
+    if (__catAreaZona.ready) return Promise.resolve();
+    if (__catAreaZona.loading) return __catAreaZona.loading;
+    const base = getBaseUrlSolicitudes();
+    __catAreaZona.loading = (async () => {
+        try {
+            const [rA, rZ] = await Promise.all([
+                fetch(`${base}src/controllers/UsuarioController.php?accion=areas`, { credentials: "same-origin" }),
+                fetch(`${base}src/controllers/ZonaController.php?accion=listar`, { credentials: "same-origin" }),
+            ]);
+            const areasJson = await rA.json().catch(() => []);
+            const zonasWrap = await rZ.json().catch(() => ({}));
+            const arrAreas = Array.isArray(areasJson) ? areasJson : [];
+            const arrZonas = Array.isArray(zonasWrap.data) ? zonasWrap.data : Array.isArray(zonasWrap) ? zonasWrap : [];
+            arrAreas.forEach((a) => {
+                const id = a.id_area != null ? String(a.id_area) : "";
+                if (id) __catAreaZona.areas.set(id, String(a.nombre_area || "").trim() || `Área ${id}`);
+            });
+            arrZonas.forEach((z) => {
+                const id = z.id_zona != null ? String(z.id_zona) : "";
+                if (id) __catAreaZona.zonas.set(id, String(z.nombre_zona || "").trim() || `Zona ${id}`);
+            });
+        } catch (_) {
+            /* mapas vacíos; se muestran IDs */
+        }
+        __catAreaZona.ready = true;
+    })();
+    return __catAreaZona.loading;
+}
+
+function nombreAreaPorId(id) {
+    if (id == null || id === "") return "";
+    const k = String(id);
+    return __catAreaZona.areas.get(k) || "";
+}
+
+function nombreZonaPorId(id) {
+    if (id == null || id === "") return "";
+    const k = String(id);
+    return __catAreaZona.zonas.get(k) || "";
+}
+
+/** Recorre detalles HORARIO_JSON y devuelve payloads parseados (valor_nuevo). */
+function extraerPayloadsHorarioDesdeDetalles(detalles) {
+    const out = [];
+    if (!Array.isArray(detalles)) return out;
+    detalles.forEach((d) => {
+        const c = String(d.campo_modificado || "").toLowerCase();
+        if (!c.includes("horario")) return;
+        const nue = parseHorarioJson(d.valor_nuevo);
+        if (nue && typeof nue === "object") out.push(nue);
+    });
+    return out;
+}
+
+/**
+ * Resume área/zona para cabecera de solicitud de horario.
+ * @returns {{ lineas: { label: string, valor: string }[], varias: boolean }}
+ */
+function resolverUbicacionDesdePayloads(payloads) {
+    const vacio = { lineas: [], varias: false };
+    if (!payloads || !payloads.length) return vacio;
+    const pares = [];
+    payloads.forEach((p) => {
+        const ia = p.id_area != null && p.id_area !== "" ? String(p.id_area) : "";
+        const iz = p.id_zona != null && p.id_zona !== "" ? String(p.id_zona) : "";
+        pares.push({ ia, iz });
+    });
+    const uniq = new Set(pares.map((x) => `${x.ia}|${x.iz}`));
+    if (uniq.size > 1) {
+        return {
+            varias: true,
+            lineas: [
+                { label: "Ámbito", valor: "Varias ubicaciones en esta solicitud (revise cada bloque)." },
+            ],
+        };
+    }
+    const { ia, iz } = pares[0] || { ia: "", iz: "" };
+    const lineas = [];
+    if (ia) {
+        const na = nombreAreaPorId(ia);
+        lineas.push({ label: "Área", valor: na ? `${na} (ID ${ia})` : `ID ${ia}` });
+    }
+    if (iz) {
+        const nz = nombreZonaPorId(iz);
+        lineas.push({ label: "Zona", valor: nz ? `${nz} (ID ${iz})` : `ID ${iz}` });
+    }
+    if (!lineas.length && payloads.length) {
+        const mod = String(payloads[0].modalidad || "").trim().toUpperCase();
+        if (mod === "VIRTUAL" || mod === "MIXTO") {
+            lineas.push({ label: "Ubicación", valor: "Modalidad sin sede física (virtual/mixto)." });
+        }
+    }
+    return { lineas, varias: false };
+}
+
+/** Subtítulo para fila de tabla (solicitud de horario). */
+function lineaUbicacionTablaDesdeSolicitud(sol) {
+    const tipo = String(sol.tipo_solicitud || "").toLowerCase();
+    if (!tipo.includes("horario")) return "";
+    const payloads = extraerPayloadsHorarioDesdeDetalles(sol.detalles || []);
+    const u = resolverUbicacionDesdePayloads(payloads);
+    if (!u.lineas.length) return "";
+    return u.lineas.map((l) => `${l.label}: ${l.valor}`).join(" · ");
+}
+
+/** Texto legible para solicitudes de horario nuevo (sin valor anterior en BD). */
+function construirNuevoHorarioHumano(h, opts) {
+    opts = opts || {};
+    const omitirDiaYFranja = !!opts.omitirDiaYFranja;
+    const omitirUbicacionIds = !!opts.omitirUbicacionIds;
+    if (!h || typeof h !== "object") return [];
+    const vacio = "—";
+    const rows = [];
+    if (!omitirDiaYFranja) {
+        const dia = String(h.dia || "").trim();
+        if (dia) {
+            const cap = capitalizarDiaSemana(dia);
+            rows.push({ etiqueta: "Día", anterior: vacio, nuevo: cap });
+        }
+        const hi = String(h.hora_inicio || "").trim();
+        const hf = String(h.hora_fin || "").trim();
+        if (hi || hf) {
+            rows.push({
+                etiqueta: "Franja horaria",
+                anterior: vacio,
+                nuevo: `${hi || "?"} – ${hf || "?"}`,
+            });
+        }
+    }
+    const ficha = String(h.numero_ficha ?? "").trim();
+    if (ficha) rows.push({ etiqueta: "Número de ficha", anterior: vacio, nuevo: ficha });
+    const ins = String(h.id_instructor ?? "").trim();
+    if (ins) rows.push({ etiqueta: "Instructor (ID)", anterior: vacio, nuevo: ins });
+    const comp = String(h.id_competencia ?? "").trim();
+    if (comp) rows.push({ etiqueta: "Competencia (ID)", anterior: vacio, nuevo: comp });
+    if (!omitirUbicacionIds) {
+        const zona = String(h.id_zona ?? "").trim();
+        if (zona) rows.push({ etiqueta: "Zona (ID)", anterior: vacio, nuevo: zona });
+        const area = String(h.id_area ?? "").trim();
+        if (area) rows.push({ etiqueta: "Área (ID)", anterior: vacio, nuevo: area });
+    }
+    const mod = String(h.modalidad ?? "").trim();
+    if (mod) rows.push({ etiqueta: "Modalidad", anterior: vacio, nuevo: mod });
+    const dj = String(h.descripcion_jornada ?? "").trim();
+    if (dj) rows.push({ etiqueta: "Descripción de la jornada", anterior: vacio, nuevo: dj });
+    const raes = h.raes;
+    if (Array.isArray(raes) && raes.length) {
+        rows.push({ etiqueta: "RAEs (ID)", anterior: vacio, nuevo: raes.map((x) => String(x).trim()).filter(Boolean).join(", ") });
+    }
+    if (!rows.length) {
+        rows.push({
+            etiqueta: "Detalle",
+            anterior: vacio,
+            nuevo: "Nuevo horario (sin datos adicionales en la solicitud).",
+        });
+    }
+    return rows;
+}
+
 let todasLasSolicitudes = [];
 let solicitudActualId = null;
 let solicitudActualTipo = null;
@@ -161,7 +356,8 @@ document.addEventListener("DOMContentLoaded", () => {
     async function cargarSolicitudes() {
         try {
             mostrarLoading(true);
-            
+            await asegurarCatalogosAreaZona();
+
             let url = getSolicitudApiUrl();
             
             // Determinar qué endpoint llamar según el estado activo
@@ -218,12 +414,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 (solicitud.nombre_programa && String(solicitud.nombre_programa)) ||
                 "";
 
+            const ubicTxt = lineaUbicacionTablaDesdeSolicitud(solicitud);
+
             return (
                 (solicitud.codigo_solicitud && solicitud.codigo_solicitud.toLowerCase().includes(textoBusqueda)) ||
                 (idStr && idStr.includes(textoBusqueda)) ||
                 (solicitud.nombre_instructor && solicitud.nombre_instructor.toLowerCase().includes(textoBusqueda)) ||
                 (solicitud.tipo_solicitud && solicitud.tipo_solicitud.toLowerCase().includes(textoBusqueda)) ||
-                (programa && programa.toLowerCase().includes(textoBusqueda))
+                (programa && programa.toLowerCase().includes(textoBusqueda)) ||
+                (ubicTxt && ubicTxt.toLowerCase().includes(textoBusqueda))
             );
         });
 
@@ -296,10 +495,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div class="font-medium">${escapeHtmlSolicitud(sol.nombre_instructor || "N/A")}</div>
                         <div class="text-xs text-gray-500">${escapeHtmlSolicitud(sol.correo_instructor || "")}</div>
                     </td>
-                    <td class="px-4 py-3 text-center">
+                    <td class="px-4 py-3 text-left align-middle">
                         <span class="${clsEstado}">${escapeHtmlSolicitud(estadoTexto)}</span>
                     </td>
-                    <td class="px-4 py-3 text-center">
+                    <td class="px-4 py-3 text-left align-middle">
                         <span class="${clsTipo}">${escapeHtmlSolicitud(tipoTexto)}</span>
                     </td>
                     <td class="px-4 py-3">${fecha}</td>
@@ -407,6 +606,8 @@ async function verSolicitud(id) {
     const solicitud = todasLasSolicitudes.find(s => s.id_solicitud == id);
     if (!solicitud) { console.error("Solicitud no encontrada"); return; }
 
+    await asegurarCatalogosAreaZona();
+
     solicitudActualId = id;
 
     // Normalizar tipo: acepta "Horario", "HORARIO", "Cambio de horario", etc.
@@ -496,12 +697,26 @@ async function verSolicitud(id) {
         if (cLow.includes("horario")) {
             const hAnt = parseHorarioJson(detalle.valor_anterior);
             const hNue = parseHorarioJson(detalle.valor_nuevo);
-            if (hAnt && hNue) {
+            const esHorarioNuevo = hNue && (!hAnt || hNue.es_nuevo === true);
+            if (esHorarioNuevo) {
+                let c = construirNuevoHorarioHumano(hNue, { omitirDiaYFranja: true, omitirUbicacionIds: true });
+                if (!c.length) {
+                    c = [{ etiqueta: "Detalle", anterior: "—", nuevo: "Nuevo horario" }];
+                }
+                cambiosHorario = cambiosHorario.concat(c);
+                bloquesHorario.push({
+                    titulo: tituloBloqueDesdeHorarios(null, hNue, true),
+                    cambios: c,
+                    soloValoresNuevos: true,
+                });
+                horarioAnterior = "—";
+                horarioNuevo = `${hNue.dia || ""} ${hNue.hora_inicio || ""} – ${hNue.hora_fin || ""}`.trim();
+            } else if (hAnt && hNue) {
                 const c = construirCambiosHorarioHumanos(hAnt, hNue);
                 if (c.length) {
                     cambiosHorario = cambiosHorario.concat(c);
                     bloquesHorario.push({
-                        titulo: "Horario ID " + (hNue.id_horario || hAnt.id_horario || "N/A"),
+                        titulo: tituloBloqueDesdeHorarios(hAnt, hNue, false),
                         cambios: c,
                     });
                 }
@@ -550,6 +765,9 @@ async function verSolicitud(id) {
             ? rawPrograma
             : "Usuario no vinculado a un programa";
 
+    const payloadsUbicacion = extraerPayloadsHorarioDesdeDetalles(detalles);
+    const ubicacionHorario = resolverUbicacionDesdePayloads(payloadsUbicacion);
+
     const dataModal = {
         id:               solicitud.id_solicitud,
         id_instructor_solicitante: solicitud.id_instructor_solicitante,
@@ -566,6 +784,7 @@ async function verSolicitud(id) {
         cambiosHorario,
         bloquesHorario,
         cambiosDatos: cambiosDatosUnicos,
+        ubicacionHorario,
     };
 
     console.log("📦 DATOS MAPEADOS:", dataModal);
@@ -582,6 +801,10 @@ function abrirModal(data) {
     const modal = document.getElementById("modalDetalle");
     modal.classList.remove("hidden");
     modal.classList.add("flex");
+    if (document.body) {
+        document.body.dataset.prevOverflow = document.body.style.overflow || "";
+        document.body.style.overflow = "hidden";
+    }
 
     const avatarEl = document.getElementById("modalSolicitudAvatar");
     if (avatarEl) {
@@ -667,6 +890,24 @@ function abrirModal(data) {
         else avisoPropiaCoord.classList.add("hidden");
     }
 
+    const wrapUb = document.getElementById("modalHorarioUbicacionWrap");
+    const lineasUb = document.getElementById("modalHorarioUbicacionLineas");
+    if (wrapUb && lineasUb) {
+        const u = data.ubicacionHorario;
+        if (data.tipo === "horario" && u && Array.isArray(u.lineas) && u.lineas.length) {
+            wrapUb.classList.remove("hidden");
+            lineasUb.innerHTML = u.lineas
+                .map(
+                    (l) =>
+                        `<div class="leading-snug"><span class="text-violet-800/90 font-semibold">${escapeHtmlSolicitud(l.label)}:</span> ${escapeHtmlSolicitud(l.valor)}</div>`
+                )
+                .join("");
+        } else {
+            wrapUb.classList.add("hidden");
+            lineasUb.innerHTML = "";
+        }
+    }
+
     // Contenido dinámico
     const contenedor = document.getElementById("modalContenido");
 
@@ -704,11 +945,18 @@ function abrirModal(data) {
         const filasHorario =
             data.bloquesHorario && data.bloquesHorario.length > 0
                 ? data.bloquesHorario
-                      .map((bloque) => `
-                    <div style="border:1px solid #d1d5db;border-radius:10px;background:#fff;padding:12px;">
-                        <p style="font-size:12px;font-weight:700;color:#374151;margin:0 0 10px 0;">${escapeHtmlSolicitud(bloque.titulo)}</p>
-                        <div style="display:flex;flex-direction:column;gap:14px;">
-                            ${(bloque.cambios || []).map((row) => `
+                      .map((bloque) => {
+                          const soloNuevo = !!bloque.soloValoresNuevos;
+                          const filasCambio = (bloque.cambios || [])
+                              .map((row) => {
+                                  if (soloNuevo) {
+                                      return `
+                                <div style="font-size:13px;">
+                                    <p style="font-weight:600;color:#6b7280;margin:0 0 6px 0;">${escapeHtmlSolicitud(row.etiqueta)}</p>
+                                    <div style="background:#fff;border:1.5px solid #10b981;border-radius:8px;padding:7px 14px;font-weight:600;color:#065f46;word-break:break-word;white-space:normal;">${escapeHtmlSolicitud(row.nuevo)}</div>
+                                </div>`;
+                                  }
+                                  return `
                                 <div style="font-size:13px;">
                                     <p style="font-weight:600;color:#6b7280;margin:0 0 6px 0;">${escapeHtmlSolicitud(row.etiqueta)}</p>
                                     <div style="display:flex;flex-direction:column;gap:6px;">
@@ -716,11 +964,17 @@ function abrirModal(data) {
                                         <div style="display:flex;align-items:center;gap:6px;padding-left:6px;color:#9ca3af;font-size:15px;">↓</div>
                                         <div style="background:#fff;border:1.5px solid #10b981;border-radius:8px;padding:7px 14px;font-weight:600;color:#065f46;word-break:break-word;white-space:normal;">${escapeHtmlSolicitud(row.nuevo)}</div>
                                     </div>
-                                </div>
-                            `).join("")}
+                                </div>`;
+                              })
+                              .join("");
+                          return `
+                    <div style="border:1px solid #d1d5db;border-radius:10px;background:#fff;padding:12px;">
+                        <p style="font-size:12px;font-weight:700;color:#374151;margin:0 0 10px 0;">${escapeHtmlSolicitud(bloque.titulo)}</p>
+                        <div style="display:flex;flex-direction:column;gap:14px;">
+                            ${filasCambio}
                         </div>
-                    </div>
-                      `)
+                    </div>`;
+                      })
                       .join("")
                 : `
                 <div class="flex flex-wrap items-center gap-2.5 text-sm">
@@ -738,7 +992,7 @@ function abrirModal(data) {
                     <i data-lucide="clock" class="h-4 w-4 shrink-0"></i>
                     Cambio de horario
                 </div>
-                <div style="display:flex;flex-direction:column;gap:16px;max-height:40vh;overflow-y:auto;overflow-x:hidden;">${filasHorario}</div>
+                <div style="display:flex;flex-direction:column;gap:16px;overflow-x:hidden;">${filasHorario}</div>
             </div>
         `;
         lucide.createIcons();
@@ -871,6 +1125,10 @@ function cerrarModal() {
     const modal = document.getElementById("modalDetalle");
     modal.classList.add("hidden");
     modal.classList.remove("flex");
+    if (document.body) {
+        document.body.style.overflow = document.body.dataset.prevOverflow || "";
+        delete document.body.dataset.prevOverflow;
+    }
 
     solicitudActualId = null;
     solicitudActualTipo = null;

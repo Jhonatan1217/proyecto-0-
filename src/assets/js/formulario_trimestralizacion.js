@@ -97,6 +97,7 @@ if (!window.TRIMESTRALIZACION_INIT) {
 
       return {
         id_horario: tmpId,
+        estado: 1,
         dia: resultadoVal.dia,
         hora_inicio: resultadoVal.horaInicio,
         hora_fin: resultadoVal.horaFin,
