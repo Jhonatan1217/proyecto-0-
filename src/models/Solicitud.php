@@ -335,7 +335,6 @@ class Solicitud {
             'correo_electronico',
             'tipo_instructor',
             'tipo_contrato',
-            'area_coordinador',
         ];
 
         $solicitud = $this->obtenerPorId($id_solicitud);
@@ -368,9 +367,6 @@ class Solicitud {
             'id_area' => isset($usuario['id_area']) && $usuario['id_area'] !== '' && $usuario['id_area'] !== null
                 ? (int) $usuario['id_area']
                 : null,
-            'area_coordinador' => isset($usuario['area_coordinador']) && $usuario['area_coordinador'] !== null && $usuario['area_coordinador'] !== ''
-                ? (string) $usuario['area_coordinador']
-                : null,
             'tipo_instructor' => (string)($usuario['tipo_instructor'] ?? ''),
             'tipo_contrato' => (string)($usuario['tipo_contrato'] ?? ''),
             'estado' => (int)($usuario['estado'] ?? 1),
@@ -385,11 +381,6 @@ class Solicitud {
                 continue;
             }
             $data[$campo] = (string) $d['valor_nuevo'];
-        }
-
-        $cargoLower = strtolower((string) ($data['cargo'] ?? ''));
-        if (strpos($cargoLower, 'coordinador') !== false) {
-            $data['id_area'] = null;
         }
 
         $resultado = $usuarioModel->actualizar($idUsuario, $data);

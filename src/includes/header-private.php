@@ -313,17 +313,8 @@ document.addEventListener("DOMContentLoaded", function () {
       <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo de documento</label><div class="relative"><select name="tipo_documento" class="select-perfil input-enterprise py-2.5 text-sm pr-10 appearance-none cursor-pointer"><option value="">Seleccione tipo de documento</option><option value="CC">Cédula de Ciudadanía</option><option value="CE">Cédula de Extranjería</option><option value="PASAPORTE">Pasaporte</option></select></div></div>
       <div><label class="block text-sm font-medium text-gray-700 mb-1">Número de documento</label><input type="text" name="numero_documento" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none" /></div>
       <div><label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label><input type="email" name="correo_electronico" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none" /></div>
-      <div id="solicitarGrupoCoordinadorPerfil" class="hidden space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Área del coordinador</label>
-          <input type="text" name="area_coordinador" autocomplete="organization" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none" placeholder="Ej. Unidad o dependencia" />
-          <p class="text-xs text-gray-500 mt-1">Solo referencia de tu cargo; no se crea en el catálogo de áreas de horarios.</p>
-        </div>
-      </div>
-      <div id="solicitarGrupoInstructorPerfil" class="space-y-4">
       <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo instructor</label><div class="relative"><select name="tipo_instructor" class="select-perfil input-enterprise py-2.5 text-sm pr-10 appearance-none cursor-pointer"><option value="">Seleccione tipo instructor</option><option value="Técnico">Técnico</option><option value="Transversal">Transversal</option></select></div></div>
       <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo contrato</label><div class="relative"><select name="tipo_contrato" class="select-perfil input-enterprise py-2.5 text-sm pr-10 appearance-none cursor-pointer"><option value="">Seleccione tipo contrato</option><option value="Planta">Planta</option><option value="Contratista">Contratista</option></select></div></div>
-      </div>
       <div class="pt-3 border-t border-gray-200">
         <p class="text-sm font-semibold text-gray-700 mb-2">Seguridad</p>
         <button type="button" id="btnAbrirCambiarContrasena" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 transition focus:ring-2 focus:ring-green-600/30 outline-none">
@@ -506,6 +497,38 @@ window.USUARIO_ID = <?= json_encode((int)($_SESSION['usuario_id'] ?? 0)) ?>;
 window.USUARIO_CARGO = <?= json_encode($_SESSION['usuario_cargo'] ?? '') ?>;
 window.USUARIO_ES_SISTEMA = <?= json_encode((int)($_SESSION['usuario_es_sistema'] ?? 0)) ?>;
 window.BASE_URL = <?= json_encode(BASE_URL) ?>;
+</script>
+<script>
+// Desactiva sugerencias/autocomplete del navegador en zona privada.
+// El login no usa este header, por lo que mantiene su comportamiento normal.
+(function () {
+  function desactivarAutocompleteEnPrivado() {
+    var forms = document.querySelectorAll('form');
+    forms.forEach(function (form) {
+      if (form.hasAttribute('data-allow-autocomplete')) return;
+      form.setAttribute('autocomplete', 'off');
+    });
+
+    var campos = document.querySelectorAll('input, textarea, select');
+    campos.forEach(function (el) {
+      if (el.hasAttribute('data-allow-autocomplete')) return;
+      if (el.tagName === 'INPUT') {
+        var type = (el.getAttribute('type') || 'text').toLowerCase();
+        if (['hidden', 'checkbox', 'radio', 'file', 'submit', 'button'].indexOf(type) >= 0) return;
+      }
+      el.setAttribute('autocomplete', 'off');
+      el.setAttribute('autocapitalize', 'off');
+      el.setAttribute('autocorrect', 'off');
+      el.setAttribute('spellcheck', 'false');
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', desactivarAutocompleteEnPrivado);
+  } else {
+    desactivarAutocompleteEnPrivado();
+  }
+})();
 </script>
 <script src="<?= BASE_URL ?>src/assets/js/gestionPerfil.js"></script>
 

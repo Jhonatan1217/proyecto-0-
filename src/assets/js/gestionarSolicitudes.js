@@ -384,7 +384,6 @@ async function verSolicitud(id) {
         correo_electronico: "Correo electrónico",
         tipo_instructor: "Tipo instructor",
         tipo_contrato: "Tipo contrato",
-        area_coordinador: "Área del coordinador",
     };
     const ordenCamposDatos = [
         "nombre_completo",
@@ -393,7 +392,6 @@ async function verSolicitud(id) {
         "correo_electronico",
         "tipo_instructor",
         "tipo_contrato",
-        "area_coordinador",
     ];
     const cambiosDatos = [];
 

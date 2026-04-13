@@ -269,20 +269,41 @@ function alternarCamposCargo(cargo, contenedorModal) {
         grupoCoor?.classList.add('hidden');
         if (modalidad) { modalidad.required = true; }
         if (tipoContrato) { tipoContrato.required = true; }
-        if (areaCoord) { areaCoord.required = false; areaCoord.value = ''; }
+        if (areaCoord) { areaCoord.required = false; areaCoord.value = ''; areaCoord.dispatchEvent(new Event('change', { bubbles: true })); }
     } else if (cargoStr.includes('coordinador')) {
         grupoIns?.classList.add('hidden');
         grupoCoor?.classList.remove('hidden');
         if (modalidad) { modalidad.required = false; modalidad.value = ''; modalidad.dispatchEvent(new Event('change', { bubbles: true })); }
         if (tipoContrato) { tipoContrato.required = false; tipoContrato.value = ''; tipoContrato.dispatchEvent(new Event('change', { bubbles: true })); }
-        if (areaCoord) { areaCoord.required = true; }
+        if (areaCoord) { areaCoord.required = false; }
     } else {
         grupoIns?.classList.add('hidden');
         grupoCoor?.classList.add('hidden');
         if (modalidad) { modalidad.required = false; modalidad.value = ''; modalidad.dispatchEvent(new Event('change', { bubbles: true })); }
         if (tipoContrato) { tipoContrato.required = false; tipoContrato.value = ''; tipoContrato.dispatchEvent(new Event('change', { bubbles: true })); }
-        if (areaCoord) { areaCoord.required = false; areaCoord.value = ''; }
+        if (areaCoord) { areaCoord.required = false; areaCoord.value = ''; areaCoord.dispatchEvent(new Event('change', { bubbles: true })); }
     }
+}
+
+async function cargarAreasCoordinadorModales() {
+    const areas = await apiRequest("areas", "GET");
+    if (!Array.isArray(areas)) return;
+    const options = ['<option value="">Sin asignar área</option>']
+        .concat(
+            areas.map((a) => {
+                const nombre = String(a.nombre_area || "").trim();
+                if (!nombre) return "";
+                return `<option value="${nombre.replace(/"/g, "&quot;")}">${nombre}</option>`;
+            }).filter(Boolean)
+        )
+        .join("");
+    ['#area_nuevo', '#area_editar'].forEach((sel) => {
+        const el = document.querySelector(sel);
+        if (!el) return;
+        const prev = String(el.value || "");
+        el.innerHTML = options;
+        if (prev) setSelectValue(el, prev);
+    });
 }
 
 /* =============================================
@@ -482,7 +503,7 @@ function debounce(fn, ms) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    cargarRolesDisponibles().then(() => {
+    Promise.all([cargarRolesDisponibles(), cargarAreasCoordinadorModales()]).then(() => {
         enhanceSelectsUsuarios();
         aplicarEstadoFiltroRoles();
     });
@@ -586,6 +607,7 @@ document.addEventListener('DOMContentLoaded', () => {
             datos.id_area = null;
         } else {
             datos.id_area = null;
+            datos.area_coordinador = '';
         }
         const res = await apiRequest("crear", "POST", datos);
         if (res.success) {
@@ -723,8 +745,8 @@ async function prepararEdicion(id) {
                     form.dataset.teniaRolTrimestralizacion = tieneTrim ? '1' : '0';
                 }
             } else {
-                const inputArea = form.querySelector('[name="area_coordinador"]');
-                if (inputArea) inputArea.value = (u.area_coordinador || u.nombre_area || '').trim();
+                const selectArea = form.querySelector('[name="area_coordinador"]');
+                if (selectArea) setSelectValue(selectArea, u.area_coordinador || u.nombre_area || '');
             }
 
             const datosIniciales = datosEditarDesdeForm(form);

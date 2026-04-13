@@ -26,6 +26,22 @@ function normalizarTipoDocumento($val) {
     return in_array($v, $TIPO_DOC_VALIDOS) ? $v : 'CC';
 }
 
+/**
+ * Resuelve el nombre del área a id_area. Si no existe, la crea.
+ * @return int|null id_area o null si nombre vacío
+ */
+function resolverAreaPorNombre($conn, $nombre) {
+    $nombre = trim((string) $nombre);
+    if ($nombre === '') return null;
+    $stmt = $conn->prepare("SELECT id_area FROM area WHERE TRIM(nombre_area) = :nombre AND estado = 1 LIMIT 1");
+    $stmt->execute([':nombre' => $nombre]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($row) return (int) $row['id_area'];
+    $stmt = $conn->prepare("INSERT INTO area (nombre_area, estado) VALUES (:nombre, 1)");
+    $stmt->execute([':nombre' => $nombre]);
+    return (int) $conn->lastInsertId();
+}
+
 function inreq($k) {
     global $__JSON;
     return $_POST[$k] ?? $_GET[$k] ?? ($__JSON[$k] ?? null);
@@ -117,10 +133,11 @@ try {
         // ============================================================
         case 'crear':
             $cargo = trim((string) inreq('cargo'));
-            $esCoordinador = stripos($cargo, 'coordinador') !== false;
-            $areaCoordTxt = trim((string) inreq('area_coordinador'));
-            // Área del coordinador: solo texto en usuarios.area_coordinador; no id_area ni tabla `area`.
-            $id_area = $esCoordinador ? null : (inreq('id_area') ? intval(inreq('id_area')) : null);
+            $id_area = inreq('id_area') ? intval(inreq('id_area')) : null;
+            if (!$id_area && stripos($cargo, 'coordinador') !== false) {
+                $areaNombre = trim((string) inreq('area_coordinador'));
+                $id_area = $areaNombre ? resolverAreaPorNombre($conn, $areaNombre) : null;
+            }
             $datos = [
                 'nombre_completo'   => trim((string) inreq('nombre_completo')),
                 'tipo_documento'    => normalizarTipoDocumento(inreq('tipo_documento')),
@@ -128,7 +145,6 @@ try {
                 'correo_electronico' => trim((string) inreq('correo_electronico')),
                 'cargo'             => $cargo,
                 'id_area'           => $id_area,
-                'area_coordinador'  => ($esCoordinador && $areaCoordTxt !== '') ? $areaCoordTxt : null,
                 'tipo_instructor'   => inreq('tipo_instructor') ? trim((string) inreq('tipo_instructor')) : null,
                 'tipo_contrato'     => trim((string) inreq('tipo_contrato')) ?: 'CONTRATISTA',
                 'password_hash'     => password_hash(trim((string) inreq('password')), PASSWORD_DEFAULT),
@@ -172,12 +188,11 @@ try {
 
             $estadoRequest = inreq('estado');
             $cargo = trim((string) inreq('cargo'));
-            $esCoordinador = stripos($cargo, 'coordinador') !== false;
-            $areaCoordTxt = trim((string) inreq('area_coordinador'));
-            $id_area = $esCoordinador ? null : (inreq('id_area') ? intval(inreq('id_area')) : null);
-            $area_coordinador_db = $esCoordinador
-                ? ($areaCoordTxt !== '' ? $areaCoordTxt : null)
-                : null;
+            $id_area = inreq('id_area') ? intval(inreq('id_area')) : null;
+            if (!$id_area && stripos($cargo, 'coordinador') !== false) {
+                $areaNombre = trim((string) inreq('area_coordinador'));
+                $id_area = $areaNombre ? resolverAreaPorNombre($conn, $areaNombre) : null;
+            }
 
             $datos = [
                 'nombre_completo'   => trim((string) inreq('nombre_completo')),
@@ -186,7 +201,6 @@ try {
                 'correo_electronico' => trim((string) inreq('correo_electronico')),
                 'cargo'             => $cargo,
                 'id_area'           => $id_area,
-                'area_coordinador'  => $area_coordinador_db,
                 'tipo_instructor'   => inreq('tipo_instructor') ? trim((string) inreq('tipo_instructor')) : null,
                 'tipo_contrato'     => trim((string) inreq('tipo_contrato')),
                 'estado'            => $estadoRequest !== null ? intval($estadoRequest) : (int)($usuarioActual['estado'] ?? 1),

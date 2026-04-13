@@ -186,8 +186,7 @@
     if (elTipoDoc) elTipoDoc.textContent = formatoTipoDocumento(data && data.tipo_documento);
     getEl("verPerfilDocumento").textContent = (data && data.numero_documento) || "—";
     getEl("verPerfilCorreo").textContent = (data && data.correo_electronico) || "—";
-    var areaTxt = (data && (data.area_coordinador || data.nombre_area)) || "—";
-    getEl("verPerfilArea").textContent = areaTxt;
+    getEl("verPerfilArea").textContent = (data && data.nombre_area) || "—";
     var tipoInstructor = getEl("verPerfilTipoInstructor");
     var tipoContrato = getEl("verPerfilTipoContrato");
     if (tipoInstructor) tipoInstructor.textContent = formatoTipoInstructor(data && data.tipo_instructor);
@@ -224,44 +223,26 @@
       numero_documento: (form.querySelector("[name='numero_documento']") || {}).value || "",
       correo_electronico: (form.querySelector("[name='correo_electronico']") || {}).value || "",
       tipo_instructor: (form.querySelector("[name='tipo_instructor']") || {}).value || "",
-      tipo_contrato: (form.querySelector("[name='tipo_contrato']") || {}).value || "",
-      area_coordinador: (form.querySelector("[name='area_coordinador']") || {}).value || ""
+      tipo_contrato: (form.querySelector("[name='tipo_contrato']") || {}).value || ""
     };
-  }
-  function actualizarGruposSolicitarPerfil(cargo) {
-    var gIns = getEl("solicitarGrupoInstructorPerfil");
-    var gCoor = getEl("solicitarGrupoCoordinadorPerfil");
-    var c = normalizeTxt(cargo || window.USUARIO_CARGO || "");
-    var esIns = c.indexOf("INSTRUCTOR") >= 0;
-    var esCoor = c.indexOf("COORDINADOR") >= 0;
-    if (gIns) gIns.classList.toggle("hidden", !esIns);
-    if (gCoor) gCoor.classList.toggle("hidden", !esCoor);
   }
   function validarCamposRequeridosSolicitar(form) {
     if (!form) return { ok: true };
-    var c = normalizeTxt(window.USUARIO_CARGO || "");
-    var esIns = c.indexOf("INSTRUCTOR") >= 0;
-    var esCoor = c.indexOf("COORDINADOR") >= 0;
     var checks = [
       { name: "nombre_completo", label: "Nombre completo" },
       { name: "tipo_documento", label: "Tipo de documento" },
       { name: "numero_documento", label: "Número de documento" },
-      { name: "correo_electronico", label: "Correo electrónico" }
+      { name: "correo_electronico", label: "Correo electrónico" },
+      { name: "tipo_instructor", label: "Tipo instructor" },
+      { name: "tipo_contrato", label: "Tipo contrato" }
     ];
-    if (esIns) {
-      checks.push({ name: "tipo_instructor", label: "Tipo instructor" });
-      checks.push({ name: "tipo_contrato", label: "Tipo contrato" });
-    }
-    if (esCoor) {
-      checks.push({ name: "area_coordinador", label: "Área del coordinador" });
-    }
     for (var i = 0; i < checks.length; i += 1) {
-      var ch = checks[i];
-      var el = form.querySelector("[name='" + ch.name + "']");
+      var c = checks[i];
+      var el = form.querySelector("[name='" + c.name + "']");
       if (!el) continue;
       var val = String(el.value || "").trim();
       if (!val) {
-        return { ok: false, field: ch.name, label: ch.label, el: el };
+        return { ok: false, field: c.name, label: c.label, el: el };
       }
     }
     return { ok: true };
@@ -279,9 +260,6 @@
         setSelectValueFlexible(sel, data[name] || "");
       }
     });
-    var inArea = form.querySelector("[name='area_coordinador']");
-    if (inArea) inArea.value = (data.area_coordinador || data.nombre_area || "").trim();
-    actualizarGruposSolicitarPerfil(data.cargo || window.USUARIO_CARGO);
     solicitarCambiosValoresIniciales = getFormSolicitarCambiosValues(form);
   }
 
