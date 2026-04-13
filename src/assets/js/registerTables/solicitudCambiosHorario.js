@@ -58,7 +58,9 @@
 
     despues.forEach((nuevo) => {
       const viejo = porIdAntes.get(String(nuevo.id_horario));
-      if (!viejo) {
+      const idHorarioStr = String(nuevo.id_horario || "");
+      const esTemporalLocal = /^tmp_/i.test(idHorarioStr);
+      if (!viejo || esTemporalLocal) {
         const descNuevo = String(nuevo.descripcion_jornada ?? nuevo.descripcion ?? "").trim();
         const raesNuevo = (nuevo.raes ?? nuevo.raesArray ?? []);
         texto += `Nuevo horario (${nuevo.dia} ${nuevo.hora_inicio} - ${nuevo.hora_fin})\n`;
@@ -135,6 +137,8 @@
             numero_ficha: viejo.numero_ficha,
             id_instructor: viejo.id_instructor,
             id_competencia: viejo.id_competencia,
+            id_zona: viejo.id_zona ?? null,
+            id_area: viejo.id_area ?? null,
             descripcion_jornada: descV,
             raes: viejo.raes ?? viejo.raesArray ?? [],
           }),
@@ -146,6 +150,8 @@
             numero_ficha: nuevo.numero_ficha,
             id_instructor: nuevo.id_instructor,
             id_competencia: nuevo.id_competencia,
+            id_zona: nuevo.id_zona ?? null,
+            id_area: nuevo.id_area ?? null,
             descripcion_jornada: descN,
             raes: nuevo.raes ?? nuevo.raesArray ?? [],
           }),

@@ -27,6 +27,305 @@ class Solicitud {
         return null;
     }
 
+    private function normalizarTextoComparacion($valor): string {
+        if ($valor === null) return '';
+        return trim((string)$valor);
+    }
+
+    private function normalizarHoraComparacion($hora): string {
+        $h = trim((string)$hora);
+        if ($h === '') return '';
+        if (preg_match('/^(\d{1,2}):(\d{2})$/', $h, $m)) {
+            return str_pad($m[1], 2, '0', STR_PAD_LEFT) . ':' . $m[2] . ':00';
+        }
+        if (preg_match('/^(\d{1,2}):(\d{2}):(\d{2})$/', $h, $m)) {
+            return str_pad($m[1], 2, '0', STR_PAD_LEFT) . ':' . $m[2] . ':' . $m[3];
+        }
+        return $h;
+    }
+
+    private function resumenHorarioPayload(array $payload): string {
+        $dia = trim((string)($payload['dia'] ?? ''));
+        $horaInicio = $this->normalizarHoraComparacion($payload['hora_inicio'] ?? '');
+        $horaFin = $this->normalizarHoraComparacion($payload['hora_fin'] ?? '');
+        $horaInicio = preg_replace('/:\d{2}$/', '', $horaInicio);
+        $horaFin = preg_replace('/:\d{2}$/', '', $horaFin);
+        $txt = trim(($dia !== '' ? ucfirst(strtolower($dia)) : '') . ' ' . ($horaInicio !== '' || $horaFin !== '' ? ($horaInicio . ' - ' . $horaFin) : ''));
+        return $txt !== '' ? $txt : 'el horario solicitado';
+    }
+
+    private function existeSolicitudDatosMasRecienteAprobada(int $idSolicitud, int $idUsuario): bool {
+        $sql = "SELECT 1
+                FROM {$this->table}
+                WHERE id_instructor_solicitante = :id_usuario
+                  AND tipo_solicitud = 'DATOS'
+                  AND estado = 'APROBADO'
+                  AND id_solicitud > :id_solicitud
+                LIMIT 1";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindValue(':id_usuario', $idUsuario, PDO::PARAM_INT);
+        $stmt->bindValue(':id_solicitud', $idSolicitud, PDO::PARAM_INT);
+        $stmt->execute();
+        return (bool)$stmt->fetchColumn();
+    }
+
+    private function existeDetalleDatosPendienteAnterior(int $idSolicitud, int $idUsuario, string $campo, string $valorNuevo): bool {
+        $sql = "SELECT 1
+                FROM {$this->table} s
+                INNER JOIN {$this->table_detalle} sd ON sd.id_solicitud = s.id_solicitud
+                WHERE s.id_instructor_solicitante = :id_usuario
+                  AND s.tipo_solicitud = 'DATOS'
+                  AND s.estado = 'PENDIENTE'
+                  AND s.id_solicitud < :id_solicitud
+                  AND sd.campo_modificado = :campo
+                  AND TRIM(COALESCE(sd.valor_nuevo, '')) = :valor_nuevo
+                LIMIT 1";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindValue(':id_usuario', $idUsuario, PDO::PARAM_INT);
+        $stmt->bindValue(':id_solicitud', $idSolicitud, PDO::PARAM_INT);
+        $stmt->bindValue(':campo', $campo);
+        $stmt->bindValue(':valor_nuevo', $valorNuevo);
+        $stmt->execute();
+        return (bool)$stmt->fetchColumn();
+    }
+
+    private function normalizarRaesComparacion($raes): array {
+        if (is_string($raes)) {
+            $raes = explode(',', $raes);
+        }
+        if (!is_array($raes)) {
+            return [];
+        }
+        return array_values(array_filter(array_map(function ($item) {
+            return trim((string)$item);
+        }, $raes), static function ($item) {
+            return $item !== '';
+        }));
+    }
+
+    private function payloadHorarioCoincide(array $a, array $b): bool {
+        $comparaciones = [
+            strtoupper($this->normalizarTextoComparacion($a['dia'] ?? '')) === strtoupper($this->normalizarTextoComparacion($b['dia'] ?? '')),
+            $this->normalizarHoraComparacion($a['hora_inicio'] ?? '') === $this->normalizarHoraComparacion($b['hora_inicio'] ?? ''),
+            $this->normalizarHoraComparacion($a['hora_fin'] ?? '') === $this->normalizarHoraComparacion($b['hora_fin'] ?? ''),
+            (string)($a['id_instructor'] ?? '') === (string)($b['id_instructor'] ?? ''),
+            (string)($a['id_competencia'] ?? '') === (string)($b['id_competencia'] ?? ''),
+            (string)($a['id_zona'] ?? '') === (string)($b['id_zona'] ?? ''),
+            (string)($a['id_area'] ?? '') === (string)($b['id_area'] ?? ''),
+            $this->normalizarTextoComparacion($a['numero_ficha'] ?? '') === $this->normalizarTextoComparacion($b['numero_ficha'] ?? ''),
+            $this->normalizarTextoComparacion($a['descripcion_jornada'] ?? '') === $this->normalizarTextoComparacion($b['descripcion_jornada'] ?? ''),
+            json_encode($this->normalizarRaesComparacion($a['raes'] ?? [])) === json_encode($this->normalizarRaesComparacion($b['raes'] ?? [])),
+        ];
+        foreach ($comparaciones as $ok) {
+            if (!$ok) return false;
+        }
+        return true;
+    }
+
+    private function existeHorarioPendienteAnteriorCompatible(int $idSolicitud, int $idUsuario, array $payloadEsperado): bool {
+        $sql = "SELECT sd.valor_nuevo
+                FROM {$this->table} s
+                INNER JOIN {$this->table_detalle} sd ON sd.id_solicitud = s.id_solicitud
+                WHERE s.id_instructor_solicitante = :id_usuario
+                  AND s.tipo_solicitud = 'HORARIO'
+                  AND s.estado = 'PENDIENTE'
+                  AND s.id_solicitud < :id_solicitud
+                  AND sd.campo_modificado = 'HORARIO_JSON'
+                ORDER BY s.id_solicitud DESC, sd.id_detalle DESC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindValue(':id_usuario', $idUsuario, PDO::PARAM_INT);
+        $stmt->bindValue(':id_solicitud', $idSolicitud, PDO::PARAM_INT);
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($rows as $row) {
+            $payload = json_decode((string)($row['valor_nuevo'] ?? ''), true);
+            if (!is_array($payload)) {
+                continue;
+            }
+            if ($this->payloadHorarioCoincide($payload, $payloadEsperado)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function validarSolicitudAprobable(array $solicitud) {
+        $tipo = strtoupper(trim((string)($solicitud['tipo_solicitud'] ?? '')));
+        $idSolicitud = (int)($solicitud['id_solicitud'] ?? 0);
+        if ($idSolicitud <= 0) {
+            return 'La solicitud no es válida para aprobación.';
+        }
+
+        if ($tipo === 'DATOS') {
+            return $this->validarSolicitudDatosAprobable($solicitud);
+        }
+        if ($tipo === 'HORARIO') {
+            return $this->validarSolicitudHorarioAprobable($solicitud);
+        }
+        return true;
+    }
+
+    private function validarSolicitudDatosAprobable(array $solicitud) {
+        require_once __DIR__ . '/Usuario.php';
+
+        $idSolicitud = (int)($solicitud['id_solicitud'] ?? 0);
+        $idUsuario = (int)($solicitud['id_instructor_solicitante'] ?? 0);
+        if ($idUsuario <= 0) {
+            return 'La solicitud no tiene un solicitante válido.';
+        }
+
+        if ($this->existeSolicitudDatosMasRecienteAprobada($idSolicitud, $idUsuario)) {
+            return 'No se puede aprobar esta solicitud porque ya existe otra solicitud de datos más reciente que fue aprobada. Revise la solicitud más nueva.';
+        }
+
+        $usuarioModel = new Usuario($this->conn);
+        $usuario = $usuarioModel->obtenerPorId($idUsuario, true);
+        if (!$usuario) {
+            return 'No se encontró el usuario asociado a la solicitud.';
+        }
+
+        $permitidos = [
+            'nombre_completo',
+            'tipo_documento',
+            'numero_documento',
+            'correo_electronico',
+            'tipo_instructor',
+            'tipo_contrato',
+        ];
+
+        $detalles = $this->obtenerDetalleSolicitud($idSolicitud);
+        foreach ($detalles as $detalle) {
+            $campo = (string)($detalle['campo_modificado'] ?? '');
+            if (!in_array($campo, $permitidos, true)) {
+                continue;
+            }
+            $actual = $this->normalizarTextoComparacion($usuario[$campo] ?? '');
+            $anterior = $this->normalizarTextoComparacion($detalle['valor_anterior'] ?? '');
+            if ($actual !== $anterior) {
+                if ($this->existeDetalleDatosPendienteAnterior($idSolicitud, $idUsuario, $campo, $anterior)) {
+                    continue;
+                }
+                return 'No se puede aprobar esta solicitud porque los datos actuales del usuario ya cambiaron desde que fue creada. Revise la solicitud más reciente antes de aprobar.';
+            }
+        }
+
+        return true;
+    }
+
+    private function validarSolicitudHorarioAprobable(array $solicitud) {
+        $tablaHorario = $this->getTablaHorario();
+        if (!$tablaHorario) {
+            return 'No existe la tabla de horarios para validar la solicitud.';
+        }
+
+        $idSolicitud = (int)($solicitud['id_solicitud'] ?? 0);
+        $idUsuario = (int)($solicitud['id_instructor_solicitante'] ?? 0);
+        $detalles = $this->obtenerDetalleSolicitud($idSolicitud);
+        foreach ($detalles as $detalle) {
+            $campo = strtoupper(trim((string)($detalle['campo_modificado'] ?? '')));
+            if ($campo !== 'HORARIO_JSON') {
+                continue;
+            }
+
+            $anterior = json_decode((string)($detalle['valor_anterior'] ?? ''), true);
+            $nuevo = json_decode((string)($detalle['valor_nuevo'] ?? ''), true);
+            if (!is_array($nuevo)) {
+                continue;
+            }
+
+            $esNuevo = !empty($nuevo['es_nuevo']) || empty($nuevo['id_horario']);
+            if ($esNuevo) {
+                $dia = strtoupper(trim((string)($nuevo['dia'] ?? '')));
+                $horaInicio = $this->normalizarHoraComparacion($nuevo['hora_inicio'] ?? '');
+                $horaFin = $this->normalizarHoraComparacion($nuevo['hora_fin'] ?? '');
+                $idZona = isset($nuevo['id_zona']) && $nuevo['id_zona'] !== '' ? (int)$nuevo['id_zona'] : null;
+                $idArea = isset($nuevo['id_area']) && $nuevo['id_area'] !== '' ? (int)$nuevo['id_area'] : null;
+
+                if ($dia === '' || $horaInicio === '' || $horaFin === '') {
+                    continue;
+                }
+
+                $sql = "SELECT COUNT(*) FROM {$tablaHorario}
+                        WHERE dia = :dia
+                          AND hora_inicio = :hora_inicio
+                          AND hora_fin = :hora_fin
+                          AND COALESCE(estado, 1) = 1";
+                if ($idZona !== null) {
+                    $sql .= " AND id_zona = :id_zona";
+                } elseif ($idArea !== null) {
+                    $sql .= " AND id_area = :id_area";
+                }
+                $sql .= " LIMIT 1";
+
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bindValue(':dia', $dia);
+                $stmt->bindValue(':hora_inicio', $horaInicio);
+                $stmt->bindValue(':hora_fin', $horaFin);
+                if ($idZona !== null) {
+                    $stmt->bindValue(':id_zona', $idZona, PDO::PARAM_INT);
+                } elseif ($idArea !== null) {
+                    $stmt->bindValue(':id_area', $idArea, PDO::PARAM_INT);
+                }
+                $stmt->execute();
+                if ((int)$stmt->fetchColumn() > 0) {
+                    return 'No se puede aprobar esta solicitud porque ' . $this->resumenHorarioPayload($nuevo) . ' ya no está disponible o ya fue creado por un cambio más reciente.';
+                }
+                continue;
+            }
+
+            $idHorario = (int)($nuevo['id_horario'] ?? ($anterior['id_horario'] ?? 0));
+            if ($idHorario <= 0) {
+                continue;
+            }
+
+            $stmt = $this->conn->prepare(
+                "SELECT h.*, f.numero_ficha
+                 FROM {$tablaHorario} h
+                 LEFT JOIN fichas f ON f.id_ficha = h.id_ficha
+                 WHERE h.id_horario = :id_horario
+                 LIMIT 1"
+            );
+            $stmt->bindValue(':id_horario', $idHorario, PDO::PARAM_INT);
+            $stmt->execute();
+            $actual = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$actual) {
+                if (is_array($anterior) && $idUsuario > 0 && $this->existeHorarioPendienteAnteriorCompatible($idSolicitud, $idUsuario, $anterior)) {
+                    continue;
+                }
+                return 'No se puede aprobar esta solicitud porque el horario original ya no existe o fue reemplazado por un cambio más reciente.';
+            }
+
+            if (is_array($anterior)) {
+                // Normaliza IDs: null, '', '0', 0 se tratan como "no asignado" (vacío).
+                $normId = fn($v) => ($v === null || $v === '' || (int)$v === 0) ? '' : (string)(int)$v;
+                // Solo validar id_zona/id_area si el anterior los traía explícitamente
+                $anteriorTieneZona = array_key_exists('id_zona', $anterior);
+                $anteriorTieneArea = array_key_exists('id_area', $anterior);
+                $comparaciones = [
+                    'dia' => strtoupper($this->normalizarTextoComparacion($actual['dia'] ?? '')) === strtoupper($this->normalizarTextoComparacion($anterior['dia'] ?? '')),
+                    'hora_inicio' => $this->normalizarHoraComparacion($actual['hora_inicio'] ?? '') === $this->normalizarHoraComparacion($anterior['hora_inicio'] ?? ''),
+                    'hora_fin' => $this->normalizarHoraComparacion($actual['hora_fin'] ?? '') === $this->normalizarHoraComparacion($anterior['hora_fin'] ?? ''),
+                    'id_instructor' => (string)($actual['id_instructor'] ?? '') === (string)($anterior['id_instructor'] ?? ''),
+                    'id_competencia' => (string)($actual['id_competencia'] ?? '') === (string)($anterior['id_competencia'] ?? ''),
+                    'id_zona' => !$anteriorTieneZona || $normId($actual['id_zona'] ?? null) === $normId($anterior['id_zona'] ?? null),
+                    'id_area' => !$anteriorTieneArea || $normId($actual['id_area'] ?? null) === $normId($anterior['id_area'] ?? null),
+                    'numero_ficha' => $this->normalizarTextoComparacion($actual['numero_ficha'] ?? '') === $this->normalizarTextoComparacion($anterior['numero_ficha'] ?? ''),
+                    'descripcion_jornada' => $this->normalizarTextoComparacion($actual['descripcion_jornada'] ?? '') === $this->normalizarTextoComparacion($anterior['descripcion_jornada'] ?? ''),
+                ];
+                foreach ($comparaciones as $ok) {
+                    if (!$ok) {
+                        if ($idUsuario > 0 && $this->existeHorarioPendienteAnteriorCompatible($idSolicitud, $idUsuario, $anterior)) {
+                            continue 2;
+                        }
+                        return 'No se puede aprobar esta solicitud porque ' . $this->resumenHorarioPayload($nuevo) . ' ya fue modificado por otro cambio más reciente.';
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
     // Función para crear una nueva solicitud CON detalle
     public function crear($tipo_solicitud, $id_instructor_solicitante, $detalles = []) {
         try {
@@ -110,6 +409,13 @@ class Solicitud {
             $this->conn->beginTransaction();
 
             $tipo = strtoupper(trim((string)($solicitud['tipo_solicitud'] ?? '')));
+            if ($estado === 'APROBADO') {
+                $vigencia = $this->validarSolicitudAprobable($solicitud);
+                if ($vigencia !== true) {
+                    $this->conn->rollBack();
+                    return ["status" => "error", "message" => $vigencia];
+                }
+            }
 
             // Si la solicitud es de HORARIO y se APRUEBA, aplicar los cambios
             if ($tipo === 'HORARIO' && $estado === 'APROBADO') {

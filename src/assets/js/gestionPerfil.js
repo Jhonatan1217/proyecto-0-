@@ -521,7 +521,7 @@
       btnConfirmarCerrar.addEventListener("click", function () {
         closeModal("modalCerrarSesion");
         var base = window.BASE_URL || "";
-        window.location.href = base + "index.php?page=logout";
+        window.location.replace(base + "index.php?page=logout");
       });
     }
 

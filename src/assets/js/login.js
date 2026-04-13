@@ -167,7 +167,7 @@ if (loginForm) {
       .then((res) => res.json())
       .then((data) => {
         if (data.status === "success") {
-          window.location.href = "index.php?page=register_tables";
+          window.location.replace("index.php?page=register_tables");
           return;
         }
 
@@ -405,7 +405,7 @@ function cambiarPassword() {
     .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
     .then(({ ok, data }) => {
       if (data.status === "password_changed") {
-        window.location.href = "index.php?page=register_tables";
+        window.location.replace("index.php?page=register_tables");
         return;
       }
       setPasswordModalMessage(

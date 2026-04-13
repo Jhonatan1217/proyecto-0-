@@ -518,4 +518,4 @@
   window.BASE_URL = "<?= BASE_URL ?>";
 </script>
 
-<script src="<?= BASE_URL ?>src/assets/js/gestionarSolicitudes.js?v=19" defer></script>
+<script src="<?= BASE_URL ?>src/assets/js/gestionarSolicitudes.js?v=20" defer></script>

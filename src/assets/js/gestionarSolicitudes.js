@@ -117,18 +117,25 @@ function capitalizarDiaSemana(d) {
     return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/** Título del bloque: día y franja (sustituye "Horario ID …"). */
+/** Título del bloque: usa el estado ORIGINAL (anterior) para ediciones; "Nuevo" para altas. */
 function tituloBloqueDesdeHorarios(hAnt, hNue, esNuevo) {
-    const n = hNue || hAnt;
-    if (!n || typeof n !== "object") return "Cambio de horario";
-    const dia = capitalizarDiaSemana(n.dia);
-    const hi = String(n.hora_inicio || "").trim();
-    const hf = String(n.hora_fin || "").trim();
-    const franja = hi && hf ? `${hi} – ${hf}` : hi || hf || "";
     if (esNuevo) {
+        const n = hNue || hAnt;
+        if (!n || typeof n !== "object") return "Nuevo horario";
+        const dia = capitalizarDiaSemana(n.dia);
+        const hi = String(n.hora_inicio || "").trim();
+        const hf = String(n.hora_fin || "").trim();
+        const franja = hi && hf ? `${hi} – ${hf}` : hi || hf || "";
         if (dia && franja) return `Nuevo · ${dia} · ${franja}`;
         return dia || franja || "Nuevo horario";
     }
+    // Para ediciones: mostrar el día/hora ORIGINAL (anterior), no el solicitado
+    const base = hAnt || hNue;
+    if (!base || typeof base !== "object") return "Cambio de horario";
+    const dia = capitalizarDiaSemana(base.dia);
+    const hi = String(base.hora_inicio || "").trim();
+    const hf = String(base.hora_fin || "").trim();
+    const franja = hi && hf ? `${hi} – ${hf}` : hi || hf || "";
     if (dia && franja) return `${dia} · ${franja}`;
     return dia || franja || "Cambio de horario";
 }

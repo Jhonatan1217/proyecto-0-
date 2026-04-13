@@ -551,7 +551,7 @@ window.BASE_URL = <?= json_encode(BASE_URL) ?>;
     if (logoutInProgress) return;
     logoutInProgress = true;
     var base = window.BASE_URL || "";
-    window.location.href = base + "index.php?page=logout";
+    window.location.replace(base + "index.php?page=logout");
   }
 
   function resetInactivityTimer() {
