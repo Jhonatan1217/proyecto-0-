@@ -2,29 +2,18 @@
 
 require_once __DIR__ . '/../../config/database.php';
 
-$id_usuario = $_SESSION['usuario_id'] ?? 0;
-$cargo = $_SESSION['usuario_cargo'] ?? '';
+$isAuthenticated = isset($_SESSION['usuario_id']);
 
-$tieneRolEncargado = false;
-
-if ($cargo === 'INSTRUCTOR' && $id_usuario) {
-    require_once __DIR__ . '/../models/Usuario.php';
-    require_once __DIR__ . '/../../config/database.php';
-
-    $usuarioModel = new Usuario($conn);
-    $roles = $usuarioModel->listarRolesFuncionalesPorUsuario($id_usuario);
-
-    foreach ($roles as $r) {
-        if (strtoupper($r['nombre_rol']) === 'ENCARGADO_TRIMESTRALIZACION') {
-            $tieneRolEncargado = true;
-            break;
-        }
-    }
-}
-
-$puedeCrearTrimestralizacion =
-    $cargo === 'COORDINADOR' ||
-    ($cargo === 'INSTRUCTOR' && $tieneRolEncargado);
+require_once __DIR__ . '/../helpers/TrimestralizacionPermisosHelper.php';
+$permisosHorarios = isset($conn)
+    ? trimestralizacion_permisos_horarios($conn, $_SESSION)
+    : [
+        'tiene_rol_encargado_trimestralizacion' => false,
+        'puede_crear_trimestralizacion' => false,
+        'puede_gestionar_horas_y_limpiar' => false,
+    ];
+$puedeCrearTrimestralizacion = $permisosHorarios['puede_crear_trimestralizacion'];
+$puedeGestionHorasYLimpiarTrimestralizacion = $permisosHorarios['puede_gestionar_horas_y_limpiar'];
 
 $areas        = [];
 $zonas        = [];
@@ -33,7 +22,6 @@ $trimestres   = [];
 $programas    = [];
 $competencias = [];
 $grupos       = [];
-$isAuthenticated = isset($_SESSION['usuario_id']);
 
 if (isset($conn)) {
   try {
@@ -310,6 +298,7 @@ if (isset($conn)) {
       </button>
 
       <?php if ($isAuthenticated): ?>
+      <?php if ($puedeGestionHorasYLimpiarTrimestralizacion): ?>
       <button id="btn-actualizar" class="bg-[#39a900] text-white px-6 py-2 rounded-lg hover:bg-[#4ebe15] transition flex items-center justify-center w-full sm:w-auto">
         Gestionar horas
       </button>
@@ -317,6 +306,7 @@ if (isset($conn)) {
       <button onclick="mostrarModalEliminar()" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition flex items-center justify-center w-full sm:w-auto">
         Limpiar Trimestralización
       </button>
+      <?php endif; ?>
 
       <button onclick="enviarHorario()" style="display:none;" class="hidden bg-[#0a3a57] text-white px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">
         Enviar horario
@@ -451,6 +441,7 @@ if (isset($conn)) {
   <script>
     window.BASE_URL = window.BASE_URL || "<?= BASE_URL ?>";
     window.IS_AUTHENTICATED = <?= $isAuthenticated ? 'true' : 'false' ?>;
+    window.PUEDE_GESTION_HORAS_Y_LIMPIAR = <?= $puedeGestionHorasYLimpiarTrimestralizacion ? 'true' : 'false' ?>;
   </script>
 
   <!-- Combobox global (select estilizado) para modalidad en cabecera -->
@@ -689,6 +680,12 @@ if (isset($conn)) {
                   </select>
                   </div>
                 </div>
+              </div>
+
+              <!-- Descripción de la jornada (se guarda en horario) -->
+              <div class="field-full">
+                <label for="descripcion_jornada_crear" class="block text-xs font-semibold text-gray-800 mb-1">Descripción de la jornada <span class="font-normal text-gray-500">(opcional)</span></label>
+                <textarea name="descripcion_jornada" id="descripcion_jornada_crear" rows="2" maxlength="2000" class="w-full min-h-[3.75rem] px-3 py-2 text-sm rounded-lg border border-gray-300 outline-none bg-white text-gray-700 resize-y focus:ring-2 focus:ring-[#39A900]/20 focus:border-[#39A900]" placeholder="Notas de la franja horaria…"></textarea>
               </div>
 
               <!-- COMPETENCIA -->

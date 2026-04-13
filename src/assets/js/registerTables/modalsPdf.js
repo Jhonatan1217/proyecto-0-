@@ -10,6 +10,10 @@
   const M = {};
 
   M.confirmarEliminar = async function () {
+    if (w.PUEDE_GESTION_HORAS_Y_LIMPIAR === false) {
+      T.fire({ icon: "warning", title: "No tienes permiso para esta acción." });
+      return;
+    }
     const selectArea = document.getElementById("selectArea");
     const id_area = selectArea ? selectArea.value : "";
 
@@ -42,6 +46,7 @@
   };
 
   M.mostrarModalEliminar = function () {
+    if (w.PUEDE_GESTION_HORAS_Y_LIMPIAR === false) return;
     const modal = document.getElementById("modalEliminar");
     if (!modal) return;
     modal.classList.remove("hidden");

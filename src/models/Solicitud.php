@@ -109,12 +109,24 @@ class Solicitud {
 
             $this->conn->beginTransaction();
 
+            $tipo = strtoupper(trim((string)($solicitud['tipo_solicitud'] ?? '')));
+
             // Si la solicitud es de HORARIO y se APRUEBA, aplicar los cambios
-            if ($solicitud['tipo_solicitud'] === 'HORARIO' && $estado === 'APROBADO') {
+            if ($tipo === 'HORARIO' && $estado === 'APROBADO') {
                 $aplicado = $this->aplicarCambiosHorario($id_solicitud);
                 if (!$aplicado) {
                     $this->conn->rollBack();
                     return ["status" => "error", "message" => "No se pudieron aplicar los cambios de horario en la base de datos."];
+                }
+            }
+
+            // Solicitud de datos personales: aplicar cambios en `usuarios` al aprobar
+            if ($tipo === 'DATOS' && $estado === 'APROBADO') {
+                $aplicadoDatos = $this->aplicarCambiosDatosPersonales($id_solicitud);
+                if ($aplicadoDatos !== true) {
+                    $this->conn->rollBack();
+                    $msg = is_string($aplicadoDatos) ? $aplicadoDatos : "No se pudieron aplicar los cambios de datos personales.";
+                    return ["status" => "error", "message" => $msg];
                 }
             }
 
@@ -307,6 +319,76 @@ class Solicitud {
             error_log("Error al aplicar cambios de horario: " . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Aplica en la tabla usuarios los valores aprobados de solicitudes_detalle (tipo DATOS).
+     * @return true|string true si OK; string con mensaje en caso de error
+     */
+    private function aplicarCambiosDatosPersonales($id_solicitud) {
+        require_once __DIR__ . '/Usuario.php';
+
+        $permitidos = [
+            'nombre_completo',
+            'tipo_documento',
+            'numero_documento',
+            'correo_electronico',
+            'tipo_instructor',
+            'tipo_contrato',
+        ];
+
+        $solicitud = $this->obtenerPorId($id_solicitud);
+        if (!$solicitud) {
+            return 'Solicitud no encontrada.';
+        }
+
+        $idUsuario = (int)($solicitud['id_instructor_solicitante'] ?? 0);
+        if ($idUsuario <= 0) {
+            return 'La solicitud no tiene un solicitante válido.';
+        }
+
+        $usuarioModel = new Usuario($this->conn);
+        $usuario = $usuarioModel->obtenerPorId($idUsuario, true);
+        if (!$usuario) {
+            return 'No se encontró el usuario asociado a la solicitud.';
+        }
+
+        $detalles = $this->obtenerDetalleSolicitud($id_solicitud);
+        if (!is_array($detalles)) {
+            $detalles = [];
+        }
+
+        $data = [
+            'nombre_completo' => (string)($usuario['nombre_completo'] ?? ''),
+            'tipo_documento' => (string)($usuario['tipo_documento'] ?? ''),
+            'numero_documento' => (string)($usuario['numero_documento'] ?? ''),
+            'correo_electronico' => (string)($usuario['correo_electronico'] ?? ''),
+            'cargo' => (string)($usuario['cargo'] ?? ''),
+            'id_area' => isset($usuario['id_area']) && $usuario['id_area'] !== '' && $usuario['id_area'] !== null
+                ? (int) $usuario['id_area']
+                : null,
+            'tipo_instructor' => (string)($usuario['tipo_instructor'] ?? ''),
+            'tipo_contrato' => (string)($usuario['tipo_contrato'] ?? ''),
+            'estado' => (int)($usuario['estado'] ?? 1),
+        ];
+
+        foreach ($detalles as $d) {
+            $campo = $d['campo_modificado'] ?? '';
+            if (!in_array($campo, $permitidos, true)) {
+                continue;
+            }
+            if (!array_key_exists('valor_nuevo', $d)) {
+                continue;
+            }
+            $data[$campo] = (string) $d['valor_nuevo'];
+        }
+
+        $resultado = $usuarioModel->actualizar($idUsuario, $data);
+        if ($resultado !== true) {
+            return is_string($resultado) ? $resultado : 'Error al actualizar el usuario.';
+        }
+
+        return true;
     }
 
     // Función para actualizar una solicitud y sus detalles
@@ -551,9 +633,10 @@ class Solicitud {
         }
     }
 
-    // Función para listar solicitudes por instructor
-    public function listarPorInstructor($id_instructor) {
+    // Función para listar solicitudes por instructor (opcionalmente filtradas por estado)
+    public function listarPorInstructor($id_instructor, $estado = null) {
         try {
+            $id_instructor = (int) $id_instructor;
             $sql = "SELECT 
                         s.id_solicitud,
                         s.codigo_solicitud,
@@ -564,16 +647,23 @@ class Solicitud {
                         s.observacion_respuesta,
                         s.id_instructor_solicitante,
                         instructor.nombre_completo as nombre_instructor,
+                        instructor.correo_electronico as correo_instructor,
                         s.id_coordinador_aprobador,
                         coordinador.nombre_completo as nombre_coordinador
                     FROM {$this->table} s
                     LEFT JOIN usuarios instructor ON s.id_instructor_solicitante = instructor.id_usuario
                     LEFT JOIN usuarios coordinador ON s.id_coordinador_aprobador = coordinador.id_usuario
-                    WHERE s.id_instructor_solicitante = :id_instructor
-                    ORDER BY s.fecha_solicitud DESC";
-            
+                    WHERE s.id_instructor_solicitante = :id_instructor";
+            if ($estado !== null && in_array($estado, ['PENDIENTE', 'APROBADO', 'DEVUELTO'], true)) {
+                $sql .= " AND s.estado = :estado";
+            }
+            $sql .= " ORDER BY s.fecha_solicitud DESC";
+
             $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':id_instructor', $id_instructor, PDO::PARAM_INT);
+            $stmt->bindValue(':id_instructor', $id_instructor, PDO::PARAM_INT);
+            if ($estado !== null && in_array($estado, ['PENDIENTE', 'APROBADO', 'DEVUELTO'], true)) {
+                $stmt->bindValue(':estado', $estado, PDO::PARAM_STR);
+            }
             $stmt->execute();
             $solicitudes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

@@ -47,7 +47,7 @@
       idInstructor: String(document.getElementById("editInstructor")?.value ?? ""),
       idCompetencia: String(document.getElementById("editCompetencia")?.value ?? ""),
       raesKey: raes.join(","),
-      descripcion: String(document.getElementById("editDescripcion")?.value ?? "").trim(),
+      descripcion_jornada: String(document.getElementById("editDescripcion")?.value ?? "").trim(),
     };
   };
 
@@ -61,7 +61,7 @@
       a.idInstructor === b.idInstructor &&
       a.idCompetencia === b.idCompetencia &&
       a.raesKey === b.raesKey &&
-      a.descripcion === b.descripcion
+      a.descripcion_jornada === b.descripcion_jornada
     );
   };
 
@@ -196,7 +196,7 @@
         raes,
         id_zona: id_zona_val,
         id_area: id_area_val,
-        descripcion: document.getElementById("editDescripcion")?.value || "",
+        descripcion_jornada: String(document.getElementById("editDescripcion")?.value ?? "").trim(),
       },
     };
   };
@@ -250,8 +250,33 @@
     }
 
     try {
+      const idx = S.horariosCache.findIndex((h) => String(h.id_horario) === String(out.value.id_horario));
+      const backup = idx >= 0 ? JSON.parse(JSON.stringify(S.horariosCache[idx])) : null;
       if (!E.aplicarEdicionHorarioEnCache(out.value)) {
         throw new Error("No se encontró el horario en la tabla actual.");
+      }
+      if (w.PUEDE_GESTION_HORAS_Y_LIMPIAR === true) {
+        const persist = {
+          id_horario: out.value.id_horario,
+          dia: out.value.dia,
+          hora_inicio: out.value.hora_inicio,
+          hora_fin: out.value.hora_fin,
+          numero_ficha: out.value.numero_ficha,
+          id_instructor: out.value.id_instructor,
+          id_competencia: out.value.id_competencia,
+          raes: out.value.raes,
+          descripcion_jornada: out.value.descripcion_jornada,
+        };
+        const res = await fetch(`${RT.API_BASE}src/controllers/TrimestralizacionController.php?accion=actualizar`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify([persist]),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.success === false) {
+          if (backup && idx >= 0) S.horariosCache[idx] = backup;
+          throw new Error(data.error || data.mensaje || "No se pudo guardar en el servidor.");
+        }
       }
       S.huboCambios = true;
       if (typeof RT.solicitud.detectarCambios === "function") {
@@ -416,7 +441,7 @@
     }
 
     const ta = document.getElementById("editDescripcion");
-    if (ta) ta.value = "";
+    if (ta) ta.value = reg.getAttribute("data-descripcion-jornada") || "";
 
     const sub = document.getElementById("subtituloModalEditarHorario");
     if (sub) {

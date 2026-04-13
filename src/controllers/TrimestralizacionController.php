@@ -6,6 +6,11 @@ ini_set('display_startup_errors', 1);
 
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../models/Trimestralizacion.php';
+require_once __DIR__ . '/../helpers/TrimestralizacionPermisosHelper.php';
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 if (!isset($conn)) {
     echo json_encode(['status' => 'error', 'mensaje' => 'No se pudo establecer conexión con la base de datos']);
@@ -325,6 +330,11 @@ if (!$tablaHorario) {
 switch ($accion) {
 
     case 'resumenHoras':
+        if (!trimestralizacion_puede_gestionar_horas_o_limpiar_api($conn)) {
+            http_response_code(403);
+            echo json_encode(['status' => 'error', 'mensaje' => 'No autorizado para consultar la gestión de horas.']);
+            exit;
+        }
         try {
             $instructores = fetchInstructorHourSummaries($conn, $tablaHorario);
             $grupos = fetchGroupHourSummaries($conn, $tablaHorario);
@@ -371,6 +381,7 @@ case 'listarPorGrupo':
                 h.dia,
                 h.hora_inicio,
                 h.hora_fin,
+                h.descripcion_jornada,
                 h.id_zona,
                 h.id_area,
                 h.numero_trimestre,
@@ -453,6 +464,7 @@ case 'listarPorGrupo':
                     h.dia,
                     h.hora_inicio,
                     h.hora_fin,
+                    h.descripcion_jornada,
                     h.id_zona,
                     h.id_area,
                     h.numero_trimestre,
@@ -526,6 +538,11 @@ case 'listarPorGrupo':
             echo json_encode(['status' => 'error', 'mensaje' => 'Método no permitido']);
             exit;
         }
+        if (!trimestralizacion_puede_crear_api($conn)) {
+            http_response_code(403);
+            echo json_encode(['status' => 'error', 'mensaje' => 'No autorizado para crear trimestralización.']);
+            exit;
+        }
 
         $modalidad_raw     = trim($_POST['modalidad'] ?? 'PRESENCIAL');
         $modalidad         = strtoupper($modalidad_raw);
@@ -545,6 +562,7 @@ case 'listarPorGrupo':
         $numero_trimestre  = isset($_POST['numero_trimestre']) && $_POST['numero_trimestre'] !== '' ? intval($_POST['numero_trimestre']) : null;
         $id_programa       = isset($_POST['id_programa']) && $_POST['id_programa'] !== '' ? intval($_POST['id_programa']) : null;
         $id_rae_raw        = trim($_POST['id_rae'] ?? '');
+        $descripcion_jornada = trim((string)($_POST['descripcion_jornada'] ?? $_POST['descripcion'] ?? ''));
 
         $id_zona = ($id_zona_raw !== null && $id_zona_raw !== '') ? intval($id_zona_raw) : null;
 
@@ -698,24 +716,47 @@ case 'listarPorGrupo':
                 exit;
             }
 
-            $insHorario = $conn->prepare("
+            $hasDescJornada = hasColumn($conn, $tablaHorario, 'descripcion_jornada');
+            if ($hasDescJornada) {
+                $insHorario = $conn->prepare("
+                INSERT INTO {$tablaHorario} (id_zona, id_area, modalidad, dia, hora_inicio, hora_fin, id_ficha, id_instructor, id_competencia, numero_trimestre, estado, id_programa, id_rae, descripcion_jornada)
+                VALUES (:id_zona, :id_area, :modalidad, :dia, :hora_inicio, :hora_fin, :id_ficha, :id_instructor, :id_competencia, :numero_trimestre, 1, :id_programa, :id_rae, :descripcion_jornada)
+            ");
+                $insHorario->execute([
+                    ':id_zona' => $id_zona,
+                    ':id_area' => $id_area,
+                    ':modalidad' => $modalidad,
+                    ':dia' => $dia,
+                    ':hora_inicio' => $horaInicio,
+                    ':hora_fin' => $horaFin,
+                    ':id_ficha' => $id_ficha,
+                    ':id_instructor' => $id_instructor,
+                    ':id_competencia' => $id_competencia,
+                    ':numero_trimestre' => $numero_trimestre,
+                    ':id_programa' => $id_programa,
+                    ':id_rae' => $id_rae,
+                    ':descripcion_jornada' => $descripcion_jornada !== '' ? $descripcion_jornada : null,
+                ]);
+            } else {
+                $insHorario = $conn->prepare("
                 INSERT INTO {$tablaHorario} (id_zona, id_area, modalidad, dia, hora_inicio, hora_fin, id_ficha, id_instructor, id_competencia, numero_trimestre, estado, id_programa, id_rae)
                 VALUES (:id_zona, :id_area, :modalidad, :dia, :hora_inicio, :hora_fin, :id_ficha, :id_instructor, :id_competencia, :numero_trimestre, 1, :id_programa, :id_rae)
             ");
-            $insHorario->execute([
-                ':id_zona' => $id_zona,
-                ':id_area' => $id_area,
-                ':modalidad' => $modalidad,
-                ':dia' => $dia,
-                ':hora_inicio' => $horaInicio,
-                ':hora_fin' => $horaFin,
-                ':id_ficha' => $id_ficha,
-                ':id_instructor' => $id_instructor,
-                ':id_competencia' => $id_competencia,
-                ':numero_trimestre' => $numero_trimestre,
-                ':id_programa' => $id_programa,
-                ':id_rae' => $id_rae
-            ]);
+                $insHorario->execute([
+                    ':id_zona' => $id_zona,
+                    ':id_area' => $id_area,
+                    ':modalidad' => $modalidad,
+                    ':dia' => $dia,
+                    ':hora_inicio' => $horaInicio,
+                    ':hora_fin' => $horaFin,
+                    ':id_ficha' => $id_ficha,
+                    ':id_instructor' => $id_instructor,
+                    ':id_competencia' => $id_competencia,
+                    ':numero_trimestre' => $numero_trimestre,
+                    ':id_programa' => $id_programa,
+                    ':id_rae' => $id_rae,
+                ]);
+            }
             $newHorarioId = intval($conn->lastInsertId());
 
             $insT = $conn->prepare("INSERT INTO trimestralizacion (id_horario) VALUES (:id_horario)");
@@ -747,6 +788,11 @@ case 'listarPorGrupo':
     case 'actualizar':
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             echo json_encode(['success' => false, 'error' => 'Método no permitido']);
+            exit;
+        }
+        if (!trimestralizacion_puede_gestionar_horas_o_limpiar_api($conn)) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'No autorizado para actualizar la trimestralización.']);
             exit;
         }
 
@@ -855,6 +901,23 @@ case 'listarPorGrupo':
                     ]);
                 }
 
+                if (hasColumn($conn, $tablaHorario, 'descripcion_jornada')
+                    && (array_key_exists('descripcion_jornada', $r) || array_key_exists('descripcion', $r))) {
+                    $descVal = array_key_exists('descripcion_jornada', $r)
+                        ? $r['descripcion_jornada']
+                        : $r['descripcion'];
+                    $descVal = $descVal === null ? null : trim((string)$descVal);
+                    $stmtDesc = $conn->prepare("
+                        UPDATE {$tablaHorario}
+                        SET descripcion_jornada = :descripcion_jornada
+                        WHERE id_horario = :id_horario
+                    ");
+                    $stmtDesc->execute([
+                        ':descripcion_jornada' => ($descVal === '' ? null : $descVal),
+                        ':id_horario' => $r['id_horario'],
+                    ]);
+                }
+
                 $actualizados++;
             }
 
@@ -891,6 +954,11 @@ case 'listarPorGrupo':
     // ELIMINAR POR ZONA + AREA (MARCAR INACTIVO)
     // ============================================================
     case 'eliminar':
+        if (!trimestralizacion_puede_gestionar_horas_o_limpiar_api($conn)) {
+            http_response_code(403);
+            echo json_encode(['status' => 'error', 'mensaje' => 'No autorizado para eliminar la trimestralización.']);
+            exit;
+        }
         $id_zona = $_GET['id_zona'] ?? null;
         $id_area_supplied = $_GET['id_area'] ?? null;
 

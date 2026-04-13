@@ -65,7 +65,10 @@ try {
                 echo json_encode(['error' => 'ID no proporcionado']);
                 break;
             }
-            $data = $usuarioModel->obtenerPorId($id);
+            $idSesion = intval($_SESSION['usuario_id'] ?? 0);
+            // Permitir consultar datos "es_sistema" únicamente del propio usuario logueado.
+            $incluirSistema = ($idSesion > 0 && $idSesion === $id);
+            $data = $usuarioModel->obtenerPorId($id, $incluirSistema);
             if ($data) {
                 // Asegurar que tipo_documento esté presente (por si la columna tiene otro nombre o es null)
                 if (!isset($data['tipo_documento']) || $data['tipo_documento'] === null) {
@@ -73,6 +76,33 @@ try {
                 }
             }
             echo json_encode($data ?: ['error' => 'Usuario no encontrado']);
+            break;
+
+        // ============================================================
+        // SINCRONIZAR $_SESSION con datos actuales en BD (usuario logueado)
+        // ============================================================
+        case 'sincronizar_sesion':
+            $idSesion = intval($_SESSION['usuario_id'] ?? 0);
+            if (!$idSesion) {
+                echo json_encode(['status' => 'error', 'message' => 'No autenticado']);
+                break;
+            }
+            $data = $usuarioModel->obtenerPorId($idSesion, true);
+            if (!$data) {
+                echo json_encode(['status' => 'error', 'message' => 'Usuario no encontrado']);
+                break;
+            }
+            $_SESSION['usuario_nombre'] = $data['nombre_completo'] ?? '';
+            $_SESSION['usuario_correo'] = $data['correo_electronico'] ?? '';
+            $_SESSION['usuario_cargo'] = $data['cargo'] ?? '';
+            echo json_encode([
+                'status' => 'success',
+                'data' => [
+                    'nombre_completo' => $data['nombre_completo'] ?? '',
+                    'correo_electronico' => $data['correo_electronico'] ?? '',
+                    'cargo' => $data['cargo'] ?? '',
+                ],
+            ]);
             break;
 
         case 'listar':

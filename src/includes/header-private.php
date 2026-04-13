@@ -27,9 +27,13 @@ document.addEventListener("DOMContentLoaded", function () {
       top: 5rem !important;
       z-index: 40 !important;
     }
-    /* Cuando un modal está abierto (body overflow:hidden) el toast sube encima del backdrop */
+    /* Cuando body tiene overflow:hidden, el toast debe superar .modal-perfil (999999) */
     body[style*="overflow: hidden"] .swal2-container {
-      z-index: 9999 !important;
+      z-index: 2147483000 !important;
+    }
+    /* Con modal de perfil visible, .swal2-container.swal2-top-end (z-index:40 arriba) quedaba detrás del backdrop */
+    body:has(.modal-perfil:not(.hidden)) .swal2-container {
+      z-index: 2147483000 !important;
     }
     .modal-perfil {
       z-index: 999999 !important;
@@ -188,7 +192,7 @@ document.addEventListener("DOMContentLoaded", function () {
         class="flex items-center space-x-3 focus:outline-none">
 
         <!-- AVATAR -->
-       <div class="w-10 h-10 min-w-[40px] min-h-[40px]
+       <div id="headerUserAvatar" class="w-10 h-10 min-w-[40px] min-h-[40px]
             bg-gray-600 text-white
             rounded-full
             flex items-center justify-center
@@ -199,10 +203,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
         <!-- TEXT -->
         <div class="text-left">
-          <p class="text-sm font-semibold text-gray-800 leading-none">
+          <p id="headerUserNombre" class="text-sm font-semibold text-gray-800 leading-none">
             <?= htmlspecialchars($nombre) ?>
           </p>
-          <p class="text-xs text-gray-500">
+          <p id="headerUserCargo" class="text-xs text-gray-500">
             <?= htmlspecialchars($cargo) ?>
           </p>
         </div>
@@ -232,7 +236,11 @@ document.addEventListener("DOMContentLoaded", function () {
           <span>Ver perfil</span>
         </button>
 
-        <button type="button" data-action="editar-perfil" class="user-widget-action w-full flex items-center gap-3 px-4 py-3 text-sm text-left hover:bg-gray-100 transition">
+        <button
+          type="button"
+          data-action="editar-perfil"
+          <?= strtoupper(trim((string)($_SESSION['usuario_cargo'] ?? ''))) === 'ES SISTEMA' ? 'disabled aria-disabled="true" title="No disponible para rol Es sistema"' : '' ?>
+          class="user-widget-action w-full flex items-center gap-3 px-4 py-3 text-sm text-left transition <?= strtoupper(trim((string)($_SESSION['usuario_cargo'] ?? ''))) === 'ES SISTEMA' ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100' ?>">
           <svg class="w-5 h-5 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
           <span>Editar perfil</span>
         </button>
@@ -272,8 +280,19 @@ document.addEventListener("DOMContentLoaded", function () {
       </div>
       <div class="border-t border-gray-200 pt-4 space-y-3">
         <div><span class="text-xs font-semibold text-gray-500 uppercase">Nombre</span><p id="verPerfilNombreCampo" class="text-gray-900 mt-0.5"></p></div>
+        <div><span class="text-xs font-semibold text-gray-500 uppercase">Tipo de documento</span><p id="verPerfilTipoDocumento" class="text-gray-900 mt-0.5"></p></div>
         <div><span class="text-xs font-semibold text-gray-500 uppercase">Número documento</span><p id="verPerfilDocumento" class="text-gray-900 mt-0.5"></p></div>
         <div><span class="text-xs font-semibold text-gray-500 uppercase">Correo electrónico</span><p id="verPerfilCorreo" class="text-gray-900 mt-0.5"></p></div>
+        <div id="verPerfilInstructorContainer" class="hidden">
+          <div>
+            <span class="text-xs font-semibold text-gray-500 uppercase">Tipo instructor</span>
+            <p id="verPerfilTipoInstructor" class="text-gray-900 mt-0.5">—</p>
+          </div>
+          <div class="mt-3">
+            <span class="text-xs font-semibold text-gray-500 uppercase">Tipo contrato</span>
+            <p id="verPerfilTipoContrato" class="text-gray-900 mt-0.5">—</p>
+          </div>
+        </div>
         <div id="verPerfilAreaContainer">
           <div><span class="text-xs font-semibold text-gray-500 uppercase">Área del coordinador</span><p id="verPerfilArea" class="text-gray-900 mt-0.5">—</p></div>
         </div>
@@ -294,8 +313,18 @@ document.addEventListener("DOMContentLoaded", function () {
       <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo de documento</label><div class="relative"><select name="tipo_documento" class="select-perfil input-enterprise py-2.5 text-sm pr-10 appearance-none cursor-pointer"><option value="">Seleccione tipo de documento</option><option value="CC">Cédula de Ciudadanía</option><option value="CE">Cédula de Extranjería</option><option value="PASAPORTE">Pasaporte</option></select></div></div>
       <div><label class="block text-sm font-medium text-gray-700 mb-1">Número de documento</label><input type="text" name="numero_documento" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none" /></div>
       <div><label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label><input type="email" name="correo_electronico" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-green-600/30 focus:border-green-600 outline-none" /></div>
-      <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo instructor</label><div class="relative"><select name="tipo_instructor" class="select-perfil input-enterprise py-2.5 text-sm pr-10 appearance-none cursor-pointer"><option value="">Seleccione tipo instructor</option><option value="Técnico">Técnico</option><option value="Transversal">Transversal</option></select></div></div>
-      <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo contrato</label><div class="relative"><select name="tipo_contrato" class="select-perfil input-enterprise py-2.5 text-sm pr-10 appearance-none cursor-pointer"><option value="">Seleccione tipo contrato</option><option value="Planta">Planta</option><option value="Contratista">Contratista</option></select></div></div>
+      <div id="solicitarGrupoInstructorPerfil" class="space-y-4">
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo instructor</label><div class="relative"><select name="tipo_instructor" class="select-perfil input-enterprise py-2.5 text-sm pr-10 appearance-none cursor-pointer"><option value="">Seleccione tipo instructor</option><option value="Técnico">Técnico</option><option value="Transversal">Transversal</option></select></div></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipo contrato</label><div class="relative"><select name="tipo_contrato" class="select-perfil input-enterprise py-2.5 text-sm pr-10 appearance-none cursor-pointer"><option value="">Seleccione tipo contrato</option><option value="Planta">Planta</option><option value="Contratista">Contratista</option></select></div></div>
+      </div>
+      <div id="solicitarGrupoCoordinadorPerfil" class="hidden">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Área del coordinador</label>
+        <div class="relative">
+          <select id="solicitarAreaCoordinadorPerfil" name="area_coordinador" class="select-perfil input-enterprise py-2.5 text-sm pr-10 appearance-none cursor-pointer">
+            <option value="">Sin asignar área</option>
+          </select>
+        </div>
+      </div>
       <div class="pt-3 border-t border-gray-200">
         <p class="text-sm font-semibold text-gray-700 mb-2">Seguridad</p>
         <button type="button" id="btnAbrirCambiarContrasena" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 transition focus:ring-2 focus:ring-green-600/30 outline-none">
@@ -476,7 +505,91 @@ window.API_USUARIO = "<?= BASE_URL ?>src/controllers/UsuarioController.php";
 window.API_SOLICITUD = "<?= BASE_URL ?>src/controllers/SolicitudController.php";
 window.USUARIO_ID = <?= json_encode((int)($_SESSION['usuario_id'] ?? 0)) ?>;
 window.USUARIO_CARGO = <?= json_encode($_SESSION['usuario_cargo'] ?? '') ?>;
+window.USUARIO_ES_SISTEMA = <?= json_encode((int)($_SESSION['usuario_es_sistema'] ?? 0)) ?>;
 window.BASE_URL = <?= json_encode(BASE_URL) ?>;
+</script>
+<script>
+// Desactiva sugerencias/autocomplete del navegador en zona privada.
+// El login no usa este header, por lo que mantiene su comportamiento normal.
+(function () {
+  function desactivarAutocompleteEnPrivado() {
+    var forms = document.querySelectorAll('form');
+    forms.forEach(function (form) {
+      if (form.hasAttribute('data-allow-autocomplete')) return;
+      form.setAttribute('autocomplete', 'off');
+    });
+
+    var campos = document.querySelectorAll('input, textarea, select');
+    campos.forEach(function (el) {
+      if (el.hasAttribute('data-allow-autocomplete')) return;
+      if (el.tagName === 'INPUT') {
+        var type = (el.getAttribute('type') || 'text').toLowerCase();
+        if (['hidden', 'checkbox', 'radio', 'file', 'submit', 'button'].indexOf(type) >= 0) return;
+      }
+      el.setAttribute('autocomplete', 'off');
+      el.setAttribute('autocapitalize', 'off');
+      el.setAttribute('autocorrect', 'off');
+      el.setAttribute('spellcheck', 'false');
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', desactivarAutocompleteEnPrivado);
+  } else {
+    desactivarAutocompleteEnPrivado();
+  }
+})();
+</script>
+<script>
+// Cierre de sesión automático tras 10 minutos sin actividad (zona privada).
+(function () {
+  var INACTIVITY_MS = 10 * 60 * 1000;
+  var inactivityTimer = null;
+  var logoutInProgress = false;
+
+  function doAutoLogout() {
+    if (logoutInProgress) return;
+    logoutInProgress = true;
+    var base = window.BASE_URL || "";
+    window.location.href = base + "index.php?page=logout";
+  }
+
+  function resetInactivityTimer() {
+    if (logoutInProgress) return;
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(doAutoLogout, INACTIVITY_MS);
+  }
+
+  function bindActivityListeners() {
+    [
+      "click",
+      "mousemove",
+      "mousedown",
+      "keydown",
+      "scroll",
+      "touchstart",
+      "pointerdown"
+    ].forEach(function (evt) {
+      window.addEventListener(evt, resetInactivityTimer, { passive: true });
+    });
+
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible") {
+        resetInactivityTimer();
+      }
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () {
+      bindActivityListeners();
+      resetInactivityTimer();
+    });
+  } else {
+    bindActivityListeners();
+    resetInactivityTimer();
+  }
+})();
 </script>
 <script src="<?= BASE_URL ?>src/assets/js/gestionPerfil.js"></script>
 

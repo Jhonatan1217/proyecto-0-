@@ -52,7 +52,7 @@ function setVerificationMessage(text, variant) {
   el.textContent = text;
   el.classList.remove("hidden");
   el.className =
-    "mb-3 rounded-lg border px-2 py-1.5 text-[11px] text-center" +
+    "mb-3 rounded-xl border px-3 py-2 text-sm text-center" +
     (variant === "success"
       ? " border-green-200 bg-green-50 text-green-800"
       : variant === "info"
@@ -71,7 +71,7 @@ function setPasswordModalMessage(text, variant) {
   el.textContent = text;
   el.classList.remove("hidden");
   el.className =
-    "mb-3 rounded-lg border px-2 py-1.5 text-[11px]" +
+    "mb-3 rounded-xl border px-3 py-2 text-sm" +
     (variant === "success"
       ? " border-green-200 bg-green-50 text-green-800"
       : " border-red-100 bg-red-50 text-red-600");
@@ -184,15 +184,16 @@ if (loginForm) {
           }
 
           setVerificationMessage("", "info");
-          document.querySelectorAll(".otp-input").forEach((input) => {
+          getVerificationOtpInputs().forEach((input) => {
             input.value = "";
           });
+          updateOtpVerifyButtonState();
 
           const modal = document.getElementById("verificationModal");
           if (modal) modal.classList.remove("hidden");
 
           iniciarContadorReenvio();
-          const firstOtp = document.querySelector(".otp-input");
+          const firstOtp = getVerificationOtpInputs()[0];
           if (firstOtp) firstOtp.focus();
           return;
         }
@@ -241,10 +242,11 @@ function reenviarCodigo() {
       if (data.status === "resent") {
         setVerificationMessage("Te enviamos un nuevo código al correo.", "success");
         iniciarContadorReenvio();
-        document.querySelectorAll(".otp-input").forEach((input) => {
+        getVerificationOtpInputs().forEach((input) => {
           input.value = "";
         });
-        document.querySelector(".otp-input")?.focus();
+        updateOtpVerifyButtonState();
+        getVerificationOtpInputs()[0]?.focus();
         return;
       }
       if (data.status === "error_mail") {
@@ -261,28 +263,87 @@ function reenviarCodigo() {
     });
 }
 
-/* ================= OTP ================= */
-document.querySelectorAll(".otp-input").forEach((input, index, inputs) => {
-  input.addEventListener("input", function () {
-    this.value = this.value.replace(/[^0-9]/g, "");
-    if (this.value.length === 1 && index < inputs.length - 1) {
-      inputs[index + 1].focus();
-    }
+/* ================= OTP (solo modal verificación) ================= */
+function getVerificationOtpInputs() {
+  return Array.from(document.querySelectorAll("#verificationModal .otp-input"));
+}
+
+function updateOtpVerifyButtonState() {
+  const btn = document.getElementById("btnVerificarCorreo");
+  if (!btn) return;
+  const inputs = getVerificationOtpInputs();
+  const code = inputs.map((i) => i.value).join("");
+  const complete = code.length === 6 && /^[0-9]{6}$/.test(code);
+  const icon = btn.querySelector("img");
+  btn.disabled = !complete;
+  if (complete) {
+    btn.className =
+      "w-full py-3.5 rounded-xl text-sm sm:text-base font-semibold flex items-center justify-center gap-2 bg-[#0a3a57] text-white shadow-md hover:bg-[#082f4a] transition-colors";
+    if (icon) icon.classList.remove("opacity-60");
+  } else {
+    btn.className =
+      "w-full py-3.5 rounded-xl text-sm sm:text-base font-semibold flex items-center justify-center gap-2 bg-gray-200 text-gray-500 cursor-not-allowed transition-colors shadow-sm";
+    if (icon) icon.classList.add("opacity-60");
+  }
+}
+
+function applyPastedOtpDigits(raw) {
+  const digits = String(raw || "")
+    .replace(/\D/g, "")
+    .slice(0, 6);
+  const inputs = getVerificationOtpInputs();
+  inputs.forEach((el, i) => {
+    el.value = digits[i] != null ? digits[i] : "";
+  });
+  const focusIdx = Math.min(Math.max(digits.length - 1, 0), inputs.length - 1);
+  inputs[focusIdx]?.focus();
+  updateOtpVerifyButtonState();
+}
+
+(function initVerificationOtp() {
+  const inputs = getVerificationOtpInputs();
+  inputs.forEach((input, index) => {
+    input.addEventListener("input", function () {
+      this.value = this.value.replace(/[^0-9]/g, "").slice(-1);
+      if (this.value.length === 1 && index < inputs.length - 1) {
+        inputs[index + 1].focus();
+      }
+      updateOtpVerifyButtonState();
+    });
+
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Backspace" && this.value === "" && index > 0) {
+        inputs[index - 1].focus();
+      }
+    });
+
+    input.addEventListener("paste", function (e) {
+      e.preventDefault();
+      const pasted = (e.clipboardData || window.clipboardData || {}).getData("text") || "";
+      applyPastedOtpDigits(pasted);
+    });
   });
 
-  input.addEventListener("keydown", function (e) {
-    if (e.key === "Backspace" && this.value === "" && index > 0) {
-      inputs[index - 1].focus();
-    }
-  });
-});
+  const wrap = document.getElementById("verificationOtpWrap");
+  if (wrap) {
+    wrap.addEventListener("paste", function (e) {
+      if (e.target && e.target.classList && e.target.classList.contains("otp-input")) return;
+      e.preventDefault();
+      const pasted = (e.clipboardData || window.clipboardData || {}).getData("text") || "";
+      applyPastedOtpDigits(pasted);
+      inputs[0]?.focus();
+    });
+  }
+
+  updateOtpVerifyButtonState();
+})();
 
 /* ================= VERIFICAR CODIGO ================= */
 function verificarCodigo() {
   setVerificationMessage("", "info");
 
   let codigo = "";
-  document.querySelectorAll(".otp-input").forEach((input) => {
+  getVerificationOtpInputs().forEach((input) => {
     codigo += input.value;
   });
 
@@ -293,6 +354,7 @@ function verificarCodigo() {
 
   fetch(loginApiUrl("src/controllers/verify_token.php"), {
     method: "POST",
+    credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       id_usuario: usuarioPendiente,
@@ -333,19 +395,23 @@ function cambiarPassword() {
 
   fetch(loginApiUrl("src/controllers/change_password_first.php"), {
     method: "POST",
+    credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       id_usuario: usuarioPendiente,
       password: nueva,
     }),
   })
-    .then((res) => res.json())
-    .then((data) => {
+    .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+    .then(({ ok, data }) => {
       if (data.status === "password_changed") {
         window.location.href = "index.php?page=register_tables";
         return;
       }
-      setPasswordModalMessage("No se pudo actualizar la contraseña. Intenta de nuevo.", "error");
+      setPasswordModalMessage(
+        data.message || (ok ? "No se pudo actualizar la contraseña. Intenta de nuevo." : "No se pudo guardar la contraseña."),
+        "error"
+      );
     })
     .catch(() => {
       setPasswordModalMessage("Error de conexión al guardar la contraseña.", "error");
