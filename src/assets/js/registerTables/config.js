@@ -32,6 +32,8 @@
     },
     /** Tras init, al cambiar modalidad se limpian área/zona (evita borrar query params al cargar). */
     cascadaFiltrosPresencialActiva: false,
+    /** Evita recargas al aplicar filtros desde vista previa local */
+    syncFiltrosDesdePreview: false,
     /** Snapshot JSON de horariosCache para comparar cambios pendientes de envío a coordinación */
     horariosOriginal: null,
     /** Hay ediciones locales no enviadas como solicitud */
@@ -65,6 +67,8 @@
   RT.data = RT.data || {};
   RT.edit = RT.edit || {};
   RT.ui = RT.ui || {};
+  RT.ui.sincronizarFiltrosCabeceraDesdePreview =
+    RT.ui.sincronizarFiltrosCabeceraDesdePreview || async function () {};
   RT.modals = RT.modals || {};
   RT.solicitud = RT.solicitud || {};
   RT.modals.abrirModal = RT.modals.abrirModal || function () {

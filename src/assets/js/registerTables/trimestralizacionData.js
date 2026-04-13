@@ -12,7 +12,8 @@
 
   D.configurarModalidadFormulario = function () {
     const modalidadForm = document.getElementById("modalidad");
-    const areaField = document.getElementById("id_area")?.closest(".field");
+    const wrapAz = document.getElementById("contenedorAreaZonaCrear");
+    const areaField = wrapAz || document.getElementById("id_area")?.closest(".field");
     const zonaField = document.getElementById("id_zona")?.closest(".field");
 
     if (!modalidadForm) return;
@@ -21,11 +22,17 @@
       const modalidad = modalidadForm.value;
 
       if (modalidad === "presencial") {
-        if (areaField) areaField.style.display = "";
-        if (zonaField) zonaField.style.display = "";
+        if (wrapAz) wrapAz.style.display = "";
+        else {
+          if (areaField) areaField.style.display = "";
+          if (zonaField && zonaField !== areaField) zonaField.style.display = "";
+        }
       } else if (modalidad === "virtual" || modalidad === "mixto") {
-        if (areaField) areaField.style.display = "none";
-        if (zonaField) zonaField.style.display = "none";
+        if (wrapAz) wrapAz.style.display = "none";
+        else {
+          if (areaField) areaField.style.display = "none";
+          if (zonaField && zonaField !== areaField) zonaField.style.display = "none";
+        }
       }
     });
   };
@@ -33,11 +40,21 @@
   D.cargarTrimestralizacionPorGrupo = async function (grupo) {
     const tbody = document.getElementById("tbody-horarios");
     if (!tbody) return;
+
+    const selMod = document.getElementById("selectModalidad");
+    const raw = selMod ? String(selMod.value || "").trim().toLowerCase() : "";
+    const mod = raw === "mixta" ? "mixto" : raw;
+    if (mod !== "virtual" && mod !== "mixto") {
+      return;
+    }
+
     tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-gray-500">Cargando datos...</td></tr>`;
 
     try {
+      const q = encodeURIComponent(String(grupo).trim());
       const res = await fetch(
-        `${RT.API_BASE}src/controllers/TrimestralizacionController.php?accion=listarPorGrupo&numero_ficha=${grupo}`
+        `${RT.API_BASE}src/controllers/TrimestralizacionController.php?accion=listarPorGrupo&numero_ficha=${q}`,
+        { credentials: "same-origin" }
       );
       const data = await res.json();
       const registrosServer = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];

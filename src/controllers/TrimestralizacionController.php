@@ -374,6 +374,9 @@ case 'listarPorGrupo':
             $selectInstructores = "i.id_usuario AS id_instructor, i.nombre_completo AS nombre_instructor, i.tipo_instructor";
         }
 
+        // Patrón LIKE: contiene el número buscado (no solo prefijo); escapar % y _ del usuario.
+        $likePat = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $numero_ficha) . '%';
+
         $sql = "
             SELECT 
                 h.id_horario,
@@ -395,21 +398,21 @@ case 'listarPorGrupo':
                 r.descripcion AS descripcion_rae,
                 h.estado
             FROM {$tablaHorario} h
-            LEFT JOIN fichas f ON h.id_ficha = f.id_ficha
+            INNER JOIN fichas f ON f.id_ficha = h.id_ficha AND h.id_ficha IS NOT NULL
             LEFT JOIN programas p ON h.id_programa = p.id_programa
             {$joinInstructores}
             LEFT JOIN competencias c ON h.id_competencia = c.id_competencia
             LEFT JOIN raes r ON FIND_IN_SET(r.id_rae, h.id_rae)
-                        WHERE f.numero_ficha LIKE :numero_ficha
-              AND h.estado = 1
-              AND h.modalidad IN ('VIRTUAL','MIXTO')
+            WHERE h.estado = 1
+              AND UPPER(TRIM(COALESCE(h.modalidad, ''))) IN ('VIRTUAL', 'MIXTO')
+              AND TRIM(CAST(f.numero_ficha AS CHAR)) LIKE :numero_ficha_like
             ORDER BY 
                 FIELD(UPPER(h.dia),'LUNES','MARTES','MIERCOLES','JUEVES','VIERNES','SABADO'),
                 h.hora_inicio
         ";
 
         $stmt = $conn->prepare($sql);
-        $stmt->bindValue(':numero_ficha', $numero_ficha . '%');
+        $stmt->bindValue(':numero_ficha_like', $likePat, PDO::PARAM_STR);
         $stmt->execute();
 
         $registros = $stmt->fetchAll(PDO::FETCH_ASSOC);

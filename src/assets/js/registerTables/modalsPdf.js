@@ -158,6 +158,8 @@
       console.error("❌ No existe #modalCrearLanding");
       return;
     }
+    const detail =
+      prefill && typeof prefill === "object" && !(prefill instanceof Event) ? prefill : {};
     modal.classList.remove("hidden");
     modal.style.display = "";
     modal.style.pointerEvents = "";
@@ -168,7 +170,7 @@
     try {
       document.dispatchEvent(
         new CustomEvent("rt:abrir-modal-crear", {
-          detail: prefill && typeof prefill === "object" ? prefill : {},
+          detail,
         })
       );
     } catch (e) {}

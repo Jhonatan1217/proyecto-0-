@@ -10,10 +10,15 @@
   const SOL = {};
 
   function setBotonEnviarVisible(visible) {
-    const btnEnviar = document.querySelector("button[onclick='enviarHorario()']");
-    if (!btnEnviar) return;
-    btnEnviar.classList.toggle("hidden", !visible);
-    btnEnviar.style.display = visible ? "inline-flex" : "none";
+    const contenedor = document.getElementById("contenedorBtnEnviarHorario");
+    if (contenedor) {
+      contenedor.style.display = visible ? "block" : "none";
+    }
+    const btnViejo = document.querySelector("#botones-principales button[onclick='enviarHorario()']");
+    if (btnViejo) {
+      btnViejo.classList.toggle("hidden", true);
+      btnViejo.style.display = "none";
+    }
   }
 
   document.addEventListener("DOMContentLoaded", () => {
@@ -21,14 +26,9 @@
   });
 
   SOL.detectarCambios = function () {
-    if (!S.horariosOriginal) {
-      S.huboCambios = false;
-      setBotonEnviarVisible(false);
-      return;
-    }
-
-    const actual = JSON.stringify(S.horariosCache);
-    S.huboCambios = actual !== S.horariosOriginal;
+    const base = S.horariosOriginal == null ? "[]" : S.horariosOriginal;
+    const actual = JSON.stringify(S.horariosCache || []);
+    S.huboCambios = actual !== base;
     setBotonEnviarVisible(S.huboCambios);
   };
 

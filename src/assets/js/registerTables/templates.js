@@ -43,7 +43,7 @@
       const hora = U.escapeHtml(p.hora);
       const raesDisplay = U.escapeHtml(p.raesDisplay.replace(/\|/g, ", "));
       const descJ = String(p.descripcionJornada || "").trim();
-      const descripcionJornadaHtml = U.escapeHtml(descJ || "—");
+      const descripcionJornadaHtml = U.escapeHtml(descJ || "Sin descripción de jornada");
       return `
               <div class="text-left" style="max-height: min(26rem, calc(100vh - 14rem)); overflow-y: auto;">
                 <div class="mb-4 pb-2 flex items-center justify-between gap-3">

@@ -120,11 +120,20 @@ if (!window.TRIMESTRALIZACION_INIT) {
     function aplicarRegistroLocalYRefrescar(registro) {
       if (!enModoVistaPreviaLocal()) return false;
       const RT = window.RegisterTables;
+
+      try {
+        if (RT.ui && typeof RT.ui.sincronizarFiltrosCabeceraDesdePreview === "function") {
+          RT.ui.sincronizarFiltrosCabeceraDesdePreview(registro);
+        }
+      } catch (e) { console.warn("syncFiltros:", e); }
+
       RT.state.horariosCache.push(registro);
       RT.state.huboCambios = true;
+
       if (RT.grid && typeof RT.grid.renderizarTablaDesdeRegistros === "function") {
         RT.grid.renderizarTablaDesdeRegistros(RT.state.horariosCache, "", { filtersApplied: true });
       }
+
       if (RT.solicitud && typeof RT.solicitud.detectarCambios === "function") {
         RT.solicitud.detectarCambios();
       }
@@ -169,6 +178,23 @@ if (!window.TRIMESTRALIZACION_INIT) {
         return String((h + 1) % 24) + ":" + mm;
       }
 
+      const selModalidadModal = document.getElementById("modalidad");
+      const selModalidadFiltro = document.getElementById("selectModalidad");
+      if (selModalidadModal) {
+        let mv = extra && extra.modalidad != null && String(extra.modalidad).trim() !== ""
+          ? String(extra.modalidad).trim().toLowerCase()
+          : "";
+        if (!mv && selModalidadFiltro) {
+          const v = String(selModalidadFiltro.value || "").trim().toLowerCase();
+          mv = v === "mixta" ? "mixto" : v;
+        }
+        if (mv === "mixta") mv = "mixto";
+        if (mv && (mv === "presencial" || mv === "virtual" || mv === "mixto")) {
+          selModalidadModal.value = mv;
+          selModalidadModal.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      }
+
       const selAreaModal = document.getElementById("id_area");
       const selZonaModal = document.getElementById("id_zona");
       const inpAreaModal = document.getElementById("id_area_combo");
@@ -181,14 +207,16 @@ if (!window.TRIMESTRALIZACION_INIT) {
       if (selHoraIni) selHoraIni.value = "";
       if (selHoraFin) selHoraFin.value = "";
 
+      const modActual = String(selModalidadModal?.value || "").trim().toLowerCase();
+      const esPresCtx = modActual === "presencial" || modActual === "";
       const areaActual = document.getElementById("selectArea")?.value || "";
       const zonaActual = document.getElementById("selectZona")?.value || "";
-      if (selAreaModal && inpAreaModal && areaActual) {
+      if (esPresCtx && selAreaModal && inpAreaModal && areaActual) {
         inpAreaModal.value = textoDeOpcion(selAreaModal, areaActual);
         inpAreaModal.dispatchEvent(new Event("blur", { bubbles: true }));
         cerrarPanelCombobox(inpAreaModal);
       }
-      if (selZonaModal && inpZonaModal && zonaActual) {
+      if (esPresCtx && selZonaModal && inpZonaModal && zonaActual) {
         const zonaLabel = textoDeOpcion(selZonaModal, zonaActual);
         if (zonaLabel) {
           inpZonaModal.value = zonaLabel;
@@ -393,6 +421,8 @@ if (!window.TRIMESTRALIZACION_INIT) {
             inpZona.value = "";
             inpZona.disabled = true;
           }
+        } else {
+          if (inpZona) inpZona.disabled = false;
         }
       };
 

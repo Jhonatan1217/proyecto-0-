@@ -240,7 +240,8 @@
     };
 
     if (inputGrupo) {
-      inputGrupo.addEventListener("input", () => {
+      const recargarPorGrupoVirtualMixto = () => {
+        if (S.syncFiltrosDesdePreview) return;
         const modalidadActual = normalizarModalidad(selectModalidad.value);
         if (modalidadActual !== "virtual" && modalidadActual !== "mixto") return;
 
@@ -250,10 +251,16 @@
           return;
         }
         RT.data.cargarTrimestralizacionPorGrupo(valor);
-      });
+      };
+      inputGrupo.addEventListener("input", recargarPorGrupoVirtualMixto);
+      inputGrupo.addEventListener("change", recargarPorGrupoVirtualMixto);
     }
 
     selectModalidad.addEventListener("change", () => {
+      // Si el cambio fue provocado programáticamente desde la sincronización
+      // de filtros de preview, no recargar datos del servidor.
+      if (S.syncFiltrosDesdePreview) return;
+
       if (S.cascadaFiltrosPresencialActiva) {
         const inputGrupoEl = document.getElementById("inputGrupoTexto");
         if (inputGrupoEl) inputGrupoEl.value = "";
@@ -370,7 +377,9 @@
         const silent = Boolean(opts.silent);
 
         selectZona.innerHTML = `<option value="" hidden selected>SELECCIONE LA ZONA</option>`;
-        RT.ui.toggleTabla(false);
+        if (!opts.preserveTabla) {
+          RT.ui.toggleTabla(false);
+        }
 
         if (!id_area) {
           selectZona.disabled = true;
@@ -446,6 +455,7 @@
       }
 
       selectArea.addEventListener("change", async (e) => {
+        if (S.syncFiltrosDesdePreview) return;
         const id_area = e.target.value;
         RT.ui.toggleTabla(false);
         S.id_zona = null;
@@ -470,6 +480,7 @@
       });
 
       selectZona.addEventListener("change", (e) => {
+        if (S.syncFiltrosDesdePreview) return;
         S.id_zona = e.target.value;
         const inputZona = document.getElementById("inputZonaTexto");
         if (inputZona) {
@@ -510,6 +521,102 @@
           }
         }
       }
+
+      /**
+       * Tras crear en vista previa local: refleja en cabecera modalidad / área-zona / grupo
+       * (destino de la solicitud si se aprueba), sin recargar desde el servidor.
+       */
+      RT.ui.sincronizarFiltrosCabeceraDesdePreview = async function (reg) {
+        if (!reg) return;
+        S.syncFiltrosDesdePreview = true;
+        try {
+          const selectModalidad = document.getElementById("selectModalidad");
+          const contenedorArea = document.getElementById("contenedorAreaFiltro");
+          const contenedorZona = document.getElementById("contenedorZonaFiltro");
+          const contenedorGrupo = document.getElementById("contenedorGrupoFiltro");
+          const inputGrupo = document.getElementById("inputGrupoTexto");
+          const inputArea = document.getElementById("inputAreaTexto");
+          const inputZona = document.getElementById("inputZonaTexto");
+          const h1 = document.querySelector("#cabecera-trimestralizacion h1");
+
+          const mod = String(reg.modalidad || "").trim().toUpperCase();
+          const esVirtual = mod === "VIRTUAL" || mod === "MIXTO" || mod === "MIXTA";
+
+          if (esVirtual) {
+            const selVal = mod === "VIRTUAL" ? "virtual" : "mixto";
+            if (selectModalidad) {
+              selectModalidad.value = selVal;
+              const w = selectModalidad.closest(".combobox-wrapper");
+              if (w && typeof w._cbUpdateInput === "function") w._cbUpdateInput();
+            }
+            if (contenedorArea) contenedorArea.classList.add("hidden");
+            if (contenedorZona) contenedorZona.classList.add("hidden");
+            if (contenedorGrupo) contenedorGrupo.classList.remove("hidden");
+            if (inputGrupo) {
+              inputGrupo.value = String(reg.numero_ficha || "").trim();
+              inputGrupo.dispatchEvent(new Event("input", { bubbles: true }));
+            }
+            if (h1) {
+              const nf = String(reg.numero_ficha || "").trim();
+              h1.innerHTML = nf
+                ? `VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN — GRUPO ${nf}`
+                : "VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN — VIRTUAL / MIXTA";
+            }
+            RT.ui.toggleTabla(true);
+            RT.ui.sincronizarHabilitacionFiltrosAreaZona();
+          } else {
+            if (selectModalidad) {
+              selectModalidad.value = "presencial";
+              const w = selectModalidad.closest(".combobox-wrapper");
+              if (w && typeof w._cbUpdateInput === "function") w._cbUpdateInput();
+            }
+            if (contenedorArea) contenedorArea.classList.remove("hidden");
+            if (contenedorZona) contenedorZona.classList.remove("hidden");
+            if (contenedorGrupo) contenedorGrupo.classList.add("hidden");
+
+            const id_area = String(reg.id_area || "").trim();
+            const id_zona = String(reg.id_zona || "").trim();
+
+            if (id_area && selectArea) {
+              const existeArea = Array.from(selectArea.options).some((o) => String(o.value) === id_area);
+              if (existeArea) {
+                selectArea.value = id_area;
+                if (inputArea) {
+                  const areaLabel =
+                    Array.from(selectArea.options).find((o) => String(o.value) === id_area)?.textContent || "";
+                  inputArea.value = String(areaLabel).trim();
+                  inputArea.dispatchEvent(new Event("input", { bubbles: true }));
+                }
+                await cargarZonasPorArea(id_area, {
+                  preselectZona: id_zona,
+                  silent: true,
+                  preserveTabla: true,
+                });
+                if (id_zona && selectZona) {
+                  const existeZona = Array.from(selectZona.options).some((o) => String(o.value) === id_zona);
+                  if (existeZona) {
+                    selectZona.value = id_zona;
+                    S.id_zona = id_zona;
+                    if (inputZona) {
+                      const zonaLabel =
+                        Array.from(selectZona.options).find((o) => String(o.value) === id_zona)?.textContent || "";
+                      inputZona.value = String(zonaLabel).trim();
+                      inputZona.dispatchEvent(new Event("input", { bubbles: true }));
+                    }
+                  }
+                }
+                if (h1 && id_zona) {
+                  h1.innerHTML = `VISUALIZACIÓN DE REGISTRO TRIMESTRALIZACIÓN - ZONA ${id_zona}`;
+                }
+              }
+            }
+            RT.ui.toggleTabla(true);
+            RT.ui.sincronizarHabilitacionFiltrosAreaZona();
+          }
+        } finally {
+          S.syncFiltrosDesdePreview = false;
+        }
+      };
 
       RT.ui.configurarComboboxArea();
       RT.ui.configurarComboboxZona();

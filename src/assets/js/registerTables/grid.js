@@ -301,7 +301,11 @@
         if (RT.IS_AUTHENTICATED) {
           document.getElementById("btnAbrirModalZonaLibre")?.addEventListener("click", () => {
             Swal.close();
-            RT.modals.abrirModal({ dia, hora });
+            const selMod = document.getElementById("selectModalidad");
+            const raw = selMod ? String(selMod.value || "").trim().toLowerCase() : "";
+            const pre = { dia, hora };
+            if (raw) pre.modalidad = raw === "mixta" ? "mixto" : raw;
+            RT.modals.abrirModal(pre);
           });
         }
       },

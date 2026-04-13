@@ -308,12 +308,24 @@ if (isset($conn)) {
       </button>
       <?php endif; ?>
 
-      <button onclick="enviarHorario()" style="display:none;" class="hidden bg-[#0a3a57] text-white px-6 py-2 rounded-lg hover:bg-[#00304D] transition flex items-center justify-center w-full sm:w-auto">
-        Enviar horario
-      </button>
       <?php endif; ?> 
     </div>
   </main>
+
+  <?php if ($isAuthenticated): ?>
+  <!-- Botón flotante "Enviar horario": visible en cualquier modalidad cuando hay cambios locales -->
+  <div id="contenedorBtnEnviarHorario" class="fixed bottom-6 right-6 z-50" style="display:none;">
+    <button
+      onclick="enviarHorario()"
+      class="flex items-center gap-2 bg-[#0a3a57] text-white px-5 py-3 rounded-xl shadow-lg hover:bg-[#00304D] transition-all text-sm font-semibold"
+      style="box-shadow: 0 4px 24px rgba(10,58,87,0.22);">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+      </svg>
+      Enviar horario
+    </button>
+  </div>
+  <?php endif; ?>
 
   <!-- Modal Eliminar (mismo patrón visual que #modalCerrarSesión en header-private) -->
   <div id="modalEliminar" class="modal-perfil fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/40" role="dialog" aria-modal="true" aria-labelledby="tituloModalEliminar">
@@ -449,12 +461,12 @@ if (isset($conn)) {
   <!-- RegisterTables: orden fijo (namespace window.RegisterTables); cargar una sola vez la cadena -->
   <script src="<?= BASE_URL ?>src/assets/js/registerTables/config.js"></script>
   <script src="<?= BASE_URL ?>src/assets/js/registerTables/utils.js"></script>
-  <script src="<?= BASE_URL ?>src/assets/js/registerTables/templates.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/templates.js?v=2"></script>
   <script src="<?= BASE_URL ?>src/assets/js/registerTables/gestionHoras.js"></script>
-  <script src="<?= BASE_URL ?>src/assets/js/registerTables/areasFiltros.js"></script>
-  <script src="<?= BASE_URL ?>src/assets/js/registerTables/grid.js?v=2"></script>
-  <script src="<?= BASE_URL ?>src/assets/js/registerTables/solicitudCambiosHorario.js"></script>
-  <script src="<?= BASE_URL ?>src/assets/js/registerTables/trimestralizacionData.js"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/areasFiltros.js?v=5"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/grid.js?v=3"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/solicitudCambiosHorario.js?v=2"></script>
+  <script src="<?= BASE_URL ?>src/assets/js/registerTables/trimestralizacionData.js?v=2"></script>
   <script src="<?= BASE_URL ?>src/assets/js/registerTables/editHorario.js"></script>
   <script src="<?= BASE_URL ?>src/assets/js/registerTables/modalsPdf.js"></script>
   <script src="<?= BASE_URL ?>src/assets/js/registerTables/init.js"></script>
@@ -470,9 +482,9 @@ if (isset($conn)) {
       <div class="fixed inset-0 flex items-center justify-center p-4 z-50">
         <div
       id="modalCard"
-      class="bg-white !w-[480px] rounded-xl shadow-lg border border-gray-300 px-5 py-4 max-h-[90vh] overflow-y-auto" style="width: 480px !important; max-width: 480px !important;">
+      class="bg-white !w-[480px] rounded-xl shadow-lg border border-gray-300 px-5 py-4 flex flex-col max-h-[min(92vh,680px)] overflow-hidden" style="width: 480px !important; max-width: 480px !important;">
           <!-- Cabecera con botón cerrar -->
-          <div class="flex items-start justify-between mb-2">
+          <div class="flex items-start justify-between mb-2 flex-shrink-0">
             <h2 id="tituloModalCrear" class="text-center w-full text-lg mb-0 text-black font-semibold">
               Crear trimestralización
             </h2>
@@ -480,13 +492,25 @@ if (isset($conn)) {
               ✕
             </button>
           </div>
-          <div class="border-b border-gray-300 mb-3"></div>
+          <div class="border-b border-gray-300 mb-3 flex-shrink-0"></div>
 
+          <!-- Cuerpo con scroll (alto del modal estable) -->
+          <div id="modalCrearFormScroll" class="modal-crear-trim-scroll min-h-0 flex-1 overflow-y-auto">
           <!-- Formulario -->
           <form id="formTrimestralizacion" action="<?= BASE_URL ?>src/controllers/TrimestralizacionController.php?accion=crear" method="POST" autocomplete="off" class="trimestralizacion-form space-y-0 text-xs">
             
             <!-- GRID -->
             <div class="form-grid">
+
+            <!-- MODALIDAD (horario: presencial / virtual / mixta) -->
+              <div class="field">
+                <label for="modalidad" class="block text-xs font-semibold text-gray-800 mb-1">Modalidad</label>
+                <select name="modalidad" id="modalidad" class="select-styled w-full form-field" autocomplete="off">
+                  <option value="presencial">Presencial</option>
+                  <option value="virtual">Virtual</option>
+                  <option value="mixto">Mixta</option>
+                </select>
+              </div>
 
             <!-- PROGRAMA (combobox + select oculto para filtro de competencias / lógica JS) -->
               <div class="field">
@@ -578,10 +602,8 @@ if (isset($conn)) {
                 </select>
               </div>
 
-              <input type="hidden" name="modalidad" id="modalidad" value="presencial">
-
-              <!-- AREA + ZONA-->
-              <div class="field">
+              <!-- AREA + ZONA (solo presencial) -->
+              <div id="contenedorAreaZonaCrear" class="field">
                 <div class="flex flex-minw-0 gap-2">
                   <div class="flex-1">
                     <label for="id_area_combo" class="block text-xs font-semibold text-gray-800 mb-1">Área</label>
@@ -749,6 +771,7 @@ if (isset($conn)) {
               Guardar trimestralización
             </button>
           </form>
+          </div><!-- /modalCrearFormScroll -->
         </div>
       </div>
     </div>
@@ -896,7 +919,7 @@ if (isset($conn)) {
 
     <!-- Scripts compartidos: apertura de modal, validaciones, flujo duplicar, etc -->
     <script src="<?= BASE_URL ?>src/assets/js/landing.js"></script>
-    <script src="<?= BASE_URL ?>src/assets/js/formulario_trimestralizacion.js?v=3"></script>
+    <script src="<?= BASE_URL ?>src/assets/js/formulario_trimestralizacion.js?v=7"></script>
 
     <script src="<?= BASE_URL ?>src/assets/js/registerTablesModal.js"></script>
 

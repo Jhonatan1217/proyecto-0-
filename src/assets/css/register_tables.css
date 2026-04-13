@@ -270,6 +270,43 @@ th {
 	flex-direction: column;
 }
 
+/* Scroll interno del modal crear.
+   El card tiene px-5 (1.25rem) a cada lado; sacamos la zona de scroll
+   hasta el borde real del card con margen negativo + padding compensado,
+   de modo que el scrollbar quede pegado al borde derecho interior. */
+#modalCard {
+	/* Permite que el scroll llegue al borde del card */
+	overflow: hidden;
+}
+#modalCrearFormScroll.modal-crear-trim-scroll {
+	max-height: min(calc(92vh - 6.5rem), 36rem);
+	/* Extender hasta el borde derecho del card (px-5 = 1.25rem) */
+	margin-right: -1.25rem;
+	padding-right: 0;
+	scrollbar-width: thin;
+	scrollbar-color: #cbd5e1 transparent;
+}
+#modalCrearFormScroll.modal-crear-trim-scroll::-webkit-scrollbar {
+	width: 7px;
+}
+#modalCrearFormScroll.modal-crear-trim-scroll::-webkit-scrollbar-track {
+	background: transparent;
+}
+#modalCrearFormScroll.modal-crear-trim-scroll::-webkit-scrollbar-thumb {
+	background: #cbd5e1;
+	border-radius: 9999px;
+}
+#modalCrearFormScroll.modal-crear-trim-scroll::-webkit-scrollbar-thumb:hover {
+	background: #94a3b8;
+}
+/* El contenido dentro del scroll necesita el padding derecho original */
+#modalCrearFormScroll.modal-crear-trim-scroll > * {
+	padding-right: 0.5rem;
+}
+#modalCrearFormScroll.modal-crear-trim-scroll > form {
+	padding-right: 0.75rem;
+}
+
 /* ── Modal Gestión de Horas ──────────────────────────────────────────── */
 #modalGestionHoras {
 	z-index: 120000 !important;
